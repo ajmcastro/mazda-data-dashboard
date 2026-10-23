@@ -7,7 +7,9 @@ import {
   fmtNum,
   matchPreset,
   parseDay,
+  pickReport,
   pivotDaily,
+  reportLabel,
   resolvePreset,
   restoreRange,
   sanitizeRange,
@@ -154,5 +156,28 @@ describe('quick ranges', () => {
     expect(restoreRange('nonsense', first, last)).toBeUndefined()
     expect(restoreRange(null, first, last)).toBeUndefined()
     expect(restoreRange('30d', null, null)).toBeUndefined() // no data yet
+  })
+})
+
+describe('diagnostic report selection', () => {
+  const list = [{ report_id: 'new' }, { report_id: 'mid' }, { report_id: 'old' }]
+  it('shows the newest report unless another one is asked for', () => {
+    expect(pickReport(list, null)).toEqual({ report: list[0], notFound: false })
+    expect(pickReport(list, undefined).report?.report_id).toBe('new')
+    expect(pickReport(list, 'old')).toEqual({ report: list[2], notFound: false })
+  })
+  it('falls back to the newest and says so when the requested report does not exist', () => {
+    expect(pickReport(list, 'gone')).toEqual({ report: list[0], notFound: true })
+  })
+  it('copes with no reports at all', () => {
+    expect(pickReport([], null)).toEqual({ report: undefined, notFound: false })
+    expect(pickReport([], 'x')).toEqual({ report: undefined, notFound: false })
+  })
+  it('names a report by date, odometer and file', () => {
+    const label = reportLabel({ taken_at: '2026-10-15T08:56:59Z', odometer_km: 5781, source_file: 'dump.txt' })
+    expect(label).toContain('2026')
+    expect(label).toContain('5,781\u202fkm')
+    expect(label.endsWith('dump.txt')).toBe(true)
+    expect(reportLabel({ taken_at: null, odometer_km: null, source_file: 'x.txt' })).toBe('unknown date · — · x.txt')
   })
 })

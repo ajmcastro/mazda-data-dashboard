@@ -374,3 +374,20 @@ class MonthMetrics(BaseModel):
     new_faults: int | None = None
     tire_avg_kpa: float | None = None
     tire_min_kpa: float | None = None
+
+
+class DiagHistoryPoint(BaseModel):
+    """One diagnostic-tool report, summarised so visits to the workshop can be compared."""
+
+    report_id: str
+    source_file: str
+    taken_at: datetime | None = None
+    odometer_km: float | None = None
+    lifetime_km: float | None = None
+    lifetime_fuel_l: float | None = None
+    lifetime_l_per_100km: float | None = None
+    engine_hours: float | None = None
+    ignition_cycles: float | None = None
+    monitors_total: int
+    monitors_passed: int
+    dtcs_listed: int

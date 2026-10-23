@@ -210,3 +210,26 @@ export function restoreRange(saved: string | null, first?: string | null, last?:
   if (!preset || preset.id === 'all' || !first || !last) return undefined
   return resolvePreset(preset.id, first, last)
 }
+
+// ---- diagnostic-tool reports ----
+
+/**
+ * The report to show: the one asked for in the address, else the newest (the list is newest
+ * first). `notFound` is true when something was asked for that does not exist.
+ */
+export function pickReport<T extends { report_id: string }>(
+  list: T[],
+  requested: string | null | undefined,
+): { report: T | undefined; notFound: boolean } {
+  if (list.length === 0) return { report: undefined, notFound: false }
+  const found = requested ? list.find((r) => r.report_id === requested) : undefined
+  return { report: found ?? list[0], notFound: Boolean(requested) && !found }
+}
+
+/** "15 Oct 2026, 09:56 · 5,781 km · file name": how a report is named in lists. */
+export function reportLabel(r: { taken_at?: string | null; odometer_km?: number | null; source_file: string }): string {
+  const when = r.taken_at
+    ? new Date(r.taken_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    : 'unknown date'
+  return `${when} · ${fmtNum(r.odometer_km, 0, 'km')} · ${r.source_file}`
+}

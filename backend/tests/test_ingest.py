@@ -118,3 +118,54 @@ def test_diag_report(con):
         ("2", "3", 300.171, 310.0, 300.171, "mV"),
         ("A2", "B", 0.0, 65535.0, 1.0, None),
     ]
+
+
+def _diag_file(data_dir):
+    return next(data_dir.glob("*diag-tool*.txt"))
+
+
+def test_several_diagnostic_dumps_become_separate_reports(data_dir, tmp_path):
+    original = _diag_file(data_dir)
+    text = original.read_text()
+    # a later visit, and a second dump on the very same date and VIN (different content)
+    (data_dir / "all-x-diag-tool_later.txt").write_text(
+        text.replace("2026/10/15", "2026/11/20")
+    )
+    (data_dir / "all-y-diag-tool_same-day.txt").write_text(
+        text.replace("(IGNCNTR) = 278", "(IGNCNTR) = 280")
+    )
+    db = tmp_path / "multi.duckdb"
+    ingest(data_dir, db)
+    con = duckdb.connect(str(db), read_only=True)
+    reports = con.execute(
+        "SELECT taken_at, vin FROM diag_reports ORDER BY taken_at, source_file"
+    ).fetchall()
+    assert len(reports) == 3
+    assert [r[0].day for r in reports] == [15, 15, 20]
+    assert {r[1] for r in reports} == {"TESTVIN0000000001"}
+    # each report keeps its own values
+    values = dict(
+        con.execute(
+            "SELECT r.source_file, v.value_num FROM diag_values v JOIN diag_reports r USING (report_id) "
+            "WHERE v.key = 'IGNCNTR' AND v.section = 'IPT'"
+        ).fetchall()
+    )
+    assert sorted(values.values()) == [278.0, 278.0, 280.0]
+    con.close()
+
+    again = ingest(data_dir, db)  # loading them again adds nothing
+    assert all(new == 0 for kind, _, _, new in again if kind == "diag")
+
+
+def test_the_same_dump_under_another_name_is_not_loaded_twice(data_dir, tmp_path):
+    (data_dir / "copy-diag-tool_of-the-first.txt").write_text(
+        _diag_file(data_dir).read_text()
+    )
+    db = tmp_path / "dup.duckdb"
+    results = ingest(data_dir, db)
+    con = duckdb.connect(str(db), read_only=True)
+    assert con.execute("SELECT count(*) FROM diag_reports").fetchone() == (1,)
+    con.close()
+    diag = [new for kind, _, _, new in results if kind == "diag"]
+    # one file was loaded, the identical copy was skipped
+    assert min(diag) == 0 and max(diag) > 0

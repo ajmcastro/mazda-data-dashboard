@@ -157,6 +157,9 @@ export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefin
 export const useDiagReports = () =>
   useQuery({ queryKey: ['diag-reports'], queryFn: () => unwrap(client.GET('/api/diag/reports')) })
 
+export const useDiagHistory = () =>
+  useQuery({ queryKey: ['diag-history'], queryFn: () => unwrap(client.GET('/api/diag/history')) })
+
 export const useDiagReport = (id: string | undefined) =>
   useQuery({
     queryKey: ['diag-report', id],

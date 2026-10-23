@@ -389,6 +389,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diag/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Diag History
+         * @description Every diagnostic-tool report with its headline numbers, oldest first.
+         */
+        get: operations["diag_history_api_diag_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diag/reports/{report_id}": {
         parameters: {
             query?: never;
@@ -621,6 +641,36 @@ export interface components {
             record_number?: string | null;
             /** Signals */
             signals: components["schemas"]["DiagValue"][];
+        };
+        /**
+         * DiagHistoryPoint
+         * @description One diagnostic-tool report, summarised so visits to the workshop can be compared.
+         */
+        DiagHistoryPoint: {
+            /** Report Id */
+            report_id: string;
+            /** Source File */
+            source_file: string;
+            /** Taken At */
+            taken_at?: string | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Lifetime Km */
+            lifetime_km?: number | null;
+            /** Lifetime Fuel L */
+            lifetime_fuel_l?: number | null;
+            /** Lifetime L Per 100Km */
+            lifetime_l_per_100km?: number | null;
+            /** Engine Hours */
+            engine_hours?: number | null;
+            /** Ignition Cycles */
+            ignition_cycles?: number | null;
+            /** Monitors Total */
+            monitors_total: number;
+            /** Monitors Passed */
+            monitors_passed: number;
+            /** Dtcs Listed */
+            dtcs_listed: number;
         };
         /** DiagReport */
         DiagReport: {
@@ -1862,6 +1912,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagReportInfo"][];
+                };
+            };
+        };
+    };
+    diag_history_api_diag_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagHistoryPoint"][];
                 };
             };
         };

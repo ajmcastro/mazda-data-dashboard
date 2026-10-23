@@ -1353,6 +1353,29 @@
         }
       }
     },
+    "/api/diag/history": {
+      "get": {
+        "summary": "Diag History",
+        "description": "Every diagnostic-tool report with its headline numbers, oldest first.",
+        "operationId": "diag_history_api_diag_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DiagHistoryPoint"
+                  },
+                  "type": "array",
+                  "title": "Response Diag History Api Diag History Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diag/reports/{report_id}": {
       "get": {
         "summary": "Diag Report",
@@ -2050,6 +2073,118 @@
           "signals"
         ],
         "title": "DiagFrame"
+      },
+      "DiagHistoryPoint": {
+        "properties": {
+          "report_id": {
+            "type": "string",
+            "title": "Report Id"
+          },
+          "source_file": {
+            "type": "string",
+            "title": "Source File"
+          },
+          "taken_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taken At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "lifetime_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime Km"
+          },
+          "lifetime_fuel_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime Fuel L"
+          },
+          "lifetime_l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime L Per 100Km"
+          },
+          "engine_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Hours"
+          },
+          "ignition_cycles": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ignition Cycles"
+          },
+          "monitors_total": {
+            "type": "integer",
+            "title": "Monitors Total"
+          },
+          "monitors_passed": {
+            "type": "integer",
+            "title": "Monitors Passed"
+          },
+          "dtcs_listed": {
+            "type": "integer",
+            "title": "Dtcs Listed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "report_id",
+          "source_file",
+          "monitors_total",
+          "monitors_passed",
+          "dtcs_listed"
+        ],
+        "title": "DiagHistoryPoint",
+        "description": "One diagnostic-tool report, summarised so visits to the workshop can be compared."
       },
       "DiagReport": {
         "properties": {

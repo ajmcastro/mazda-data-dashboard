@@ -5,7 +5,7 @@ Time:10:00:00
 TimeZone:UTC+0000
 
 
-ODO:4879km
+ODO:4859km
 
 Mode 9
 ModuleName:ECM
@@ -14,20 +14,20 @@ CALID   SAMPLECALID000000
 CVN   0000000000000000000000000000000000000000
 IPT
    (OBDCOND) = 120
-   (IGNCNTR) = 210
+   (IGNCNTR) = 237
    (CATCOMP1) = 150
 ECUNAME   ECM-EngineControl
 TG/EFN
 VOD - Engine Run/Idle Time
    (IGNCNTR_R) = 40
-   (IGNCNTR_L) = 210
+   (IGNCNTR_L) = 237
    (ERT_R) = 52000 s
-   (ERT_L) = 373818 s
+   (ERT_L) = 372288 s
 VOD - Distance/Fuel Used
    (DT_R) = 780.0 km
-   (DT_L) = 4759.3 km
+   (DT_L) = 4739.8 km
    (FC_R) = 53.04 l
-   (FC_L) = 323.63 l
+   (FC_L) = 322.31 l
 AAF #1 OCC Vehicle Data
    (AAF1_TIME1_R) = 4294967295 s
    (AAF1_TIME1_L) = 120 s
@@ -53,7 +53,7 @@ ModuleName:ADU
 DTC:C1B22:87-28
 RecordNumber:01
 APP:12.5 %
-ODOMETER:4876.3 km
+ODOMETER:4856.8 km
 VSS:48 km/h
 VPWR:13.1 V
 AMB_TEMP:21 ℃
@@ -65,5 +65,5 @@ Mode 6
 ModuleName:ECM
 OBDMID: 1, Test: 80, Min: 0.000, Max: 1.000, Value: 0.000
 OBDMID: 2, Test: 3, Min: 300.000 mV, Max: 310.000 mV, Value: 304.500 mV
-OBDMID: 21, Test: 82, Min: 0.89 g, Max: 655.35 g, Value: 2.15 g
+OBDMID: 21, Test: 82, Min: 0.89 g, Max: 655.35 g, Value: 2.45 g
 OBDMID: 42, Test: 80, Min: 5 Ohm, Max: 450 Ohm, Value: 100 Ohm

@@ -273,3 +273,4 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .cell-change { font-size: 11px; font-family: var(--mono); }
 .partial-tag { font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 400; }
 .controls .toggle { flex-direction: row; align-items: center; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.report-select { width: 330px; max-width: 90vw; }

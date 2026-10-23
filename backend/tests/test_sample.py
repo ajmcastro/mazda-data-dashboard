@@ -54,7 +54,12 @@ def test_every_feature_has_data(con):
     assert q(
         con, "SELECT count(*) FROM v_dtc_readout_summary WHERE read_errors > 0"
     ) == [(2,)]
-    assert q(con, "SELECT count(*) FROM v_diag_obd WHERE in_range") == [(4,)]
+    assert q(con, "SELECT count(*) FROM diag_reports") == [
+        (3,)
+    ]  # three workshop visits
+    assert q(con, "SELECT count(*) FROM v_diag_obd WHERE in_range") == [
+        (12,)
+    ]  # 4 monitors each
     assert q(con, "SELECT count(*) FROM v_freeze_frames")[0][0] > 5
 
 

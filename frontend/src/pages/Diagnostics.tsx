@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { useDiagCompare, useDiagFrames, useDiagReport, useDiagReports } from '../api/hooks'
+import { useSearchParams } from 'react-router-dom'
+import { useDiagCompare, useDiagFrames, useDiagHistory, useDiagReport, useDiagReports } from '../api/hooks'
 import type { DiagDelta, ObdTest } from '../api/types'
+import { ReportHistory } from '../components/ReportHistory'
 import { Badge, DataTable, Panel, QueryState, Stat, type Column } from '../components/ui'
-import { fmtDateTime, fmtNum } from '../lib'
+import { fmtDateTime, fmtNum, pickReport, reportLabel } from '../lib'
 
 function RangeBar({ t }: { t: ObdTest }) {
   const pos = t.position === null || t.position === undefined ? null : Math.min(1, Math.max(0, t.position))
@@ -15,17 +17,37 @@ function RangeBar({ t }: { t: ObdTest }) {
 
 export default function Diagnostics() {
   const reports = useDiagReports()
-  const [chosen, setChosen] = useState<string | undefined>()
-  const [other, setOther] = useState<string | undefined>()
+  const history = useDiagHistory()
+  const [params, setParams] = useSearchParams()
   const [onlyChanged, setOnlyChanged] = useState(true)
   const list = reports.data ?? []
-  const id = chosen ?? list[0]?.report_id
+
+  // The shown report and the one to compare with live in the address (?report=…&compare=…), next
+  // to the period, so a particular visit can be bookmarked or linked to.
+  const { report: picked, notFound } = pickReport(list, params.get('report'))
+  const id = picked?.report_id
+  const compareWith = list.find((x) => x.report_id === params.get('compare') && x.report_id !== id)?.report_id
+  const setParam = (key: 'report' | 'compare', value: string | undefined) =>
+    setParams(
+      (prev) => {
+        const p = new URLSearchParams(prev)
+        if (value) p.set(key, value)
+        else p.delete(key)
+        return p
+      },
+      { replace: true },
+    )
+
   const report = useDiagReport(id)
   const frames = useDiagFrames(id)
-  const compare = useDiagCompare(other && other !== id ? other : undefined, id)
-
-  // a comparison target equal to the shown report makes no sense, so it is ignored
-  const compareWith = other && other !== id ? other : undefined
+  const otherInfo = list.find((x) => x.report_id === compareWith)
+  // always read the comparison in time order: from the earlier report to the later one
+  const otherIsEarlier = (otherInfo?.taken_at ?? '') <= (picked?.taken_at ?? '')
+  const earlierId = otherIsEarlier ? compareWith : id
+  const laterId = otherIsEarlier ? id : compareWith
+  const compare = useDiagCompare(earlierId, laterId)
+  const earlierInfo = otherIsEarlier ? otherInfo : picked
+  const laterInfo = otherIsEarlier ? picked : otherInfo
 
   const r = report.data
   const s = r?.summary
@@ -41,8 +63,8 @@ export default function Diagnostics() {
   const deltaCols: Column<DiagDelta>[] = [
     { key: 'sec', header: 'Section', render: (d) => <span className="muted">{d.section}</span> },
     { key: 'key', header: 'Value', render: (d) => <span className="mono">{d.key}</span>, sort: (d) => d.key },
-    { key: 'a', header: 'Earlier', num: true, render: (d) => fmtNum(d.a, 2, d.unit ?? '') },
-    { key: 'b', header: 'This report', num: true, render: (d) => fmtNum(d.b, 2, d.unit ?? '') },
+    { key: 'a', header: 'Earlier report', num: true, render: (d) => fmtNum(d.a, 2, d.unit ?? '') },
+    { key: 'b', header: 'Later report', num: true, render: (d) => fmtNum(d.b, 2, d.unit ?? '') },
     { key: 'd', header: 'Change', num: true, sort: (d) => Math.abs(d.delta), render: (d) => (d.delta > 0 ? '+' : '') + fmtNum(d.delta, 2) },
   ]
   const deltas = (compare.data ?? []).filter((d) => !onlyChanged || d.delta !== 0)
@@ -60,28 +82,59 @@ export default function Diagnostics() {
               : 'Dump from the dealer or workshop diagnostic tool.'}
           </p>
         </div>
-        {list.length > 1 && (
+        {list.length > 0 && (
           <div className="controls">
             <label>
               Report
-              <select value={id} onChange={(e) => setChosen(e.target.value)}>
+              <select
+                className="report-select"
+                value={id}
+                onChange={(e) => setParam('report', e.target.value)}
+              >
                 {list.map((x) => (
-                  <option key={x.report_id} value={x.report_id}>{fmtDateTime(x.taken_at)}</option>
+                  <option key={x.report_id} value={x.report_id}>
+                    {reportLabel(x)}
+                  </option>
                 ))}
               </select>
             </label>
-            <label>
-              Compare with
-              <select value={compareWith ?? ''} onChange={(e) => setOther(e.target.value || undefined)}>
-                <option value="">—</option>
-                {list.filter((x) => x.report_id !== id).map((x) => (
-                  <option key={x.report_id} value={x.report_id}>{fmtDateTime(x.taken_at)}</option>
-                ))}
-              </select>
-            </label>
+            {list.length > 1 && (
+              <label>
+                Compare with
+                <select
+                  className="report-select"
+                  value={compareWith ?? ''}
+                  onChange={(e) => setParam('compare', e.target.value || undefined)}
+                >
+                  <option value="">—</option>
+                  {list
+                    .filter((x) => x.report_id !== id)
+                    .map((x) => (
+                      <option key={x.report_id} value={x.report_id}>
+                        {reportLabel(x)}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
           </div>
         )}
       </div>
+
+      {notFound && (
+        <div className="alert-row warn" role="status" style={{ marginBottom: 14 }}>
+          <b>That report is not in the database</b>
+          <span className="muted">Showing the newest one instead.</span>
+        </div>
+      )}
+      {list.length === 1 && (
+        <div className="alert-row" role="status" style={{ marginBottom: 14 }}>
+          <b>1 report loaded</b>
+          <span className="muted">
+            Put more diagnostic-tool <span className="mono">*diag-tool*.txt</span> files in <span className="mono">data/</span> and run <span className="mono">make ingest</span> to compare visits.
+          </span>
+        </div>
+      )}
 
       <QueryState query={reports}>
         {list.length === 0 ? (
@@ -101,8 +154,14 @@ export default function Diagnostics() {
                   <Stat label="Emission monitors" value={`${r.obd_tests.length - failed}/${r.obd_tests.length}`} unit="pass" sub={`${activeAes} of ${r.aes.length} AES active`} alert={failed > 0} />
                 </div>
 
+                <ReportHistory
+                  query={history}
+                  selected={id}
+                  onSelect={(rid) => setParam('report', rid)}
+                />
+
                 {compareWith && (
-                  <Panel title="Change since the earlier report" hint={
+                  <Panel title={`Change: ${fmtDateTime(earlierInfo?.taken_at)} → ${fmtDateTime(laterInfo?.taken_at)}`} hint={
                     <label className="toggle">
                       <input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />
                       only changed values

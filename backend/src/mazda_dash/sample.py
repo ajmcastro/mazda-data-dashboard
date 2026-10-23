@@ -416,17 +416,58 @@ def write_dtcs(out: Path, rng: random.Random, car: Car) -> None:
     )
 
 
-def write_diag(out: Path, car: Car) -> None:
-    km = car.odo - 120
-    fuel = km * 6.8 / 100
-    text = f"""Collect Diagnostic Information
+# Three workshop visits. The counters grow, one fault appears only at the last visit, and the
+# monitor results drift a little (but stay inside their limits).
+DIAG_VISITS = [
+    (
+        datetime(2026, 4, 15, 10, 0),
+        {"faults": False, "mv": 301.2, "g": 2.15, "lpk": 7.05},
+    ),
+    (
+        datetime(2026, 5, 20, 10, 0),
+        {"faults": False, "mv": 302.8, "g": 2.31, "lpk": 6.92},
+    ),
+    (
+        datetime(2026, 6, 30, 10, 0),
+        {"faults": True, "mv": 304.5, "g": 2.45, "lpk": 6.8},
+    ),
+]
 
-Date:2026/06/30
-Time:10:00:00
+
+def diag_text(
+    when: datetime, odo: float, faults: bool, mv: float, g: float, lpk: float
+) -> str:
+    km = odo - 120
+    fuel = km * lpk / 100
+    ignitions = 40 + int(km / 24)
+    dtcs = "ModuleName:ADU\nC1B22:87-28\n" if faults else "ModuleName:ADU\n"
+    rob = "ModuleName:DCM\nXB2A92:00-28\n" if faults else "ModuleName:DCM\n"
+    snapshot = (
+        f"""SnapshotData
+ModuleName:ADU
+DTC:C1B22:87-28
+RecordNumber:01
+APP:12.5 %
+ODOMETER:{odo - 3:.1f} km
+VSS:48 km/h
+VPWR:13.1 V
+AMB_TEMP:21 ℃
+ECT:88 ℃
+ENG_RPM:1900 RPM
+POWER_MODE:ON
+SHIFT_POS:Drive
+"""
+        if faults
+        else ""
+    )
+    return f"""Collect Diagnostic Information
+
+Date:{when:%Y/%m/%d}
+Time:{when:%H:%M:%S}
 TimeZone:UTC+0000
 
 
-ODO:{int(car.odo)}km
+ODO:{int(odo)}km
 
 Mode 9
 ModuleName:ECM
@@ -435,13 +476,13 @@ CALID   SAMPLECALID000000
 CVN   0000000000000000000000000000000000000000
 IPT
    (OBDCOND) = 120
-   (IGNCNTR) = 210
+   (IGNCNTR) = {ignitions}
    (CATCOMP1) = 150
 ECUNAME   ECM-EngineControl
 TG/EFN
 VOD - Engine Run/Idle Time
    (IGNCNTR_R) = 40
-   (IGNCNTR_L) = 210
+   (IGNCNTR_L) = {ignitions}
    (ERT_R) = 52000 s
    (ERT_L) = {int(km / 55 * 3600 * 1.2)} s
 VOD - Distance/Fuel Used
@@ -462,36 +503,24 @@ Mode 9 Workaround
 
 
 dtcs
-ModuleName:ADU
-C1B22:87-28
-
+{dtcs}
 Rob_dtcs
-ModuleName:DCM
-XB2A92:00-28
-
-SnapshotData
-ModuleName:ADU
-DTC:C1B22:87-28
-RecordNumber:01
-APP:12.5 %
-ODOMETER:{car.odo - 3:.1f} km
-VSS:48 km/h
-VPWR:13.1 V
-AMB_TEMP:21 ℃
-ECT:88 ℃
-ENG_RPM:1900 RPM
-POWER_MODE:ON
-SHIFT_POS:Drive
-Mode 6
+{rob}
+{snapshot}Mode 6
 ModuleName:ECM
 OBDMID: 1, Test: 80, Min: 0.000, Max: 1.000, Value: 0.000
-OBDMID: 2, Test: 3, Min: 300.000 mV, Max: 310.000 mV, Value: 304.500 mV
-OBDMID: 21, Test: 82, Min: 0.89 g, Max: 655.35 g, Value: 2.15 g
+OBDMID: 2, Test: 3, Min: 300.000 mV, Max: 310.000 mV, Value: {mv:.3f} mV
+OBDMID: 21, Test: 82, Min: 0.89 g, Max: 655.35 g, Value: {g:.2f} g
 OBDMID: 42, Test: 80, Min: 5 Ohm, Max: 450 Ohm, Value: 100 Ohm
 """
-    (out / "all-sample-diag-tool_sample-diag-tool_1_20260630_100000.txt").write_text(
-        text
-    )
+
+
+def write_diag(out: Path, car: Car) -> None:
+    for when, extra in DIAG_VISITS:
+        # odometer at the visit: after the last drive that ended before it
+        odo = next((o for t, o in reversed(car.events) if t <= when), 120.0)
+        name = f"all-sample-diag-tool_sample-diag-tool_1_{when:%Y%m%d_%H%M%S}.txt"
+        (out / name).write_text(diag_text(when, odo, **extra))
 
 
 def generate(out: Path, seed: int = 7) -> None:

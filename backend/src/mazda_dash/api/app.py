@@ -430,7 +430,23 @@ def diag_reports(con: duckdb.DuckDBPyConnection = Con):
         "(SELECT count(*) FROM diag_values v WHERE v.report_id = r.report_id) AS values, "
         "(SELECT count(*) FROM diag_dtcs d WHERE d.report_id = r.report_id) AS dtcs, "
         "(SELECT count(*) FROM diag_obd_tests t WHERE t.report_id = r.report_id) AS obd_tests "
-        "FROM diag_reports r ORDER BY r.taken_at DESC",
+        "FROM diag_reports r ORDER BY r.taken_at DESC, r.source_file",
+    )
+
+
+@app.get("/api/diag/history", response_model=list[m.DiagHistoryPoint])
+def diag_history(con: duckdb.DuckDBPyConnection = Con):
+    """Every diagnostic-tool report with its headline numbers, oldest first."""
+    return rows(
+        con,
+        "SELECT r.report_id, r.source_file, r.taken_at, r.odometer_km, s.lifetime_km, "
+        "s.lifetime_fuel_l, s.lifetime_l_per_100km, s.engine_hours, s.ignition_cycles, "
+        "(SELECT count(*) FROM v_diag_obd o WHERE o.report_id = r.report_id) AS monitors_total, "
+        "(SELECT count(*) FROM v_diag_obd o WHERE o.report_id = r.report_id AND o.in_range) "
+        "AS monitors_passed, "
+        "(SELECT count(*) FROM diag_dtcs d WHERE d.report_id = r.report_id) AS dtcs_listed "
+        "FROM diag_reports r LEFT JOIN v_diag_summary s USING (report_id) "
+        "ORDER BY r.taken_at, r.source_file",
     )
 
 
