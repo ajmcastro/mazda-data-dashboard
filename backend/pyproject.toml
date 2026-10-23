@@ -8,7 +8,9 @@ authors = [
 requires-python = ">=3.12"
 dependencies = [
     "duckdb>=2.0.0",
+    "fastapi>=0.161.1",
     "pyyaml>=6.0.3",
+    "uvicorn[standard]>=0.54.0",
 ]
 
 [build-system]
@@ -17,6 +19,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pytest>=9.1.1",
     "ruff>=0.17.2",
 ]

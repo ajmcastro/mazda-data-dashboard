@@ -1,0 +1,1831 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Mazda CX-5 dashboard API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/overview": {
+      "get": {
+        "summary": "Overview",
+        "operationId": "overview_api_overview_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/odometer/daily": {
+      "get": {
+        "summary": "Odometer Daily",
+        "operationId": "odometer_daily_api_odometer_daily_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OdometerDay"
+                  },
+                  "type": "array",
+                  "title": "Response Odometer Daily Api Odometer Daily Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/fuel/monthly": {
+      "get": {
+        "summary": "Fuel Monthly",
+        "operationId": "fuel_monthly_api_fuel_monthly_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FuelMonth"
+                  },
+                  "type": "array",
+                  "title": "Response Fuel Monthly Api Fuel Monthly Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/trips/segments": {
+      "get": {
+        "summary": "Trip Segments",
+        "operationId": "trip_segments_api_trips_segments_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TripSegment"
+                  },
+                  "title": "Response Trip Segments Api Trips Segments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/status/timeline": {
+      "get": {
+        "summary": "Status Timeline",
+        "operationId": "status_timeline_api_status_timeline_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StatusPoint"
+                  },
+                  "type": "array",
+                  "title": "Response Status Timeline Api Status Timeline Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/doors/timeline": {
+      "get": {
+        "summary": "Doors Timeline",
+        "operationId": "doors_timeline_api_doors_timeline_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 200,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DoorPoint"
+                  },
+                  "title": "Response Doors Timeline Api Doors Timeline Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/alarms": {
+      "get": {
+        "summary": "Alarms",
+        "operationId": "alarms_api_alarms_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AlarmEvent"
+                  },
+                  "type": "array",
+                  "title": "Response Alarms Api Alarms Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warnings/frequency": {
+      "get": {
+        "summary": "Warning Frequency",
+        "operationId": "warning_frequency_api_warnings_frequency_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WarningFrequency"
+                  },
+                  "type": "array",
+                  "title": "Response Warning Frequency Api Warnings Frequency Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warnings/daily": {
+      "get": {
+        "summary": "Warning Daily",
+        "operationId": "warning_daily_api_warnings_daily_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/WarningDay"
+                  },
+                  "type": "array",
+                  "title": "Response Warning Daily Api Warnings Daily Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/warnings/events": {
+      "get": {
+        "summary": "Warning Events",
+        "operationId": "warning_events_api_warnings_events_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 1000,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarningPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dtcs/frequency": {
+      "get": {
+        "summary": "Dtc Frequency",
+        "operationId": "dtc_frequency_api_dtcs_frequency_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DtcFrequency"
+                  },
+                  "type": "array",
+                  "title": "Response Dtc Frequency Api Dtcs Frequency Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dtcs/events": {
+      "get": {
+        "summary": "Dtc Events",
+        "operationId": "dtc_events_api_dtcs_events_get",
+        "parameters": [
+          {
+            "name": "ecu",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ecu"
+            }
+          },
+          {
+            "name": "dtc_code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dtc Code"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 5000,
+              "minimum": 1,
+              "default": 500,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DtcEvent"
+                  },
+                  "title": "Response Dtc Events Api Dtcs Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dtcs/readouts": {
+      "get": {
+        "summary": "Dtc Readouts",
+        "operationId": "dtc_readouts_api_dtcs_readouts_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Readout"
+                  },
+                  "type": "array",
+                  "title": "Response Dtc Readouts Api Dtcs Readouts Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dtcs/snapshots": {
+      "get": {
+        "summary": "Dtc Snapshots",
+        "operationId": "dtc_snapshots_api_dtcs_snapshots_get",
+        "parameters": [
+          {
+            "name": "ecu",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ecu"
+            }
+          },
+          {
+            "name": "dtc_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dtc Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SnapshotSignal"
+                  },
+                  "title": "Response Dtc Snapshots Api Dtcs Snapshots Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/codes/unmapped": {
+      "get": {
+        "summary": "Unmapped",
+        "operationId": "unmapped_api_codes_unmapped_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UnmappedCode"
+                  },
+                  "type": "array",
+                  "title": "Response Unmapped Api Codes Unmapped Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlarmEvent": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "burglar_status": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Burglar Status"
+          },
+          "alarm_reason": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alarm Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at"
+        ],
+        "title": "AlarmEvent"
+      },
+      "DoorPoint": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "door_driver": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Door Driver"
+          },
+          "door_passenger": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Door Passenger"
+          },
+          "door_rear_left": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Door Rear Left"
+          },
+          "door_rear_right": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Door Rear Right"
+          },
+          "trunk": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trunk"
+          },
+          "hood": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hood"
+          },
+          "lock_driver": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lock Driver"
+          },
+          "lock_passenger": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lock Passenger"
+          },
+          "hazard_switch": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hazard Switch"
+          },
+          "light_switch": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Light Switch"
+          },
+          "invalid_signals": {
+            "type": "integer",
+            "title": "Invalid Signals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at",
+          "invalid_signals"
+        ],
+        "title": "DoorPoint"
+      },
+      "DtcEvent": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Event At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "failure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "failure_type_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type Title"
+          },
+          "system": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "System"
+          },
+          "confirmed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed"
+          },
+          "pending": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pending"
+          },
+          "test_failed": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Failed"
+          },
+          "warning_indicator": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning Indicator"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "event_at",
+          "ecu",
+          "dtc_code",
+          "title",
+          "severity"
+        ],
+        "title": "DtcEvent"
+      },
+      "DtcFrequency": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "ecu_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecu Title"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "failure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "readouts": {
+            "type": "integer",
+            "title": "Readouts"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "first_odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Odometer Km"
+          },
+          "last_odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Odometer Km"
+          },
+          "active_in_latest_readout": {
+            "type": "boolean",
+            "title": "Active In Latest Readout"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu",
+          "dtc_code",
+          "title",
+          "severity",
+          "readouts",
+          "first_seen",
+          "last_seen",
+          "active_in_latest_readout"
+        ],
+        "title": "DtcFrequency"
+      },
+      "FuelMonth": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "segments": {
+            "type": "integer",
+            "title": "Segments"
+          },
+          "km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km"
+          },
+          "fuel_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel L"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          },
+          "driving_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driving Hours"
+          },
+          "avg_speed_kmh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Speed Kmh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "segments"
+        ],
+        "title": "FuelMonth"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "has_data"
+        ],
+        "title": "Health"
+      },
+      "LatestStatus": {
+        "properties": {
+          "at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "fuel_level_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel Level Pct"
+          },
+          "range_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range Km"
+          },
+          "tire_fl_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Fl Kpa"
+          },
+          "tire_fr_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Fr Kpa"
+          },
+          "tire_rl_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Rl Kpa"
+          },
+          "tire_rr_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Rr Kpa"
+          }
+        },
+        "type": "object",
+        "title": "LatestStatus"
+      },
+      "OdometerDay": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "odometer_km": {
+            "type": "number",
+            "title": "Odometer Km"
+          },
+          "km_since_previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Since Previous"
+          },
+          "days_since_previous": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Since Previous"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "odometer_km"
+        ],
+        "title": "OdometerDay"
+      },
+      "Overview": {
+        "properties": {
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vin"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "odometer_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer At"
+          },
+          "data_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data From"
+          },
+          "data_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data To"
+          },
+          "km_last_30_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Last 30 Days"
+          },
+          "lifetime_l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime L Per 100Km"
+          },
+          "recent_l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recent L Per 100Km"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LatestStatus"
+          },
+          "warnings_total": {
+            "type": "integer",
+            "title": "Warnings Total"
+          },
+          "warnings_last_30_days": {
+            "type": "integer",
+            "title": "Warnings Last 30 Days"
+          },
+          "active_faults": {
+            "type": "integer",
+            "title": "Active Faults"
+          },
+          "faults_seen": {
+            "type": "integer",
+            "title": "Faults Seen"
+          },
+          "unmapped_codes": {
+            "type": "integer",
+            "title": "Unmapped Codes"
+          },
+          "last_alarm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlarmEvent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "warnings_total",
+          "warnings_last_30_days",
+          "active_faults",
+          "faults_seen",
+          "unmapped_codes"
+        ],
+        "title": "Overview"
+      },
+      "Readout": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "event_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Event At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "faults": {
+            "type": "integer",
+            "title": "Faults"
+          },
+          "read_errors": {
+            "type": "integer",
+            "title": "Read Errors"
+          },
+          "ecus_reported": {
+            "type": "integer",
+            "title": "Ecus Reported"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "event_at",
+          "faults",
+          "read_errors",
+          "ecus_reported"
+        ],
+        "title": "Readout"
+      },
+      "SnapshotSignal": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "record_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Number"
+          },
+          "snapshot_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "signal": {
+            "type": "string",
+            "title": "Signal"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "value_num": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Num"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "signal"
+        ],
+        "title": "SnapshotSignal"
+      },
+      "StatusPoint": {
+        "properties": {
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "fuel_level_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel Level Pct"
+          },
+          "range_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range Km"
+          },
+          "trip_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trip Km"
+          },
+          "engine_state": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine State"
+          },
+          "tire_fl_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Fl Kpa"
+          },
+          "tire_fr_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Fr Kpa"
+          },
+          "tire_rl_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Rl Kpa"
+          },
+          "tire_rr_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Rr Kpa"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created_at"
+        ],
+        "title": "StatusPoint"
+      },
+      "TripSegment": {
+        "properties": {
+          "start_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Start At"
+          },
+          "end_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End At"
+          },
+          "gap_hours": {
+            "type": "number",
+            "title": "Gap Hours"
+          },
+          "after_reset": {
+            "type": "boolean",
+            "title": "After Reset"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "fuel_l": {
+            "type": "number",
+            "title": "Fuel L"
+          },
+          "driving_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driving Seconds"
+          },
+          "odometer_delta_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Delta Km"
+          },
+          "fuel_level_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel Level Pct"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_at",
+          "end_at",
+          "gap_hours",
+          "after_reset",
+          "km",
+          "fuel_l"
+        ],
+        "title": "TripSegment"
+      },
+      "UnmappedCode": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "occurrences": {
+            "type": "integer",
+            "title": "Occurrences"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "code",
+          "occurrences"
+        ],
+        "title": "UnmappedCode"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WarningDay": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "title": "Day"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "events": {
+            "type": "integer",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "code",
+          "events"
+        ],
+        "title": "WarningDay"
+      },
+      "WarningEvent": {
+        "properties": {
+          "transaction_id": {
+            "type": "string",
+            "title": "Transaction Id"
+          },
+          "triggered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "known": {
+            "type": "boolean",
+            "title": "Known"
+          }
+        },
+        "type": "object",
+        "required": [
+          "transaction_id",
+          "code",
+          "title",
+          "severity",
+          "known"
+        ],
+        "title": "WarningEvent"
+      },
+      "WarningFrequency": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "known": {
+            "type": "boolean",
+            "title": "Known"
+          },
+          "events": {
+            "type": "integer",
+            "title": "Events"
+          },
+          "pct_of_events": {
+            "type": "number",
+            "title": "Pct Of Events"
+          },
+          "days_seen": {
+            "type": "integer",
+            "title": "Days Seen"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Seen"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "title",
+          "severity",
+          "known",
+          "events",
+          "pct_of_events",
+          "days_seen",
+          "first_seen",
+          "last_seen"
+        ],
+        "title": "WarningFrequency"
+      },
+      "WarningPage": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WarningEvent"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "items"
+        ],
+        "title": "WarningPage"
+      }
+    }
+  }
+}

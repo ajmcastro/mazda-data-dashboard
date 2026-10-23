@@ -1,0 +1,18 @@
+import type { components } from './schema'
+
+type S = components['schemas']
+export type Overview = S['Overview']
+export type OdometerDay = S['OdometerDay']
+export type FuelMonth = S['FuelMonth']
+export type TripSegment = S['TripSegment']
+export type StatusPoint = S['StatusPoint']
+export type DoorPoint = S['DoorPoint']
+export type AlarmEvent = S['AlarmEvent']
+export type WarningFrequency = S['WarningFrequency']
+export type WarningDay = S['WarningDay']
+export type WarningEvent = S['WarningEvent']
+export type DtcFrequency = S['DtcFrequency']
+export type DtcEvent = S['DtcEvent']
+export type Readout = S['Readout']
+export type SnapshotSignal = S['SnapshotSignal']
+export type UnmappedCode = S['UnmappedCode']

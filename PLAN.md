@@ -10,7 +10,7 @@ Personal dashboard to analyse the data Mazda exported for my CX-5 (see `CLAUDE.m
 | Storage | **DuckDB** (single file) | Columnar and analytical; reads the wide `dtc-ssr` CSV and mixed timestamps well; `read_csv` makes re-ingestion trivial. SQLite would work but is clumsier for this kind of analytics |
 | API | **FastAPI** | Thin read-only layer over DuckDB; typed responses |
 | Frontend | **React + Vite + TypeScript** | Flexible for alerts, drill-downs and a polished UI; Streamlit is faster to start but limiting for a long-lived, shareable project |
-| Charts / tables | Recharts (or ECharts) / TanStack Table | Decide in milestone 4 |
+| Charts / tables | Recharts / a small sortable `DataTable` component | Chosen in M4; TanStack Table v9 was skipped (new API, not needed yet) |
 | Tests | pytest (backend), Vitest (frontend) | |
 
 ## Privacy / open-source rules
@@ -63,7 +63,7 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Editable code-description mappings (warnings, DTCs, ECUs) with "unknown" fallback.
 - Derived metrics: odometer over time, fuel consumption per trip, warning/DTC frequency.
 
-### M4 — API + dashboard skeleton
+### M4 — API + dashboard skeleton ✅ done
 - FastAPI endpoints for the views above; OpenAPI types shared with the frontend.
 - Vite/React app: overview page (key stats, odometer/fuel charts), warnings page, DTC explorer, status/doors page.
 - `make dev` runs both.
