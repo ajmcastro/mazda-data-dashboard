@@ -101,3 +101,24 @@ Created by `make ingest` in `db/mazda.duckdb` (gitignored). All timestamps are n
 | `ingest_runs` | – | audit log of rows read / new per file |
 
 Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers, 1,166 DTC readings (106 faults, 906 none, 154 read errors), 137 snapshots (2,745 values), 42,108 signal readings, 1 diagnostic report.
+
+## Domain model (M3)
+
+`make model` (also run by `make ingest`) loads `config/codes/*.yaml` into `ref_*` tables and recreates these views. Codes without a description fall back to `Unknown warning $XXX` / `Unknown DTC XXXXX` with `known = false`; `make unmapped` lists them (`v_unmapped_codes`).
+
+| View | What it gives |
+|---|---|
+| `v_warnings`, `v_warning_frequency` | one row per warning code occurrence; per-code counts, share of events, days seen, first/last seen |
+| `v_dtc_events` | real faults only (not `none` / `read_error`), with ECU and failure-type titles, system (Powertrain/Chassis/Body/Network), scope, and the UDS status byte decoded (`confirmed`, `pending`, `test_failed`, `warning_indicator`) |
+| `v_dtc_frequency` | per ECU + DTC: read-outs, first/last seen and odometer, `active_in_latest_readout` |
+| `v_dtc_readout_summary` | per read-out: faults, read errors, ECUs reported |
+| `v_dtc_snapshot_signals` | freeze-frame signals joined to their DTC |
+| `v_vehicle_status` | wide remote-status timeline: odometer, fuel level, range, trip counters, engine state, tire pressures (kPa); `Invalid` signals are NULL. Latitude/longitude are deliberately left out |
+| `v_door_status`, `v_alarm_events` | door/lock/light snapshots; burglar alarm status and reason |
+| `v_odometer_readings`, `v_odometer_daily` | odometer from every source; daily max and km since the previous day with data |
+| `v_trip_log`, `v_trip_segments`, `v_fuel_monthly` | trip-1 counters, consumption between consecutive snapshots, monthly km / litres / l per 100 km |
+| `v_diag_values`, `v_diag_summary` | diagnostic-tool counters; lifetime and recent distance, fuel and l/100 km |
+
+Signal interpretations used by the views (inferred from the values, not documented by Mazda): `drv1avlfuele` = km/l, `drv1avlfuelg` = l/100 km (`102.2` = no data), `drv1distnc` = trip km, `drv1drvtm` = trip seconds, `fuelsegementdactl` = fuel level 0-100, `smaphremdrvdistnum` = remaining range km. Cross-checks: 100 / km-per-l equals l/100 km; trip km tracks the odometer delta; fuel economy comes out at 6.7-7.2 l/100 km per month, and the diagnostic tool reports 7.32 l/100 km lifetime.
+
+Caveats: trip segments cover about 70% of the odometer distance (km driven before a counter reset that no snapshot saw are lost); a single segment's l/100 km is noisy, so use `v_fuel_monthly` or segments of 5+ km. DTC failure-type titles only list entries known with confidence; ECU titles marked "(inferred)" are guesses.

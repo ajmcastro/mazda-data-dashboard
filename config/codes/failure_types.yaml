@@ -1,0 +1,12 @@
+# Failure-type byte (the part after ':' in a DTC, e.g. "87" in "U0198:87").
+# Definitions follow SAE J2012-DA; only the entries I am confident about are listed.
+"00": No sub type information
+"11": Circuit short to ground
+"12": Circuit short to battery
+"13": Circuit open
+"16": Circuit voltage below threshold
+"17": Circuit voltage above threshold
+"81": Invalid serial data received
+"86": Signal invalid
+"87": Missing message
+"88": Bus off

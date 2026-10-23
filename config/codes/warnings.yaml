@@ -1,0 +1,71 @@
+# Warning codes from the `war` export (WARNING_LIST), keyed by the code as it appears there.
+# Mazda does not publish these; fill in what you learn (owner's manual, dealer, forums).
+#   title:    short human description (null = unknown)
+#   severity: info | warning | critical | unknown  (used by the alerts engine, M5)
+#   category: free text, e.g. "lighting", "safety"
+#   notes:    anything useful (source, how sure you are)
+# Run `make unmapped` to list codes seen in the data that have no title yet.
+"$000":
+  title: null
+  severity: unknown
+"$049":
+  title: null
+  severity: unknown
+"$072":
+  title: null
+  severity: unknown
+"$086":
+  title: null
+  severity: unknown
+"$08D":
+  title: null
+  severity: unknown
+"$0B5":
+  title: null
+  severity: unknown
+"$182":
+  title: null
+  severity: unknown
+"$184":
+  title: null
+  severity: unknown
+"$187":
+  title: null
+  severity: unknown
+"$1B4":
+  title: null
+  severity: unknown
+"$20F":
+  title: null
+  severity: unknown
+"$210":
+  title: null
+  severity: unknown
+  notes: Present in ~98% of warning events (6,922 of 7,039); probably informational, but unconfirmed.
+"$21D":
+  title: null
+  severity: unknown
+"$226":
+  title: null
+  severity: unknown
+"$246":
+  title: null
+  severity: unknown
+"$25E":
+  title: null
+  severity: unknown
+"$260":
+  title: null
+  severity: unknown
+"$290":
+  title: null
+  severity: unknown
+"$2CD":
+  title: null
+  severity: unknown
+"$2DA":
+  title: null
+  severity: unknown
+"$2FE":
+  title: null
+  severity: unknown

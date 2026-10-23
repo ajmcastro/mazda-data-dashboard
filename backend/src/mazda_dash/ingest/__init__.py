@@ -6,6 +6,7 @@ from pathlib import Path
 
 import duckdb
 
+from ..model import build_model
 from .csv_loaders import LOADERS, ORDER
 from .diag_parser import parse_diag_file
 from .schema import init_schema
@@ -51,7 +52,9 @@ def find_files(data_dir: Path) -> list[tuple[str, Path]]:
     return found
 
 
-def ingest(data_dir: Path, db_path: Path) -> list[tuple[str, str, int, int]]:
+def ingest(
+    data_dir: Path, db_path: Path, config_dir: Path | None = None
+) -> list[tuple[str, str, int, int]]:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(db_path))
     init_schema(con)
@@ -65,6 +68,8 @@ def ingest(data_dir: Path, db_path: Path) -> list[tuple[str, str, int, int]]:
             [now, path.name, kind, rows_read, rows_new],
         )
         results.append((kind, path.name, rows_read, rows_new))
+    if config_dir is not None:
+        build_model(con, config_dir)
     con.close()
     return results
 
@@ -73,7 +78,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--data", type=Path, default=Path("../data"))
     ap.add_argument("--db", type=Path, default=Path("../db/mazda.duckdb"))
+    ap.add_argument("--config", type=Path, default=Path("../config/codes"))
     args = ap.parse_args()
-    for kind, name, read, new in ingest(args.data, args.db):
+    for kind, name, read, new in ingest(args.data, args.db, args.config):
         print(f"{kind:8} read={read:6} new={new:6}  {name}")
     print("database:", args.db)

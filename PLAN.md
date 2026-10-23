@@ -58,7 +58,7 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Idempotent `make ingest` (re-running with newer exports doesn't duplicate rows; dedupe on `X_TRANSACTION_ID` or timestamp keys).
 - Tests with small fixtures.
 
-### M3 — Domain model & code lookups
+### M3 — Domain model & code lookups ✅ done
 - Views/tables for: warning events, DTC events (+ header + snapshot), vehicle status timeline, diag-tool counters.
 - Editable code-description mappings (warnings, DTCs, ECUs) with "unknown" fallback.
 - Derived metrics: odometer over time, fuel consumption per trip, warning/DTC frequency.

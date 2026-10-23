@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-The repository so far has a `uv` backend skeleton (`backend/`: profiling script and the `mazda_dash.ingest` package; milestones M1–M2 done) and raw data in `data/` (gitignored). Follow `PLAN.md` milestone by milestone. Commands (from repo root): `make setup`, `make profile` (writes `docs/profile/`, gitignored), `make ingest` (loads `data/` into `db/mazda.duckdb`, idempotent), `make reset-db`, `make test`, `make lint`, `make format`.
+The repository so far has a `uv` backend skeleton (`backend/`: profiling script and the `mazda_dash.ingest` package; milestones M1–M3 done) and raw data in `data/` (gitignored). Follow `PLAN.md` milestone by milestone. Commands (from repo root): `make setup`, `make profile` (writes `docs/profile/`, gitignored), `make ingest` (loads `data/` into `db/mazda.duckdb`, idempotent), `make model` (reload `config/codes/*.yaml` and recreate views), `make unmapped` (codes lacking a description), `make reset-db`, `make test`, `make lint`, `make format`.
 
 ## Data overview (`data/`)
 
@@ -33,3 +33,5 @@ Things to know before writing parsing code:
 ## Backend architecture
 
 `backend/src/mazda_dash/ingest/`: `schema.py` (DuckDB DDL), `csv_loaders.py` (SQL-based loaders, one per CSV kind, all via `_insert_new` = anti-join on the key + in-file dedupe), `diag_parser.py` (state-machine parser for the text dump, pure Python), `__init__.py` (file discovery by `*_<kind>-*.csv`, runner, CLI). Table keys and sentinel rules are in `docs/data-dictionary.md`. Tests use synthetic fixtures in `backend/tests/conftest.py`; run one with `cd backend && uv run pytest tests/test_ingest.py::test_dtc_kinds`. DuckDB 2.x: use `con.execute(...).fetchone()`, not `con.sql(...).fetchone()`.
+
+`backend/src/mazda_dash/model/`: `lookups.py` loads and validates `config/codes/{warnings,dtcs,ecus,failure_types}.yaml` into `ref_*` tables; `views.sql` defines all `v_*` views (executed as one script by `build_model`; `at` is a reserved word in DuckDB). `ingest()` calls `build_model` when given a config dir. View catalogue and the signal interpretations are in `docs/data-dictionary.md`. Code descriptions are user-maintained (Mazda does not publish them): never invent titles, leave `title: null`.

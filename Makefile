@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest reset-db test lint format clean
+.PHONY: setup profile ingest model unmapped reset-db test lint format clean
 
 setup:
 	cd backend && uv sync
@@ -23,3 +23,9 @@ ingest:
 
 reset-db:
 	rm -f db/mazda.duckdb db/mazda.duckdb.wal
+
+model:
+	cd backend && uv run python -m mazda_dash.model --db ../db/mazda.duckdb --config ../config/codes
+
+unmapped:
+	cd backend && uv run python -c "import duckdb; [print(r) for r in duckdb.connect('../db/mazda.duckdb', read_only=True).execute('SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC').fetchall()]"

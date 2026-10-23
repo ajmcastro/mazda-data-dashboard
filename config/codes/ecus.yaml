@@ -1,0 +1,28 @@
+# ECU abbreviations from `ECU_NAME_MKT`. Titles marked "(inferred)" are guesses from the
+# abbreviation; correct them if you know better. null = unknown.
+BCM: {title: Body control module}
+DCM: {title: Data communication module (telematics) (inferred)}
+DSC: {title: Dynamic stability control}
+EPS: {title: Electric power steering}
+ECM: {title: Engine control module}
+IC: {title: Instrument cluster}
+CGW: {title: Central gateway (inferred)}
+ADU: {title: null}
+ALH: {title: null}
+CDC: {title: null}
+DASH_ESU: {title: null}
+DOOR_ESU_D: {title: null}
+DOOR_ESU_P: {title: null}
+ESU: {title: null}
+FR: {title: null}
+FSRL: {title: null}
+FSRR: {title: null}
+ISPU: {title: null}
+LCM_L: {title: null}
+LCM_R: {title: null}
+LFU: {title: null}
+PLG: {title: null}
+RSRL: {title: null}
+RSRR: {title: null}
+SAS_CM: {title: null}
+WC_Qi: {title: null}

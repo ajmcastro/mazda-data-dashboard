@@ -1,0 +1,26 @@
+# Diagnostic trouble codes, keyed by the code WITHOUT the failure-type byte
+# (e.g. "U0198" for "U0198:00"). Same fields as warnings.yaml.
+# Letter = system (P powertrain, C chassis, B body, U network). A second character 0
+# means an SAE-standard code; anything else is Mazda-specific and not public.
+"U0198":
+  title: Lost communication with telematics control module
+  severity: unknown
+  notes: SAE J2012 definition.
+"U3000":
+  title: Control module (internal fault)
+  severity: unknown
+  notes: SAE J2012 definition.
+"U2122": {title: null, severity: unknown}
+"U2123": {title: null, severity: unknown}
+"U2124": {title: null, severity: unknown}
+"U2524": {title: null, severity: unknown}
+"U2701": {title: null, severity: unknown}
+"C1681": {title: null, severity: unknown}
+"C1A0E": {title: null, severity: unknown}
+"C1A0F": {title: null, severity: unknown}
+"C1A10": {title: null, severity: unknown}
+"C1AE1": {title: null, severity: unknown}
+"C1AE2": {title: null, severity: unknown}
+"C1AE3": {title: null, severity: unknown}
+"C1AE4": {title: null, severity: unknown}
+"C1C83": {title: null, severity: unknown}
