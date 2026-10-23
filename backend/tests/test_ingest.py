@@ -127,7 +127,7 @@ def _diag_file(data_dir):
 def test_several_diagnostic_dumps_become_separate_reports(data_dir, tmp_path):
     original = _diag_file(data_dir)
     text = original.read_text()
-    # a later visit, and a second dump on the very same date and VIN (different content)
+    # a later report, and a second dump on the very same date and VIN (different content)
     (data_dir / "all-x-diag-tool_later.txt").write_text(
         text.replace("2026/10/15", "2026/11/20")
     )

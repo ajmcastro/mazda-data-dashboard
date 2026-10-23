@@ -143,7 +143,7 @@ def test_months_without_data_are_kept_as_gaps_not_zeros(env, tmp_path, monkeypat
     for table, col in [
         ("signal_readings", "created_at"), ("warning_events", "triggered_at"),
         ("dtc_headers", "triggered_at"), ("dtc_snapshots", "triggered_at"),
-        ("diag_reports", "taken_at"),  # a workshop report also carries an odometer reading
+        ("diag_reports", "taken_at"),  # a diagnostic report also carries an odometer reading
     ]:  # fmt: skip
         con.execute(f"DELETE FROM {table} WHERE strftime({col}, '%Y-%m') = '2026-05'")
     con.execute(

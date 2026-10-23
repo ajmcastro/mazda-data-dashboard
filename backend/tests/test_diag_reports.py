@@ -1,4 +1,4 @@
-"""Several diagnostic-tool reports (three workshop visits in the sample data)."""
+"""Several diagnostic reports (three, made at different dates, in the sample data)."""
 
 from pathlib import Path
 
@@ -61,7 +61,7 @@ def test_history_is_oldest_first_and_counters_grow(client):
         0,
         0,
         2,
-    ]  # the fault shows up at the last visit
+    ]  # the fault shows up in the last report
     assert all(6.5 < h["lifetime_l_per_100km"] < 7.1 for h in history)
 
 
@@ -82,7 +82,7 @@ def test_each_report_has_its_own_content(client):
     assert len(get(client, f"/api/diag/reports/{newest['report_id']}/frames")) == 1
 
 
-def test_comparing_two_visits_shows_what_changed(client):
+def test_comparing_two_reports_shows_what_changed(client):
     history = get(client, "/api/diag/history")
     a, b = history[0]["report_id"], history[-1]["report_id"]
     deltas = {

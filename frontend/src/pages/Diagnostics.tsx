@@ -23,7 +23,7 @@ export default function Diagnostics() {
   const list = reports.data ?? []
 
   // The shown report and the one to compare with live in the address (?report=…&compare=…), next
-  // to the period, so a particular visit can be bookmarked or linked to.
+  // to the period, so a particular report can be bookmarked or linked to.
   const { report: picked, notFound } = pickReport(list, params.get('report'))
   const id = picked?.report_id
   const compareWith = list.find((x) => x.report_id === params.get('compare') && x.report_id !== id)?.report_id
@@ -79,7 +79,7 @@ export default function Diagnostics() {
           <p>
             {r
               ? `Diagnostic tool report from ${fmtDateTime(r.info.taken_at)} at ${fmtNum(r.info.odometer_km, 0, 'km')}`
-              : 'Dump from the dealer or workshop diagnostic tool.'}
+              : 'The diagnostic report from your Mazda data download.'}
           </p>
         </div>
         {list.length > 0 && (
@@ -131,7 +131,7 @@ export default function Diagnostics() {
         <div className="alert-row" role="status" style={{ marginBottom: 14 }}>
           <b>1 report loaded</b>
           <span className="muted">
-            Put more diagnostic-tool <span className="mono">*diag-tool*.txt</span> files in <span className="mono">data/</span> and run <span className="mono">make ingest</span> to compare visits.
+            Put more diagnostic-tool <span className="mono">*diag-tool*.txt</span> files in <span className="mono">data/</span> and run <span className="mono">make ingest</span> to compare reports over time.
           </span>
         </div>
       )}

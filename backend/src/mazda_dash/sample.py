@@ -416,7 +416,7 @@ def write_dtcs(out: Path, rng: random.Random, car: Car) -> None:
     )
 
 
-# Three workshop visits. The counters grow, one fault appears only at the last visit, and the
+# Three downloads, each with its own diagnostic report. The counters grow, one fault appears only at the last visit, and the
 # monitor results drift a little (but stay inside their limits).
 DIAG_VISITS = [
     (
@@ -517,7 +517,7 @@ OBDMID: 42, Test: 80, Min: 5 Ohm, Max: 450 Ohm, Value: 100 Ohm
 
 def write_diag(out: Path, car: Car) -> None:
     for when, extra in DIAG_VISITS:
-        # odometer at the visit: after the last drive that ended before it
+        # odometer when the report was made: after the last drive that ended before it
         odo = next((o for t, o in reversed(car.events) if t <= when), 120.0)
         name = f"all-sample-diag-tool_sample-diag-tool_1_{when:%Y%m%d_%H%M%S}.txt"
         (out / name).write_text(diag_text(when, odo, **extra))

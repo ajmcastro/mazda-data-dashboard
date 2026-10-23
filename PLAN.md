@@ -65,7 +65,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M7 | Polish and open-source readiness | sample data, demo mode, README, MIT licence, CI, privacy audit |
 | M8 | Date-range filter | `from` / `to` on the API, range bar, range kept in the URL |
 | M9 | Quick ranges | Last week … All time presets, remembered choice |
-| M10 | Choose any diagnostic report | always-visible picker, report history, three sample visits |
+| M10 | Choose any diagnostic report | always-visible picker, report history, three sample reports |
 | M11 | Monthly comparison ("Trends") | cards and table with change vs the previous month |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
@@ -126,7 +126,7 @@ Each milestone was implemented only on request ("start implementing milestone N"
 - The report selector is **always visible** and lists each report as "date · odometer · file", newest first, with the selection in the URL (`?report=`; `?compare=` for the comparison).
 - A **report history** panel: lifetime km, lifetime l/100 km, ignition cycles, engine hours, monitors passed and faults listed per report, with small charts when there are 2+ reports. The "compare with" table stays and always reads from the earlier report to the later one.
 - Ingest: several `*diag-tool*.txt` files (even with the same date or VIN) load as separate reports; an identical copy under another name is skipped; re-running adds nothing.
-- `sample.py` writes **three** diagnostic reports (three workshop visits); tests cover the report list, history, switching and comparison across dates.
+- `sample.py` writes **three** diagnostic reports (as if downloaded at three different dates); tests cover the report list, history, switching and comparison across dates.
 - *As built:* `GET /api/diag/history`. With real data there is one dump today; further dumps appear once their `.txt` files are in `data/` and `make ingest` is run.
 
 ### M11 — Monthly comparison page ("Trends") ✅ done

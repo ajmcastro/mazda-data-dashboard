@@ -377,7 +377,7 @@ class MonthMetrics(BaseModel):
 
 
 class DiagHistoryPoint(BaseModel):
-    """One diagnostic-tool report, summarised so visits to the workshop can be compared."""
+    """One diagnostic report, summarised so reports made at different times can be compared."""
 
     report_id: str
     source_file: str

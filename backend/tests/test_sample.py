@@ -56,7 +56,7 @@ def test_every_feature_has_data(con):
     ) == [(2,)]
     assert q(con, "SELECT count(*) FROM diag_reports") == [
         (3,)
-    ]  # three workshop visits
+    ]  # three diagnostic reports
     assert q(con, "SELECT count(*) FROM v_diag_obd WHERE in_range") == [
         (12,)
     ]  # 4 monitors each

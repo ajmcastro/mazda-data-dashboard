@@ -64,7 +64,7 @@ One row per transaction: `COPIED_DT_TM`, `WARNING_TRIGGER_OCCURRENCE_TM` (2 null
 `burglarstatus_value` (1 ×3, **5 ×1**) and `balarmreasondactl_value` (0 ×3, **5 ×1**), dates 2026-08-16, 2026-10-04, 2026-10-18 ×2. The row with value 5 / reason 5 is a security alarm event worth an alert (meaning of the codes to be confirmed).
 
 ### Diagnostic tool dump (`*.txt`, 481 lines)
-Run on 2026-10-15 09:56:59 (UTC+0100), ODO 5,781 km. Not CSV; line-oriented with sections:
+Came inside the zip download from the Mazda Vehicle Data portal, together with the CSV files. In the author's export it was made on 2026-10-15 09:56:59 (UTC+0100), ODO 5,781 km. Not CSV; line-oriented with sections:
 - Header (date/time/timezone/ODO), then `Mode 9` for ECM: `VIN`, `CALID`, `CVN`, `IPT` counters (`(KEY) = value`).
 - `VOD - …` and `* OCC Vehicle Data` sections of `(KEY) = value [unit]`: run/idle time (s), distance (km) and fuel used (l) for the "recent" (`_R`) and "lifetime" (`_L`) periods (e.g. lifetime 5,781.6 km / 423.38 l ⇒ ≈ 7.3 l/100 km), AAF/DSM/DCT/OCCT counters. Value `4294967295` (UINT32_MAX) = not available.
 - `AES ID and Status`: repeated `(AESIDx) = <hex>` / `(AESIDx_Activity_State) = Not Active` pairs.
