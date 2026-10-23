@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useDtcEvents, useDtcFrequency, useReadouts, useSnapshots } from '../api/hooks'
-import type { DtcEvent, DtcFrequency } from '../api/types'
+import { useDtcFrequency, useReadouts } from '../api/hooks'
+import type { DtcFrequency } from '../api/types'
+import { FaultDetail } from '../components/FaultDetail'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { SEVERITY_BADGE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
@@ -13,8 +14,6 @@ export default function Faults() {
   const readouts = useReadouts()
   const [selected, setSelected] = useState<string | undefined>()
   const sel = freq.data?.find((f) => key(f) === selected)
-  const events = useDtcEvents(sel?.ecu, sel?.dtc_code)
-  const snaps = useSnapshots(sel?.ecu, sel?.dtc_code)
 
   const columns: Column<DtcFrequency>[] = [
     {
@@ -28,19 +27,6 @@ export default function Faults() {
     { key: 'n', header: 'Seen', num: true, sort: (f) => f.readouts, render: (f) => fmtNum(f.readouts) },
     { key: 'last', header: 'Last', sort: (f) => f.last_seen, render: (f) => fmtTick(Date.parse(f.last_seen)) },
   ]
-
-  const evCols: Column<DtcEvent>[] = [
-    { key: 'at', header: 'When', render: (e) => fmtDateTime(e.event_at) },
-    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtNum(e.odometer_km, 0, 'km') },
-    { key: 'conf', header: 'Confirmed', render: (e) => (e.confirmed === null || e.confirmed === undefined ? '—' : e.confirmed ? 'yes' : 'no') },
-    { key: 'pend', header: 'Pending', render: (e) => (e.pending === null || e.pending === undefined ? '—' : e.pending ? 'yes' : 'no') },
-  ]
-
-  // Freeze-frame data: show the most recent record only, other records stay in the API.
-  const latestRecord = snaps.data?.[0]
-  const latestSignals = (snaps.data ?? []).filter(
-    (s) => s.transaction_id === latestRecord?.transaction_id && s.record_number === latestRecord?.record_number,
-  )
 
   return (
     <>
@@ -74,31 +60,7 @@ export default function Faults() {
         </Panel>
       </div>
 
-      {sel && (
-        <div className="grid cols-2" style={{ marginTop: 14 }}>
-          <Panel title={`${sel.ecu} · ${sel.dtc_code}:${sel.failure_type}`} hint={sel.ecu_title ?? undefined}>
-            <QueryState query={events}>
-              <DataTable rows={events.data ?? []} columns={evCols} rowKey={(e) => `${e.transaction_id}`} />
-            </QueryState>
-          </Panel>
-          <Panel title="Freeze frame" hint={latestRecord ? `record ${latestRecord.record_number} · ${fmtDateTime(latestRecord.snapshot_at)}` : 'none stored'}>
-            <QueryState query={snaps}>
-              {latestSignals.length === 0 ? (
-                <div className="state">No snapshot data for this code</div>
-              ) : (
-                <dl className="kv">
-                  {latestSignals.map((s) => (
-                    <div key={s.signal} style={{ display: 'contents' }}>
-                      <dt>{s.signal.replaceAll('_', ' ')}</dt>
-                      <dd>{s.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-            </QueryState>
-          </Panel>
-        </div>
-      )}
+      {sel && <FaultDetail key={key(sel)} fault={sel} />}
     </>
   )
 }

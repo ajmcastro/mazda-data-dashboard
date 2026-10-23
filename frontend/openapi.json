@@ -635,6 +635,268 @@
           }
         }
       }
+    },
+    "/api/diag/reports": {
+      "get": {
+        "summary": "Diag Reports",
+        "operationId": "diag_reports_api_diag_reports_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DiagReportInfo"
+                  },
+                  "type": "array",
+                  "title": "Response Diag Reports Api Diag Reports Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diag/reports/{report_id}": {
+      "get": {
+        "summary": "Diag Report",
+        "operationId": "diag_report_api_diag_reports__report_id__get",
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Report Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diag/reports/{report_id}/frames": {
+      "get": {
+        "summary": "Diag Report Frames",
+        "operationId": "diag_report_frames_api_diag_reports__report_id__frames_get",
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Report Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiagFrame"
+                  },
+                  "title": "Response Diag Report Frames Api Diag Reports  Report Id  Frames Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/diag/compare": {
+      "get": {
+        "summary": "Diag Compare",
+        "description": "Numeric values present in both reports, with the change from ``a`` to ``b``.",
+        "operationId": "diag_compare_api_diag_compare_get",
+        "parameters": [
+          {
+            "name": "a",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "A"
+            }
+          },
+          {
+            "name": "b",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "B"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiagDelta"
+                  },
+                  "title": "Response Diag Compare Api Diag Compare Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dtcs/frames": {
+      "get": {
+        "summary": "Freeze Frames",
+        "description": "Distinct freeze frames of a DTC, newest first, each with its signals.",
+        "operationId": "freeze_frames_api_dtcs_frames_get",
+        "parameters": [
+          {
+            "name": "ecu",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ecu"
+            }
+          },
+          {
+            "name": "dtc_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dtc Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FreezeFrame"
+                  },
+                  "title": "Response Freeze Frames Api Dtcs Frames Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/dtcs/context": {
+      "get": {
+        "summary": "Fault Context",
+        "description": "What else was going on around a fault read-out: nearby warnings, the other faults in\nthe same read-out and the closest vehicle-status snapshot.",
+        "operationId": "fault_context_api_dtcs_context_get",
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Transaction Id"
+            }
+          },
+          {
+            "name": "window_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 48,
+              "exclusiveMinimum": 0,
+              "default": 2,
+              "title": "Window Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FaultContext"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -651,6 +913,30 @@
           "acknowledged"
         ],
         "title": "Acknowledged"
+      },
+      "AesState": {
+        "properties": {
+          "aes_id": {
+            "type": "string",
+            "title": "Aes Id"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "aes_id"
+        ],
+        "title": "AesState"
       },
       "AlarmEvent": {
         "properties": {
@@ -772,6 +1058,560 @@
           "status"
         ],
         "title": "Alert"
+      },
+      "ContextFault": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "failure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu",
+          "dtc_code",
+          "title"
+        ],
+        "title": "ContextFault"
+      },
+      "ContextWarning": {
+        "properties": {
+          "triggered_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Triggered At"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "triggered_at",
+          "code",
+          "title",
+          "severity"
+        ],
+        "title": "ContextWarning"
+      },
+      "DiagDelta": {
+        "properties": {
+          "ecu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecu"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "a": {
+            "type": "number",
+            "title": "A"
+          },
+          "b": {
+            "type": "number",
+            "title": "B"
+          },
+          "delta": {
+            "type": "number",
+            "title": "Delta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "a",
+          "b",
+          "delta"
+        ],
+        "title": "DiagDelta"
+      },
+      "DiagDtc": {
+        "properties": {
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "failure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type"
+          },
+          "status_byte": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Byte"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dtc_code"
+        ],
+        "title": "DiagDtc"
+      },
+      "DiagDtcGroup": {
+        "properties": {
+          "list_name": {
+            "type": "string",
+            "title": "List Name"
+          },
+          "ecu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecu"
+          },
+          "dtcs": {
+            "items": {
+              "$ref": "#/components/schemas/DiagDtc"
+            },
+            "type": "array",
+            "title": "Dtcs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "list_name",
+          "dtcs"
+        ],
+        "title": "DiagDtcGroup"
+      },
+      "DiagFrame": {
+        "properties": {
+          "ecu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "failure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type"
+          },
+          "status_byte": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Byte"
+          },
+          "record_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Number"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/DiagValue"
+            },
+            "type": "array",
+            "title": "Signals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "dtc_code",
+          "signals"
+        ],
+        "title": "DiagFrame"
+      },
+      "DiagReport": {
+        "properties": {
+          "info": {
+            "$ref": "#/components/schemas/DiagReportInfo"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/DiagSummary"
+          },
+          "sections": {
+            "items": {
+              "$ref": "#/components/schemas/DiagSection"
+            },
+            "type": "array",
+            "title": "Sections"
+          },
+          "dtc_lists": {
+            "items": {
+              "$ref": "#/components/schemas/DiagDtcGroup"
+            },
+            "type": "array",
+            "title": "Dtc Lists"
+          },
+          "obd_tests": {
+            "items": {
+              "$ref": "#/components/schemas/ObdTest"
+            },
+            "type": "array",
+            "title": "Obd Tests"
+          },
+          "aes": {
+            "items": {
+              "$ref": "#/components/schemas/AesState"
+            },
+            "type": "array",
+            "title": "Aes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "info",
+          "summary",
+          "sections",
+          "dtc_lists",
+          "obd_tests",
+          "aes"
+        ],
+        "title": "DiagReport"
+      },
+      "DiagReportInfo": {
+        "properties": {
+          "report_id": {
+            "type": "string",
+            "title": "Report Id"
+          },
+          "source_file": {
+            "type": "string",
+            "title": "Source File"
+          },
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vin"
+          },
+          "taken_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Taken At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "values": {
+            "type": "integer",
+            "title": "Values"
+          },
+          "dtcs": {
+            "type": "integer",
+            "title": "Dtcs"
+          },
+          "obd_tests": {
+            "type": "integer",
+            "title": "Obd Tests"
+          }
+        },
+        "type": "object",
+        "required": [
+          "report_id",
+          "source_file",
+          "values",
+          "dtcs",
+          "obd_tests"
+        ],
+        "title": "DiagReportInfo"
+      },
+      "DiagSection": {
+        "properties": {
+          "ecu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecu"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DiagValue"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "items"
+        ],
+        "title": "DiagSection"
+      },
+      "DiagSummary": {
+        "properties": {
+          "lifetime_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime Km"
+          },
+          "lifetime_fuel_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime Fuel L"
+          },
+          "lifetime_l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lifetime L Per 100Km"
+          },
+          "recent_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recent Km"
+          },
+          "recent_fuel_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recent Fuel L"
+          },
+          "recent_l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recent L Per 100Km"
+          },
+          "engine_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Hours"
+          },
+          "ignition_cycles": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ignition Cycles"
+          }
+        },
+        "type": "object",
+        "title": "DiagSummary"
+      },
+      "DiagValue": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "value_num": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Num"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "title": "DiagValue"
       },
       "DoorPoint": {
         "properties": {
@@ -1123,6 +1963,198 @@
         ],
         "title": "DtcFrequency"
       },
+      "FaultContext": {
+        "properties": {
+          "event_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "window_hours": {
+            "type": "number",
+            "title": "Window Hours"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ContextWarning"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "other_faults": {
+            "items": {
+              "$ref": "#/components/schemas/ContextFault"
+            },
+            "type": "array",
+            "title": "Other Faults"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/StatusPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status_offset_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Offset Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "window_hours",
+          "warnings",
+          "other_faults"
+        ],
+        "title": "FaultContext"
+      },
+      "FrameSignal": {
+        "properties": {
+          "signal": {
+            "type": "string",
+            "title": "Signal"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "value_num": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Num"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signal"
+        ],
+        "title": "FrameSignal"
+      },
+      "FreezeFrame": {
+        "properties": {
+          "frame_id": {
+            "type": "string",
+            "title": "Frame Id"
+          },
+          "record_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Record Number"
+          },
+          "snapshot_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snapshot At"
+          },
+          "first_reported_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Reported At"
+          },
+          "last_reported_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reported At"
+          },
+          "times_reported": {
+            "type": "integer",
+            "title": "Times Reported"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/FrameSignal"
+            },
+            "type": "array",
+            "title": "Signals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "frame_id",
+          "times_reported",
+          "signals"
+        ],
+        "title": "FreezeFrame"
+      },
       "FuelMonth": {
         "properties": {
           "month": {
@@ -1315,6 +2347,101 @@
         },
         "type": "object",
         "title": "LatestStatus"
+      },
+      "ObdTest": {
+        "properties": {
+          "ecu": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ecu"
+          },
+          "obdmid": {
+            "type": "string",
+            "title": "Obdmid"
+          },
+          "test": {
+            "type": "string",
+            "title": "Test"
+          },
+          "min_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min Value"
+          },
+          "max_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Value"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "in_range": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "In Range"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "obdmid",
+          "test"
+        ],
+        "title": "ObdTest"
       },
       "OdometerDay": {
         "properties": {

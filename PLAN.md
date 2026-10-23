@@ -73,7 +73,7 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Alerts persisted in DuckDB with severity and status (new / acknowledged); notifications panel in the UI.
 - Optional later: desktop/email notifications after each ingest.
 
-### M6 — Diagnostic report & deep dives
+### M6 — Diagnostic report & deep dives ✅ done
 - Diag-tool report view (Mode 9, VOD counters, OCC sections).
 - DTC freeze-frame viewer (snapshot data around each fault); compare reports over time if more tool dumps are added.
 

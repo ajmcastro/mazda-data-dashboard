@@ -81,6 +81,50 @@ export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefin
       ),
   })
 
+export const useDiagReports = () =>
+  useQuery({ queryKey: ['diag-reports'], queryFn: () => unwrap(client.GET('/api/diag/reports')) })
+
+export const useDiagReport = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['diag-report', id],
+    enabled: Boolean(id),
+    queryFn: () =>
+      unwrap(client.GET('/api/diag/reports/{report_id}', { params: { path: { report_id: id! } } })),
+  })
+
+export const useDiagFrames = (id: string | undefined) =>
+  useQuery({
+    queryKey: ['diag-frames', id],
+    enabled: Boolean(id),
+    queryFn: () =>
+      unwrap(
+        client.GET('/api/diag/reports/{report_id}/frames', { params: { path: { report_id: id! } } }),
+      ),
+  })
+
+export const useDiagCompare = (a: string | undefined, b: string | undefined) =>
+  useQuery({
+    queryKey: ['diag-compare', a, b],
+    enabled: Boolean(a && b && a !== b),
+    queryFn: () => unwrap(client.GET('/api/diag/compare', { params: { query: { a: a!, b: b! } } })),
+  })
+
+export const useFreezeFrames = (ecu: string | undefined, dtc_code: string | undefined) =>
+  useQuery({
+    queryKey: ['frames', ecu, dtc_code],
+    enabled: Boolean(ecu && dtc_code),
+    queryFn: () =>
+      unwrap(client.GET('/api/dtcs/frames', { params: { query: { ecu: ecu!, dtc_code: dtc_code! } } })),
+  })
+
+export const useFaultContext = (transaction_id: string | undefined) =>
+  useQuery({
+    queryKey: ['fault-context', transaction_id],
+    enabled: Boolean(transaction_id),
+    queryFn: () =>
+      unwrap(client.GET('/api/dtcs/context', { params: { query: { transaction_id: transaction_id! } } })),
+  })
+
 export const useUnmapped = () =>
   useQuery({ queryKey: ['unmapped'], queryFn: () => unwrap(client.GET('/api/codes/unmapped')) })
 

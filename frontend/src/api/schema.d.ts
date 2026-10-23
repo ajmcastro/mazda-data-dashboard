@@ -327,6 +327,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diag/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diag Reports */
+        get: operations["diag_reports_api_diag_reports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diag/reports/{report_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diag Report */
+        get: operations["diag_report_api_diag_reports__report_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diag/reports/{report_id}/frames": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Diag Report Frames */
+        get: operations["diag_report_frames_api_diag_reports__report_id__frames_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/diag/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Diag Compare
+         * @description Numeric values present in both reports, with the change from ``a`` to ``b``.
+         */
+        get: operations["diag_compare_api_diag_compare_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dtcs/frames": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Freeze Frames
+         * @description Distinct freeze frames of a DTC, newest first, each with its signals.
+         */
+        get: operations["freeze_frames_api_dtcs_frames_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/dtcs/context": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fault Context
+         * @description What else was going on around a fault read-out: nearby warnings, the other faults in
+         *     the same read-out and the closest vehicle-status snapshot.
+         */
+        get: operations["fault_context_api_dtcs_context_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -335,6 +447,13 @@ export interface components {
         Acknowledged: {
             /** Acknowledged */
             acknowledged: number;
+        };
+        /** AesState */
+        AesState: {
+            /** Aes Id */
+            aes_id: string;
+            /** State */
+            state?: string | null;
         };
         /** AlarmEvent */
         AlarmEvent: {
@@ -373,6 +492,154 @@ export interface components {
             status: string;
             /** Acknowledged At */
             acknowledged_at?: string | null;
+        };
+        /** ContextFault */
+        ContextFault: {
+            /** Ecu */
+            ecu: string;
+            /** Dtc Code */
+            dtc_code: string;
+            /** Failure Type */
+            failure_type?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** ContextWarning */
+        ContextWarning: {
+            /**
+             * Triggered At
+             * Format: date-time
+             */
+            triggered_at: string;
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Severity */
+            severity: string;
+        };
+        /** DiagDelta */
+        DiagDelta: {
+            /** Ecu */
+            ecu?: string | null;
+            /** Section */
+            section?: string | null;
+            /** Key */
+            key: string;
+            /** Unit */
+            unit?: string | null;
+            /** A */
+            a: number;
+            /** B */
+            b: number;
+            /** Delta */
+            delta: number;
+        };
+        /** DiagDtc */
+        DiagDtc: {
+            /** Dtc Code */
+            dtc_code: string;
+            /** Failure Type */
+            failure_type?: string | null;
+            /** Status Byte */
+            status_byte?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** DiagDtcGroup */
+        DiagDtcGroup: {
+            /** List Name */
+            list_name: string;
+            /** Ecu */
+            ecu?: string | null;
+            /** Dtcs */
+            dtcs: components["schemas"]["DiagDtc"][];
+        };
+        /** DiagFrame */
+        DiagFrame: {
+            /** Ecu */
+            ecu?: string | null;
+            /** Dtc Code */
+            dtc_code: string;
+            /** Failure Type */
+            failure_type?: string | null;
+            /** Status Byte */
+            status_byte?: string | null;
+            /** Record Number */
+            record_number?: string | null;
+            /** Signals */
+            signals: components["schemas"]["DiagValue"][];
+        };
+        /** DiagReport */
+        DiagReport: {
+            info: components["schemas"]["DiagReportInfo"];
+            summary: components["schemas"]["DiagSummary"];
+            /** Sections */
+            sections: components["schemas"]["DiagSection"][];
+            /** Dtc Lists */
+            dtc_lists: components["schemas"]["DiagDtcGroup"][];
+            /** Obd Tests */
+            obd_tests: components["schemas"]["ObdTest"][];
+            /** Aes */
+            aes: components["schemas"]["AesState"][];
+        };
+        /** DiagReportInfo */
+        DiagReportInfo: {
+            /** Report Id */
+            report_id: string;
+            /** Source File */
+            source_file: string;
+            /** Vin */
+            vin?: string | null;
+            /** Taken At */
+            taken_at?: string | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Values */
+            values: number;
+            /** Dtcs */
+            dtcs: number;
+            /** Obd Tests */
+            obd_tests: number;
+        };
+        /** DiagSection */
+        DiagSection: {
+            /** Ecu */
+            ecu?: string | null;
+            /** Name */
+            name: string;
+            /** Items */
+            items: components["schemas"]["DiagValue"][];
+        };
+        /** DiagSummary */
+        DiagSummary: {
+            /** Lifetime Km */
+            lifetime_km?: number | null;
+            /** Lifetime Fuel L */
+            lifetime_fuel_l?: number | null;
+            /** Lifetime L Per 100Km */
+            lifetime_l_per_100km?: number | null;
+            /** Recent Km */
+            recent_km?: number | null;
+            /** Recent Fuel L */
+            recent_fuel_l?: number | null;
+            /** Recent L Per 100Km */
+            recent_l_per_100km?: number | null;
+            /** Engine Hours */
+            engine_hours?: number | null;
+            /** Ignition Cycles */
+            ignition_cycles?: number | null;
+        };
+        /** DiagValue */
+        DiagValue: {
+            /** Key */
+            key: string;
+            /** Value */
+            value?: string | null;
+            /** Value Num */
+            value_num?: number | null;
+            /** Unit */
+            unit?: string | null;
         };
         /** DoorPoint */
         DoorPoint: {
@@ -471,6 +738,50 @@ export interface components {
             /** Active In Latest Readout */
             active_in_latest_readout: boolean;
         };
+        /** FaultContext */
+        FaultContext: {
+            /** Event At */
+            event_at?: string | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Window Hours */
+            window_hours: number;
+            /** Warnings */
+            warnings: components["schemas"]["ContextWarning"][];
+            /** Other Faults */
+            other_faults: components["schemas"]["ContextFault"][];
+            status?: components["schemas"]["StatusPoint"] | null;
+            /** Status Offset Minutes */
+            status_offset_minutes?: number | null;
+        };
+        /** FrameSignal */
+        FrameSignal: {
+            /** Signal */
+            signal: string;
+            /** Value */
+            value?: string | null;
+            /** Value Num */
+            value_num?: number | null;
+        };
+        /** FreezeFrame */
+        FreezeFrame: {
+            /** Frame Id */
+            frame_id: string;
+            /** Record Number */
+            record_number?: string | null;
+            /** Snapshot At */
+            snapshot_at?: string | null;
+            /** First Reported At */
+            first_reported_at?: string | null;
+            /** Last Reported At */
+            last_reported_at?: string | null;
+            /** Times Reported */
+            times_reported: number;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Signals */
+            signals: components["schemas"]["FrameSignal"][];
+        };
         /** FuelMonth */
         FuelMonth: {
             /** Month */
@@ -518,6 +829,27 @@ export interface components {
             tire_rl_kpa?: number | null;
             /** Tire Rr Kpa */
             tire_rr_kpa?: number | null;
+        };
+        /** ObdTest */
+        ObdTest: {
+            /** Ecu */
+            ecu?: string | null;
+            /** Obdmid */
+            obdmid: string;
+            /** Test */
+            test: string;
+            /** Min Value */
+            min_value?: number | null;
+            /** Max Value */
+            max_value?: number | null;
+            /** Value */
+            value?: number | null;
+            /** Unit */
+            unit?: string | null;
+            /** In Range */
+            in_range?: boolean | null;
+            /** Position */
+            position?: number | null;
         };
         /** OdometerDay */
         OdometerDay: {
@@ -1202,6 +1534,184 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Alert"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diag_reports_api_diag_reports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagReportInfo"][];
+                };
+            };
+        };
+    };
+    diag_report_api_diag_reports__report_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diag_report_frames_api_diag_reports__report_id__frames_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                report_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagFrame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    diag_compare_api_diag_compare_get: {
+        parameters: {
+            query: {
+                a: string;
+                b: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagDelta"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    freeze_frames_api_dtcs_frames_get: {
+        parameters: {
+            query: {
+                ecu: string;
+                dtc_code: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreezeFrame"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fault_context_api_dtcs_context_get: {
+        parameters: {
+            query: {
+                transaction_id: string;
+                window_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FaultContext"];
                 };
             };
             /** @description Validation Error */

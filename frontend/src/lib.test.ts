@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fmtAgo, fmtNum, pivotDaily } from './lib'
+import { fmtAgo, fmtNum, pivotDaily, signalLabel, signalValue } from './lib'
 
 describe('fmtNum', () => {
   it('formats with digits and unit', () => {
@@ -41,5 +41,17 @@ describe('pivotDaily', () => {
   })
   it('returns nothing when no chosen code has events', () => {
     expect(pivotDaily(rows, ['$Z'])).toEqual([])
+  })
+})
+
+describe('freeze-frame signals', () => {
+  it('adds known units and leaves unknown signals raw', () => {
+    expect(signalValue('Vehicle_Speed', '12.5')).toBe('12.5\u202fkm/h')
+    expect(signalValue('Shift_Position', '3')).toBe('3')
+    expect(signalValue('Vehicle_Speed', null)).toBe('—')
+  })
+  it('makes names readable and caps their length', () => {
+    expect(signalLabel('Engine_Coolant_Temperature')).toBe('Engine Coolant Temperature')
+    expect(signalLabel('x'.repeat(80))).toHaveLength(58)
   })
 })

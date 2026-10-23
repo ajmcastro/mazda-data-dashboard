@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { useOverview } from './api/hooks'
 import Alerts from './pages/Alerts'
+import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
@@ -39,6 +40,7 @@ export default function App() {
             Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}
           </NavLink>
           <NavLink to="/status">Status</NavLink>
+          <NavLink to="/diagnostics">Diagnostics</NavLink>
         </nav>
         <div className="rail-foot">{o?.vin ? `VIN …${o.vin.slice(-6)}` : ''}</div>
       </aside>
@@ -49,6 +51,7 @@ export default function App() {
           <Route path="/warnings" element={<Warnings />} />
           <Route path="/faults" element={<Faults />} />
           <Route path="/status" element={<Status />} />
+          <Route path="/diagnostics" element={<Diagnostics />} />
           <Route path="*" element={<div className="state">Page not found</div>} />
         </Routes>
       </main>

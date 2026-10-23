@@ -213,3 +213,18 @@ button:hover:not(:disabled) { border-color: var(--muted); } button:disabled { op
 .alert-actions a { color: var(--steel); text-decoration: none; font-weight: 500; }
 .alert-actions a:hover { text-decoration: underline; }
 @media (max-width: 640px) { .alert-card { flex-direction: column; } }
+
+/* ---- diagnostics ---- */
+.controls { display: flex; gap: 14px; flex-wrap: wrap; }
+.controls label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+select { font: inherit; font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 7px; padding: 5px 9px; }
+.range { position: relative; width: 120px; height: 6px; border-radius: 3px; background: var(--panel-2); border: 1px solid var(--line); }
+.range i { position: absolute; top: -4px; width: 4px; height: 12px; margin-left: -2px; border-radius: 2px; background: var(--teal); }
+.range i.out { background: var(--accent); }
+.sections details { border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); padding: 8px 0; }
+.sections summary { cursor: pointer; font-weight: 500; list-style-position: outside; }
+.sections summary:hover { color: var(--accent); }
+.sections .kv { margin: 10px 0 4px 18px; max-width: 520px; }
+.matrix td, .matrix th { font-family: var(--mono); font-size: 12px; }
+.sub-h { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 8px; }
+.grid.cols-3 > div { min-width: 0; }

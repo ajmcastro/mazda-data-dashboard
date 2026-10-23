@@ -34,6 +34,17 @@ export function fmtDateTime(iso: string | null | undefined): string {
   })
 }
 
+export function fmtDateTimeSec(iso: string | null | undefined): string {
+  if (!iso) return '—'
+  return new Date(iso).toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+}
+
 export function fmtAgo(iso: string | null | undefined, now = Date.now()): string {
   if (!iso) return '—'
   const minutes = Math.floor((now - new Date(iso).getTime()) / 60000)
@@ -77,4 +88,33 @@ export const SEVERITY_BADGE: Record<string, string> = {
   warning: 'warning',
   info: 'info',
   unknown: 'dim',
+}
+
+// Units of the freeze-frame signals in the snapshot CSV. They match the diagnostic tool's own
+// printout of the same frames (e.g. Vehicle_Speed = VSS in km/h); signals not listed have no
+// known unit and are shown raw.
+const SIGNAL_UNITS: Record<string, string> = {
+  Vehicle_Speed: 'km/h',
+  Engine_RPM: 'rpm',
+  Ambient_Air_Temperature: '°C',
+  Engine_Coolant_Temperature: '°C',
+  SOC_StateOfCharge: '%',
+  Main_ECU_Voltage_Supply: 'V',
+  ECU_Power_Voltage: 'V',
+  Vehicle_Odometer_Information: 'km',
+  IG_OnTimer: 'min',
+  Global_Real_Time: 'min',
+  Time_Since_Engine_Start: 's',
+  Relative_Accelerator_Pedal_Position: '%',
+}
+
+export function signalLabel(signal: string): string {
+  const text = signal.replaceAll('_', ' ')
+  return text.length > 60 ? `${text.slice(0, 57)}…` : text
+}
+
+export function signalValue(signal: string, value: string | null | undefined): string {
+  if (value === null || value === undefined) return '—'
+  const unit = SIGNAL_UNITS[signal]
+  return unit ? `${value}\u202f${unit}` : value
 }

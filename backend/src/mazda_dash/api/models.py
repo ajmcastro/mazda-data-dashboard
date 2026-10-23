@@ -209,3 +209,137 @@ class Alert(BaseModel):
 
 class Acknowledged(BaseModel):
     acknowledged: int
+
+
+class DiagReportInfo(BaseModel):
+    report_id: str
+    source_file: str
+    vin: str | None = None
+    taken_at: datetime | None = None
+    odometer_km: float | None = None
+    values: int
+    dtcs: int
+    obd_tests: int
+
+
+class DiagSummary(BaseModel):
+    lifetime_km: float | None = None
+    lifetime_fuel_l: float | None = None
+    lifetime_l_per_100km: float | None = None
+    recent_km: float | None = None
+    recent_fuel_l: float | None = None
+    recent_l_per_100km: float | None = None
+    engine_hours: float | None = None
+    ignition_cycles: float | None = None
+
+
+class DiagValue(BaseModel):
+    key: str
+    value: str | None = None
+    value_num: float | None = None
+    unit: str | None = None
+
+
+class DiagSection(BaseModel):
+    ecu: str | None = None
+    name: str
+    items: list[DiagValue]
+
+
+class DiagDtc(BaseModel):
+    dtc_code: str
+    failure_type: str | None = None
+    status_byte: str | None = None
+    title: str | None = None
+
+
+class DiagDtcGroup(BaseModel):
+    list_name: str
+    ecu: str | None = None
+    dtcs: list[DiagDtc]
+
+
+class ObdTest(BaseModel):
+    ecu: str | None = None
+    obdmid: str
+    test: str
+    min_value: float | None = None
+    max_value: float | None = None
+    value: float | None = None
+    unit: str | None = None
+    in_range: bool | None = None
+    position: float | None = None
+
+
+class AesState(BaseModel):
+    aes_id: str
+    state: str | None = None
+
+
+class DiagReport(BaseModel):
+    info: DiagReportInfo
+    summary: DiagSummary
+    sections: list[DiagSection]
+    dtc_lists: list[DiagDtcGroup]
+    obd_tests: list[ObdTest]
+    aes: list[AesState]
+
+
+class DiagFrame(BaseModel):
+    ecu: str | None = None
+    dtc_code: str
+    failure_type: str | None = None
+    status_byte: str | None = None
+    record_number: str | None = None
+    signals: list[DiagValue]
+
+
+class DiagDelta(BaseModel):
+    ecu: str | None = None
+    section: str | None = None
+    key: str
+    unit: str | None = None
+    a: float
+    b: float
+    delta: float
+
+
+class FrameSignal(BaseModel):
+    signal: str
+    value: str | None = None
+    value_num: float | None = None
+
+
+class FreezeFrame(BaseModel):
+    frame_id: str
+    record_number: str | None = None
+    snapshot_at: datetime | None = None
+    first_reported_at: datetime | None = None
+    last_reported_at: datetime | None = None
+    times_reported: int
+    odometer_km: float | None = None
+    signals: list[FrameSignal]
+
+
+class ContextWarning(BaseModel):
+    triggered_at: datetime
+    code: str
+    title: str
+    severity: str
+
+
+class ContextFault(BaseModel):
+    ecu: str
+    dtc_code: str
+    failure_type: str | None = None
+    title: str
+
+
+class FaultContext(BaseModel):
+    event_at: datetime | None = None
+    odometer_km: float | None = None
+    window_hours: float
+    warnings: list[ContextWarning]
+    other_faults: list[ContextFault]
+    status: StatusPoint | None = None
+    status_offset_minutes: float | None = None

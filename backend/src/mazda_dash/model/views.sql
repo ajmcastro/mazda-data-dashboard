@@ -243,6 +243,32 @@ SELECT report_id, taken_at, report_odometer_km,
 FROM v_diag_values
 GROUP BY ALL;
 
+-- Mode 6 on-board monitor results; a value outside [min, max] is a failed test.
+CREATE OR REPLACE VIEW v_diag_obd AS
+SELECT t.report_id, r.taken_at, t.ecu, t.obdmid, t.test, t.min_value, t.max_value, t.value, t.unit,
+       t.value BETWEEN t.min_value AND t.max_value AS in_range,
+       -- where the value sits inside its limits: 0 = at min, 1 = at max (NULL if limits are equal)
+       (t.value - t.min_value) / nullif(t.max_value - t.min_value, 0) AS position
+FROM diag_obd_tests t JOIN diag_reports r USING (report_id);
+
+-- Active emission-system (AES) ids: the tool prints id / state pairs.
+CREATE OR REPLACE VIEW v_diag_aes AS
+SELECT report_id, seq,
+       max(value) FILTER (WHERE key = 'AESIDx') AS aes_id,
+       max(value) FILTER (WHERE key = 'AESIDx_Activity_State') AS state
+FROM diag_values WHERE section = 'AES ID and Status' GROUP BY report_id, seq;
+
+-- One row per distinct freeze frame. The car re-reports the same frame in many read-outs,
+-- so frames are keyed by when they were captured, not by read-out.
+CREATE OR REPLACE VIEW v_freeze_frames AS
+SELECT ecu, dtc_code, failure_type, record_number, snapshot_at,
+       count(DISTINCT transaction_id) AS times_reported,
+       min(coalesce(triggered_at, copied_at)) AS first_reported_at,
+       max(coalesce(triggered_at, copied_at)) AS last_reported_at,
+       min(odometer_km) AS odometer_km
+FROM dtc_snapshots
+GROUP BY ecu, dtc_code, failure_type, record_number, snapshot_at;
+
 -- ----------------------------------------------------------- housekeeping
 -- Codes seen in the data that have no description yet (fill them in config/codes).
 CREATE OR REPLACE VIEW v_unmapped_codes AS

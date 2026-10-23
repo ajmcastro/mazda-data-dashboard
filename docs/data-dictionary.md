@@ -122,3 +122,13 @@ Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers,
 Signal interpretations used by the views (inferred from the values, not documented by Mazda): `drv1avlfuele` = km/l, `drv1avlfuelg` = l/100 km (`102.2` = no data), `drv1distnc` = trip km, `drv1drvtm` = trip seconds, `fuelsegementdactl` = fuel level 0-100, `smaphremdrvdistnum` = remaining range km. Cross-checks: 100 / km-per-l equals l/100 km; trip km tracks the odometer delta; fuel economy comes out at 6.7-7.2 l/100 km per month, and the diagnostic tool reports 7.32 l/100 km lifetime.
 
 Caveats: trip segments cover about 70% of the odometer distance (km driven before a counter reset that no snapshot saw are lost); a single segment's l/100 km is noisy, so use `v_fuel_monthly` or segments of 5+ km. DTC failure-type titles only list entries known with confidence; ECU titles marked "(inferred)" are guesses.
+
+### Added in M6
+
+| View | What it gives |
+|---|---|
+| `v_diag_obd` | Mode 6 monitor results with `in_range` (value within its min/max) and `position` (0 = at min, 1 = at max) |
+| `v_diag_aes` | AES id / activity-state pairs from the tool dump (28 ids, all "Not Active" in the current report) |
+| `v_freeze_frames` | one row per distinct freeze frame (ECU, DTC, record number, capture time) with how many read-outs repeated it. A DTC can have several records (e.g. ADU `C1A0F` has records 20-25); the car re-reports the same frames in later read-outs |
+
+Freeze-frame signal units (km/h, rpm, V, ...) are not in the CSV; the frontend adds them from a small table in `frontend/src/lib.ts`, taken from the tool dump's printout of the same frames.
