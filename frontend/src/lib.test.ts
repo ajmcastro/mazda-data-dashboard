@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { fmtAgo, fmtNum, pivotDaily, signalLabel, signalValue } from './lib'
+import {
+  daysInRange,
+  editRange,
+  fmtAgo,
+  fmtNum,
+  parseDay,
+  pivotDaily,
+  sanitizeRange,
+  signalLabel,
+  signalValue,
+} from './lib'
 
 describe('fmtNum', () => {
   it('formats with digits and unit', () => {
@@ -53,5 +63,33 @@ describe('freeze-frame signals', () => {
   it('makes names readable and caps their length', () => {
     expect(signalLabel('Engine_Coolant_Temperature')).toBe('Engine Coolant Temperature')
     expect(signalLabel('x'.repeat(80))).toHaveLength(58)
+  })
+})
+
+describe('date range', () => {
+  it('accepts only real calendar days', () => {
+    expect(parseDay('2026-02-28')).toBe('2026-02-28')
+    expect(parseDay('2026-02-30')).toBeUndefined()
+    expect(parseDay('2026-13-01')).toBeUndefined()
+    expect(parseDay('26-02-01')).toBeUndefined()
+    expect(parseDay('')).toBeUndefined()
+    expect(parseDay(null)).toBeUndefined()
+  })
+  it('sanitizes what comes from the address bar', () => {
+    expect(sanitizeRange('2026-05-02', '2026-05-01')).toEqual({ from: '2026-05-01', to: '2026-05-02' })
+    expect(sanitizeRange('junk', '2026-05-01')).toEqual({ from: undefined, to: '2026-05-01' })
+    expect(sanitizeRange(null, null)).toEqual({ from: undefined, to: undefined })
+  })
+  it('counts days inclusively, across month and year ends', () => {
+    expect(daysInRange('2026-06-12', '2026-06-12')).toBe(1)
+    expect(daysInRange('2026-06-12', '2026-10-22')).toBe(133)
+    expect(daysInRange('2025-12-31', '2026-01-01')).toBe(2)
+  })
+  it('keeps the bounds ordered while editing', () => {
+    const r = { from: '2026-05-10', to: '2026-05-20' }
+    expect(editRange(r, 'from', '2026-05-15')).toEqual({ from: '2026-05-15', to: '2026-05-20' })
+    expect(editRange(r, 'from', '2026-06-01')).toEqual({ from: '2026-06-01', to: '2026-06-01' })
+    expect(editRange(r, 'to', '2026-05-01')).toEqual({ from: '2026-05-01', to: '2026-05-01' })
+    expect(editRange(r, 'to', '')).toEqual({ from: '2026-05-10', to: undefined })
   })
 })

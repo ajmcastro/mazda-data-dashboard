@@ -1,4 +1,8 @@
-"""Read-only JSON API over the DuckDB model views."""
+"""Read-only JSON API over the DuckDB model views.
+
+Endpoints that describe a period take optional ``from`` / ``to`` days (see ``dates.py``).
+Endpoints that describe a *state* (active faults, alerts, the diagnostic-tool report, the
+description lookups) deliberately ignore them."""
 
 from datetime import timedelta
 from typing import Literal
@@ -7,11 +11,13 @@ import duckdb
 from fastapi import Depends, FastAPI, HTTPException, Query
 
 from . import models as m
+from .dates import DateRange, date_range
 from .db import db_path, get_con, get_rw_con, has_table, one, rows
 
-app = FastAPI(title="Mazda CX-5 dashboard API", version="0.1.0")
+app = FastAPI(title="Mazda CX-5 dashboard API", version="0.2.0")
 Con = Depends(get_con)
 RwCon = Depends(get_rw_con)
+Range = Depends(date_range)
 
 
 @app.get("/api/health", response_model=m.Health)
@@ -20,63 +26,113 @@ def health():
     return m.Health(status="ok", database=str(path), has_data=path.exists())
 
 
+@app.get("/api/span", response_model=m.DataSpan)
+def data_span(con: duckdb.DuckDBPyConnection = Con):
+    """First and last day with any data, used to bound the date pickers."""
+    span = one(
+        con,
+        "SELECT CAST(min(read_at) AS DATE) AS first_day, CAST(max(read_at) AS DATE) AS last_day "
+        "FROM v_odometer_readings",
+    )
+    return m.DataSpan(**span)
+
+
 @app.get("/api/overview", response_model=m.Overview)
-def overview(con: duckdb.DuckDBPyConnection = Con):
+def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    odo_where, odo_params = rng.clause("read_at")
     odo = one(
         con,
-        "SELECT read_at, odometer_km FROM v_odometer_readings ORDER BY odometer_km DESC LIMIT 1",
+        f"SELECT read_at, odometer_km FROM v_odometer_readings {odo_where} "
+        "ORDER BY odometer_km DESC LIMIT 1",
+        odo_params,
     )
     span = one(
         con, "SELECT min(read_at) AS a, max(read_at) AS b FROM v_odometer_readings"
     )
+
+    # Distance driven in the range: odometer at its end minus the last reading before its
+    # start (or the first reading inside it when the range starts before any data).
+    km = None
+    if odo:
+        base = (
+            one(
+                con,
+                "SELECT max(odometer_km) AS v FROM v_odometer_readings WHERE read_at < ?",
+                [rng.start_ts],
+            ).get("v")
+            if rng.start_ts
+            else None
+        )
+        if base is None:
+            base = one(
+                con,
+                f"SELECT min(odometer_km) AS v FROM v_odometer_readings {odo_where}",
+                odo_params,
+            )["v"]
+        km = odo["odometer_km"] - base
+
+    st_where, st_params = rng.clause("created_at", "AND")
     status = one(
         con,
         "SELECT created_at AS at, fuel_level_pct, range_km, tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, "
-        "tire_rr_kpa FROM v_vehicle_status WHERE fuel_level_pct IS NOT NULL "
+        f"tire_rr_kpa FROM v_vehicle_status WHERE fuel_level_pct IS NOT NULL {st_where} "
         "ORDER BY created_at DESC LIMIT 1",
-    )
-    km30 = one(
-        con,
-        "SELECT max(odometer_km) - (SELECT max(odometer_km) FROM v_odometer_daily "
-        "WHERE day <= (SELECT max(day) FROM v_odometer_daily) - 30) AS km FROM v_odometer_daily",
+        st_params,
     )
     diag = one(
         con,
-        "SELECT lifetime_l_per_100km, recent_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC LIMIT 1",
+        "SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC LIMIT 1",
     )
-    month = one(
-        con, "SELECT l_per_100km FROM v_fuel_monthly ORDER BY month DESC LIMIT 1"
-    )
-    w = one(
+    seg_where, seg_params = rng.clause("end_at")
+    economy = one(
         con,
-        "SELECT count(*) AS total, count(*) FILTER (WHERE triggered_at >= "
-        "(SELECT max(triggered_at) FROM warning_events) - INTERVAL 30 DAY) AS recent "
-        "FROM warning_events",
+        f"SELECT 100 * sum(fuel_l) / nullif(sum(km), 0) AS v FROM v_trip_segments {seg_where}",
+        seg_params,
     )
-    f = one(
+    w_where, w_params = rng.clause("triggered_at")
+    warnings = one(
         con,
-        "SELECT count(*) AS seen, count(*) FILTER (WHERE active_in_latest_readout) AS active "
-        "FROM v_dtc_frequency",
+        "SELECT (SELECT count(*) FROM warning_events) AS total, "
+        f"(SELECT count(*) FROM warning_events {w_where}) AS in_range",
+        w_params,
     )
+    ev_where, ev_params = rng.clause("event_at")
+    faults_seen = one(
+        con,
+        "SELECT count(*) AS n FROM (SELECT DISTINCT ecu, dtc_code, failure_type "
+        f"FROM v_dtc_events {ev_where})",
+        ev_params,
+    )["n"]
+    active = one(
+        con,
+        "SELECT count(*) FILTER (WHERE active_in_latest_readout) AS n FROM v_dtc_frequency",
+    )["n"]
+    al_where, al_params = rng.clause("created_at", "AND")
     alarm = one(
         con,
         "SELECT created_at, burglar_status, alarm_reason FROM v_alarm_events "
-        "WHERE burglar_status > 1 OR alarm_reason > 0 ORDER BY created_at DESC LIMIT 1",
+        f"WHERE (burglar_status > 1 OR alarm_reason > 0) {al_where} ORDER BY created_at DESC LIMIT 1",
+        al_params,
     )
+    first_day = span["a"].date() if span.get("a") else None
+    last_day = span["b"].date() if span.get("b") else None
     return m.Overview(
         vin=one(con, "SELECT vin FROM warning_events LIMIT 1").get("vin"),
         odometer_km=odo.get("odometer_km"),
         odometer_at=odo.get("read_at"),
         data_from=span.get("a"),
         data_to=span.get("b"),
-        km_last_30_days=km30.get("km"),
+        range_from=rng.start or first_day,
+        range_to=rng.end or last_day,
+        has_data_in_range=bool(odo),
+        km_in_range=km,
         lifetime_l_per_100km=diag.get("lifetime_l_per_100km"),
-        recent_l_per_100km=month.get("l_per_100km"),
+        l_per_100km_in_range=economy["v"],
         status=m.LatestStatus(**status),
-        warnings_total=w["total"],
-        warnings_last_30_days=w["recent"] or 0,
-        active_faults=f["active"] or 0,
-        faults_seen=f["seen"],
+        warnings_total=warnings["total"],
+        warnings_in_range=warnings["in_range"],
+        active_faults=active or 0,
+        faults_seen=faults_seen,
         unmapped_codes=one(con, "SELECT count(*) AS n FROM v_unmapped_codes")["n"],
         alerts_new=(
             one(con, "SELECT count(*) AS n FROM alerts WHERE status = 'new'")["n"]
@@ -88,58 +144,99 @@ def overview(con: duckdb.DuckDBPyConnection = Con):
 
 
 @app.get("/api/odometer/daily", response_model=list[m.OdometerDay])
-def odometer_daily(con: duckdb.DuckDBPyConnection = Con):
-    return rows(con, "SELECT * FROM v_odometer_daily ORDER BY day")
+def odometer_daily(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    where, params = rng.clause("day")
+    return rows(con, f"SELECT * FROM v_odometer_daily {where} ORDER BY day", params)
 
 
 @app.get("/api/fuel/monthly", response_model=list[m.FuelMonth])
-def fuel_monthly(con: duckdb.DuckDBPyConnection = Con):
-    return rows(con, "SELECT * FROM v_fuel_monthly ORDER BY month")
+def fuel_monthly(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    # same aggregates as the v_fuel_monthly view, over the segments inside the range
+    where, params = rng.clause("end_at")
+    return rows(
+        con,
+        "SELECT strftime(date_trunc('month', end_at), '%Y-%m') AS month, count(*) AS segments, "
+        "round(sum(km), 1) AS km, round(sum(fuel_l), 1) AS fuel_l, "
+        "round(100 * sum(fuel_l) / nullif(sum(km), 0), 2) AS l_per_100km, "
+        "round(sum(driving_seconds) / 3600.0, 1) AS driving_hours, "
+        "round(sum(km) / nullif(sum(driving_seconds) / 3600.0, 0), 1) AS avg_speed_kmh "
+        f"FROM v_trip_segments {where} GROUP BY 1 ORDER BY month",
+        params,
+    )
 
 
 @app.get("/api/trips/segments", response_model=list[m.TripSegment])
 def trip_segments(
-    limit: int = Query(500, ge=1, le=5000), con: duckdb.DuckDBPyConnection = Con
+    limit: int = Query(500, ge=1, le=5000),
+    rng: DateRange = Range,
+    con: duckdb.DuckDBPyConnection = Con,
 ):
+    where, params = rng.clause("end_at")
     return rows(
-        con, "SELECT * FROM v_trip_segments ORDER BY end_at DESC LIMIT ?", [limit]
+        con,
+        f"SELECT * FROM v_trip_segments {where} ORDER BY end_at DESC LIMIT ?",
+        [*params, limit],
     )
 
 
 @app.get("/api/status/timeline", response_model=list[m.StatusPoint])
-def status_timeline(con: duckdb.DuckDBPyConnection = Con):
+def status_timeline(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    where, params = rng.clause("created_at")
     return rows(
         con,
         "SELECT created_at, odometer_km, fuel_level_pct, range_km, trip_km, engine_state, "
-        "tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa FROM v_vehicle_status ORDER BY created_at",
+        "tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa "
+        f"FROM v_vehicle_status {where} ORDER BY created_at",
+        params,
     )
 
 
 @app.get("/api/doors/timeline", response_model=list[m.DoorPoint])
 def doors_timeline(
-    limit: int = Query(200, ge=1, le=5000), con: duckdb.DuckDBPyConnection = Con
+    limit: int = Query(200, ge=1, le=5000),
+    rng: DateRange = Range,
+    con: duckdb.DuckDBPyConnection = Con,
 ):
+    where, params = rng.clause("created_at")
     return rows(
-        con, "SELECT * FROM v_door_status ORDER BY created_at DESC LIMIT ?", [limit]
+        con,
+        f"SELECT * FROM v_door_status {where} ORDER BY created_at DESC LIMIT ?",
+        [*params, limit],
     )
 
 
 @app.get("/api/alarms", response_model=list[m.AlarmEvent])
-def alarms(con: duckdb.DuckDBPyConnection = Con):
-    return rows(con, "SELECT * FROM v_alarm_events ORDER BY created_at DESC")
+def alarms(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    where, params = rng.clause("created_at")
+    return rows(
+        con, f"SELECT * FROM v_alarm_events {where} ORDER BY created_at DESC", params
+    )
 
 
 @app.get("/api/warnings/frequency", response_model=list[m.WarningFrequency])
-def warning_frequency(con: duckdb.DuckDBPyConnection = Con):
-    return rows(con, "SELECT * FROM v_warning_frequency ORDER BY events DESC")
+def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    # same aggregates as v_warning_frequency; the share is relative to the events in range
+    where, params = rng.clause("triggered_at")
+    return rows(
+        con,
+        "SELECT code, any_value(title) AS title, any_value(severity) AS severity, "
+        "bool_or(known) AS known, count(*) AS events, "
+        f"round(100.0 * count(*) / (SELECT count(*) FROM warning_events {where}), 1) AS pct_of_events, "
+        "count(DISTINCT CAST(triggered_at AS DATE)) AS days_seen, "
+        "min(triggered_at) AS first_seen, max(triggered_at) AS last_seen "
+        f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC",
+        [*params, *params],
+    )
 
 
 @app.get("/api/warnings/daily", response_model=list[m.WarningDay])
-def warning_daily(con: duckdb.DuckDBPyConnection = Con):
+def warning_daily(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    where, params = rng.clause("triggered_at", "AND")
     return rows(
         con,
         "SELECT CAST(triggered_at AS DATE) AS day, code, count(*) AS events FROM v_warnings "
-        "WHERE triggered_at IS NOT NULL GROUP BY 1, 2 ORDER BY 1, 2",
+        f"WHERE triggered_at IS NOT NULL {where} GROUP BY 1, 2 ORDER BY 1, 2",
+        params,
     )
 
 
@@ -148,9 +245,14 @@ def warning_events(
     code: str | None = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
+    rng: DateRange = Range,
     con: duckdb.DuckDBPyConnection = Con,
 ):
-    where, params = ("WHERE code = ?", [code]) if code else ("", [])
+    conds, params = rng.conds("triggered_at")
+    if code:
+        conds.append("code = ?")
+        params.append(code)
+    where = "WHERE " + " AND ".join(conds) if conds else ""
     total = one(con, f"SELECT count(*) AS n FROM v_warnings {where}", params)["n"]
     items = rows(
         con,
@@ -162,10 +264,37 @@ def warning_events(
 
 
 @app.get("/api/dtcs/frequency", response_model=list[m.DtcFrequency])
-def dtc_frequency(con: duckdb.DuckDBPyConnection = Con):
+def dtc_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """Per fault: read-outs and first/last seen *within the range*. Faults still active in the
+    latest read-out are always listed (that is a state), with all-time dates if they were not
+    reported inside the range."""
+    where, params = rng.clause("event_at")
     return rows(
         con,
-        "SELECT * FROM v_dtc_frequency ORDER BY active_in_latest_readout DESC, last_seen DESC",
+        f"""WITH everything AS (
+                SELECT ecu, dtc_code, failure_type, any_value(ecu_title) AS ecu_title,
+                       any_value(title) AS title, any_value(severity) AS severity,
+                       min(event_at) AS first_seen, max(event_at) AS last_seen,
+                       min(odometer_km) AS first_odometer_km, max(odometer_km) AS last_odometer_km,
+                       bool_or(transaction_id = (SELECT transaction_id FROM dtc_headers
+                                                 ORDER BY copied_at DESC LIMIT 1)) AS active
+                FROM v_dtc_events GROUP BY ecu, dtc_code, failure_type),
+            inside AS (
+                SELECT ecu, dtc_code, failure_type, count(DISTINCT transaction_id) AS readouts,
+                       min(event_at) AS first_seen, max(event_at) AS last_seen,
+                       min(odometer_km) AS first_odometer_km, max(odometer_km) AS last_odometer_km
+                FROM v_dtc_events {where} GROUP BY ecu, dtc_code, failure_type)
+            SELECT e.ecu, e.ecu_title, e.dtc_code, e.failure_type, e.title, e.severity,
+                   coalesce(i.readouts, 0) AS readouts,
+                   coalesce(i.first_seen, e.first_seen) AS first_seen,
+                   coalesce(i.last_seen, e.last_seen) AS last_seen,
+                   coalesce(i.first_odometer_km, e.first_odometer_km) AS first_odometer_km,
+                   coalesce(i.last_odometer_km, e.last_odometer_km) AS last_odometer_km,
+                   e.active AS active_in_latest_readout
+            FROM everything e LEFT JOIN inside i USING (ecu, dtc_code, failure_type)
+            WHERE i.readouts > 0 OR e.active
+            ORDER BY e.active DESC, last_seen DESC""",
+        params,
     )
 
 
@@ -174,9 +303,10 @@ def dtc_events(
     ecu: str | None = None,
     dtc_code: str | None = None,
     limit: int = Query(500, ge=1, le=5000),
+    rng: DateRange = Range,
     con: duckdb.DuckDBPyConnection = Con,
 ):
-    conds, params = [], []
+    conds, params = rng.conds("event_at")
     for col, val in (("ecu", ecu), ("dtc_code", dtc_code)):
         if val:
             conds.append(f"{col} = ?")
@@ -186,17 +316,19 @@ def dtc_events(
         con,
         "SELECT transaction_id, event_at, odometer_km, ecu, dtc_code, failure_type, title, severity, "
         "failure_type_title, system, confirmed, pending, test_failed, warning_indicator "
-        f"FROM v_dtc_events {where} ORDER BY event_at DESC LIMIT ?",
+        f"FROM v_dtc_events {where} ORDER BY event_at DESC, ecu, dtc_code LIMIT ?",
         [*params, limit],
     )
 
 
 @app.get("/api/dtcs/readouts", response_model=list[m.Readout])
-def dtc_readouts(con: duckdb.DuckDBPyConnection = Con):
+def dtc_readouts(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    where, params = rng.clause("event_at")
     return rows(
         con,
         "SELECT transaction_id, event_at, odometer_km, faults, read_errors, ecus_reported "
-        "FROM v_dtc_readout_summary ORDER BY event_at DESC",
+        f"FROM v_dtc_readout_summary {where} ORDER BY event_at DESC",
+        params,
     )
 
 

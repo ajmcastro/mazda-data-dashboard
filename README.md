@@ -48,6 +48,12 @@ Open <http://localhost:5173>.
    newer export) and evaluates the alert rules.
 3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
 
+**Looking at a period.** The bar at the top of the Overview, Warnings, Faults and Status pages
+limits everything to a *from – to* range of days (UTC, both included). The range is kept in
+the address, so you can bookmark it, and it follows you from page to page. "All time" clears
+it. Things that describe a *state* ignore the range: the faults still active in the latest
+read-out, the alerts list and the diagnostic-tool report.
+
 Run `make unmapped` to see warning and fault codes that have no description yet, then add what
 you learn to `config/codes/*.yaml` and run `make model`.
 

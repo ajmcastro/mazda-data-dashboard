@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAcknowledge, useAcknowledgeAll, useAlerts } from '../api/hooks'
 import type { Alert } from '../api/types'
+import { RangeLink } from '../components/RangeLink'
 import { Badge, Panel, QueryState } from '../components/ui'
 import { fmtDateTime } from '../lib'
 
@@ -22,7 +22,7 @@ function AlertCard({ alert, onAck, busy }: { alert: Alert; onAck?: () => void; b
         </div>
       </div>
       <div className="alert-actions">
-        {alert.link && alert.link !== '/alerts' && <Link to={alert.link}>View →</Link>}
+        {alert.link && alert.link !== '/alerts' && <RangeLink to={alert.link}>View →</RangeLink>}
         {onAck && (
           <button onClick={onAck} disabled={busy}>
             Acknowledge

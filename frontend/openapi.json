@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Mazda CX-5 dashboard API",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "paths": {
     "/api/health": {
@@ -23,10 +23,69 @@
         }
       }
     },
+    "/api/span": {
+      "get": {
+        "summary": "Data Span",
+        "description": "First and last day with any data, used to bound the date pickers.",
+        "operationId": "data_span_api_span_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataSpan"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/overview": {
       "get": {
         "summary": "Overview",
         "operationId": "overview_api_overview_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -34,6 +93,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Overview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -45,17 +114,67 @@
       "get": {
         "summary": "Odometer Daily",
         "operationId": "odometer_daily_api_odometer_daily_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/OdometerDay"
                   },
-                  "type": "array",
                   "title": "Response Odometer Daily Api Odometer Daily Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -67,17 +186,67 @@
       "get": {
         "summary": "Fuel Monthly",
         "operationId": "fuel_monthly_api_fuel_monthly_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/FuelMonth"
                   },
-                  "type": "array",
                   "title": "Response Fuel Monthly Api Fuel Monthly Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -101,6 +270,44 @@
               "default": 500,
               "title": "Limit"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
           }
         ],
         "responses": {
@@ -135,17 +342,67 @@
       "get": {
         "summary": "Status Timeline",
         "operationId": "status_timeline_api_status_timeline_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/StatusPoint"
                   },
-                  "type": "array",
                   "title": "Response Status Timeline Api Status Timeline Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -169,6 +426,44 @@
               "default": 200,
               "title": "Limit"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
           }
         ],
         "responses": {
@@ -203,17 +498,67 @@
       "get": {
         "summary": "Alarms",
         "operationId": "alarms_api_alarms_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/AlarmEvent"
                   },
-                  "type": "array",
                   "title": "Response Alarms Api Alarms Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -225,17 +570,67 @@
       "get": {
         "summary": "Warning Frequency",
         "operationId": "warning_frequency_api_warnings_frequency_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/WarningFrequency"
                   },
-                  "type": "array",
                   "title": "Response Warning Frequency Api Warnings Frequency Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -247,17 +642,67 @@
       "get": {
         "summary": "Warning Daily",
         "operationId": "warning_daily_api_warnings_daily_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/WarningDay"
                   },
-                  "type": "array",
                   "title": "Response Warning Daily Api Warnings Daily Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -308,6 +753,44 @@
               "default": 0,
               "title": "Offset"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
           }
         ],
         "responses": {
@@ -337,18 +820,69 @@
     "/api/dtcs/frequency": {
       "get": {
         "summary": "Dtc Frequency",
+        "description": "Per fault: read-outs and first/last seen *within the range*. Faults still active in the\nlatest read-out are always listed (that is a state), with all-time dates if they were not\nreported inside the range.",
         "operationId": "dtc_frequency_api_dtcs_frequency_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/DtcFrequency"
                   },
-                  "type": "array",
                   "title": "Response Dtc Frequency Api Dtcs Frequency Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -404,6 +938,44 @@
               "default": 500,
               "title": "Limit"
             }
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
           }
         ],
         "responses": {
@@ -438,17 +1010,67 @@
       "get": {
         "summary": "Dtc Readouts",
         "operationId": "dtc_readouts_api_dtcs_readouts_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
+                  "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Readout"
                   },
-                  "type": "array",
                   "title": "Response Dtc Readouts Api Dtcs Readouts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -1121,6 +1743,36 @@
           "severity"
         ],
         "title": "ContextWarning"
+      },
+      "DataSpan": {
+        "properties": {
+          "first_day": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Day"
+          },
+          "last_day": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Day"
+          }
+        },
+        "type": "object",
+        "title": "DataSpan"
       },
       "DiagDelta": {
         "properties": {
@@ -2544,7 +3196,36 @@
             ],
             "title": "Data To"
           },
-          "km_last_30_days": {
+          "range_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range From"
+          },
+          "range_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range To"
+          },
+          "has_data_in_range": {
+            "type": "boolean",
+            "title": "Has Data In Range",
+            "default": false
+          },
+          "km_in_range": {
             "anyOf": [
               {
                 "type": "number"
@@ -2553,7 +3234,7 @@
                 "type": "null"
               }
             ],
-            "title": "Km Last 30 Days"
+            "title": "Km In Range"
           },
           "lifetime_l_per_100km": {
             "anyOf": [
@@ -2566,7 +3247,7 @@
             ],
             "title": "Lifetime L Per 100Km"
           },
-          "recent_l_per_100km": {
+          "l_per_100km_in_range": {
             "anyOf": [
               {
                 "type": "number"
@@ -2575,7 +3256,7 @@
                 "type": "null"
               }
             ],
-            "title": "Recent L Per 100Km"
+            "title": "L Per 100Km In Range"
           },
           "status": {
             "$ref": "#/components/schemas/LatestStatus"
@@ -2584,9 +3265,9 @@
             "type": "integer",
             "title": "Warnings Total"
           },
-          "warnings_last_30_days": {
+          "warnings_in_range": {
             "type": "integer",
-            "title": "Warnings Last 30 Days"
+            "title": "Warnings In Range"
           },
           "active_faults": {
             "type": "integer",
@@ -2620,7 +3301,7 @@
         "required": [
           "status",
           "warnings_total",
-          "warnings_last_30_days",
+          "warnings_in_range",
           "active_faults",
           "faults_seen",
           "unmapped_codes"

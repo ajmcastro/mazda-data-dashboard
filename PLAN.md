@@ -81,7 +81,7 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Synthetic sample data generator, README with screenshots, licence, CI (lint + tests) on GitHub Actions.
 - Audit git history and files for VIN or personal data before the first push.
 
-### M8 — Date-range filter (from / to)
+### M8 — Date-range filter (from / to) ✅ done
 Lets you look at any period instead of "everything". Requested after M7.
 - **Backend:** one shared `date_range` dependency (`from`, `to`; inclusive days, UTC; `from <= to` else 422) applied in SQL to the time-based endpoints: odometer, fuel, trips, status timeline, doors, warnings (frequency, daily, events), fault events and read-outs, overview figures. Without parameters nothing changes (all time). Tests for each endpoint with a range, an empty range and invalid input.
 - **What is *not* filtered:** state, not events. "Active faults in the latest read-out", the alerts list (acknowledging is a workflow, not a period) and the diagnostic-tool report (has its own picker, M10).

@@ -228,3 +228,17 @@ select { font: inherit; font-size: 13px; letter-spacing: 0; text-transform: none
 .matrix td, .matrix th { font-family: var(--mono); font-size: 12px; }
 .sub-h { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 8px; }
 .grid.cols-3 > div { min-width: 0; }
+
+/* ---- date range bar ---- */
+.range-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-bottom: 18px;
+  padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.range-inputs { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.range-inputs label { display: flex; flex-direction: column; gap: 3px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+input[type='date'] {
+  font: inherit; font-family: var(--mono); font-size: 13px; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 7px; padding: 4px 8px; color-scheme: inherit;
+}
+.range-summary { font-size: 12px; color: var(--muted); }
+.range-empty { flex-basis: 100%; color: var(--amber); font-size: 13px; }

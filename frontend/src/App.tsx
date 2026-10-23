@@ -1,5 +1,7 @@
-import { NavLink, Route, Routes } from 'react-router-dom'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from './api/hooks'
+import { DateRangeBar } from './components/DateRangeBar'
+import { RangeNavLink as NavLink } from './components/RangeLink'
 import Alerts from './pages/Alerts'
 import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
@@ -17,8 +19,13 @@ function Logo() {
   )
 }
 
+// Pages about a period get the date-range bar; alerts and the diagnostic-tool report are not
+// tied to a period.
+const PERIOD_PAGES = ['/', '/warnings', '/faults', '/status']
+
 export default function App() {
   const overview = useOverview()
+  const { pathname } = useLocation()
   const o = overview.data
   return (
     <div className="shell">
@@ -45,6 +52,7 @@ export default function App() {
         <div className="rail-foot">{o?.vin ? `VIN …${o.vin.slice(-6)}` : ''}</div>
       </aside>
       <main className="main">
+        {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
         <Routes>
           <Route path="/" element={<OverviewPage />} />
           <Route path="/alerts" element={<Alerts />} />

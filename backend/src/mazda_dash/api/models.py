@@ -33,17 +33,25 @@ class Overview(BaseModel):
     odometer_at: datetime | None = None
     data_from: datetime | None = None
     data_to: datetime | None = None
-    km_last_30_days: float | None = None
+    range_from: date | None = None
+    range_to: date | None = None
+    has_data_in_range: bool = False
+    km_in_range: float | None = None
     lifetime_l_per_100km: float | None = None
-    recent_l_per_100km: float | None = None
+    l_per_100km_in_range: float | None = None
     status: LatestStatus
     warnings_total: int
-    warnings_last_30_days: int
+    warnings_in_range: int
     active_faults: int
     faults_seen: int
     unmapped_codes: int
     alerts_new: int = 0
     last_alarm: AlarmEvent | None = None
+
+
+class DataSpan(BaseModel):
+    first_day: date | None = None
+    last_day: date | None = None
 
 
 class OdometerDay(BaseModel):

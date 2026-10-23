@@ -122,3 +122,38 @@ export function signalValue(signal: string, value: string | null | undefined): s
 /** Charts skip their draw-in animation when the user asks for reduced motion. */
 export const ANIMATE =
   typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+// ---- date range (calendar days in UTC, "YYYY-MM-DD") ----
+
+const DAY_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** The string if it is a real calendar day, otherwise undefined. */
+export function parseDay(value: string | null | undefined): string | undefined {
+  if (!value || !DAY_RE.test(value)) return undefined
+  const d = new Date(`${value}T00:00:00Z`)
+  return Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== value ? undefined : value
+}
+
+export type DayRange = { from?: string; to?: string }
+
+/** Drops invalid days and swaps the bounds if they were given the wrong way round. */
+export function sanitizeRange(from: string | null | undefined, to: string | null | undefined): DayRange {
+  const a = parseDay(from)
+  const b = parseDay(to)
+  if (a && b && a > b) return { from: b, to: a }
+  return { from: a, to: b }
+}
+
+/** Number of calendar days in the range, both ends included. */
+export function daysInRange(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000) + 1
+}
+
+/** Keeps `from <= to` after the user edits one of the two bounds. */
+export function editRange(range: DayRange, edited: 'from' | 'to', value: string): DayRange {
+  const day = parseDay(value)
+  const next = { ...range, [edited]: day }
+  if (day && edited === 'from' && next.to && day > next.to) next.to = day
+  if (day && edited === 'to' && next.from && day < next.from) next.from = day
+  return next
+}

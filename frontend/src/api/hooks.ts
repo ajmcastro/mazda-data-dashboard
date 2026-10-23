@@ -1,8 +1,15 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import createClient from 'openapi-fetch'
+import { useDateRange } from '../range'
 import type { paths } from './schema'
 
 const client = createClient<paths>({ baseUrl: '' })
+
+/** from/to query parameters of the selected period (undefined = no limit). */
+function useRangeQuery() {
+  const { from, to } = useDateRange()
+  return { from, to }
+}
 
 type Result<T> = { data?: T; error?: unknown; response: Response }
 
@@ -15,61 +22,119 @@ async function unwrap<T>(request: Promise<Result<T>>): Promise<T> {
   return data
 }
 
-export const useOverview = () =>
-  useQuery({ queryKey: ['overview'], queryFn: () => unwrap(client.GET('/api/overview')) })
-
-export const useOdometerDaily = () =>
-  useQuery({ queryKey: ['odometer'], queryFn: () => unwrap(client.GET('/api/odometer/daily')) })
-
-export const useFuelMonthly = () =>
-  useQuery({ queryKey: ['fuel'], queryFn: () => unwrap(client.GET('/api/fuel/monthly')) })
-
-export const useTripSegments = (limit = 200) =>
-  useQuery({
-    queryKey: ['segments', limit],
-    queryFn: () => unwrap(client.GET('/api/trips/segments', { params: { query: { limit } } })),
+export const useOverview = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['overview', range],
+    queryFn: () => unwrap(client.GET('/api/overview', { params: { query: range } })),
   })
+}
 
-export const useStatusTimeline = () =>
-  useQuery({ queryKey: ['status'], queryFn: () => unwrap(client.GET('/api/status/timeline')) })
+export const useSpan = () =>
+  useQuery({ queryKey: ['span'], queryFn: () => unwrap(client.GET('/api/span')) })
 
-export const useDoors = (limit = 50) =>
-  useQuery({
-    queryKey: ['doors', limit],
-    queryFn: () => unwrap(client.GET('/api/doors/timeline', { params: { query: { limit } } })),
+export const useOdometerDaily = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['odometer', range],
+    queryFn: () => unwrap(client.GET('/api/odometer/daily', { params: { query: range } })),
   })
+}
 
-export const useAlarms = () =>
-  useQuery({ queryKey: ['alarms'], queryFn: () => unwrap(client.GET('/api/alarms')) })
-
-export const useWarningFrequency = () =>
-  useQuery({
-    queryKey: ['warning-frequency'],
-    queryFn: () => unwrap(client.GET('/api/warnings/frequency')),
+export const useFuelMonthly = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['fuel', range],
+    queryFn: () => unwrap(client.GET('/api/fuel/monthly', { params: { query: range } })),
   })
+}
 
-export const useWarningDaily = () =>
-  useQuery({ queryKey: ['warning-daily'], queryFn: () => unwrap(client.GET('/api/warnings/daily')) })
-
-export const useWarningEvents = (code: string | undefined, offset: number, limit = 25) =>
-  useQuery({
-    queryKey: ['warning-events', code, offset, limit],
+export const useTripSegments = (limit = 200) => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['segments', limit, range],
     queryFn: () =>
-      unwrap(client.GET('/api/warnings/events', { params: { query: { code, offset, limit } } })),
+      unwrap(client.GET('/api/trips/segments', { params: { query: { limit, ...range } } })),
+  })
+}
+
+export const useStatusTimeline = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['status', range],
+    queryFn: () => unwrap(client.GET('/api/status/timeline', { params: { query: range } })),
+  })
+}
+
+export const useDoors = (limit = 50) => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['doors', limit, range],
+    queryFn: () =>
+      unwrap(client.GET('/api/doors/timeline', { params: { query: { limit, ...range } } })),
+  })
+}
+
+export const useAlarms = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['alarms', range],
+    queryFn: () => unwrap(client.GET('/api/alarms', { params: { query: range } })),
+  })
+}
+
+export const useWarningFrequency = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['warning-frequency', range],
+    queryFn: () => unwrap(client.GET('/api/warnings/frequency', { params: { query: range } })),
+  })
+}
+
+export const useWarningDaily = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['warning-daily', range],
+    queryFn: () => unwrap(client.GET('/api/warnings/daily', { params: { query: range } })),
+  })
+}
+
+export const useWarningEvents = (code: string | undefined, offset: number, limit = 25) => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['warning-events', code, offset, limit, range],
+    queryFn: () =>
+      unwrap(
+        client.GET('/api/warnings/events', { params: { query: { code, offset, limit, ...range } } }),
+      ),
     placeholderData: keepPreviousData,
   })
+}
 
-export const useDtcFrequency = () =>
-  useQuery({ queryKey: ['dtc-frequency'], queryFn: () => unwrap(client.GET('/api/dtcs/frequency')) })
-
-export const useDtcEvents = (ecu?: string, dtc_code?: string) =>
-  useQuery({
-    queryKey: ['dtc-events', ecu, dtc_code],
-    queryFn: () => unwrap(client.GET('/api/dtcs/events', { params: { query: { ecu, dtc_code } } })),
+export const useDtcFrequency = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['dtc-frequency', range],
+    queryFn: () => unwrap(client.GET('/api/dtcs/frequency', { params: { query: range } })),
   })
+}
 
-export const useReadouts = () =>
-  useQuery({ queryKey: ['readouts'], queryFn: () => unwrap(client.GET('/api/dtcs/readouts')) })
+export const useDtcEvents = (ecu?: string, dtc_code?: string) => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['dtc-events', ecu, dtc_code, range],
+    queryFn: () =>
+      unwrap(client.GET('/api/dtcs/events', { params: { query: { ecu, dtc_code, ...range } } })),
+  })
+}
+
+export const useReadouts = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['readouts', range],
+    queryFn: () => unwrap(client.GET('/api/dtcs/readouts', { params: { query: range } })),
+  })
+}
 
 export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefined) =>
   useQuery({

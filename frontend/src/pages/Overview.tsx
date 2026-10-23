@@ -1,8 +1,8 @@
-import { Link } from 'react-router-dom'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { useFuelMonthly, useOdometerDaily, useOverview } from '../api/hooks'
+import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
@@ -22,7 +22,9 @@ export default function OverviewPage() {
         <div>
           <h1>Overview</h1>
           <p>
-            {o ? `Data from ${fmtDate(o.data_from)} to ${fmtDate(o.data_to)} · last reading ${fmtAgo(o.data_to)}` : 'Loading…'}
+            {o
+              ? `Data from ${fmtDate(o.data_from)} to ${fmtDate(o.data_to)} · last reading ${fmtAgo(o.data_to)} · ${fmtNum(o.warnings_in_range)} warning events in this period`
+              : 'Loading…'}
           </p>
         </div>
       </div>
@@ -32,16 +34,16 @@ export default function OverviewPage() {
           <>
             <div className="alerts">
               {o.alerts_new > 0 && (
-                <Link to="/alerts" className="alert-row warn">
+                <RangeLink to="/alerts" className="alert-row warn">
                   <b>{o.alerts_new} new alert{o.alerts_new > 1 ? 's' : ''}</b>
                   <span className="muted">Review and acknowledge</span>
-                </Link>
+                </RangeLink>
               )}
               {o.active_faults > 0 ? (
-                <Link to="/faults" className="alert-row bad">
+                <RangeLink to="/faults" className="alert-row bad">
                   <b>{o.active_faults} fault{o.active_faults > 1 ? 's' : ''} still listed in the latest read-out</b>
                   <span className="muted">Open the fault explorer</span>
-                </Link>
+                </RangeLink>
               ) : (
                 <div className="alert-row ok"><b>No active faults in the latest read-out</b></div>
               )}
@@ -65,15 +67,20 @@ export default function OverviewPage() {
                 <div className="stat">
                   <div className="label">Odometer</div>
                   <div style={{ marginTop: 10 }}><Odometer km={o.odometer_km} /></div>
-                  <div className="sub">as of {fmtDateTime(o.odometer_at)}</div>
+                  <div className="sub">{o.odometer_at ? `as of ${fmtDateTime(o.odometer_at)}` : 'no reading in this period'}</div>
                 </div>
               </Panel>
-              <Stat label="Last 30 days" value={fmtNum(o.km_last_30_days)} unit="km" sub="distance driven" />
+              <Stat
+                label="Distance driven"
+                value={fmtNum(o.km_in_range)}
+                unit="km"
+                sub={`${fmtDate(o.range_from)} – ${fmtDate(o.range_to)}`}
+              />
               <Stat
                 label="Fuel economy"
-                value={fmtNum(o.recent_l_per_100km, 1)}
+                value={fmtNum(o.l_per_100km_in_range, 1)}
                 unit="l/100 km"
-                sub={`this month · lifetime ${fmtNum(o.lifetime_l_per_100km, 1)}`}
+                sub={`in this period · lifetime ${fmtNum(o.lifetime_l_per_100km, 1)}`}
               />
               <Stat
                 label="Fuel level"

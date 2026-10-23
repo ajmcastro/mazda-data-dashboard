@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/span": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Data Span
+         * @description First and last day with any data, used to bound the date pickers.
+         */
+        get: operations["data_span_api_span_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/overview": {
         parameters: {
             query?: never;
@@ -198,7 +218,12 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Dtc Frequency */
+        /**
+         * Dtc Frequency
+         * @description Per fault: read-outs and first/last seen *within the range*. Faults still active in the
+         *     latest read-out are always listed (that is a state), with all-time dates if they were not
+         *     reported inside the range.
+         */
         get: operations["dtc_frequency_api_dtcs_frequency_get"];
         put?: never;
         post?: never;
@@ -517,6 +542,13 @@ export interface components {
             title: string;
             /** Severity */
             severity: string;
+        };
+        /** DataSpan */
+        DataSpan: {
+            /** First Day */
+            first_day?: string | null;
+            /** Last Day */
+            last_day?: string | null;
         };
         /** DiagDelta */
         DiagDelta: {
@@ -877,17 +909,26 @@ export interface components {
             data_from?: string | null;
             /** Data To */
             data_to?: string | null;
-            /** Km Last 30 Days */
-            km_last_30_days?: number | null;
+            /** Range From */
+            range_from?: string | null;
+            /** Range To */
+            range_to?: string | null;
+            /**
+             * Has Data In Range
+             * @default false
+             */
+            has_data_in_range: boolean;
+            /** Km In Range */
+            km_in_range?: number | null;
             /** Lifetime L Per 100Km */
             lifetime_l_per_100km?: number | null;
-            /** Recent L Per 100Km */
-            recent_l_per_100km?: number | null;
+            /** L Per 100Km In Range */
+            l_per_100km_in_range?: number | null;
             status: components["schemas"]["LatestStatus"];
             /** Warnings Total */
             warnings_total: number;
-            /** Warnings Last 30 Days */
-            warnings_last_30_days: number;
+            /** Warnings In Range */
+            warnings_in_range: number;
             /** Active Faults */
             active_faults: number;
             /** Faults Seen */
@@ -1105,9 +1146,34 @@ export interface operations {
             };
         };
     };
-    overview_api_overview_get: {
+    data_span_api_span_get: {
         parameters: {
             query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataSpan"];
+                };
+            };
+        };
+    };
+    overview_api_overview_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1123,11 +1189,25 @@ export interface operations {
                     "application/json": components["schemas"]["Overview"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     odometer_daily_api_odometer_daily_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1143,11 +1223,25 @@ export interface operations {
                     "application/json": components["schemas"]["OdometerDay"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     fuel_monthly_api_fuel_monthly_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1163,12 +1257,25 @@ export interface operations {
                     "application/json": components["schemas"]["FuelMonth"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     trip_segments_api_trips_segments_get: {
         parameters: {
             query?: {
                 limit?: number;
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
             };
             header?: never;
             path?: never;
@@ -1198,7 +1305,12 @@ export interface operations {
     };
     status_timeline_api_status_timeline_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1214,12 +1326,25 @@ export interface operations {
                     "application/json": components["schemas"]["StatusPoint"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     doors_timeline_api_doors_timeline_get: {
         parameters: {
             query?: {
                 limit?: number;
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
             };
             header?: never;
             path?: never;
@@ -1249,7 +1374,12 @@ export interface operations {
     };
     alarms_api_alarms_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1265,11 +1395,25 @@ export interface operations {
                     "application/json": components["schemas"]["AlarmEvent"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     warning_frequency_api_warnings_frequency_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1285,11 +1429,25 @@ export interface operations {
                     "application/json": components["schemas"]["WarningFrequency"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     warning_daily_api_warnings_daily_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1305,6 +1463,15 @@ export interface operations {
                     "application/json": components["schemas"]["WarningDay"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     warning_events_api_warnings_events_get: {
@@ -1313,6 +1480,10 @@ export interface operations {
                 code?: string | null;
                 limit?: number;
                 offset?: number;
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
             };
             header?: never;
             path?: never;
@@ -1342,7 +1513,12 @@ export interface operations {
     };
     dtc_frequency_api_dtcs_frequency_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1358,6 +1534,15 @@ export interface operations {
                     "application/json": components["schemas"]["DtcFrequency"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     dtc_events_api_dtcs_events_get: {
@@ -1366,6 +1551,10 @@ export interface operations {
                 ecu?: string | null;
                 dtc_code?: string | null;
                 limit?: number;
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
             };
             header?: never;
             path?: never;
@@ -1395,7 +1584,12 @@ export interface operations {
     };
     dtc_readouts_api_dtcs_readouts_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1409,6 +1603,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Readout"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

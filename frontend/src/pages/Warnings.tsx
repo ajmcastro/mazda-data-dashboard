@@ -4,6 +4,7 @@ import { useWarningDaily, useWarningEvents, useWarningFrequency } from '../api/h
 import type { WarningEvent, WarningFrequency } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
+import { useDateRange } from '../range'
 
 const PALETTE = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--steel)', '#b58bd6', '#d6b48b', '#8bd6c4']
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
@@ -12,12 +13,19 @@ const PAGE = 25
 export default function Warnings() {
   const freq = useWarningFrequency()
   const daily = useWarningDaily()
-  const [selected, setSelected] = useState<string | undefined>()
-  const [offset, setOffset] = useState(0)
+  const { from, to } = useDateRange()
+  const [chosen, setChosen] = useState<string | undefined>()
   const [hideNoisy, setHideNoisy] = useState(true)
-  const events = useWarningEvents(selected, offset, PAGE)
+  // the page number belongs to one period: changing the period starts again at page 1
+  const rangeKey = `${from ?? ''}|${to ?? ''}`
+  const [pager, setPager] = useState({ key: rangeKey, offset: 0 })
+  const offset = pager.key === rangeKey ? pager.offset : 0
+  const setOffset = (value: number) => setPager({ key: rangeKey, offset: value })
 
   const all = useMemo(() => freq.data ?? [], [freq.data])
+  // a code picked earlier may have no events in the new period
+  const selected = all.some((w) => w.code === chosen) ? chosen : undefined
+  const events = useWarningEvents(selected, offset, PAGE)
   // A code present in over half of all events carries little signal on its own.
   const shown = useMemo(
     () => all.filter((w) => !hideNoisy || w.pct_of_events < 50).slice(0, 6).map((w) => w.code),
@@ -98,7 +106,7 @@ export default function Warnings() {
               columns={columns}
               rowKey={(w) => w.code}
               selected={selected}
-              onSelect={(w) => { setSelected(selected === w.code ? undefined : w.code); setOffset(0) }}
+              onSelect={(w) => { setChosen(selected === w.code ? undefined : w.code); setOffset(0) }}
             />
           </QueryState>
         </Panel>
