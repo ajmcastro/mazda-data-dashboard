@@ -51,6 +51,33 @@ Open <http://localhost:5173>.
 Run `make unmapped` to see warning and fault codes that have no description yet, then add what
 you learn to `config/codes/*.yaml` and run `make model`.
 
+### Adding newer data later
+
+You can keep adding exports as you receive them; history is never lost.
+
+1. Put the new files in `data/`. Replacing the old files with the new ones is fine, and so is
+   keeping both. Only the top level of `data/` is read, so moving older exports into
+   `data/archive/` (also git-ignored) keeps them without reloading them.
+2. Run `make ingest`. Only rows that are not in the database yet are added. Every row is matched
+   by its transaction id or timestamp, so an export that overlaps (or repeats) earlier data
+   creates no duplicates, and a cumulative export that starts from the beginning is fine too.
+   The output shows how many new rows each file added (`new=0` means nothing new).
+3. Open the dashboard (`make dev`). Alerts are re-evaluated; ones you already acknowledged stay
+   acknowledged.
+
+A new diagnostic-tool `.txt` file becomes an additional report on the Diagnostics page.
+
+Things to know:
+
+- Your history lives in `db/mazda.duckdb`, not in `data/`. **Don't run `make reset-db`** unless
+  you mean to start over: it deletes the database, including your acknowledged alerts. Copy
+  `db/mazda.duckdb` somewhere safe now and then, and keep your original export files.
+- Only new rows are inserted; rows already stored are never updated. If Mazda corrects an old
+  value in a later export, the stored value stays. (To rebuild from scratch, run
+  `make reset-db` and then `make ingest` with **all** your export files in `data/`.)
+- A gap between two exports stays a gap in the charts. The "no new data" alert reminds you
+  when it is time to ask for a newer export.
+
 ## Commands
 
 | Command | What it does |

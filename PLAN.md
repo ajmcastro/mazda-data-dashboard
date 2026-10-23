@@ -77,9 +77,41 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Diag-tool report view (Mode 9, VOD counters, OCC sections).
 - DTC freeze-frame viewer (snapshot data around each fault); compare reports over time if more tool dumps are added.
 
-### M7 — Polish & open-source readiness ✅ done (history clean-up pending, see README Privacy)
+### M7 — Polish & open-source readiness ✅ done
 - Synthetic sample data generator, README with screenshots, licence, CI (lint + tests) on GitHub Actions.
 - Audit git history and files for VIN or personal data before the first push.
+
+### M8 — Date-range filter (from / to)
+Lets you look at any period instead of "everything". Requested after M7.
+- **Backend:** one shared `date_range` dependency (`from`, `to`; inclusive days, UTC; `from <= to` else 422) applied in SQL to the time-based endpoints: odometer, fuel, trips, status timeline, doors, warnings (frequency, daily, events), fault events and read-outs, overview figures. Without parameters nothing changes (all time). Tests for each endpoint with a range, an empty range and invalid input.
+- **What is *not* filtered:** state, not events. "Active faults in the latest read-out", the alerts list (acknowledging is a workflow, not a period) and the diagnostic-tool report (has its own picker, M10).
+- **Frontend:** a date-range bar in the page header with two date inputs (clamped to the first and last day with data). The range lives in the URL (`?from=2026-06-12&to=2026-07-12`) so a view can be bookmarked or shared, and every query key includes it. Overview tiles, which are fixed "last 30 days" today, are computed for the chosen range and say so ("12 Jun – 12 Jul").
+- **Edge cases:** a range with no data shows a clear empty state instead of blank charts; the range survives navigation between pages; a range outside the data is explained.
+- **Done when:** picking a range changes every period-based chart, table and tile consistently, tests pass, and the demo data shows it working.
+
+### M9 — Quick ranges (presets)
+Buttons next to the date inputs; built on M8.
+- Presets: **Last week**, **Last 2 weeks**, **Last 30 days**, **Last 60 days**, **Last 90 days**, **All time**. The active preset is highlighted; editing a date manually clears the highlight (custom range).
+- **Decision to confirm:** presets count back from the **most recent data point**, not from today. Your exports are a snapshot, so "last 30 days" relative to today would be empty as soon as a few weeks pass without a new export. The bar shows the resolved dates ("Last 30 days · 23 Sep – 22 Oct") so it is never ambiguous.
+- Remembers your last choice in the browser; the default for new visitors is All time. Keyboard accessible (it is a radio group), works on phone width.
+- Pure date logic (`resolvePreset(latestDate, preset)`) lives in `lib.ts` with unit tests, including month ends, short datasets and a dataset shorter than the preset.
+
+### M10 — Choose any diagnostic-tool report
+- The Diagnostics page already has a report picker, but it only appears when 2+ reports are loaded, so with one dump it looks like "the latest report only". Make the selector **always visible** and list each report as "date · odometer · file", newest first, with the selection in the URL (`?report=`).
+- A short **report history** strip: lifetime km, lifetime l/100 km, ignition cycles and monitors passed per report, with a small chart when there are 2+ reports, so changes between visits to the workshop are visible at a glance. The existing "compare with" table stays.
+- Ingest check: several `*diag-tool*.txt` files (even with the same date or VIN) load as separate reports and re-running adds nothing.
+- Extend `sample.py` to write **three** diagnostic reports at different dates, regenerate `sample_data/` and the README screenshot, and add tests (report list, switching, comparison across dates).
+- **Note:** with your real data there is one dump today; further dumps appear once their `.txt` files are in `data/` and `make ingest` is run.
+
+### M11 — Monthly comparison page ("Trends")
+A new page showing how each metric evolved month by month, with the change against the previous month.
+- **Metrics (proposal, to confirm):** distance driven, fuel consumption (l/100 km), fuel used, number of trips, driving time and average speed, warning events, distinct warning codes, fault read-outs with faults, new faults, alerts raised, average tire pressure and the lowest tire reading.
+- **Presentation:** a card per metric with a bar chart across all months (latest highlighted), the current value, and "x % more / less than May" with an arrow. Colour reflects whether the change is good or bad for that metric (less fuel use is green; more warnings is red; distance driven is neutral). A table view (months as columns, change row underneath) for reading exact numbers.
+- **Incomplete months:** the first and last month are usually partial, so they are marked "partial" and volume metrics (km, warnings, trips) can be shown **per day covered** via a toggle, so a half month is not compared with a full one. Months without data show a gap, not zero; a missing previous month shows "no previous month".
+- **Backend:** a `v_monthly_metrics` view and `GET /api/trends/monthly` returning one row per month (including days covered); the change and its good/bad direction are computed in the frontend (unit-tested). It follows the date range from M8/M9 when they are done (months outside the range are dropped).
+- **Done when:** the page renders from real and demo data, edge cases above are covered by tests, and the README gets a screenshot.
+
+**Suggested order:** M8, M9 (the filter), then M11 (benefits from the filter), then M10 (independent, smallest). Each is started with "start implementing milestone N", as before.
 
 ## Open questions (to resolve during M1)
 
