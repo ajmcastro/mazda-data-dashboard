@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest model unmapped reset-db api web dev types test lint format clean
+.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean
 
 setup:
 	cd backend && uv sync
@@ -47,3 +47,6 @@ dev:
 types:
 	cd backend && uv run python -m mazda_dash.api.openapi > ../frontend/openapi.json
 	cd frontend && npm run types
+
+alerts:
+	cd backend && uv run python -m mazda_dash.alerts --db ../db/mazda.duckdb --config ../config/alerts.yaml

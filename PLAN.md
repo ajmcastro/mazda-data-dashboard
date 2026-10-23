@@ -68,7 +68,7 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Vite/React app: overview page (key stats, odometer/fuel charts), warnings page, DTC explorer, status/doors page.
 - `make dev` runs both.
 
-### M5 — Alerts engine
+### M5 — Alerts engine ✅ done
 - Rule definitions in YAML: new DTC never seen before, recurring DTC/warning above a threshold, burglar alarm triggered, abnormal fuel consumption, invalid signals, long gaps in data.
 - Alerts persisted in DuckDB with severity and status (new / acknowledged); notifications panel in the UI.
 - Optional later: desktop/email notifications after each ingest.

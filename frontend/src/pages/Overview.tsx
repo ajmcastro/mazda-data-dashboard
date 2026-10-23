@@ -31,6 +31,12 @@ export default function OverviewPage() {
         {o && (
           <>
             <div className="alerts">
+              {o.alerts_new > 0 && (
+                <Link to="/alerts" className="alert-row warn">
+                  <b>{o.alerts_new} new alert{o.alerts_new > 1 ? 's' : ''}</b>
+                  <span className="muted">Review and acknowledge</span>
+                </Link>
+              )}
               {o.active_faults > 0 ? (
                 <Link to="/faults" className="alert-row bad">
                   <b>{o.active_faults} fault{o.active_faults > 1 ? 's' : ''} still listed in the latest read-out</b>

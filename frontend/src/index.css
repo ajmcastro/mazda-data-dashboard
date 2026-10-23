@@ -196,3 +196,20 @@ button:hover:not(:disabled) { border-color: var(--muted); } button:disabled { op
 .chart-tip { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
 .chart-tip .t { color: var(--muted); margin-bottom: 4px; font-family: var(--mono); }
 .chart-tip div.row { display: flex; gap: 14px; justify-content: space-between; font-family: var(--mono); }
+
+/* ---- alert cards ---- */
+.alert-card {
+  display: flex; gap: 16px; align-items: flex-start; justify-content: space-between;
+  padding: 14px 16px; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line);
+  border-left: 4px solid var(--steel); animation: rise 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.alert-card.warning { border-left-color: var(--amber); }
+.alert-card.critical { border-left-color: var(--accent); background: linear-gradient(90deg, var(--accent-soft), var(--panel) 40%); }
+.alert-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.alert-title b { font-size: 15px; font-weight: 600; }
+.alert-card p { margin: 6px 0 4px; color: var(--muted); max-width: 70ch; }
+.alert-meta { font-size: 11px; color: var(--muted); }
+.alert-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
+.alert-actions a { color: var(--steel); text-decoration: none; font-weight: 500; }
+.alert-actions a:hover { text-decoration: underline; }
+@media (max-width: 640px) { .alert-card { flex-direction: column; } }

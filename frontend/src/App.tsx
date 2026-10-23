@@ -1,5 +1,6 @@
 import { NavLink, Route, Routes } from 'react-router-dom'
 import { useOverview } from './api/hooks'
+import Alerts from './pages/Alerts'
 import Faults from './pages/Faults'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
@@ -30,6 +31,9 @@ export default function App() {
         </div>
         <nav className="nav" aria-label="Main">
           <NavLink to="/" end>Overview</NavLink>
+          <NavLink to="/alerts">
+            Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}
+          </NavLink>
           <NavLink to="/warnings">Warnings</NavLink>
           <NavLink to="/faults">
             Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}
@@ -41,6 +45,7 @@ export default function App() {
       <main className="main">
         <Routes>
           <Route path="/" element={<OverviewPage />} />
+          <Route path="/alerts" element={<Alerts />} />
           <Route path="/warnings" element={<Warnings />} />
           <Route path="/faults" element={<Faults />} />
           <Route path="/status" element={<Status />} />

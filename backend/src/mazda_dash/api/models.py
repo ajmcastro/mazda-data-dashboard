@@ -42,6 +42,7 @@ class Overview(BaseModel):
     active_faults: int
     faults_seen: int
     unmapped_codes: int
+    alerts_new: int = 0
     last_alarm: AlarmEvent | None = None
 
 
@@ -191,3 +192,20 @@ class UnmappedCode(BaseModel):
     kind: str
     code: str
     occurrences: int
+
+
+class Alert(BaseModel):
+    alert_id: int
+    rule: str
+    severity: str
+    title: str
+    detail: str | None = None
+    link: str | None = None
+    occurred_at: datetime | None = None
+    created_at: datetime
+    status: str
+    acknowledged_at: datetime | None = None
+
+
+class Acknowledged(BaseModel):
+    acknowledged: int

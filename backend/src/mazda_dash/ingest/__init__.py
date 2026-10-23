@@ -6,6 +6,7 @@ from pathlib import Path
 
 import duckdb
 
+from ..alerts import evaluate, report
 from ..model import build_model
 from .csv_loaders import LOADERS, ORDER
 from .diag_parser import parse_diag_file
@@ -79,7 +80,16 @@ def main() -> None:
     ap.add_argument("--data", type=Path, default=Path("../data"))
     ap.add_argument("--db", type=Path, default=Path("../db/mazda.duckdb"))
     ap.add_argument("--config", type=Path, default=Path("../config/codes"))
+    ap.add_argument("--alerts-config", type=Path, default=Path("../config/alerts.yaml"))
+    ap.add_argument(
+        "--no-alerts", action="store_true", help="skip evaluating alert rules"
+    )
+    ap.add_argument(
+        "--notify", action="store_true", help="desktop notification for new alerts"
+    )
     args = ap.parse_args()
     for kind, name, read, new in ingest(args.data, args.db, args.config):
         print(f"{kind:8} read={read:6} new={new:6}  {name}")
     print("database:", args.db)
+    if not args.no_alerts:
+        report(*evaluate(args.db, args.alerts_config, args.notify))

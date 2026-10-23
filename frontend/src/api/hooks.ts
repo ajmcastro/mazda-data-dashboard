@@ -1,4 +1,4 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import createClient from 'openapi-fetch'
 import type { paths } from './schema'
 
@@ -83,3 +83,29 @@ export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefin
 
 export const useUnmapped = () =>
   useQuery({ queryKey: ['unmapped'], queryFn: () => unwrap(client.GET('/api/codes/unmapped')) })
+
+export const useAlerts = (status: 'new' | 'acknowledged') =>
+  useQuery({
+    queryKey: ['alerts', status],
+    queryFn: () => unwrap(client.GET('/api/alerts', { params: { query: { status } } })),
+  })
+
+/** Acknowledging changes alert lists and the overview/nav counters. */
+function useAlertMutation<T = void>(run: (arg: T) => Promise<unknown>) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: run,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['alerts'] })
+      void queryClient.invalidateQueries({ queryKey: ['overview'] })
+    },
+  })
+}
+
+export const useAcknowledge = () =>
+  useAlertMutation((alert_id: number) =>
+    unwrap(client.POST('/api/alerts/{alert_id}/acknowledge', { params: { path: { alert_id } } })),
+  )
+
+export const useAcknowledgeAll = () =>
+  useAlertMutation(() => unwrap(client.POST('/api/alerts/acknowledge-all')))

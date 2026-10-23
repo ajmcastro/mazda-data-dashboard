@@ -67,3 +67,32 @@ def test_timelines(client):
     assert client.get("/api/alarms").json()[0]["burglar_status"] == 5
     assert client.get("/api/odometer/daily").json()
     assert client.get("/api/fuel/monthly").json() == []  # fixture has no trip data
+
+
+def test_alerts_listing_and_acknowledging(client, tmp_path):
+    from mazda_dash.alerts import evaluate
+
+    assert client.get("/api/alerts").json() == []  # nothing evaluated yet
+    assert client.get("/api/overview").json()["alerts_new"] == 0
+
+    import os
+
+    cfg = tmp_path / "alerts.yaml"
+    cfg.write_text("lookback_days: 400\n")
+    evaluate(os.environ["MAZDA_DB"], cfg)
+
+    new = client.get("/api/alerts").json()
+    assert new and new[0]["severity"] == "critical"  # worst first
+    assert client.get("/api/overview").json()["alerts_new"] == len(new)
+
+    one = client.post(f"/api/alerts/{new[0]['alert_id']}/acknowledge").json()
+    assert one["status"] == "acknowledged" and one["acknowledged_at"].endswith("Z")
+    assert len(client.get("/api/alerts").json()) == len(new) - 1
+    assert len(client.get("/api/alerts", params={"status": "all"}).json()) == len(new)
+
+    assert client.post("/api/alerts/acknowledge-all").json() == {
+        "acknowledged": len(new) - 1
+    }
+    assert client.get("/api/alerts").json() == []
+    assert client.post("/api/alerts/999999/acknowledge").status_code == 404
+    assert client.get("/api/alerts", params={"status": "bogus"}).status_code == 422

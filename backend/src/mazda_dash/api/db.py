@@ -25,6 +25,33 @@ def get_con() -> Iterator[duckdb.DuckDBPyConnection]:
         con.close()
 
 
+def get_rw_con() -> Iterator[duckdb.DuckDBPyConnection]:
+    """Read-write connection for the few endpoints that change state (acknowledging alerts)."""
+    path = db_path()
+    if not path.exists():
+        raise HTTPException(503, f"Database {path} not found - run `make ingest` first")
+    try:
+        con = duckdb.connect(str(path))
+    except (
+        duckdb.IOException
+    ) as e:  # another process (e.g. `make ingest`) holds the write lock
+        raise HTTPException(
+            503, "Database is busy (is `make ingest` running?) - try again"
+        ) from e
+    try:
+        yield con
+    finally:
+        con.close()
+
+
+def has_table(con: duckdb.DuckDBPyConnection, name: str) -> bool:
+    return bool(
+        con.execute(
+            "SELECT 1 FROM duckdb_tables() WHERE table_name = ?", [name]
+        ).fetchone()
+    )
+
+
 def _clean(v):
     if isinstance(v, datetime):
         return v.replace(tzinfo=UTC)  # the database stores naive UTC

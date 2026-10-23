@@ -1,0 +1,45 @@
+# Alert rules. `make alerts` (also run by `make ingest`) evaluates them against the data and
+# stores new alerts in the database; each alert is raised once and keeps its status
+# (new -> acknowledged) across runs.
+#
+# lookback_days: event-based rules only alert on events newer than this many days before
+# the most recent data point, so the first run does not flood you with history.
+# Severities: info | warning | critical.
+
+lookback_days: 30
+
+notifications:
+  desktop: false          # macOS notification when new alerts appear (or use `--notify`)
+  min_severity: warning   # only notify for alerts at or above this severity
+
+rules:
+  # A trouble code (ECU + DTC + failure type) reported for the first time.
+  # Uses the severity from config/codes/dtcs.yaml when set, otherwise `severity` below.
+  new_dtc: {enabled: true, severity: warning}
+
+  # A trouble code that is still listed in the latest read-out and has been
+  # reported in at least `min_readouts` read-outs.
+  recurring_dtc: {enabled: true, severity: warning, min_readouts: 5}
+
+  # A warning code never seen before the lookback window.
+  new_warning_code: {enabled: true, severity: info, ignore_codes: []}
+
+  # A day with unusually many events of one warning code: at least `min_events` and
+  # more than mean + `sigma` standard deviations of that code's daily count.
+  warning_spike: {enabled: true, severity: warning, min_events: 20, sigma: 3, ignore_codes: []}
+
+  # Burglar alarm status above normal (status > 1 or a non-zero reason).
+  burglar_alarm: {enabled: true, severity: critical}
+
+  # A stretch of at least `min_km` whose consumption exceeds `factor` x your average.
+  high_consumption: {enabled: true, severity: info, min_km: 20, factor: 1.4}
+
+  # Latest fuel gauge reading below this percentage.
+  low_fuel: {enabled: true, severity: warning, below_pct: 12}
+
+  # A tire reading below this pressure (kPa); at most one alert per wheel per day.
+  # Check your door-jamb sticker for the right value; 200 is a deliberately low default.
+  low_tire_pressure: {enabled: true, severity: warning, min_kpa: 200}
+
+  # No new data for more than `max_days` days (based on the clock).
+  data_gap: {enabled: true, severity: info, max_days: 3}

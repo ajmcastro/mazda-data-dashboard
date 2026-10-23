@@ -1,13 +1,16 @@
 """Read-only JSON API over the DuckDB model views."""
 
+from typing import Literal
+
 import duckdb
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 
 from . import models as m
-from .db import db_path, get_con, one, rows
+from .db import db_path, get_con, get_rw_con, has_table, one, rows
 
 app = FastAPI(title="Mazda CX-5 dashboard API", version="0.1.0")
 Con = Depends(get_con)
+RwCon = Depends(get_rw_con)
 
 
 @app.get("/api/health", response_model=m.Health)
@@ -74,6 +77,11 @@ def overview(con: duckdb.DuckDBPyConnection = Con):
         active_faults=f["active"] or 0,
         faults_seen=f["seen"],
         unmapped_codes=one(con, "SELECT count(*) AS n FROM v_unmapped_codes")["n"],
+        alerts_new=(
+            one(con, "SELECT count(*) AS n FROM alerts WHERE status = 'new'")["n"]
+            if has_table(con, "alerts")
+            else 0
+        ),
         last_alarm=m.AlarmEvent(**alarm) if alarm else None,
     )
 
@@ -205,3 +213,52 @@ def dtc_snapshots(ecu: str, dtc_code: str, con: duckdb.DuckDBPyConnection = Con)
 @app.get("/api/codes/unmapped", response_model=list[m.UnmappedCode])
 def unmapped(con: duckdb.DuckDBPyConnection = Con):
     return rows(con, "SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC")
+
+
+ALERT_COLS = "alert_id, rule, severity, title, detail, link, occurred_at, created_at, status, acknowledged_at"
+
+
+@app.get("/api/alerts", response_model=list[m.Alert])
+def list_alerts(
+    status: Literal["new", "acknowledged", "all"] = "new",
+    con: duckdb.DuckDBPyConnection = Con,
+):
+    if not has_table(con, "alerts"):
+        return []
+    where, params = ("", []) if status == "all" else ("WHERE status = ?", [status])
+    return rows(
+        con,
+        f"SELECT {ALERT_COLS} FROM alerts {where} "
+        "ORDER BY CASE severity WHEN 'critical' THEN 0 WHEN 'warning' THEN 1 ELSE 2 END, "
+        "occurred_at DESC NULLS LAST, alert_id DESC",
+        params,
+    )
+
+
+@app.post("/api/alerts/acknowledge-all", response_model=m.Acknowledged)
+def acknowledge_all(con: duckdb.DuckDBPyConnection = RwCon):
+    if not has_table(con, "alerts"):
+        return m.Acknowledged(acknowledged=0)
+    n = con.execute(
+        "UPDATE alerts SET status = 'acknowledged', acknowledged_at = now()::TIMESTAMP "
+        "WHERE status = 'new'"
+    ).fetchone()[0]
+    return m.Acknowledged(acknowledged=n)
+
+
+@app.post("/api/alerts/{alert_id}/acknowledge", response_model=m.Alert)
+def acknowledge(alert_id: int, con: duckdb.DuckDBPyConnection = RwCon):
+    if has_table(con, "alerts"):
+        con.execute(
+            "UPDATE alerts SET status = 'acknowledged', acknowledged_at = now()::TIMESTAMP "
+            "WHERE alert_id = ? AND status = 'new'",
+            [alert_id],
+        )
+    found = (
+        rows(con, f"SELECT {ALERT_COLS} FROM alerts WHERE alert_id = ?", [alert_id])
+        if has_table(con, "alerts")
+        else []
+    )
+    if not found:
+        raise HTTPException(404, f"No alert with id {alert_id}")
+    return found[0]
