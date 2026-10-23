@@ -1,0 +1,4 @@
+"vin","fileid_datetime","datacreationtime","burglarstatus_value","burglarstatus_validstatus","balarmreasondactl_value","balarmreasondactl_validstatus"
+"SAMPLEVIN00000001","2026-04-09 08:40:00","2026-04-09T08:45:00Z","1","Valid","0","Valid"
+"SAMPLEVIN00000001","2026-06-22 21:14:00","2026-06-22T21:19:00Z","5","Valid","5","Valid"
+"SAMPLEVIN00000001","2026-06-22 21:14:12","2026-06-22T21:19:12Z","1","Valid","0","Valid"

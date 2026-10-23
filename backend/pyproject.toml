@@ -3,7 +3,7 @@ name = "mazda-dash"
 version = "0.1.0"
 description = "Analysis and dashboard for Mazda CX-5 telemetry exports"
 authors = [
-    { name = "Antonio Castro", email = "antonio.castro@masdima.com" }
+    { name = "Antonio Castro" }
 ]
 requires-python = ">=3.12"
 dependencies = [

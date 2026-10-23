@@ -6,7 +6,7 @@ import { useFuelMonthly, useOdometerDaily, useOverview } from '../api/hooks'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
-import { fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
+import { ANIMATE, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
@@ -91,7 +91,7 @@ export default function OverviewPage() {
         <Panel title="Distance" hint="odometer, daily maximum">
           <QueryState query={odometer}>
             <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={(odometer.data ?? []).map((d) => ({ t: ts(`${d.day}T00:00:00Z`), km: d.odometer_km }))}>
+              <AreaChart margin={{ right: 18, top: 5 }} data={(odometer.data ?? []).map((d) => ({ t: ts(`${d.day}T00:00:00Z`), km: d.odometer_km }))}>
                 <defs>
                   <linearGradient id="odo" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.55} />
@@ -102,7 +102,7 @@ export default function OverviewPage() {
                 <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={fmtTick} minTickGap={36} {...axis} />
                 <YAxis {...axis} width={44} />
                 <Tooltip content={<ChartTip fmtLabel={(v) => fmtDate(new Date(Number(v)).toISOString())} />} />
-                <Area name="km" dataKey="km" stroke="var(--accent)" strokeWidth={2} fill="url(#odo)" />
+                <Area isAnimationActive={ANIMATE} name="km" dataKey="km" stroke="var(--accent)" strokeWidth={2} fill="url(#odo)" />
               </AreaChart>
             </ResponsiveContainer>
           </QueryState>
@@ -116,12 +116,12 @@ export default function OverviewPage() {
       <Panel title="Fuel economy by month" hint="l/100 km, from the car's trip counters">
         <QueryState query={fuel}>
           <ResponsiveContainer width="100%" height={230}>
-            <BarChart data={fuel.data ?? []}>
+            <BarChart margin={{ right: 18, top: 5 }} data={fuel.data ?? []}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="month" {...axis} />
               <YAxis {...axis} width={34} domain={[0, 'auto']} />
               <Tooltip cursor={{ fill: 'var(--grid)' }} content={<ChartTip fmtLabel={String} />} />
-              <Bar name="l/100 km" dataKey="l_per_100km" fill="var(--teal)" radius={[4, 4, 0, 0]} />
+              <Bar isAnimationActive={ANIMATE} name="l/100 km" dataKey="l_per_100km" fill="var(--teal)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </QueryState>

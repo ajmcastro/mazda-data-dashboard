@@ -2,7 +2,7 @@ import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, X
 import { useAlarms, useDoors, useStatusTimeline, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, TripSegment } from '../api/types'
 import { ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
-import { fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
+import { ANIMATE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const tipLabel = (v: number | string) => fmtDateTime(new Date(Number(v)).toISOString())
@@ -64,8 +64,8 @@ export default function Status() {
                 <YAxis yAxisId="r" orientation="right" {...axis} width={40} />
                 <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
                 <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--mono)' }} />
-                <Line yAxisId="l" name="fuel %" dataKey="fuel %" stroke="var(--teal)" dot={false} strokeWidth={2} connectNulls />
-                <Line yAxisId="r" name="range km" dataKey="range km" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
+                <Line isAnimationActive={ANIMATE} yAxisId="l" name="fuel %" dataKey="fuel %" stroke="var(--teal)" dot={false} strokeWidth={2} connectNulls />
+                <Line isAnimationActive={ANIMATE} yAxisId="r" name="range km" dataKey="range km" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </QueryState>
@@ -80,10 +80,10 @@ export default function Status() {
                 <YAxis {...axis} width={40} domain={['dataMin - 10', 'dataMax + 10']} />
                 <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
                 <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--mono)' }} />
-                <Line name="front left" dataKey="FL" stroke="var(--accent)" dot={false} connectNulls />
-                <Line name="front right" dataKey="FR" stroke="var(--amber)" dot={false} connectNulls />
-                <Line name="rear left" dataKey="RL" stroke="var(--teal)" dot={false} connectNulls />
-                <Line name="rear right" dataKey="RR" stroke="var(--steel)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name="front left" dataKey="FL" stroke="var(--accent)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name="front right" dataKey="FR" stroke="var(--amber)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name="rear left" dataKey="RL" stroke="var(--teal)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name="rear right" dataKey="RR" stroke="var(--steel)" dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </QueryState>

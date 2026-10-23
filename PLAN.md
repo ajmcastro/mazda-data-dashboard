@@ -77,7 +77,7 @@ Each milestone is implemented only when requested ("start implementing milestone
 - Diag-tool report view (Mode 9, VOD counters, OCC sections).
 - DTC freeze-frame viewer (snapshot data around each fault); compare reports over time if more tool dumps are added.
 
-### M7 — Polish & open-source readiness
+### M7 — Polish & open-source readiness ✅ done (history clean-up pending, see README Privacy)
 - Synthetic sample data generator, README with screenshots, licence, CI (lint + tests) on GitHub Actions.
 - Audit git history and files for VIN or personal data before the first push.
 

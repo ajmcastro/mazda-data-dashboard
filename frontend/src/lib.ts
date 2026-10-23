@@ -118,3 +118,7 @@ export function signalValue(signal: string, value: string | null | undefined): s
   const unit = SIGNAL_UNITS[signal]
   return unit ? `${value}\u202f${unit}` : value
 }
+
+/** Charts skip their draw-in animation when the user asks for reduced motion. */
+export const ANIMATE =
+  typeof window === 'undefined' || !window.matchMedia('(prefers-reduced-motion: reduce)').matches

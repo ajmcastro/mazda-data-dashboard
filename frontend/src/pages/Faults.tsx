@@ -4,7 +4,7 @@ import { useDtcFrequency, useReadouts } from '../api/hooks'
 import type { DtcFrequency } from '../api/types'
 import { FaultDetail } from '../components/FaultDetail'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
-import { SEVERITY_BADGE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
+import { ANIMATE, SEVERITY_BADGE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const key = (f: DtcFrequency) => `${f.ecu}|${f.dtc_code}|${f.failure_type ?? ''}`
@@ -47,13 +47,13 @@ export default function Faults() {
         <Panel title="Read-outs" hint="faults and failed reads per diagnostic read-out">
           <QueryState query={readouts}>
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={[...(readouts.data ?? [])].reverse().map((r) => ({ t: ts(r.event_at), faults: r.faults, 'read errors': r.read_errors }))}>
+              <BarChart margin={{ right: 18, top: 5 }} data={[...(readouts.data ?? [])].reverse().map((r) => ({ t: ts(r.event_at), faults: r.faults, 'read errors': r.read_errors }))}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={fmtTick} minTickGap={36} {...axis} />
                 <YAxis {...axis} width={30} allowDecimals={false} />
                 <Tooltip cursor={{ fill: 'var(--grid)' }} content={<ChartTip fmtLabel={(v) => fmtDateTime(new Date(Number(v)).toISOString())} />} />
-                <Bar dataKey="faults" stackId="r" fill="var(--accent)" />
-                <Bar dataKey="read errors" stackId="r" fill="var(--steel)" />
+                <Bar isAnimationActive={ANIMATE} dataKey="faults" stackId="r" fill="var(--accent)" />
+                <Bar isAnimationActive={ANIMATE} dataKey="read errors" stackId="r" fill="var(--steel)" />
               </BarChart>
             </ResponsiveContainer>
           </QueryState>

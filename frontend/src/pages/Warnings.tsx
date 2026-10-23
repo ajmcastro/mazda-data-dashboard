@@ -3,7 +3,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useWarningDaily, useWarningEvents, useWarningFrequency } from '../api/hooks'
 import type { WarningEvent, WarningFrequency } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
-import { SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
+import { ANIMATE, SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
 
 const PALETTE = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--steel)', '#b58bd6', '#d6b48b', '#8bd6c4']
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
@@ -72,13 +72,13 @@ export default function Warnings() {
       >
         <QueryState query={daily}>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart data={chartData}>
+            <BarChart margin={{ right: 18, top: 5 }} data={chartData}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="day" tickFormatter={(d: string) => fmtTick(Date.parse(d))} minTickGap={36} {...axis} />
               <YAxis {...axis} width={34} />
               <Tooltip cursor={{ fill: 'var(--grid)' }} content={<ChartTip fmtLabel={(v) => fmtDate(String(v))} />} />
               {shown.map((code, i) => (
-                <Bar key={code} name={code} dataKey={code} stackId="w" fill={PALETTE[i % PALETTE.length]} />
+                <Bar isAnimationActive={ANIMATE} key={code} name={code} dataKey={code} stackId="w" fill={PALETTE[i % PALETTE.length]} />
               ))}
             </BarChart>
           </ResponsiveContainer>

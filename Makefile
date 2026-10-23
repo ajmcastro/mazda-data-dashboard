@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean
+.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit
 
 setup:
 	cd backend && uv sync
@@ -50,3 +50,18 @@ types:
 
 alerts:
 	cd backend && uv run python -m mazda_dash.alerts --db ../db/mazda.duckdb --config ../config/alerts.yaml
+
+# Synthetic data in the same format as the Mazda exports (no personal data), committed in sample_data/
+sample-data:
+	cd backend && uv run python -m mazda_dash.sample ../sample_data
+
+# Try the app without your own data: load sample_data/ into db/demo.duckdb and serve it
+demo-ingest:
+	cd backend && uv run python -m mazda_dash.ingest --data ../sample_data --db ../db/demo.duckdb --config ../config/codes --alerts-config ../config/alerts.yaml
+
+demo: demo-ingest
+	MAZDA_DB=../db/demo.duckdb $(MAKE) -j2 api web
+
+# Scan the repo and its git history for your VIN / location / other private values (see README)
+audit:
+	cd backend && uv run python -m mazda_dash.audit --data ../data --repo ..
