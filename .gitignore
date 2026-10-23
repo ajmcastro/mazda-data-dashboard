@@ -14,3 +14,4 @@ node_modules/
 dist/
 # generated profiling output
 docs/profile/
+db/

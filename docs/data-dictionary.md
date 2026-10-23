@@ -52,6 +52,7 @@ One row per transaction: `COPIED_DT_TM`, `WARNING_TRIGGER_OCCURRENCE_TM` (2 null
 ### `rts` — remote vehicle status (214 rows)
 `requesttype=RemoteConfirm`, `isinservicemode=false` (constant). Mostly constant signals (163 of 237 columns); useful varying ones:
 `ododispvalue` (odometer, km, 59.1→6,243.0), `drv1avlfuele/g` (available fuel/range), `drv1drvtm`, `drv1distnc` (trip), `enginestate`, `powercontrolstatus`, `fuelsegementdactl` (fuel gauge segments), tire-pressure display values (`fltprsdispkp`, `frtprsdispkp`, `rltprsdispkp`, `rrtprsdispkp` in kPa, with `tprsdisp*` timestamp parts), `remoildistk/m` (oil change distance), seatbelt and occupant-sensor flags.
+- **Plain columns without a validity flag** (found while ingesting; missed by the M1 profile, which only inspected `_value` pairs): 6 `*_seatbelt_used` flags, 128 `vdt_2_warningpt_*` / `vdt_7_warningbody_*` warning bit flags (almost always 0; `vdt_7_warningbody_1_30` is 1 in 94 rows), and `latitude` / `longitude` — **location, populated in only 1 of 214 rows**. Treat as personal data (never commit, see PLAN privacy rules).
 - Always-constant (ignore initially): `tpmsstatus`, `oillevelwarning`, `remainingmileage`, maintenance settings, etc.
 - Note 74 `Invalid`-status occurrences are counted across these columns; filter on `_validstatus`.
 
@@ -81,3 +82,22 @@ Run on 2026-10-15 09:56:59 (UTC+0100), ODO 5,781 km. Not CSV; line-oriented with
 - Timezone of `COPIED_DT_TM` / `fileid_datetime` (assumed UTC).
 - Meaning of `$` warning codes, `DISPLAY_STATUS`/`DTC_STATUS_FLAG` values, burglar/alarm reason codes, `HOURS`/`MINUTES` in `war`.
 - Whether `dtc-ssr`'s ~30 informative columns map to known signal names with units.
+
+## Database schema (M2)
+
+Created by `make ingest` in `db/mazda.duckdb` (gitignored). All timestamps are naive UTC; sentinels are NULL; re-running is idempotent (rows are keyed as below and skipped if present).
+
+| Table | Key | Source |
+|---|---|---|
+| `warning_events` | `transaction_id` | `war` |
+| `warning_codes` | `transaction_id, code` | exploded `WARNING_LIST` |
+| `dtc_headers` | `transaction_id` | `dtc-h` |
+| `dtc_readings` | `transaction_id, ecu, raw_dtc` | `dtc-d`; `kind` = `none` / `fault` / `read_error` |
+| `dtc_snapshots` | `transaction_id, ecu, raw_dtc, record_number` | `dtc-ssr` metadata, `snapshot_at` built from `Time_UTC_Information_*` |
+| `dtc_snapshot_values` | snapshot key + `signal` | `dtc-ssr` unpivoted, non-empty values only (64 signals) |
+| `signal_readings` | `source, vin, created_at, signal` | `rts` / `vis` / `alt` in long format; `valid` NULL when the signal has no validity flag |
+| `diag_reports` | `report_id` (hash of file) | diag-tool `.txt` header |
+| `diag_values`, `diag_dtcs`, `diag_snapshots`, `diag_obd_tests` | per `report_id` | Mode 9 counters, DTC lists (`dtcs`, `rob_dtcs`), snapshot data, Mode 6 tests |
+| `ingest_runs` | – | audit log of rows read / new per file |
+
+Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers, 1,166 DTC readings (106 faults, 906 none, 154 read errors), 137 snapshots (2,745 values), 42,108 signal readings, 1 diagnostic report.

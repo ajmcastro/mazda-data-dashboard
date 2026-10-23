@@ -1,4 +1,4 @@
-.PHONY: setup profile test lint format clean
+.PHONY: setup profile ingest reset-db test lint format clean
 
 setup:
 	cd backend && uv sync
@@ -17,3 +17,9 @@ format:
 
 clean:
 	rm -rf docs/profile backend/.pytest_cache backend/.ruff_cache
+
+ingest:
+	cd backend && uv run python -m mazda_dash.ingest --data ../data --db ../db/mazda.duckdb
+
+reset-db:
+	rm -f db/mazda.duckdb db/mazda.duckdb.wal

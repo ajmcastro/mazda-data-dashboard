@@ -45,13 +45,13 @@ PLAN.md
 
 Each milestone is implemented only when requested ("start implementing milestone N") and ends with a short summary and a check that it works.
 
-### M1 — Data exploration & data dictionary
+### M1 — Data exploration & data dictionary ✅ done
 - Scaffold `backend/` with `uv`, the root `Makefile`, `.gitignore` (data, db, node_modules).
 - Notebook/script profiling every file: row counts, date ranges, null rates, distinct values, duplicates.
 - Produce `docs/data-dictionary.md`: columns, units, join keys, timestamp formats, quirks.
 - Output: findings that may adjust milestones below.
 
-### M2 — Ingestion into DuckDB
+### M2 — Ingestion into DuckDB ✅ done
 - Parsers for each CSV (typed columns, UTC-normalised timestamps, empty → NULL, `_value`/`_validstatus` handling).
 - Parser for the diagnostic `.txt` (sections → key/value/unit rows).
 - Split `WARNING_LIST` into one row per warning code; normalise DTC code and status.

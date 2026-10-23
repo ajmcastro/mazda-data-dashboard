@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current state
 
-The repository so far has a `uv` backend skeleton (`backend/`, milestone M1 profiling script only) and raw data in `data/` (gitignored). Follow `PLAN.md` milestone by milestone. Commands (from repo root): `make setup`, `make profile` (writes `docs/profile/`, gitignored), `make test`, `make lint`, `make format`.
+The repository so far has a `uv` backend skeleton (`backend/`: profiling script and the `mazda_dash.ingest` package; milestones M1–M2 done) and raw data in `data/` (gitignored). Follow `PLAN.md` milestone by milestone. Commands (from repo root): `make setup`, `make profile` (writes `docs/profile/`, gitignored), `make ingest` (loads `data/` into `db/mazda.duckdb`, idempotent), `make reset-db`, `make test`, `make lint`, `make format`.
 
 ## Data overview (`data/`)
 
@@ -29,3 +29,7 @@ Things to know before writing parsing code:
 - **Signal value/validity pairs**: in `rts`/`vis`/`alt`, always check the sibling `_validstatus` column before trusting a `_value`.
 - **`dtc-ssr`** snapshot columns include a `Time_UTC_Information_*` set split across Year/Month/Date/Hour/Minute fields.
 - The diag-tool `.txt` is section-structured (`ModuleName:`, `VOD - …`, `… OCC Vehicle Data`, lines of `(KEY) = value [unit]`), not CSV.
+
+## Backend architecture
+
+`backend/src/mazda_dash/ingest/`: `schema.py` (DuckDB DDL), `csv_loaders.py` (SQL-based loaders, one per CSV kind, all via `_insert_new` = anti-join on the key + in-file dedupe), `diag_parser.py` (state-machine parser for the text dump, pure Python), `__init__.py` (file discovery by `*_<kind>-*.csv`, runner, CLI). Table keys and sentinel rules are in `docs/data-dictionary.md`. Tests use synthetic fixtures in `backend/tests/conftest.py`; run one with `cd backend && uv run pytest tests/test_ingest.py::test_dtc_kinds`. DuckDB 2.x: use `con.execute(...).fetchone()`, not `con.sql(...).fetchone()`.
