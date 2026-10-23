@@ -110,6 +110,79 @@
         }
       }
     },
+    "/api/trends/monthly": {
+      "get": {
+        "summary": "Trends Monthly",
+        "description": "One row per calendar month in the period, for the month-by-month comparison page.",
+        "operationId": "trends_monthly_api_trends_monthly_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MonthMetrics"
+                  },
+                  "title": "Response Trends Monthly Api Trends Monthly Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/odometer/daily": {
       "get": {
         "summary": "Odometer Daily",
@@ -2999,6 +3072,189 @@
         },
         "type": "object",
         "title": "LatestStatus"
+      },
+      "MonthMetrics": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "days_in_month": {
+            "type": "integer",
+            "title": "Days In Month"
+          },
+          "days_covered": {
+            "type": "integer",
+            "title": "Days Covered"
+          },
+          "partial": {
+            "type": "boolean",
+            "title": "Partial"
+          },
+          "distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance Km"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          },
+          "fuel_l_est": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel L Est"
+          },
+          "drives": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drives"
+          },
+          "days_driven": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Driven"
+          },
+          "driving_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driving Hours"
+          },
+          "avg_speed_kmh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Speed Kmh"
+          },
+          "warning_events": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning Events"
+          },
+          "warning_codes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Warning Codes"
+          },
+          "fault_readouts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fault Readouts"
+          },
+          "distinct_faults": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distinct Faults"
+          },
+          "new_faults": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Faults"
+          },
+          "tire_avg_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Avg Kpa"
+          },
+          "tire_min_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Min Kpa"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "days_in_month",
+          "days_covered",
+          "partial"
+        ],
+        "title": "MonthMetrics",
+        "description": "One calendar month. Metrics are None when the month has no data for them (a gap, not 0)."
       },
       "ObdTest": {
         "properties": {

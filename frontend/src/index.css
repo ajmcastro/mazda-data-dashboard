@@ -256,3 +256,20 @@ fieldset.presets { display: flex; flex-wrap: wrap; gap: 6px; border: 0; margin: 
 fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 @media (max-width: 640px) { .preset span { padding: 6px 12px; } .range-inputs { width: 100%; } .range-inputs label { flex: 1; } input[type='date'] { width: 100%; } }
 .range-empty { flex-basis: 100%; color: var(--amber); font-size: 13px; }
+
+/* ---- trends ---- */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.metric { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
+.metric-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.metric-head h3 { font-size: 17px; color: var(--muted); font-weight: 700; }
+.metric-value { font-family: var(--display); font-weight: 700; font-size: 38px; line-height: 1.05; }
+.metric-value small { font-family: var(--mono); font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+.change { font-size: 13px; min-height: 20px; }
+.tone-good { color: var(--teal); } .tone-bad { color: var(--accent); } .tone-neutral { color: var(--muted); }
+.caveat { color: var(--amber); }
+.metric-chart { margin-top: 6px; }
+.trend-table th[scope='row'] { text-align: left; position: sticky; left: 0; background: var(--panel); white-space: nowrap; font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 13px; color: var(--text); }
+.trend-table td { vertical-align: top; }
+.cell-change { font-size: 11px; font-family: var(--mono); }
+.partial-tag { font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 400; }
+.controls .toggle { flex-direction: row; align-items: center; text-transform: none; letter-spacing: 0; font-size: 13px; }

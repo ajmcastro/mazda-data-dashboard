@@ -12,12 +12,16 @@ Everything runs on your machine. Your data never leaves it.
 
 <table>
   <tr>
+    <td><img src="docs/screenshots/trends.png" alt="Month-by-month trends"></td>
     <td><img src="docs/screenshots/alerts.png" alt="Alerts"></td>
-    <td><img src="docs/screenshots/faults.png" alt="Fault explorer with freeze frames"></td>
   </tr>
   <tr>
+    <td><img src="docs/screenshots/faults.png" alt="Fault explorer with freeze frames"></td>
     <td><img src="docs/screenshots/status.png" alt="Fuel, tires, trips and doors"></td>
+  </tr>
+  <tr>
     <td><img src="docs/screenshots/diagnostics.png" alt="Diagnostic tool report"></td>
+    <td><img src="docs/screenshots/warnings.png" alt="Warnings"></td>
   </tr>
 </table>
 
@@ -47,6 +51,12 @@ Open <http://localhost:5173>.
 2. `make ingest`: loads everything into `db/mazda.duckdb` (safe to re-run whenever you get a
    newer export) and evaluates the alert rules.
 3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
+
+**Trends.** The Trends page compares every month with the one before: distance, fuel
+consumption, warnings, faults, tire pressure and more, as charts or as a table. The arrow is
+green when the change is good for that figure (less fuel use) and red when it is bad. Months
+the period cuts through are marked *partial*; tick **per day** to compare them fairly with full
+months. A month with no data is a gap, never a zero.
 
 **Looking at a period.** The bar at the top of the Overview, Warnings, Faults and Status pages
 limits everything to a *from – to* range of days (UTC, both included). Use the quick buttons

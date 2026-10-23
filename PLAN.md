@@ -103,13 +103,19 @@ Buttons next to the date inputs; built on M8.
 - Extend `sample.py` to write **three** diagnostic reports at different dates, regenerate `sample_data/` and the README screenshot, and add tests (report list, switching, comparison across dates).
 - **Note:** with your real data there is one dump today; further dumps appear once their `.txt` files are in `data/` and `make ingest` is run.
 
-### M11 — Monthly comparison page ("Trends")
+### M11 — Monthly comparison page ("Trends") ✅ done
 A new page showing how each metric evolved month by month, with the change against the previous month.
 - **Metrics (proposal, to confirm):** distance driven, fuel consumption (l/100 km), fuel used, number of trips, driving time and average speed, warning events, distinct warning codes, fault read-outs with faults, new faults, alerts raised, average tire pressure and the lowest tire reading.
 - **Presentation:** a card per metric with a bar chart across all months (latest highlighted), the current value, and "x % more / less than May" with an arrow. Colour reflects whether the change is good or bad for that metric (less fuel use is green; more warnings is red; distance driven is neutral). A table view (months as columns, change row underneath) for reading exact numbers.
 - **Incomplete months:** the first and last month are usually partial, so they are marked "partial" and volume metrics (km, warnings, trips) can be shown **per day covered** via a toggle, so a half month is not compared with a full one. Months without data show a gap, not zero; a missing previous month shows "no previous month".
 - **Backend:** a `v_monthly_metrics` view and `GET /api/trends/monthly` returning one row per month (including days covered); the change and its good/bad direction are computed in the frontend (unit-tested). It follows the date range from M8/M9 when they are done (months outside the range are dropped).
 - **Done when:** the page renders from real and demo data, edge cases above are covered by tests, and the README gets a screenshot.
+
+**M11 as built, and where it differs from the plan above:**
+- The monthly figures are computed in `api/trends.py` instead of a `v_monthly_metrics` view, so the date range applies *before* aggregation (a month cut by the period only counts its days inside it and is reported as partial).
+- *Alerts raised* is not a metric: alerts are only evaluated for the last `lookback_days` each time you run `make ingest`, so older months would always show 0.
+- *Trips* became two metrics, **Drives recorded** (stretches between status snapshots) and **Days driven**, because the car's snapshots are not true trips. *Distance* comes from the odometer, not from summed stretches (which cover only part of it), and *fuel used* is estimated as distance x consumption.
+- *New faults* excludes faults first reported on the first day of diagnostic data, which may have existed long before the data begins.
 
 **Suggested order:** M8, M9 (the filter), then M11 (benefits from the filter), then M10 (independent, smallest). Each is started with "start implementing milestone N", as before.
 

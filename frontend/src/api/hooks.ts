@@ -33,6 +33,14 @@ export const useOverview = () => {
 export const useSpan = () =>
   useQuery({ queryKey: ['span'], queryFn: () => unwrap(client.GET('/api/span')) })
 
+export const useMonthly = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['monthly', range],
+    queryFn: () => unwrap(client.GET('/api/trends/monthly', { params: { query: range } })),
+  })
+}
+
 export const useOdometerDaily = () => {
   const range = useRangeQuery()
   return useQuery({

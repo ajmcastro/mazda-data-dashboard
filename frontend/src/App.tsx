@@ -8,6 +8,7 @@ import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
+import Trends from './pages/Trends'
 import Warnings from './pages/Warnings'
 
 function Logo() {
@@ -22,7 +23,7 @@ function Logo() {
 
 // Pages about a period get the date-range bar; alerts and the diagnostic-tool report are not
 // tied to a period.
-const PERIOD_PAGES = ['/', '/warnings', '/faults', '/status']
+const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
 
 export default function App() {
   const overview = useOverview()
@@ -41,6 +42,7 @@ export default function App() {
         </div>
         <nav className="nav" aria-label="Main">
           <NavLink to="/" end>Overview</NavLink>
+          <NavLink to="/trends">Trends</NavLink>
           <NavLink to="/alerts">
             Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}
           </NavLink>
@@ -57,6 +59,7 @@ export default function App() {
         {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
         <Routes>
           <Route path="/" element={<OverviewPage />} />
+          <Route path="/trends" element={<Trends />} />
           <Route path="/alerts" element={<Alerts />} />
           <Route path="/warnings" element={<Warnings />} />
           <Route path="/faults" element={<Faults />} />

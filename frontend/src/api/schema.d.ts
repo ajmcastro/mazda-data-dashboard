@@ -58,6 +58,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trends/monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trends Monthly
+         * @description One row per calendar month in the period, for the month-by-month comparison page.
+         */
+        get: operations["trends_monthly_api_trends_monthly_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/odometer/daily": {
         parameters: {
             query?: never;
@@ -862,6 +882,48 @@ export interface components {
             /** Tire Rr Kpa */
             tire_rr_kpa?: number | null;
         };
+        /**
+         * MonthMetrics
+         * @description One calendar month. Metrics are None when the month has no data for them (a gap, not 0).
+         */
+        MonthMetrics: {
+            /** Month */
+            month: string;
+            /** Days In Month */
+            days_in_month: number;
+            /** Days Covered */
+            days_covered: number;
+            /** Partial */
+            partial: boolean;
+            /** Distance Km */
+            distance_km?: number | null;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+            /** Fuel L Est */
+            fuel_l_est?: number | null;
+            /** Drives */
+            drives?: number | null;
+            /** Days Driven */
+            days_driven?: number | null;
+            /** Driving Hours */
+            driving_hours?: number | null;
+            /** Avg Speed Kmh */
+            avg_speed_kmh?: number | null;
+            /** Warning Events */
+            warning_events?: number | null;
+            /** Warning Codes */
+            warning_codes?: number | null;
+            /** Fault Readouts */
+            fault_readouts?: number | null;
+            /** Distinct Faults */
+            distinct_faults?: number | null;
+            /** New Faults */
+            new_faults?: number | null;
+            /** Tire Avg Kpa */
+            tire_avg_kpa?: number | null;
+            /** Tire Min Kpa */
+            tire_min_kpa?: number | null;
+        };
         /** ObdTest */
         ObdTest: {
             /** Ecu */
@@ -1187,6 +1249,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Overview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trends_monthly_api_trends_monthly_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthMetrics"][];
                 };
             };
             /** @description Validation Error */

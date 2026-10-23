@@ -351,3 +351,26 @@ class FaultContext(BaseModel):
     other_faults: list[ContextFault]
     status: StatusPoint | None = None
     status_offset_minutes: float | None = None
+
+
+class MonthMetrics(BaseModel):
+    """One calendar month. Metrics are None when the month has no data for them (a gap, not 0)."""
+
+    month: str  # YYYY-MM
+    days_in_month: int
+    days_covered: int  # days of this month inside the data span and the selected period
+    partial: bool
+    distance_km: float | None = None
+    l_per_100km: float | None = None
+    fuel_l_est: float | None = None
+    drives: int | None = None
+    days_driven: int | None = None
+    driving_hours: float | None = None
+    avg_speed_kmh: float | None = None
+    warning_events: int | None = None
+    warning_codes: int | None = None
+    fault_readouts: int | None = None
+    distinct_faults: int | None = None
+    new_faults: int | None = None
+    tire_avg_kpa: float | None = None
+    tire_min_kpa: float | None = None

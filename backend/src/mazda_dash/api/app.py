@@ -13,6 +13,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from . import models as m
 from .dates import DateRange, date_range
 from .db import db_path, get_con, get_rw_con, has_table, one, rows
+from .trends import monthly_metrics
 
 app = FastAPI(title="Mazda CX-5 dashboard API", version="0.2.0")
 Con = Depends(get_con)
@@ -141,6 +142,12 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
         ),
         last_alarm=m.AlarmEvent(**alarm) if alarm else None,
     )
+
+
+@app.get("/api/trends/monthly", response_model=list[m.MonthMetrics])
+def trends_monthly(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """One row per calendar month in the period, for the month-by-month comparison page."""
+    return monthly_metrics(con, rng)
 
 
 @app.get("/api/odometer/daily", response_model=list[m.OdometerDay])
