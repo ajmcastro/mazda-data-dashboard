@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
+  addDays,
   daysInRange,
   editRange,
   fmtAgo,
   fmtNum,
+  matchPreset,
   parseDay,
   pivotDaily,
+  resolvePreset,
+  restoreRange,
   sanitizeRange,
   signalLabel,
   signalValue,
@@ -91,5 +95,64 @@ describe('date range', () => {
     expect(editRange(r, 'from', '2026-06-01')).toEqual({ from: '2026-06-01', to: '2026-06-01' })
     expect(editRange(r, 'to', '2026-05-01')).toEqual({ from: '2026-05-01', to: '2026-05-01' })
     expect(editRange(r, 'to', '')).toEqual({ from: '2026-05-10', to: undefined })
+  })
+})
+
+describe('quick ranges', () => {
+  const first = '2026-03-01'
+  const last = '2026-10-22'
+
+  it('does calendar arithmetic across month, year and leap-day boundaries', () => {
+    expect(addDays('2026-03-01', -1)).toBe('2026-02-28')
+    expect(addDays('2024-03-01', -1)).toBe('2024-02-29')
+    expect(addDays('2025-12-31', 1)).toBe('2026-01-01')
+    expect(addDays('2026-10-22', -29)).toBe('2026-09-23')
+    expect(addDays('2026-03-29', 1)).toBe('2026-03-30') // across a clock change
+  })
+
+  it('counts back from the latest data day, both ends included', () => {
+    expect(resolvePreset('30d', first, last)).toEqual({ from: '2026-09-23', to: last })
+    expect(daysInRange('2026-09-23', last)).toBe(30)
+    expect(resolvePreset('week', first, last)).toEqual({ from: '2026-10-16', to: last })
+    expect(resolvePreset('fortnight', first, last)).toEqual({ from: '2026-10-09', to: last })
+    expect(resolvePreset('60d', first, last)).toEqual({ from: '2026-08-24', to: last })
+    expect(resolvePreset('90d', first, last)).toEqual({ from: '2026-07-25', to: last })
+  })
+
+  it('works when the window crosses a month or year end', () => {
+    expect(resolvePreset('30d', '2025-01-01', '2026-01-10')).toEqual({ from: '2025-12-12', to: '2026-01-10' })
+    expect(resolvePreset('week', '2026-01-01', '2026-03-03')).toEqual({ from: '2026-02-25', to: '2026-03-03' })
+  })
+
+  it('never starts before the first day with data', () => {
+    expect(resolvePreset('90d', '2026-10-01', last)).toEqual({ from: '2026-10-01', to: last })
+    expect(resolvePreset('week', '2026-10-20', last)).toEqual({ from: '2026-10-20', to: last })
+  })
+
+  it('treats All time as no bounds', () => {
+    expect(resolvePreset('all', first, last)).toEqual({})
+  })
+
+  it('recognises which preset a range is', () => {
+    expect(matchPreset({}, first, last)).toBe('all')
+    expect(matchPreset({ from: '2026-09-23', to: last }, first, last)).toBe('30d')
+    expect(matchPreset({ from: '2026-09-24', to: last }, first, last)).toBeUndefined() // custom
+    expect(matchPreset({ from: '2026-09-23' }, first, last)).toBeUndefined() // open end
+    expect(matchPreset({ from: '2026-09-23', to: last })).toBeUndefined() // span not loaded
+  })
+
+  it('picks the shortest preset when the data is shorter than several of them', () => {
+    // five days of data: every preset resolves to the whole span
+    const short = resolvePreset('90d', '2026-10-18', last)
+    expect(matchPreset(short, '2026-10-18', last)).toBe('week')
+  })
+
+  it('restores only a saved rolling preset, never all-time, custom or junk', () => {
+    expect(restoreRange('30d', first, last)).toEqual({ from: '2026-09-23', to: last })
+    expect(restoreRange('all', first, last)).toBeUndefined()
+    expect(restoreRange('custom', first, last)).toBeUndefined()
+    expect(restoreRange('nonsense', first, last)).toBeUndefined()
+    expect(restoreRange(null, first, last)).toBeUndefined()
+    expect(restoreRange('30d', null, null)).toBeUndefined() // no data yet
   })
 })

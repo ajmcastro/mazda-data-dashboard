@@ -49,9 +49,12 @@ Open <http://localhost:5173>.
 3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
 
 **Looking at a period.** The bar at the top of the Overview, Warnings, Faults and Status pages
-limits everything to a *from – to* range of days (UTC, both included). The range is kept in
-the address, so you can bookmark it, and it follows you from page to page. "All time" clears
-it. Things that describe a *state* ignore the range: the faults still active in the latest
+limits everything to a *from – to* range of days (UTC, both included). Use the quick buttons
+(Last week, Last 2 weeks, Last 30 / 60 / 90 days, All time) or type your own dates. Quick
+ranges count back from your **newest data**, not from today, so they still make sense when
+your last export is a few weeks old, and your last quick choice is remembered in the browser.
+The range is kept in the address, so you can bookmark it (a link with dates always wins over
+the remembered choice), and it follows you from page to page. Things that describe a *state* ignore the range: the faults still active in the latest
 read-out, the alerts list and the diagnostic-tool report.
 
 Run `make unmapped` to see warning and fault codes that have no description yet, then add what

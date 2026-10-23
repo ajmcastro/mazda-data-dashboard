@@ -2,6 +2,7 @@ import { Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
 import { RangeNavLink as NavLink } from './components/RangeLink'
+import { useRestoreSavedRange } from './range'
 import Alerts from './pages/Alerts'
 import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
@@ -26,6 +27,7 @@ const PERIOD_PAGES = ['/', '/warnings', '/faults', '/status']
 export default function App() {
   const overview = useOverview()
   const { pathname } = useLocation()
+  useRestoreSavedRange()
   const o = overview.data
   return (
     <div className="shell">

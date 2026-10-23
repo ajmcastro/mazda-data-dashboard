@@ -157,3 +157,56 @@ export function editRange(range: DayRange, edited: 'from' | 'to', value: string)
   if (day && edited === 'to' && next.from && day < next.from) next.from = day
   return next
 }
+
+// ---- quick ranges ----
+// Presets count back from the most recent day with data, not from today: an export is a
+// snapshot, so "last 30 days" counted from today would be empty a few weeks after the export.
+
+export type PresetId = 'week' | 'fortnight' | '30d' | '60d' | '90d' | 'all'
+
+export const PRESETS: { id: PresetId; label: string; days: number | null }[] = [
+  { id: 'week', label: 'Last week', days: 7 },
+  { id: 'fortnight', label: 'Last 2 weeks', days: 14 },
+  { id: '30d', label: 'Last 30 days', days: 30 },
+  { id: '60d', label: 'Last 60 days', days: 60 },
+  { id: '90d', label: 'Last 90 days', days: 90 },
+  { id: 'all', label: 'All time', days: null },
+]
+
+/** `day` shifted by `delta` calendar days (UTC, so daylight saving cannot interfere). */
+export function addDays(day: string, delta: number): string {
+  return new Date(Date.parse(`${day}T00:00:00Z`) + delta * 86_400_000).toISOString().slice(0, 10)
+}
+
+/**
+ * The range a preset stands for: its last `days` days ending on the latest day with data,
+ * never starting before the first day with data. "All time" has no bounds.
+ */
+export function resolvePreset(id: PresetId, first: string, last: string): DayRange {
+  const days = PRESETS.find((p) => p.id === id)?.days
+  if (!days) return {}
+  const start = addDays(last, -(days - 1))
+  return { from: start < first ? first : start, to: last }
+}
+
+/**
+ * Which preset the current range is, if any. A range without bounds is "All time". Otherwise
+ * the shortest preset that resolves to exactly these days wins (with very little data several
+ * presets coincide); anything else is a custom range.
+ */
+export function matchPreset(range: DayRange, first?: string, last?: string): PresetId | undefined {
+  if (!range.from && !range.to) return 'all'
+  if (!first || !last) return undefined
+  return PRESETS.find((p) => {
+    if (p.id === 'all') return false
+    const r = resolvePreset(p.id, first, last)
+    return r.from === range.from && r.to === range.to
+  })?.id
+}
+
+/** What to restore on load from the saved choice: only presets are rolling and worth keeping. */
+export function restoreRange(saved: string | null, first?: string | null, last?: string | null): DayRange | undefined {
+  const preset = PRESETS.find((p) => p.id === saved)
+  if (!preset || preset.id === 'all' || !first || !last) return undefined
+  return resolvePreset(preset.id, first, last)
+}

@@ -89,7 +89,7 @@ Lets you look at any period instead of "everything". Requested after M7.
 - **Edge cases:** a range with no data shows a clear empty state instead of blank charts; the range survives navigation between pages; a range outside the data is explained.
 - **Done when:** picking a range changes every period-based chart, table and tile consistently, tests pass, and the demo data shows it working.
 
-### M9 — Quick ranges (presets)
+### M9 — Quick ranges (presets) ✅ done
 Buttons next to the date inputs; built on M8.
 - Presets: **Last week**, **Last 2 weeks**, **Last 30 days**, **Last 60 days**, **Last 90 days**, **All time**. The active preset is highlighted; editing a date manually clears the highlight (custom range).
 - **Decision to confirm:** presets count back from the **most recent data point**, not from today. Your exports are a snapshot, so "last 30 days" relative to today would be empty as soon as a few weeks pass without a new export. The bar shows the resolved dates ("Last 30 days · 23 Sep – 22 Oct") so it is never ambiguous.
