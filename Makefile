@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-spike mobile-spike-prod mobile-variants mobile-golden mobile-golden-real mobile-test mobile-typecheck
+.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
 
 setup:
 	cd backend && uv sync
@@ -72,28 +72,21 @@ audit:
 mobile-pack:
 	cd backend && uv run python -m mazda_dash.pack --db ../db/mazda.duckdb --out ../db/mazda.cx5pack
 
-# Data pack of the synthetic demo database, plus the reference fingerprints the spike/tests compare against
+# Data pack of the synthetic demo database: the phone app ships it as its "Load demo data"
 mobile-demo-pack: demo-ingest
-	cd backend && uv run python -m mazda_dash.pack --db ../db/demo.duckdb --out ../mobile/public/demo.cx5pack --reference
+	cd backend && uv run python -m mazda_dash.pack --db ../db/demo.duckdb --out ../mobile/public/demo.cx5pack
 
-# M12 feasibility spike page (DuckDB in the browser). HOST=1 lets a phone on the same Wi-Fi open it.
 mobile-install:
 	cd mobile && npm install
 
-mobile-spike: mobile-demo-pack
+# Phone app on http://localhost:5174 (demo data bundled). HOST=1 lets a phone on the same Wi-Fi open it;
+# stop it with Ctrl+C afterwards. Import your own pack from the app's Data screen (make mobile-pack).
+mobile-dev: mobile-demo-pack
 	cd mobile && npm run dev -- $(if $(HOST),--host,)
 
-# Same, but the production build (what the phone really downloads). Results land in mobile/spike-results/.
-# On a phone: `make mobile-spike-prod HOST=1`, then open the "Network" address it prints, adding
-# /?autorun=1&label=iphone . Stop with Ctrl+C when done (HOST=1 makes it reachable on your Wi-Fi).
-mobile-spike-prod: mobile-demo-pack
-	cd mobile && npm run build && npm run preview -- $(if $(HOST),--host,)
-
-# Four packs of YOUR data in db/variants/ to compare load speed on a phone (M12 round 2):
-# a = all signals + zstd (the first test), b = trimmed + zstd (the new default), c/d = trimmed + other compression.
-mobile-variants:
-	cd backend && for v in "a-full-zstd --all-signals --compression zstd" "b-trim-zstd --compression zstd" "c-trim-snappy --compression snappy" "d-trim-raw --compression uncompressed"; do \
-		set -- $$v; name=$$1; shift; uv run python -m mazda_dash.pack --db ../db/mazda.duckdb --out ../db/variants/$$name.cx5pack "$$@"; done
+# Production build into mobile/dist (what gets hosted); includes the synthetic demo pack only
+mobile-build: mobile-demo-pack
+	cd mobile && npm run build
 
 # ---- phone data engine (M13): the TypeScript re-implementation of the API, proven against the Python one ----
 

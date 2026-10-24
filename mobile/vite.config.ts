@@ -1,44 +1,19 @@
-import { mkdirSync, writeFileSync } from 'node:fs'
-import type { IncomingMessage, ServerResponse } from 'node:http'
-import { defineConfig, type Plugin } from 'vite'
+import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'node:url'
+import { defineConfig } from 'vite'
 
-/**
- * Dev/preview only: lets the spike page report its measurements back from ANY browser (Chrome,
- * Safari, an iPhone on the same Wi-Fi), so no browser automation is needed. Writes
- * spike-results/<label>-<time>.json (gitignored). The label is sanitised and the body capped.
- */
-function resultsSink(): Plugin {
-  const handler = (req: IncomingMessage, res: ServerResponse, next: () => void) => {
-    if (!req.url?.startsWith('/__results')) return next()
-    if (req.method !== 'POST') {
-      res.statusCode = 405
-      return res.end()
-    }
-    const label = (new URL(req.url, 'http://x').searchParams.get('label') ?? '').replace(/[^a-z0-9-]/gi, '').slice(0, 40) || 'unknown'
-    const chunks: Buffer[] = []
-    let size = 0
-    req.on('data', (c: Buffer) => {
-      size += c.length
-      if (size > 1_000_000) req.destroy()
-      else chunks.push(c)
-    })
-    req.on('end', () => {
-      mkdirSync('spike-results', { recursive: true })
-      writeFileSync(`spike-results/${label}-${Date.now()}.json`, Buffer.concat(chunks))
-      res.statusCode = 204
-      res.end()
-    })
-  }
-  return {
-    name: 'results-sink',
-    configureServer: (server) => void server.middlewares.use(handler),
-    configurePreviewServer: (server) => void server.middlewares.use(handler),
-  }
-}
+const frontend = fileURLToPath(new URL('../frontend/src', import.meta.url))
 
 export default defineConfig({
-  plugins: [resultsSink()],
+  plugins: [react()],
+  // './' keeps the built app working from any address (GitHub Pages sub-path, a local file server)
+  base: './',
+  resolve: {
+    alias: { '@frontend': frontend },
+    // the pages live in ../frontend/src: use ONE copy of these packages, this folder's
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'recharts', 'openapi-fetch', 'react-is'],
+  },
   optimizeDeps: { exclude: ['@duckdb/duckdb-wasm'] },
-  // views.sql is imported from the backend folder: one source of truth for the SQL
+  // the pages (../frontend/src) and views.sql (../backend) are shared with the Mac app
   server: { fs: { allow: ['..'] } },
 })

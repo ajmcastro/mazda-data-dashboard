@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine) is done. M14–M16 (the rest of the offline phone app in `mobile/`) are planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 14".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine) and M14 (the app shell) are done. M15–M16 (the rest of the offline phone app in `mobile/`) are planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 15".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -70,7 +70,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M11 | Monthly comparison ("Trends") | cards and table with change vs the previous month |
 | M12 | Standalone feasibility spike ✅ | data pack export, DuckDB in the browser runs the views; **GO**; confirmed in Chrome, Safari, the iOS Simulator and a real iPhone |
 | M13 | Standalone data engine | the API's routes re-implemented in TypeScript, proven identical by contract tests (done) |
-| M14 | Standalone app shell | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
+| M14 | Standalone app shell (done) | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
 | M15 | iPhone polish and offline | installable web app, works in airplane mode, phone navigation, storage safety |
 | M16 | Hosting, docs and CI | HTTPS static hosting (code only), README guide, parity checks in CI |
 | M17 | Next oil change | the car's own oil-change countdown: tile, history, alert (planned after M16) |
@@ -246,6 +246,16 @@ Re-implement the API inside the browser with **identical JSON**.
 - Fonts bundled in the app (no Google Fonts), so it makes **no network request at all** once installed. (This also lets the README claim "no outside request" for this app.)
 - Makefile: `make mobile-dev` (dev server on its own port), `make mobile-build`, `make mobile-test`.
 - **Verification that nothing else broke:** `make dev`, `make demo`, `make test`, `make lint` give the same results as before.
+
+**M14 as built.**
+- `frontend/src/api/client.ts` holds the one `openapi-fetch` client (hooks import it); `setFetch()` lets the phone app swap in the engine's `fetch`. The Mac app is unchanged (`make test`, `make lint` give the same results).
+- `mobile/` is a Vite + React project with its own `App` (bottom tab bar: Overview, Trends, Alerts, Faults, More → Warnings, Status, Diagnostics, Data) that mounts the **same pages** from `frontend/src` through the `@frontend` alias. It has its own copies of the shared packages (`resolve.dedupe` + `paths` make Vite and TypeScript use only those) and a `HashRouter`, so it works from any address.
+- `src/controller.ts` (UI-free, tested) owns the data: starts DuckDB-WASM (EH build only) while reading the stored pack, loads it, `replayAcks`, and offers import / demo / delete. A pack is validated by its content before anything is touched, so a wrong file changes nothing; if a load fails after the old data was cleared, the stored pack is loaded back.
+- `src/storage.ts`: IndexedDB `cx5` with the pack (+ manifest, name, import time) and the acknowledgements. Deleting data removes both.
+- Data screen: first-run empty state with the three steps to get a pack, **Import data pack** (file input with no `accept` filter), **Load demo data** (the synthetic pack is bundled by `make mobile-build`/`mobile-dev`), pack information (data span, pack created, imported, size), **Replace**, **Delete data from this device** (asks first).
+- Fonts come from `@fontsource` packages bundled into the build: the app makes no request to any other host (checked in the browser: only the app's own address, including after a reload).
+- The M12 spike page and its Makefile targets were removed (results stay in this file). Makefile: `make mobile-dev` (port 5174, `HOST=1` for a phone on your Wi-Fi), `make mobile-build`, `make mobile-test`.
+- Checked in a 375x812 browser view with the demo data: first run, import, reload (data kept), and every page without errors. Still to do on a real iPhone: the M15 offline test (service worker comes in M15). Known and left for M15: the layout problems of the phone audit (Faults and Diagnostics too wide, period bar tall, small tap targets).
 
 #### M15 — iPhone polish and offline
 - Installable web app: manifest, icons, splash, service worker that precaches everything (versioned cache with an "update available" prompt).

@@ -1,9 +1,6 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import createClient from 'openapi-fetch'
 import { useDateRange } from '../range'
-import type { paths } from './schema'
-
-const client = createClient<paths>({ baseUrl: '' })
+import { client } from './client'
 
 /** from/to query parameters of the selected period (undefined = no limit). */
 function useRangeQuery() {

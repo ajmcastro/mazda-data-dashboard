@@ -29,7 +29,7 @@
       "port": 8000
     },
     {
-      "name": "mobile-spike",
+      "name": "mobile",
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",

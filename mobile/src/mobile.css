@@ -1,0 +1,45 @@
+/* Phone layout: the Mac app's styles (../frontend/src/index.css) plus a bottom tab bar. */
+.m-shell { min-height: 100vh; position: relative; }
+.m-shell .main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: calc(18px + env(safe-area-inset-top)) 16px calc(88px + env(safe-area-inset-bottom));
+}
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 10;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--panel); border-top: 1px solid var(--line);
+}
+.tabbar a {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  min-height: 56px; padding: 0 2px; text-decoration: none; text-align: center;
+  font-size: 12px; font-weight: 500; letter-spacing: 0.02em; color: var(--muted);
+}
+.tabbar a.active { color: var(--text); box-shadow: inset 0 2px 0 var(--accent); }
+.tabbar .count { font-family: var(--mono); font-size: 10px; color: var(--bg); background: var(--amber); border-radius: 99px; padding: 0 6px; }
+
+.more-list { display: grid; gap: 8px; }
+.more-list a {
+  display: block; padding: 16px; text-decoration: none; font-weight: 500;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+}
+
+.data-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.button {
+  display: inline-flex; align-items: center; justify-content: center; position: relative;
+  min-height: 46px; padding: 0 18px; font: inherit; font-weight: 500; color: var(--text);
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer;
+}
+.button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.button.danger { color: var(--accent); }
+.button:disabled, .button.disabled { opacity: 0.5; pointer-events: none; }
+.button input[type='file'] { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.linklike { margin-left: 12px; font: inherit; color: inherit; text-decoration: underline; background: none; border: 0; padding: 0; cursor: pointer; }
+.data-info, .data-help { margin-top: 14px; }
+.data-info h2, .data-help h2 { font-size: 20px; margin-bottom: 10px; word-break: break-all; }
+.data-info dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; }
+.data-info dt { color: var(--muted); }
+.data-info dd { margin: 0; }
+.data-help ol { padding-left: 20px; margin: 0 0 10px; }
+.muted { color: var(--muted); }

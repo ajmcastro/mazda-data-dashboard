@@ -1,17 +1,39 @@
 {
   "compilerOptions": {
     "target": "es2023",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "types": ["vite/client", "node"],
+    "types": [
+      "vite/client",
+      "node"
+    ],
     "skipLibCheck": true,
     "strict": true,
     "noEmit": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true
+    "noUnusedParameters": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@frontend/*": [
+        "../frontend/src/*"
+      ],
+      "*": [
+        "./node_modules/@types/*",
+        "./node_modules/*"
+      ]
+    }
   },
-  "include": ["src", "test", "vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }
