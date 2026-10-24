@@ -19,6 +19,7 @@ import { DataController } from './controller'
 import { DataProvider } from './data'
 import { createFetch } from './engine/api'
 import { startBrowserEngine } from './engine-browser'
+import { registerServiceWorker } from './pwa'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1, refetchOnWindowFocus: false } },
@@ -39,6 +40,7 @@ const controller = new DataController({
 })
 setFetch(createFetch(controller.api))
 void controller.init()
+registerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

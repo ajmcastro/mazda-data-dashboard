@@ -19,7 +19,7 @@ How it works (details and measurements in `../PLAN.md`):
 make mobile-install        # once
 make mobile-dev            # http://localhost:5174, with the synthetic demo data bundled
 make mobile-dev HOST=1     # also reachable from a phone on the same Wi-Fi; stop with Ctrl+C afterwards
-make mobile-build          # production build into mobile/dist
+make mobile-build          # production build into mobile/dist (includes the service worker)
 make mobile-test           # contract + app tests
 ```
 
@@ -50,3 +50,21 @@ make mobile-golden-real   # same on your own database; then: rm -r mobile/contra
 
 Any difference in the JSON (a value, a missing field, the order of rows) fails with the request and
 the path of the first difference.
+
+## Installing and offline use
+
+A production build is an installable web app: on an iPhone open the hosted address in Safari, Share,
+**Add to Home Screen**. It saves itself on the phone (about 36 MB, once; the Data screen says
+"Works offline: yes" when it is done) and then opens with no connection. When a newer build is
+published the app offers an **Update** button. Service workers need `https://` (or `localhost`), so
+this works on the hosted site (M16) and on `localhost` in the iOS Simulator, not from
+`make mobile-dev HOST=1` over plain http (there the app still runs, but is not installable).
+
+Test it locally: `make mobile-build`, `cd mobile && npm run preview`, open `http://localhost:5174`,
+load the demo data, stop the server, reload: everything still works.
+
+iOS may remove a web app's stored data after a few weeks without use or when space runs low. The app
+asks Safari to keep it, tells you if it was removed, and the `.cx5pack` file (keep it in Files) is
+the real copy: importing it again takes a few seconds.
+
+Icons: `python3 scripts/make_icons.py` redraws them into `public/`.

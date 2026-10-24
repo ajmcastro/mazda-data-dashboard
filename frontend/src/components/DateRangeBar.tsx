@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useOverview, useSpan } from '../api/hooks'
 import {
   PRESETS,
@@ -13,6 +14,8 @@ import { saveRangeChoice, useDateRange } from '../range'
 /** Period picker shown on the pages that describe a period. The range lives in the URL. */
 export function DateRangeBar() {
   const { from, to, isFiltered, setRange } = useDateRange()
+  // on a narrow screen the controls fold away behind the summary line (CSS only shows the toggle there)
+  const [open, setOpen] = useState(false)
   const span = useSpan().data
   const overview = useOverview().data
 
@@ -34,7 +37,8 @@ export function DateRangeBar() {
   }
 
   return (
-    <div className="range-bar" role="group" aria-label="Period">
+    <div className={`range-bar${open ? ' open' : ''}`} role="group" aria-label="Period">
+      <div className="range-controls" id="range-controls">
       <fieldset className="presets" disabled={!span}>
         <legend className="sr-only">Quick ranges, counted back from the newest data</legend>
         {PRESETS.map((p) => (
@@ -72,16 +76,28 @@ export function DateRangeBar() {
           />
         </label>
       </div>
+      </div>
 
       <div className="range-summary mono" aria-live="polite">
-        {shownFrom && shownTo ? (
-          <>
-            <b>{activeLabel ?? 'Custom range'}</b> · {fmtDate(shownFrom)} – {fmtDate(shownTo)}
-            {days !== undefined && ` · ${days} day${days === 1 ? '' : 's'}`}
-          </>
-        ) : (
-          'no data yet'
-        )}
+        <span className="range-text">
+          {shownFrom && shownTo ? (
+            <>
+              <b>{activeLabel ?? 'Custom range'}</b> · {fmtDate(shownFrom)} – {fmtDate(shownTo)}
+              {days !== undefined && ` · ${days} day${days === 1 ? '' : 's'}`}
+            </>
+          ) : (
+            'no data yet'
+          )}
+        </span>
+        <button
+          type="button"
+          className="range-toggle"
+          aria-expanded={open}
+          aria-controls="range-controls"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {open ? 'Done' : 'Change'}
+        </button>
       </div>
 
       {isFiltered && overview && !overview.has_data_in_range && (

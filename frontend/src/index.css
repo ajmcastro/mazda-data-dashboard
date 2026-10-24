@@ -254,7 +254,25 @@ fieldset.presets { display: flex; flex-wrap: wrap; gap: 6px; border: 0; margin: 
 .preset input:checked + span { color: var(--text); border-color: var(--accent); background: var(--accent-soft); }
 .preset input:focus-visible + span { outline: 2px solid var(--steel); outline-offset: 2px; }
 fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
-@media (max-width: 640px) { .preset span { padding: 6px 12px; } .range-inputs { width: 100%; } .range-inputs label { flex: 1; } input[type='date'] { width: 100%; } }
+/* the controls and the summary are one block on wide screens; the toggle only exists on narrow ones */
+.range-controls { display: contents; }
+.range-toggle { display: none; }
+@media (max-width: 640px) {
+  .preset span { padding: 6px 12px; }
+  .range-inputs { width: 100%; }
+  .range-inputs label { flex: 1; }
+  input[type='date'] { width: 100%; }
+  /* one line (summary + Change) instead of a third of the screen; the controls open on demand */
+  .range-bar { gap: 10px; padding: 8px 12px; }
+  .range-summary { order: -1; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .range-toggle {
+    display: inline-flex; align-items: center; flex: none; font: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 99px; padding: 0 16px;
+  }
+  .range-text { min-width: 0; }
+  .range-bar:not(.open) .range-controls { display: none; }
+  .range-bar.open .range-controls { display: flex; flex-direction: column; gap: 12px; flex-basis: 100%; }
+}
 .range-empty { flex-basis: 100%; color: var(--amber); font-size: 13px; }
 
 /* ---- trends ---- */
@@ -274,3 +292,17 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .partial-tag { font-size: 10px; letter-spacing: 0; text-transform: none; font-weight: 400; }
 .controls .toggle { flex-direction: row; align-items: center; text-transform: none; letter-spacing: 0; font-size: 13px; }
 .report-select { width: 330px; max-width: 90vw; }
+
+/* ---- touch screens and narrow windows: comfortable tap targets, nothing pushed off the side ---- */
+@media (max-width: 640px), (pointer: coarse) {
+  button, select, input[type='date'], .preset span, .range-toggle { min-height: 44px; }
+  .preset span { display: inline-flex; align-items: center; }
+  tr.clickable td { padding-top: 12px; padding-bottom: 12px; }
+  th.sortable { padding-top: 12px; padding-bottom: 12px; }
+  .report-select { width: 100%; max-width: 100%; }
+}
+@media (max-width: 640px) {
+  .kv { grid-template-columns: minmax(0, auto) minmax(0, 1fr); }
+  .kv dt, .kv dd { overflow-wrap: anywhere; min-width: 0; }
+  .sections .kv { margin-left: 0; max-width: none; }
+}

@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto'
 import { readFileSync } from 'node:fs'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DataController } from '../src/controller'
 import { readStoredPack } from '../src/storage'
 import { nodeDb } from './support/node-db'
@@ -8,11 +8,15 @@ import { nodeDb } from './support/node-db'
 const pack = () => new Uint8Array(readFileSync(new URL('../contract/sample.cx5pack', import.meta.url)))
 
 // a "launch" of the app: a new controller (and engine) over the same browser storage
-const launch = () => new DataController({ startEngine: nodeDb, fetchDemo: async () => pack() })
+let remembered: { name: string; lastDay: string } | null = null
+const memory = { read: () => remembered, write: (v: { name: string; lastDay: string } | null) => void (remembered = v) }
+const launch = (persist: () => Promise<boolean | null> = async () => true) =>
+  new DataController({ startEngine: nodeDb, fetchDemo: async () => pack(), memory, persist })
 
 async function wipe() {
   const c = launch()
   await c.deleteData()
+  remembered = null
 }
 
 describe('data on the device', () => {
@@ -99,4 +103,37 @@ describe('data on the device', () => {
     const left = (await next.api.handle('GET', '/api/alerts?status=new')).body as unknown[]
     expect(left).toHaveLength(newAlerts.length - 1)
   }, 120_000)
+
+  it('asks the browser to keep the data and says whether it agreed', async () => {
+    const yes = launch(async () => true)
+    await yes.init()
+    await yes.importPack(pack(), 'p.cx5pack')
+    await vi.waitFor(() => expect(yes.getState().persisted).toBe(true))
+
+    const no = launch(async () => false)
+    await no.init()
+    await vi.waitFor(() => expect(no.getState().persisted).toBe(false))
+  }, 120_000)
+
+  it('notices data the browser removed (but not data the user deleted)', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(pack(), 'mazda.cx5pack')
+    expect(remembered).toMatchObject({ name: 'mazda.cx5pack', lastDay: '2026-06-30' })
+
+    // the browser evicts the stored pack behind the app's back
+    const { deleteStoredData } = await import('../src/storage')
+    await deleteStoredData()
+    const next = launch()
+    await next.init()
+    expect(next.getState()).toMatchObject({ status: 'empty', lost: { name: 'mazda.cx5pack', lastDay: '2026-06-30' } })
+
+    // importing again clears the notice; deleting on purpose leaves none
+    await next.importPack(pack(), 'mazda.cx5pack')
+    expect(next.getState().lost).toBeNull()
+    await next.deleteData()
+    const last = launch()
+    await last.init()
+    expect(last.getState().lost).toBeNull()
+  }, 180_000)
 })

@@ -26,6 +26,46 @@ export interface DataState {
   info: PackInfo | null
   /** shown on the data screen; the data in use (if any) is untouched unless the status is 'error' without info */
   error: string | null
+  /** the browser promised to keep the data (null = unknown / not asked yet) */
+  persisted: boolean | null
+  /** data that was on this phone before but is gone without the user deleting it (the browser removed it) */
+  lost: { name: string; lastDay: string } | null
+}
+
+/** Remembers that data was imported, to tell "never had data" from "the browser removed it". */
+export interface Memory {
+  read(): { name: string; lastDay: string } | null
+  write(value: { name: string; lastDay: string } | null): void
+}
+
+const KEY = 'cx5.had-data'
+
+export const localMemory: Memory = {
+  read() {
+    try {
+      return JSON.parse(localStorage.getItem(KEY) ?? 'null')
+    } catch {
+      return null
+    }
+  },
+  write(value) {
+    try {
+      if (value) localStorage.setItem(KEY, JSON.stringify(value))
+      else localStorage.removeItem(KEY)
+    } catch {
+      /* private mode: nothing to remember with */
+    }
+  },
+}
+
+/** Asks the browser not to evict our data; resolves to whether it agreed. */
+export async function requestPersistence(): Promise<boolean | null> {
+  try {
+    if (!navigator.storage?.persist) return null
+    return (await navigator.storage.persisted()) || (await navigator.storage.persist())
+  } catch {
+    return null
+  }
 }
 
 export interface ControllerDeps {
@@ -35,20 +75,31 @@ export interface ControllerDeps {
   /** Called whenever the data behind the API changed (clear cached query results). */
   onDataChanged?: () => void
   api?: Api
+  memory?: Memory
+  /** Ask the browser to keep the data (default: navigator.storage.persist). */
+  persist?: () => Promise<boolean | null>
 }
 
 const asInfo = (p: StoredPack): PackInfo => ({ name: p.name, bytes: p.bytes.byteLength, savedAt: p.savedAt, manifest: p.manifest })
 
 export class DataController {
   readonly api: Api
-  private state: DataState = { status: 'starting', message: 'Starting the data engine…', info: null, error: null }
+  private state: DataState = {
+    status: 'starting', message: 'Starting the data engine…', info: null, error: null, persisted: null, lost: null,
+  }
   private readonly listeners = new Set<() => void>()
   private raw: RawDb | null = null
   private engine: Promise<RawDb> | null = null
   private readonly acks = new IdbAckStore()
+  private readonly memory: Memory
 
   constructor(private readonly deps: ControllerDeps) {
     this.api = deps.api ?? new Api({ acks: this.acks })
+    this.memory = deps.memory ?? localMemory
+  }
+
+  private async keepData(): Promise<void> {
+    this.set({ persisted: await (this.deps.persist ?? requestPersistence)() })
   }
 
   getState = (): DataState => this.state
@@ -72,7 +123,10 @@ export class DataController {
   async init(): Promise<void> {
     try {
       const [raw, stored] = await Promise.all([this.engineReady(), readStoredPack()])
-      if (!stored) return this.set({ status: 'empty', message: '', info: null })
+      if (!stored) {
+        // data that was here before and is not any more: the browser removed it (iOS does that to sites not opened for a while)
+        return this.set({ status: 'empty', message: '', info: null, lost: this.memory.read() })
+      }
       await this.activate(raw, stored)
     } catch (e) {
       this.set({ status: 'error', message: '', error: describe(e) })
@@ -85,7 +139,9 @@ export class DataController {
     await replayAcks(new Con(raw), this.acks)
     this.api.use(raw)
     this.deps.onDataChanged?.()
-    this.set({ status: 'ready', message: '', info: asInfo({ ...stored, manifest }), error: null })
+    this.memory.write({ name: stored.name, lastDay: manifest.last_data_day })
+    this.set({ status: 'ready', message: '', info: asInfo({ ...stored, manifest }), error: null, lost: null })
+    void this.keepData()
   }
 
   /** Validates a pack file, replaces the data with it and stores it. A bad file changes nothing. */
@@ -131,8 +187,9 @@ export class DataController {
     this.api.use(null)
     if (this.raw) await clearDatabase(this.raw)
     await deleteStoredData()
+    this.memory.write(null) // deleted on purpose: not "lost"
     this.deps.onDataChanged?.()
-    this.set({ status: 'empty', message: '', info: null, error: null })
+    this.set({ status: 'empty', message: '', info: null, error: null, lost: null })
   }
 
   clearError(): void {

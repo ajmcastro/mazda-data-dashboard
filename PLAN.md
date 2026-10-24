@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine) and M14 (the app shell) are done. M15–M16 (the rest of the offline phone app in `mobile/`) are planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 15".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell) and M15 (iPhone polish and offline) are done. M16 (hosting, docs and CI for the offline phone app in `mobile/`) is planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 16".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -71,7 +71,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M12 | Standalone feasibility spike ✅ | data pack export, DuckDB in the browser runs the views; **GO**; confirmed in Chrome, Safari, the iOS Simulator and a real iPhone |
 | M13 | Standalone data engine ✅ | the API's routes re-implemented in TypeScript, proven identical by contract tests |
 | M14 | Standalone app shell ✅ | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
-| M15 | iPhone polish and offline | installable web app, works in airplane mode, phone navigation, storage safety |
+| M15 | iPhone polish and offline ✅ | installable web app, works in airplane mode, phone navigation, storage safety |
 | M16 | Hosting, docs and CI | HTTPS static hosting (code only), README guide, parity checks in CI |
 | M17 | Next oil change | the car's own oil-change countdown: tile, history, alert (planned after M16) |
 | M18 | The car's own warnings | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) (planned after M16) |
@@ -263,6 +263,13 @@ Re-implement the API inside the browser with **identical JSON**.
 - Storage safety: ask the browser to keep the data (`navigator.storage.persist()`), detect missing or evicted data and offer a one-tap re-import; explain that the pack file itself is the real backup.
 - **Offline test:** airplane mode, cold start, every page, import and replace, in the Simulator and on a real iPhone.
 - **Done when:** every page works in airplane mode with the demo pack and with your own pack.
+
+**M15 as built.**
+- **Installable and offline.** `mobile/public/manifest.webmanifest` + icons (`scripts/make_icons.py` draws them, no dependencies; one maskable) + the `apple-*` meta tags. `vite build` writes `dist/sw.js` from `sw.template.js` with every built file in the precache list and a version hash of their contents, so each build is a new version. The worker caches the whole app (engine 36 MB, fonts, demo pack) at install, serves cache first (`ignoreVary`: the host sends `Vary: Origin`, which made module scripts miss the cache until fixed) and falls back to the cached page for navigations. A new version waits; the page shows **"A new version of the app is ready. Update"** and reloads once the new worker has taken over (old cache deleted). Registration only happens in a production build.
+- **Storage safety.** After loading, the app asks the browser to keep the data (`navigator.storage.persist()`) and the Data screen shows the answer and "Works offline: yes". The app remembers (localStorage) that data was imported; if the stored pack is gone and the user did not delete it, the empty screen explains that the browser removed it and asks for a re-import ("your `.cx5pack` file in Files is the real copy"). Deleting on purpose leaves no such notice. Tested with a fake IndexedDB (`test/controller.test.ts`).
+- **Phone layout (shared CSS, only under narrow/touch media queries, desktop checked unchanged).** The audit's page-width problems were not present in the current build at 390, 430 and 768 px (tables scroll inside their panel; measured zero horizontal overflow on all nine screens); what was left and is fixed: the **period bar folds into one line** (summary + "Change") that opens the controls (`DateRangeBar`; wide screens render it as before), **44 px minimum tap targets** for buttons, selects, date fields, quick ranges, table rows and sortable headers (touch screens and narrow windows), key/value lists that wrap instead of overflowing (Diagnostics), full-width report selector, safe-area insets on all sides including landscape, a tab bar that respects the home bar.
+- **Offline test passed in the browser pane and in the iOS Simulator (iPhone 18 Pro Max, iOS 27):** production build served from `localhost`, demo data loaded, server stopped (connection refused confirmed), page reloaded from the cache: every screen opens with the data, "Works offline: yes".
+- **Still to do (needs HTTPS hosting, so after M16):** the same test on a real iPhone. A service worker only runs on `https://` or `localhost`, so a phone on the Wi-Fi cannot install the app from `make mobile-dev HOST=1`; it can still be tried there as a normal page (no offline). The real-pack offline check on the phone also waits for M16.
 
 #### M16 — Hosting, docs and CI
 - GitHub Pages workflow publishing the static build (demo pack only; **no real data is ever in the repo or the site**), and the instructions for other hosts.

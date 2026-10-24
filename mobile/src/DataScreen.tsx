@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useController, useData } from './data'
+import { usePwa } from './pwa'
 
 const fmtBytes = (n: number) => (n >= 1_048_576 ? `${(n / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`)
 const fmtDay = (d: string) => new Date(`${d}T00:00:00Z`).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
@@ -7,7 +8,8 @@ const fmtWhen = (iso: string) => new Date(iso).toLocaleString(undefined, { dateS
 
 export default function DataScreen() {
   const controller = useController()
-  const { status, message, info, error } = useData()
+  const { status, message, info, error, persisted, lost } = useData()
+  const pwa = usePwa()
   const [busy, setBusy] = useState(false)
   const input = useRef<HTMLInputElement>(null)
   const working = busy || status === 'starting' || status === 'loading'
@@ -64,6 +66,17 @@ export default function DataScreen() {
         </div>
       )}
 
+      {!info && lost && status !== 'starting' && status !== 'loading' && (
+        <section className="panel data-lost" role="status" aria-label="Data removed">
+          <h2>Your data is no longer on this phone</h2>
+          <p>
+            The browser removed <b>{lost.name === 'demo' ? 'the demo data' : lost.name}</b> (data up to {fmtDay(lost.lastDay)}).
+            iOS does this to web apps that are not opened for a while or when space runs low. Import the pack
+            again: your <span className="mono">.cx5pack</span> file in Files is the real copy of your data.
+          </p>
+        </section>
+      )}
+
       {info && (
         <section className="panel data-info" aria-label="Data pack">
           <h2>{info.name === 'demo' ? 'Demo data (synthetic)' : info.name}</h2>
@@ -76,7 +89,17 @@ export default function DataScreen() {
             <dd>{fmtWhen(info.savedAt)}</dd>
             <dt>Size</dt>
             <dd>{fmtBytes(info.bytes)}</dd>
+            <dt>Kept by the browser</dt>
+            <dd>{persisted === null ? 'unknown' : persisted ? 'yes' : 'not guaranteed'}</dd>
+            <dt>Works offline</dt>
+            <dd>{!pwa.supported ? 'only in the installed build' : pwa.offlineReady ? 'yes' : 'saving the app…'}</dd>
           </dl>
+          {persisted !== true && (
+            <p className="muted">
+              The browser may remove this data if the phone runs low on space. Keep the{' '}
+              <span className="mono">.cx5pack</span> file (in Files or iCloud Drive) so you can import it again.
+            </p>
+          )}
         </section>
       )}
 

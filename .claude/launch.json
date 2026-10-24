@@ -36,6 +36,15 @@
         "cd mobile && npm run dev"
       ],
       "port": 5174
+    },
+    {
+      "name": "mobile-preview",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd mobile && npm run preview"
+      ],
+      "port": 5174
     }
   ]
 }

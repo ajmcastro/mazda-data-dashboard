@@ -12,6 +12,7 @@ import Warnings from '@frontend/pages/Warnings'
 import { useRestoreSavedRange } from '@frontend/range'
 import DataScreen from './DataScreen'
 import { useData } from './data'
+import { applyUpdate, usePwa } from './pwa'
 
 // Pages about a period get the date-range bar (same list as the Mac app)
 const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
@@ -68,14 +69,29 @@ function Ready() {
   )
 }
 
+function UpdateBanner() {
+  const { updateReady } = usePwa()
+  if (!updateReady) return null
+  return (
+    <div className="update-banner" role="status">
+      A new version of the app is ready.
+      <button type="button" className="button primary" onClick={applyUpdate}>Update</button>
+    </div>
+  )
+}
+
 export default function MobileApp() {
   const { status } = useData()
-  if (status !== 'ready') {
-    return (
-      <div className="m-shell">
-        <main className="main"><DataScreen /></main>
-      </div>
-    )
-  }
-  return <Ready />
+  return (
+    <>
+      <UpdateBanner />
+      {status !== 'ready' ? (
+        <div className="m-shell">
+          <main className="main"><DataScreen /></main>
+        </div>
+      ) : (
+        <Ready />
+      )}
+    </>
+  )
 }
