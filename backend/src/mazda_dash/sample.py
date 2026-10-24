@@ -101,7 +101,9 @@ class Car:
         Like the real car it sometimes sends 65535 (unknown) or an Invalid reading; chosen from the
         clock, not the random generator, so the rest of the sample data stays as it was."""
         left = max(0, 5000 - int(self.odo // 1000) * 1000)
-        second = int(t.timestamp())
+        second = int(
+            (t - datetime(1970, 1, 1)).total_seconds()
+        )  # t is naive UTC: not timestamp(), which uses the machine's time zone
         if second % 29 == 0:
             return {"remoildistk": 65535, "remoildistm": 65535}
         if second % 41 == 1:

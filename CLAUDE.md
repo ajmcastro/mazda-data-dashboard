@@ -54,6 +54,8 @@ API: `/api/diag/reports` (+ `/{id}`, `/{id}/frames`) and `/api/diag/compare?a=&b
 
 ## Sample data, audit and CI
 
+Generated files that are committed (`sample_data/`, `frontend/openapi.json`, `schema.d.ts`) are compared byte for byte in CI on a UTC machine with no line-ending conversion: a generator must not use the machine's time zone, locale, `datetime.timestamp()` on naive times, or CRLF (a test covers the time zone; `.gitattributes` pins LF). To check CI parity: clone the repo, copy in your changes, `git add -A`, run `TZ=UTC make types sample-data` with `core.autocrlf=false`, then `git diff --exit-code`.
+
 `backend/src/mazda_dash/sample.py` generates deterministic synthetic exports (`make sample-data` -> committed `sample_data/`; the VIN is `SAMPLEVIN00000001`, nothing comes from a real car). It is shaped to trigger every alert rule, so changing a detector or a view usually means checking `tests/test_sample.py` too. `make demo` ingests it into `db/demo.duckdb` and serves it. `mazda_dash/audit.py` (`make audit`) reads the VINs/positions from the real `data/` files and greps the publishable files and the full git history for them; never hardcode a real VIN anywhere to "check" for it. `.github/workflows/ci.yml` runs ruff, pytest, oxlint, tsc, vitest, the build, and checks that `make types sample-data` leave no diff. Charts honour `prefers-reduced-motion` via `ANIMATE` in `frontend/src/lib.ts`. README screenshots in `docs/screenshots/` were taken from the demo data with headless Chrome (puppeteer-core, dark scheme, reduced motion).
 
 ## Date range

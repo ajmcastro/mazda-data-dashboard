@@ -74,3 +74,23 @@ def test_expected_alerts_are_raised(con):
         "high_consumption",
         "low_tire_pressure",
     } <= rules
+
+
+def test_sample_data_does_not_depend_on_the_machines_time_zone(tmp_path, monkeypatch):
+    """CI runs in UTC, developers do not: the committed sample files must be byte-identical anywhere."""
+    import time
+
+    def build(tz: str, name: str) -> dict[str, bytes]:
+        monkeypatch.setenv("TZ", tz)
+        time.tzset()
+        out = tmp_path / name
+        generate(out)
+        return {p.name: p.read_bytes() for p in sorted(out.iterdir())}
+
+    try:
+        utc = build("UTC", "utc")
+        assert build("Pacific/Auckland", "nz") == utc
+        assert build("America/New_York", "ny") == utc
+    finally:
+        monkeypatch.undo()
+        time.tzset()
