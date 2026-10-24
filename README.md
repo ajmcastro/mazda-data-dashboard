@@ -71,8 +71,8 @@ git --version
 ### 2. Get the code and start the demo
 
 ```bash
-git clone <repository-url>
-cd <project-folder>
+git clone https://github.com/ajmcastro/mazda-data-dashboard.git
+cd mazda-data-dashboard
 make setup   # Python (via uv) and npm dependencies, takes a minute or two the first time
 make demo    # loads the synthetic sample data, then serves it
 ```

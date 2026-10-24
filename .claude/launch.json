@@ -27,6 +27,15 @@
         "cd backend && MAZDA_DB=../db/demo.duckdb uv run uvicorn mazda_dash.api.app:app --port 8000"
       ],
       "port": 8000
+    },
+    {
+      "name": "mobile-spike",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd mobile && npm run dev"
+      ],
+      "port": 5174
     }
   ]
 }

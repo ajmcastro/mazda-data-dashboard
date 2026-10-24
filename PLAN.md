@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: all milestones (M1–M11) are done.** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13–M16 (the offline phone app in `mobile/`) are planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 13".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -39,6 +39,7 @@ backend/                    # uv project (pyproject.toml, uv.lock)
     profile.py              # data profiling (make profile)
   tests/
 frontend/                   # Vite + React + TS (src/api, components, pages)
+mobile/                 # (planned, M12-M16) offline iPhone app, separate build; reuses frontend/src
 config/                     # alerts.yaml, codes/*.yaml
 data/                       # private raw exports (gitignored)
 db/                         # DuckDB files (gitignored)
@@ -50,7 +51,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 
 ## Makefile targets
 
-`setup`, `ingest`, `alerts`, `model`, `unmapped`, `api`, `web`, `dev`, `demo-ingest`, `demo`, `sample-data`, `types`, `test`, `lint`, `format`, `profile`, `audit`, `reset-db`, `clean`. The README has a one-line description of each.
+`setup`, `ingest`, `alerts`, `model`, `unmapped`, `api`, `web`, `dev`, `demo-ingest`, `demo`, `sample-data`, `types`, `test`, `lint`, `format`, `profile`, `audit`, `reset-db`, `clean`. The README has a one-line description of each. Planned for the standalone app: `mobile-pack`, `mobile-demo-pack`, `mobile-dev`, `mobile-build`, `mobile-test`.
 
 ## Milestones
 
@@ -67,6 +68,15 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M9 | Quick ranges | Last week … All time presets, remembered choice |
 | M10 | Choose any diagnostic report | always-visible picker, report history, three sample reports |
 | M11 | Monthly comparison ("Trends") | cards and table with change vs the previous month |
+| M12 | Standalone feasibility spike ✅ | data pack export, DuckDB in the browser runs the views; **GO**; confirmed in Chrome, Safari, the iOS Simulator and a real iPhone |
+| M13 | Standalone data engine | the API's 28 routes re-implemented in TypeScript, proven identical by contract tests |
+| M14 | Standalone app shell | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
+| M15 | iPhone polish and offline | installable web app, works in airplane mode, phone navigation, storage safety |
+| M16 | Hosting, docs and CI | HTTPS static hosting (code only), README guide, parity checks in CI |
+| M17 | Next oil change | the car's own oil-change countdown: tile, history, alert (planned after M16) |
+| M18 | The car's own warnings | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) (planned after M16) |
+| M19 | Tire reading time | when each tire pressure was really measured, and how fresh it is (planned after M16) |
+| M20 | Warning-lamp flags | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert (planned after M16) |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -140,6 +150,200 @@ A page showing how each metric evolved month by month, with the change against t
   - *Trips* became two metrics, **Drives recorded** (stretches between status snapshots) and **Days driven**, because the car's snapshots are not true trips. *Distance* comes from the odometer, not from summed stretches (which cover only part of it); *fuel used* is estimated as distance × consumption.
   - *New faults* excludes faults first reported on the first day of diagnostic data, which may have existed long before the data begins.
 
+## Standalone offline app for iPhone (M12 done, M13–M16 planned)
+
+**Goal.** Use the dashboard on an iPhone (iOS 27 is the target), with the data on the phone, **without the Mac being on or reachable**. **Hard constraint:** the current app must keep working exactly as today (`make dev` → `http://localhost:5173`, `make demo`, all tests). The new app therefore lives in its own folder, **`mobile/`**, with its own `package.json`, build and tests. The existing `backend/` and `frontend/` get only the small, tested changes listed under "What changes in existing code".
+
+### How it will work
+
+```
+ on the Mac (unchanged)                      on the iPhone (new, offline)
+ data/ ─ make ingest ─▶ db/mazda.duckdb      ┌──────────────────────────────────────────────┐
+                           │                 │ installed web app (static files, cached)     │
+              make mobile-pack (new)         │   same screens as today (reused from         │
+                           ▼                 │   frontend/src)                              │
+                 db/mazda.cx5pack ──AirDrop / Files / iCloud Drive──▶ "Import data"        │
+                 (zip of Parquet + manifest) │   DuckDB-WASM + TypeScript "API" ◀── IndexedDB│
+                                             └──────────────────────────────────────────────┘
+```
+
+- **A data pack.** `make mobile-pack` (new, in `backend/`) exports the database tables to **Parquet** files plus a `manifest.json` (pack format version, creation time, row counts, newest data day) in one zip, `db/mazda.cx5pack` (gitignored). Parquet, not the `.duckdb` file, because the browser's DuckDB is a different, independently versioned build than this project's (backend: DuckDB 2.0.0; `@duckdb/duckdb-wasm` is numbered 1.33.x), and the `.duckdb` storage format is not guaranteed to open across versions, while Parquet is.
+- **The same SQL.** The app loads the Parquet tables into DuckDB-WASM and runs the existing `backend/src/mazda_dash/model/views.sql` unchanged (imported from the backend folder at build time, so there is one source of truth). Code descriptions need no YAML parsing: the `ref_*` tables travel inside the pack.
+- **The same screens.** The standalone app reuses the existing React pages and components from `frontend/src` through a Vite alias. Only the data layer is swapped: the pages talk to `/api/...` through one `openapi-fetch` client, and in the standalone app that client's `fetch` is replaced by an in-browser implementation of the same 28 routes. So the screens, types and URL parameters (`?from=`, `?report=`) are identical.
+- **Alerts.** Alert rules run on the Mac during `make ingest`; the pack carries the resulting `alerts` table. Acknowledging an alert on the phone is stored on the phone (IndexedDB) and layered over the pack's alerts. The phone does not evaluate rules (that would mean porting the alert engine; not in scope).
+- **Installing without a Mac.** An iPhone can only install an offline web app (service worker) from an **HTTPS** address, not from a Mac on the local network. The plan is to host the **static build, code only**, on GitHub Pages (or any static host). The site never receives any data: the pack is imported from the phone's own storage and never leaves it. The site also offers "Load demo data" so anyone can try it.
+- **Updating the data.** On the Mac: ingest a new Mazda export as today, run `make mobile-pack`, send the pack to the phone, tap **Import data**. Importing replaces the previous pack on the phone (acknowledgements are kept).
+
+### What changes in existing code (the only seams)
+
+1. `frontend/src/api/hooks.ts`: the `createClient(...)` call moves into `frontend/src/api/client.ts` so the standalone build can substitute its own client. No behaviour change; covered by the existing typecheck, lint, tests and build.
+2. `backend/`: **new** files only (`pack.py`, tests, a `make mobile-pack` target). Nothing existing is modified except the Makefile gaining targets.
+3. CI: new jobs for `mobile/`; the existing jobs stay as they are.
+4. Responsive fixes in `frontend/src` (see "Phone layout audit" below): CSS under narrow-width media queries plus a few layout tweaks, so the Mac app also behaves on a narrow window. Desktop widths must look unchanged (checked with before/after screenshots).
+
+### Standalone milestones
+
+#### M12 — Feasibility spike and decision gate ✅ done (final GO, confirmed on a real iPhone)
+Prove the risky parts before building the rest.
+- `backend/src/mazda_dash/pack.py` + `make mobile-pack` / `make mobile-demo-pack` (from `sample_data/`): Parquet export + `manifest.json`, with tests.
+- A minimal page in `mobile/` that loads the pack into DuckDB-WASM and runs **every statement of `views.sql`**; compare row counts and a checksum of each view against the Python database.
+- Measure on desktop Chrome, desktop Safari, the **iOS Simulator**, and (you) a real iPhone: download size, time to open, memory, time per typical query.
+- **Decision gate (written into this file):** go, or change course. Fallbacks if DuckDB-WASM is too heavy or too different: ship precomputed JSON for fixed presets; or SQLite-WASM with a SQL port.
+- **Done when:** all views build in Safari with identical results, the numbers are recorded, and the go/no-go is recorded.
+
+**M12 as built and measured (24 Oct 2026).**
+- `backend/src/mazda_dash/pack.py` (`make mobile-pack`, `make mobile-demo-pack`): exports 17 tables to Parquet inside a `.cx5pack` zip with a manifest (format version, checksums, `views.sql` hash, data span); GPS positions are left out. `--reference` writes per-view *fingerprints* (row count plus per-column counts and sums/min/max) used to prove the browser rebuilt identical views. 7 new tests, including a round trip that rebuilds every view from the Parquet files in an empty database.
+- `mobile/` spike (`make mobile-spike-prod`): DuckDB-WASM loads the pack, runs the unchanged `views.sql`, compares all 20 views with the Python database, times queries, and reports results to the dev server from any browser.
+
+| Measurement | Result |
+|---|---|
+| **Views identical to Python** | **20 of 20**, in Chrome and in desktop Safari 27.0.1, with the demo pack and with the author's real pack; `views.sql` ran unchanged, as one script |
+| Engine | DuckDB v1.5.4 in the browser (`@duckdb/duckdb-wasm` 1.33.1-dev57.0); the Python side is the `duckdb` 2.0.0 package |
+| Download, first install | engine 34.3 MB raw, **7.7 MB gzip, 5.2 MB brotli**; app code 0.2 MB. The older-browser fallback engine (39 MB) is not needed on iOS 27 and will not be shipped |
+| Data pack | demo 113 KiB (6,292 rows); real data **494 KiB** (64,486 rows), against a 6.8 MB `.duckdb` file |
+| Time to a working database, cold, on a Mac | Chrome 1.2–1.4 s; Safari 1.4–1.8 s (engine start 0.3–0.8 s, tables 0.2–0.7 s, views 22 ms) |
+| Typical query | 1–5 ms each (8 representative queries, including the range-aware fault and monthly-fuel SQL) |
+| Memory | tables 5.8 MB (demo) / 15.2 MB (real) in DuckDB, JS heap about 6 MB (Chrome); the WebAssembly memory itself is not exposed, to be measured on the iPhone |
+| Keeping the pack on the device | IndexedDB write+read 17–31 ms, intact; quota 10 GB (Chrome) / 78 GB (Safari desktop). `storage.persist()` was **not granted** in either, so expect to rely on re-import (M15) |
+| **iOS Safari 27.0 (Simulator, iPhone 18 Pro Max)** | **20 of 20 views identical**, demo pack and the author's real pack; ready in **1.7 s** (demo) / **1.3 s** (real, 64,486 rows); engine start 0.7 s; typical query 2–6 ms; IndexedDB round trip 8–12 ms, quota 39 GB, `persist()` not granted. The Simulator runs on the Mac's processor and has no iPhone memory limit, so real-device speed and memory are still to be measured |
+| **Real iPhone, round 1** (Safari 27.0.1, over Wi-Fi from the Mac, full pack) | **correct**: demo pack 20 of 20 views identical to Python (fingerprints), real pack built all 20 views; no crash, no reload. **Slow, though**: cold start (engine + tables + views) **6.2 s demo / 9.3 s real data** against about 1 s on the Mac. Engine start 4.2–6.8 s (includes downloading the 34 MB engine uncompressed over Wi-Fi), tables 1.6–2.2 s (10× the Mac), views 0.4 s, typical query **29–187 ms (10–40× the Mac)** |
+| **Real iPhone, round 2** (trimmed packs, engine already cached by Safari) | engine **download 0.07–0.1 s (cached), compile 0.21–0.23 s, start 0.75 s**, so the 4–7 s of round 1 was mostly the first download of the 34 MB engine over Wi-Fi without compression. Real data, **trimmed pack: tables 0.36–0.41 s** against 0.74 s (all signals, second pass) and 1.57 s (all signals, first pass); views 0.27 s; the 8 typical queries together 0.53 s against 0.78 s (66 ms per query on average). Demo pack, first launch: tables 1.05 s (first-use warm-up), views 0.26 s. Compression makes no difference (zstd 403, snappy 389, none 358 ms). **Expected cold start on a normal launch: about 1.5–2.5 s** (engine 0.75 + tables 0.4–1.0 + views 0.3) |
+| Phone processor speed (round 2 benchmark) | plain JavaScript loop (30 M steps) **1.0 s on the phone against 0.016 s on the Mac (60×)**; DuckDB scan of 20 M rows **4.3 s against 0.062 s (70×)**. That is far slower than any iPhone able to run iOS 27 should be, and what is expected when the JavaScript/WebAssembly JIT compiler is switched off (for example **Lockdown Mode**, or a Safari feature flag), where WebKit falls back to interpreters. Not yet confirmed with the owner; if it is the cause the real speed is several times better on a phone without it |
+
+**Finding after the real iPhone, rounds 1 and 2: even on a phone that runs code 60–70× slower than the Mac (see the processor row; probably JIT off), the trimmed pack gives a working database in roughly 1.5–2.5 s once the engine is cached, and each query takes tens of milliseconds, so a screen shows in well under a second.** Cheapest fix already made: `signal_readings` held 200 signals of which the views read 24 (4,546 of 41,680 rows), so packs are now trimmed to those by default (`--all-signals` restores everything). On the Mac this makes table loading about 7× faster (128 ms to 18 ms), views 3× and the typical page's queries 3.5×, with identical view results (tested); compression (zstd, snappy, none) makes no measurable difference, so zstd stays. DuckDB's browser OPFS persistence was tried (so the tables would not be rebuilt at each launch) and **did not persist** in this version (the file stayed empty, DuckDB logged "buffering"), so it is dropped; an alternative is saving the database file's bytes in IndexedDB if loading is still too slow after trimming.
+
+**Decision gate: GO.** The risks that could have stopped the plan did not materialise: the SQL needs no changes, results are identical in Chrome, desktop Safari, **iOS Safari 27** and on a **real iPhone**. Speed, the only open question, is answered: round 1 (full pack, first download of the engine) took 9.3 s; round 2 (trimmed pack, engine cached) is about 1.5–2.5 s even on this slow phone. The first install still downloads the engine once (7.7 MB gzip, 5.2 MB brotli on a host that compresses; the Mac's test server did not compress, which is why round 1 looked so bad). M12 is **closed with a final GO**. The fallbacks in the milestone text are not needed.
+
+**What this changes in the later milestones:**
+- Ship the **trimmed** pack by default (done in M12); keep the app shell responsive while the engine starts (show the screen skeleton and a progress line at once; start the engine and load the data in the background).
+- Ship only the modern (EH) engine build; cache it with the service worker (about 8 MB over the network once, about 36 MB of storage on the device).
+- `crypto.subtle` is disabled on plain `http://` addresses other than localhost, so the app must not depend on it (HTTPS hosting on GitHub Pages is fine, local-network tests are not).
+- Beware ties in `ORDER BY` (equal sort keys may come out in a different order in a different engine): the M13 contract tests must compare with deterministic orders, and the SQL should gain tie-breakers where needed (one was already fixed in the API).
+- The pack carries `views_sql_sha256`; the app should refuse or warn about a pack made for a different `views.sql`.
+
+#### M13 — Standalone data engine (TypeScript)
+Re-implement the API inside the browser with **identical JSON**.
+- All 28 routes (overview, odometer, fuel, trips, status, doors, alarms, warnings, faults, diagnostics, trends, span, alerts), the `from`/`to` range semantics (inclusive UTC days, 422-style errors for bad ranges, empty results for empty ranges), `api/trends.py`'s monthly figures, and the `Z`-suffixed timestamps.
+- A `fetch` adapter that answers `/api/...` requests (including error responses with the same `detail` messages).
+- Alert acknowledgement stored locally and merged over the pack's alerts.
+- **Contract tests (the safeguard against drift):** a script runs the real Python API on the sample data for a matrix of requests (no range, a month, a single day, an empty range, a range cutting months, bad input, every report id, each endpoint's filters) and saves the responses as golden JSON files. The TypeScript engine must reproduce every one byte for byte (modulo key order). CI regenerates the goldens and fails on any diff.
+- **Done when:** all golden tests pass, with the Python API remaining the reference implementation.
+
+#### M14 — Standalone app shell
+- `mobile/` Vite project: its own `App` layout (with the bottom tab bar), reuses `frontend/src` pages via alias, mounts them on the in-browser engine.
+- **Data screen:** first-run empty state, **Import data** (file picker with **no `accept` filter**: iOS greys out files with an extension it does not know, such as `.cx5pack`, found in the M12 iPhone test; validate the file by its content instead), **Load demo data**, pack information (created, newest data day, size), **Replace** and **Delete data from this device**, clear errors for a wrong or newer-format pack.
+- Storage in IndexedDB; the engine restarts from it on every launch.
+- Fonts bundled in the app (no Google Fonts), so it makes **no network request at all** once installed. (This also lets the README claim "no outside request" for this app.)
+- Makefile: `make mobile-dev` (dev server on its own port), `make mobile-build`, `make mobile-test`.
+- **Verification that nothing else broke:** `make dev`, `make demo`, `make test`, `make lint` give the same results as before.
+
+#### M15 — iPhone polish and offline
+- Installable web app: manifest, icons, splash, service worker that precaches everything (versioned cache with an "update available" prompt).
+- Phone layout: fix what the audit below found, add the bottom tab bar (in `mobile/`), large touch targets, safe-area insets (notch and home bar), charts and tables sized for narrow screens, landscape, dark/light.
+- Storage safety: ask the browser to keep the data (`navigator.storage.persist()`), detect missing or evicted data and offer a one-tap re-import; explain that the pack file itself is the real backup.
+- **Offline test:** airplane mode, cold start, every page, import and replace, in the Simulator and on a real iPhone.
+- **Done when:** every page works in airplane mode with the demo pack and with your own pack.
+
+#### M16 — Hosting, docs and CI
+- GitHub Pages workflow publishing the static build (demo pack only; **no real data is ever in the repo or the site**), and the instructions for other hosts.
+- README section "Use it on your iPhone": make the pack, AirDrop it, open the site, Add to Home Screen, Import; plus limitations.
+- CI: typecheck, tests, build for `mobile/`; golden files up to date; the audit (`make audit`) also scans `mobile/` and refuses `*.cx5pack` files in git.
+- `CLAUDE.md` gets a "keep both implementations in step" rule: adding or changing an API route means changing the Python API, the TypeScript engine and the goldens, in one change.
+
+### Phone layout audit (the current app at an iPhone width of 390 px, measured)
+
+The pages already stack into one column below ~860 px, but the app was not designed for a phone yet:
+
+| Page | At 390 px today |
+|---|---|
+| Overview, Trends, Alerts, Status | stack well; readable |
+| Warnings | stacks well; the codes table scrolls sideways inside its panel |
+| **Faults** | **broken**: the page becomes ~1280 px wide (a wide table and the frame-comparison matrix push it out), so a phone would zoom out and pan sideways |
+| **Diagnostics** | **broken**: ~800 px wide (the report/compare selectors and the history table overflow) |
+| All pages | the period bar (quick ranges + two date fields) takes about a third of the first screen; the top navigation is a sideways-scrolling strip; many controls are under 32 px tall (27 on the Alerts page) |
+
+M15 fixes these. Planned approach: tables become horizontally scrollable *inside* their panel (never the page), selectors stack, the period bar collapses into one compact "period" button that opens the controls, a bottom tab bar replaces the top strip (Overview, Trends, Alerts, Faults, More), and controls get at least 44 px touch targets. Verified by screenshots at 390 px (iPhone), 430 px (large iPhone), and 768 px (iPad), and with the iOS Simulator.
+
+### Android and other devices
+
+The app is a web app (a PWA), so the same hosted address works in Chrome on Android, and in a desktop browser. Chrome on Android supports everything used here (service worker, installable app, IndexedDB, file picker, DuckDB-WASM), and is usually *less* restrictive about stored data than iOS. What differs is only the manual steps: install through Chrome's menu ("Install app" / "Add to Home screen"), and getting the pack file there (Nearby Share, Google Drive, a USB cable or email instead of AirDrop). **Not an acceptance target:** there is no Android device to verify on, so it is tested only in desktop Chrome's mobile emulation, and the README says "expected to work". A tester with an Android phone could be added later.
+
+### Limits (by design)
+- **Read-only viewer.** New Mazda exports still go through `make ingest` on the Mac, then a new pack to the phone. Parsing Mazda's zip/CSV files on the phone would mean porting the ingestion code; not planned.
+- Alerts are not re-evaluated on the phone.
+- Two implementations of the API must be kept equal; the golden tests make drift visible but cost maintenance.
+- iOS decides how long web-app storage survives; keep the pack file (iCloud Drive or Files) as the source of truth.
+
+### Risks and how the plan handles them
+
+| Risk | Handling |
+|---|---|
+| DuckDB-WASM too slow or too big on an iPhone | measured first, in M12, with a written go/no-go and fallbacks |
+| SQL differences between DuckDB 2.0.0 and the WASM engine | run all of `views.sql` in M12; adapt the SQL only if needed, keeping Python and WASM results identical |
+| The TypeScript API drifting from the Python one | golden contract tests (M13), regenerated and diffed in CI |
+| iOS evicting stored data | persistence request, detection and one-tap re-import (M15); the pack file is the backup |
+| Phone with the JIT compiler off (Lockdown Mode or similar): code runs 10–70× slower | measured: still ready in about 2 s and queries in tens of ms; the app shows its screen skeleton immediately, and the README explains how to exclude the site from Lockdown Mode for full speed |
+| Stale cached app after an update | versioned precache and an update prompt (M15) |
+| Privacy of hosting | the host only ever serves static code; CSP `connect-src 'self'`; verified by blocking the network (M15, M16) |
+| Breaking the Mac app | separate folder; only the one-line client seam in `frontend/`; both apps run in CI |
+
+### Decisions
+
+1. **Folder name: `mobile/`.** Confirmed.
+2. **Host the app's code on GitHub Pages** (public, code only; no data ever in the repo or the site). Confirmed.
+3. **Move the data pack by AirDrop / Files / iCloud Drive.** Confirmed.
+4. **Read-only viewer, alerts computed on the Mac.** Confirmed. What this means: the phone gets a snapshot of the database that the Mac made, including the alerts the Mac had already raised. On the phone you can read everything, change the period, compare months, and acknowledge alerts. You cannot (a) drop a new Mazda zip onto the phone and have it processed, (b) make the phone raise new alerts or change the alert thresholds. For both you go through the Mac (`make ingest`, then a new pack). One consequence: an alert you acknowledge on the phone is remembered on the phone only; the Mac does not know, and the other way round. The alternative is to port the ingestion code and the alert engine to the phone as well (roughly two or three more milestones), so the phone would be fully independent of the Mac. Not recommended for now; it can be added later without redoing the rest.
+5. **Real iPhone testing:** yes, iOS 27, in addition to the iOS Simulator, in M12 and M15. Confirmed.
+
+## More of the car's own data (M17–M20, planned after M16)
+
+Added after looking at the 176 signals the views do not read yet (24 of 200 are used). Nothing is lost by not using them: the Mac database keeps all 200, and the phone pack's signal list is read from `views.sql`, so **a feature that starts reading a new signal makes the trimmed pack include it automatically** (guarded by a test); `--all-signals` always gives the full set. These milestones are to be done **after M16**, so each one is built once in both places: the Python API (Mac app) and the TypeScript engine (phone app), with the golden contract tests extended and sample data that exercises it.
+
+### What the data shows (author's export, Jun–Oct 2026; meanings are inferred from names and values, Mazda does not publish them)
+
+| Signal(s) | What was seen |
+|---|---|
+| `remoildistk` / `remoildistm` | stepped 14,000 → 12,000 → 11,000 → 9,000 while the odometer went 59 → 4,860 km, so it behaves like **distance left until the next oil change** (km; the second is the same in miles: 14,000 km ≈ 8,700 mi, shown as 8,600). `65535` = unknown, and it appears briefly between valid values on trips, so it must be ignored, not charted |
+| `fltyrepresswarn`, `frtyrepresswarn`, `rltyrepresswarn`, `rrtyrepresswarn`, `tpmsstatus`, `tpmssystemflt`, `oillevelwarning`, `seatbeltwrndrq`, `dropnwrn` | the car's **own warning flags** (tire pressure warning per wheel, tire-pressure-system status and fault, oil level, seat belt, door open): **always 0** in 196 readings, i.e. "all clear" today. Their non-zero values are unknown, so anything other than 0 will be treated as "the car is warning" |
+| `tprsdispyear/month/date/hour/minute` | the time the car last **measured** the tire pressures (year always 2026). The newest snapshot (17:46 UTC on 22 Oct) shows 22 Oct, hour 18, so this clock is the car's **local time (UTC+1 then), not UTC**: it needs a time zone |
+| `vdt_2_warningpt_*`, `vdt_7_warningbody_*` | **128 bit flags**, apparently the state of dashboard warning lamps (power-train and body). Only 4 ever change: `vdt_7_warningbody_1_30` is set in 94 of 214 readings (about 44%) from June to October, `vdt_7_warningbody_2_44` in 3 (first 1 Aug), `vdt_2_warningpt_1_23` and `vdt_2_warningpt_2_46` in 4 each, all first seen on **15 Oct, the day of the diagnostic report** |
+| `mntsetdist`, `remregdist` (and `mntset*`) | constant `65535` / `255`: the maintenance reminder is not set up in the car (could be mentioned in M17) |
+
+### M17 — Next oil change
+- **View and API:** `v_oil_service` from `remoildistk` (km; ignore `65535` and `Invalid` readings): latest valid remaining distance with its date and odometer, plus the history of steps. `GET /api/maintenance/oil`.
+- **UI:** an Overview tile "Next oil change in about 9,000 km (as reported on 22 Oct)", and a small step chart on Status; clear wording that the car reports it in coarse steps (1,000–2,000 km) and that it is the car's value, not a calculation.
+- **Alert:** rule `oil_change_due` in `config/alerts.yaml` (default: below 1,000 km remaining, one alert per service interval).
+- **Also:** the sample data gets an oil countdown (with the `65535` dropouts) and a due-soon episode; the TypeScript engine, goldens and pack follow automatically.
+- **Done when:** the tile, chart and alert work with sample and real data, `65535` never shows, and Python and TypeScript agree on the golden files.
+
+### M18 — Alerts from the car's own warnings
+- **View and API:** `v_car_warnings`: for each of the nine flags above (and any later ones), the latest state and the periods it was non-zero. `GET /api/status/car-warnings`. Readings flagged `Invalid` are ignored.
+- **UI:** a "Car warnings" panel on Status (all clear, or which flag is on since when) and a row in the Overview alert strip.
+- **Alert rule** `car_warning_flag` (default severity warning; `critical` can be set per flag in the file): plain-language titles ("The car reports a tire pressure warning: rear left"), raised once per episode, event-based so the 30-day lookback applies. It complements the user-set low-pressure rule (`low_tire_pressure`), which stays.
+- **Sample data** gets a rear-left tire warning flag that comes on shortly after the existing slow leak, so the demo shows both.
+- **Open point:** the meaning of non-zero values (1 vs 2 …) is unknown; the plan treats any non-zero as "warning" and shows the raw value in the detail text. If a real value ever appears, `config/codes/` gets an optional label file for it.
+
+### M19 — Tire reading time
+- **Time zone first:** the measurement time is in the car's local time. Add `car_timezone` to a small settings file (e.g. `Europe/Lisbon`, with a one-line check that suggests the zone from the data: compare the measurement clock with the snapshot's UTC time) and convert to UTC. Must handle the clock change in late October and invalid parts (`255`, `0` year).
+- **View and API:** `v_tire_readings` with `measured_at` (UTC), the snapshot time, and the age of the measurement at snapshot time; consecutive snapshots that repeat the same measurement are one reading.
+- **UI:** the tire panels say "measured 18:02, 41 min before this snapshot"; the Status tire chart uses the measurement time on its axis (fewer duplicate points); stale readings (older than a configurable number of hours) are marked.
+- **Alerts:** `low_tire_pressure` keys on the measurement time instead of the snapshot time, so one low reading counted in several snapshots raises one alert.
+- **Done when:** both implementations convert times identically (DST edge cases in the goldens) and the demo data has readings whose measurement is older than the snapshot.
+
+### M20 — Warning-lamp flags (the 128 bit flags)
+- **View and API:** `v_warning_flags`: per flag, readings set, share of readings, first and last seen, and the timeline of when it was on; only flags that ever change are listed by default. `GET /api/status/warning-flags`.
+- **Labels:** user-supplied meanings in `config/codes/warning_flags.yaml` (like `warnings.yaml`: title, severity, notes); unmapped flags appear in `make unmapped` and the dashboard's unmapped list.
+- **Decoding aid:** for each flag that changes, show which `$` warning codes and which diagnostic faults appear around the times it is on (for example "set in 94 snapshots; `$…` codes co-occur in N of them"), clearly marked as a *hint*, not a fact. This is research support for filling in `warnings.yaml` and the flag labels.
+- **UI:** a "Warning lamps" panel on Status with the timeline; flags set on the day of a diagnostic report are called out.
+- **Alert rule** `new_warning_flag`: a flag that has never been set before is set for the first time (like `new_warning_code`).
+- **Done when:** the panel, hints, labels and alert work on sample and real data, with identical results in both implementations.
+
+### Decisions (all confirmed)
+1. **Order:** M17 oil, M18 car warnings, M19 tire time, M20 lamp flags (easiest and most useful first). Confirmed.
+2. **Time zone (M19):** a setting in a small config file, with a suggestion from the data (not the browser's time zone, which would be wrong when travelling). Confirmed.
+3. **Default thresholds:** oil change due below 1,000 km; tire data "stale" after 6 hours; car warning flags severity `warning`. Confirmed.
+4. **Phone app:** all four ship to it in the same milestone (the engine and golden tests are extended each time), not as a separate catch-up. Confirmed.
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes and the DTC status flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`.
@@ -149,4 +353,4 @@ A page showing how each metric evolved month by month, with the change against t
 
 ## Ideas not built
 
-Email notifications; support for several vehicles in the UI; self-hosted fonts (so the page makes no outside request at all); Windows support without WSL; a published Docker image.
+Email notifications; support for several vehicles in the UI; self-hosted fonts for the Mac app too (planned only for the standalone app, M14); Windows support without WSL; a published Docker image.

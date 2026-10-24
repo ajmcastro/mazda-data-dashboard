@@ -15,3 +15,8 @@ dist/
 # generated profiling output
 docs/profile/
 db/
+# offline phone app: data packs (contain your VIN) and spike output
+*.cx5pack
+*.cx5pack.reference.json
+mobile/spike-results/
+*.tsbuildinfo
