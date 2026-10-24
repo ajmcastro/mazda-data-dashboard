@@ -57,20 +57,20 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 
 | | Milestone | Outcome |
 |---|---|---|
-| M1 | Data exploration and data dictionary | `make profile`, `docs/data-dictionary.md` |
-| M2 | Ingestion into DuckDB | idempotent `make ingest`, parsers for every file kind |
-| M3 | Domain model and code lookups | SQL views, editable code descriptions, unknown-code fallback |
-| M4 | API and dashboard skeleton | FastAPI, React app, generated types, `make dev` |
-| M5 | Alerts engine | nine YAML rules, Alerts page, optional macOS notification |
-| M6 | Diagnostic report and deep dives | Diagnostics page, freeze-frame viewer, fault context |
-| M7 | Polish and open-source readiness | sample data, demo mode, README, MIT licence, CI, privacy audit |
-| M8 | Date-range filter | `from` / `to` on the API, range bar, range kept in the URL |
-| M9 | Quick ranges | Last week … All time presets, remembered choice |
-| M10 | Choose any diagnostic report | always-visible picker, report history, three sample reports |
-| M11 | Monthly comparison ("Trends") | cards and table with change vs the previous month |
+| M1 | Data exploration and data dictionary ✅ | `make profile`, `docs/data-dictionary.md` |
+| M2 | Ingestion into DuckDB ✅ | idempotent `make ingest`, parsers for every file kind |
+| M3 | Domain model and code lookups ✅ | SQL views, editable code descriptions, unknown-code fallback |
+| M4 | API and dashboard skeleton ✅ | FastAPI, React app, generated types, `make dev` |
+| M5 | Alerts engine ✅ | nine YAML rules, Alerts page, optional macOS notification |
+| M6 | Diagnostic report and deep dives ✅ | Diagnostics page, freeze-frame viewer, fault context |
+| M7 | Polish and open-source readiness ✅ | sample data, demo mode, README, MIT licence, CI, privacy audit |
+| M8 | Date-range filter ✅ | `from` / `to` on the API, range bar, range kept in the URL |
+| M9 | Quick ranges ✅ | Last week … All time presets, remembered choice |
+| M10 | Choose any diagnostic report ✅ | always-visible picker, report history, three sample reports |
+| M11 | Monthly comparison ("Trends") ✅ | cards and table with change vs the previous month |
 | M12 | Standalone feasibility spike ✅ | data pack export, DuckDB in the browser runs the views; **GO**; confirmed in Chrome, Safari, the iOS Simulator and a real iPhone |
-| M13 | Standalone data engine | the API's routes re-implemented in TypeScript, proven identical by contract tests (done) |
-| M14 | Standalone app shell (done) | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
+| M13 | Standalone data engine ✅ | the API's routes re-implemented in TypeScript, proven identical by contract tests |
+| M14 | Standalone app shell ✅ | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
 | M15 | iPhone polish and offline | installable web app, works in airplane mode, phone navigation, storage safety |
 | M16 | Hosting, docs and CI | HTTPS static hosting (code only), README guide, parity checks in CI |
 | M17 | Next oil change | the car's own oil-change countdown: tile, history, alert (planned after M16) |
