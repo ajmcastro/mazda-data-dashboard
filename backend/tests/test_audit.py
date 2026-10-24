@@ -85,6 +85,20 @@ def test_flags_databases_and_data_files(repo):
     assert sorted(report.bad_files) == ["data/export.csv", "other.wal"]
 
 
+def test_flags_data_packs_unless_gitignored(repo):
+    repo_dir, data = repo
+    (repo_dir / "mine.cx5pack").write_bytes(
+        b"PK"
+    )  # would be published: contains the VIN
+    (repo_dir / "mobile").mkdir()
+    (repo_dir / "mobile" / "demo.cx5pack").write_bytes(b"PK")
+    (repo_dir / ".gitignore").write_text(
+        "*.duckdb\nmobile/*.cx5pack\n"
+    )  # ignored: fine
+    report = audit(data, repo_dir)
+    assert report.bad_files == ["mine.cx5pack"] and not report.clean
+
+
 def test_mask_hides_most_of_the_value():
     assert "REALVIN" not in mask(SECRET_VIN)
     assert mask("abc") == "abc"

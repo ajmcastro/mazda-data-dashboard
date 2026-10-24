@@ -209,6 +209,58 @@ Things to know:
 - A gap between two exports stays a gap in the charts. The "no new data" alert reminds you
   when it is time to ask for a newer export.
 
+## Use it on your iPhone (offline, with your data on the phone)
+
+The `mobile/` folder is the same dashboard as an offline web app: your data lives **on the phone**
+and the app works without the Mac, without Wi-Fi and without any server. The Mac version above is
+unaffected. It is read-only: new Mazda exports still go through `make ingest` on the Mac, then a new
+data pack goes to the phone.
+
+**1. Publish the app (once).** The repository has a GitHub Actions workflow that builds the app and
+publishes it on GitHub Pages. In your copy of the repository open **Settings → Pages → Build and
+deployment → Source: GitHub Actions**, then push to `main` (or run the workflow "Phone app (GitHub
+Pages)" from the Actions tab). The address is `https://<your-user>.github.io/<repository>/`.
+The site contains the app and the **synthetic demo data only**, never yours.
+
+Any other static host with HTTPS works too (Netlify, Cloudflare Pages, your own server): run
+`make mobile-build` and upload the folder `mobile/dist`. It must be `https://`: iOS only installs and
+caches an app from a secure address.
+
+**2. Make your data pack** on the Mac:
+
+```bash
+make ingest        # if you have new exports (see "Adding newer data later")
+make mobile-pack   # writes db/mazda.cx5pack
+```
+
+**3. Move it to the phone.** AirDrop `db/mazda.cx5pack` to the iPhone and save it in **Files**
+(iCloud Drive is good: it keeps the file as your backup).
+
+**4. Install the app.** Open the site address in **Safari**, tap **Share → Add to Home Screen**, and
+open the new "CX-5" icon. The first start downloads the app once (about 36 MB). When the **Data**
+screen says **Works offline: yes**, you can switch Wi-Fi off.
+
+**5. Import your data.** On the Data screen tap **Import data pack** and choose the file. Or try
+**Load demo data** first. To update later, make a new pack and use **Replace with another pack**
+(alerts you acknowledged on the phone stay acknowledged).
+
+Good to know:
+
+- **Privacy.** The pack contains your VIN, so treat it like the raw files. GPS positions are left out.
+  The app makes no network request except to its own address, and your data never leaves the phone.
+  Keep the pack out of git (`*.cx5pack` is ignored and `make audit` refuses it).
+- **iOS may remove the stored data** after a few weeks without use or when space is low. The app asks
+  Safari to keep it and tells you if it was removed; importing the pack file again takes seconds.
+- **Updates.** When a newer version of the app is published, it shows an **Update** button.
+- Alerts are not re-evaluated on the phone (they come from `make ingest` on the Mac); you can
+  acknowledge them on the phone.
+- **Lockdown Mode** (Settings → Privacy & Security) switches off parts of Safari that this app relies on
+  (the JavaScript compiler, and it can restrict WebAssembly). If the app is very slow or does not
+  start, turn Lockdown Mode off for Safari or for this site. A very old iPhone will also be slow to
+  start (a few seconds with real data).
+- Android: the app should work in Chrome ("Install app"), but it has not been tested on a device.
+- To try the app on the Mac: `make mobile-dev` and open http://localhost:5174.
+
 ## Alerts
 
 `make ingest` (or `make alerts`) evaluates the rules in [config/alerts.yaml](config/alerts.yaml);
@@ -247,6 +299,9 @@ file (or run `cd backend && uv run python -m mazda_dash.alerts --notify`).
 | `make sample-data` | regenerate `sample_data/` (deterministic) |
 | `make types` | regenerate the frontend's TypeScript types from the API schema |
 | `make test` / `make lint` | backend and frontend tests / checks |
+| `make mobile-pack` | export your database as `db/mazda.cx5pack` for the phone app |
+| `make mobile-dev` / `make mobile-build` | run / build the phone app (`mobile/`) with the demo data |
+| `make mobile-test` | check that the phone app's TypeScript engine answers exactly like the Python API |
 | `make format` | format the backend code |
 | `make profile` | per-file data profiling reports in `docs/profile/` |
 | `make audit` | check for private values before publishing (see [Privacy](#privacy)) |
@@ -270,6 +325,9 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + code lookups
   figures for the Trends page.
 - `frontend/`: Vite, React, TypeScript, Recharts. Types are generated from the API's OpenAPI
   schema.
+- `mobile/`: the same pages as an offline phone app. DuckDB runs in the browser (WebAssembly) on a
+  data pack exported by `make mobile-pack`, and a TypeScript port of the API answers the pages;
+  contract tests keep it identical to the Python API.
 
 [PLAN.md](PLAN.md) has the design decisions and the milestones this was built in.
 
@@ -278,7 +336,9 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + code lookups
 Vehicle exports contain your VIN, and may contain GPS positions. `data/`, `db/` and `*.duckdb`
 are git-ignored, and nothing you load is sent anywhere: the dashboard talks only to the API on
 your own machine. The one outside request is the page fonts, which the browser fetches from
-Google Fonts (no data is sent, and the dashboard still works without them).
+Google Fonts (no data is sent, and the dashboard still works without them). The phone app bundles
+its fonts and makes no outside request at all. Data packs (`*.cx5pack`, which hold the VIN) are
+git-ignored too.
 
 If you fork this project, or publish your own copy, run:
 
@@ -306,12 +366,15 @@ for review. The tests and the sample data use only made-up values.
 ## Development
 
 ```bash
-make test   # pytest + vitest
-make lint   # ruff, oxlint, tsc
+make test          # pytest + vitest
+make lint          # ruff, oxlint, tsc
+make mobile-test   # phone app: contract tests against the Python API, types
 ```
 
-CI runs the same checks (plus a format check and a production build), and verifies that the
-generated types and sample data are up to date. See [CLAUDE.md](CLAUDE.md) for a tour of the
+CI runs the same checks (plus a format check and production builds), verifies that the generated
+types and sample data are up to date, replays the Python API's answers against the phone app's
+engine, and runs the privacy audit. The phone app is published by `.github/workflows/pages.yml`.
+When you change an API endpoint, change its twin in `mobile/src/engine/` in the same commit. See [CLAUDE.md](CLAUDE.md) for a tour of the
 code for contributors and coding assistants.
 
 ## License

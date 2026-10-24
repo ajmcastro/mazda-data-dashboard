@@ -1,0 +1,52 @@
+# Publishes the phone app (mobile/) as a static site on GitHub Pages.
+# The site contains the app and the SYNTHETIC demo data only. Your own data pack is never part of
+# the repository or the site: you copy it to your phone and import it in the app.
+# One-time setup in the repository: Settings > Pages > Build and deployment > Source: GitHub Actions.
+name: Phone app (GitHub Pages)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: cd backend && uv sync --locked
+      - run: cd mobile && npm ci
+      # tests first: a broken engine must not be published
+      - run: make mobile-test
+      - run: make mobile-build
+      - name: Only the synthetic demo pack may be published
+        run: |
+          test -f mobile/dist/demo.cx5pack
+          test -z "$(find mobile/dist -name '*.cx5pack' ! -name demo.cx5pack)"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: mobile/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4

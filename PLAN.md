@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell) and M15 (iPhone polish and offline) are done. M16 (hosting, docs and CI for the offline phone app in `mobile/`) is planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 16".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done: the offline phone app in `mobile/` is complete except for the real-iPhone test after the first deployment and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 17".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -72,7 +72,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M13 | Standalone data engine ✅ | the API's routes re-implemented in TypeScript, proven identical by contract tests |
 | M14 | Standalone app shell ✅ | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
 | M15 | iPhone polish and offline ✅ | installable web app, works in airplane mode, phone navigation, storage safety |
-| M16 | Hosting, docs and CI | HTTPS static hosting (code only), README guide, parity checks in CI |
+| M16 | Hosting, docs and CI ✅ | HTTPS static hosting (code only), README guide, parity checks in CI |
 | M17 | Next oil change | the car's own oil-change countdown: tile, history, alert (planned after M16) |
 | M18 | The car's own warnings | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) (planned after M16) |
 | M19 | Tire reading time | when each tire pressure was really measured, and how fresh it is (planned after M16) |
@@ -276,6 +276,14 @@ Re-implement the API inside the browser with **identical JSON**.
 - README section "Use it on your iPhone": make the pack, AirDrop it, open the site, Add to Home Screen, Import; plus limitations.
 - CI: typecheck, tests, build for `mobile/`; golden files up to date; the audit (`make audit`) also scans `mobile/` and refuses `*.cx5pack` files in git.
 - `CLAUDE.md` gets a "keep both implementations in step" rule: adding or changing an API route means changing the Python API, the TypeScript engine and the goldens, in one change.
+
+**M16 as built.**
+- `.github/workflows/pages.yml`: on every push to `main` (or by hand) it runs `make mobile-test`, `make mobile-build`, checks that `mobile/dist` holds `demo.cx5pack` and no other `*.cx5pack`, and publishes `mobile/dist` to GitHub Pages (needs the one-time setting Pages → Source: GitHub Actions). The site holds the app and the synthetic demo pack only. The build uses relative paths, so it works under `https://<user>.github.io/<repo>/` and on any other static host; the README explains Netlify / Cloudflare / own server (`make mobile-build`, upload `mobile/dist`, HTTPS required).
+- `ci.yml` gained a `mobile` job (typecheck, contract tests against freshly recorded Python answers, production build, the same pack check) and a `privacy` job (`make audit`). The goldens are regenerated on every run rather than committed, so there is nothing to go stale; a Python test fails if an API route has no golden case.
+- The audit refuses any `*.cx5pack` that git would publish (a gitignored one is fine), with a test.
+- The phone app typechecks, tests and builds with only `mobile/node_modules` installed (checked with `frontend/node_modules` moved away), which is what CI has.
+- README: new section "Use it on your iPhone" (publish, `make mobile-pack`, AirDrop to Files, Add to Home Screen, import, update, privacy, storage eviction, Lockdown Mode, Android note), new commands, privacy and development text. `CLAUDE.md`: the "keep both implementations in step" rule.
+- **Not verifiable from here:** the first real deployment (needs the repository setting and a push) and the real-iPhone install/offline test with the hosted site and the author's own pack. Do that and note the result here.
 
 ### Phone layout audit (the current app at an iPhone width of 390 px, measured)
 

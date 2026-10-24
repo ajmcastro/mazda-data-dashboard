@@ -62,3 +62,40 @@ jobs:
       - run: make types sample-data
       - name: Generated types and sample data are up to date
         run: git diff --exit-code -- frontend/openapi.json frontend/src/api/schema.d.ts sample_data
+
+  # The phone app re-implements the API in TypeScript. `make mobile-test` records what the Python API
+  # answers on the sample data (goldens are regenerated, never committed), checks the TypeScript
+  # types and replays every answer against the TypeScript engine.
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: cd backend && uv sync --locked
+      - run: cd mobile && npm ci
+      - run: make mobile-test
+      - run: make mobile-build
+      - name: The build holds the synthetic demo pack and no other data pack
+        run: |
+          test -f mobile/dist/demo.cx5pack
+          test -z "$(find mobile/dist -name '*.cx5pack' ! -name demo.cx5pack)"
+
+  # Nothing private may be published: no databases, raw exports or data packs in git (see `make audit`).
+  privacy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - run: cd backend && uv sync --locked
+      - run: make audit

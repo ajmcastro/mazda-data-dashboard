@@ -82,7 +82,10 @@ def audit(data_dir: Path, repo: Path, extra: list[str] | None = None) -> Report:
 
     for path in files:
         rel = str(path.relative_to(repo))
-        if re.search(r"\.(duckdb|wal)$|(^|/)\.env$", rel) or rel.startswith("data/"):
+        # data packs for the phone app (*.cx5pack) hold the VIN too: only gitignored ones are fine
+        if re.search(r"\.(duckdb|wal|cx5pack)$|(^|/)\.env$", rel) or rel.startswith(
+            "data/"
+        ):
             report.bad_files.append(rel)
             continue
         try:
@@ -119,7 +122,9 @@ def main() -> None:
     if report.tokens == 0:
         print("  (no private values found; is --data pointing at your real exports?)")
     for rel in report.bad_files:
-        print(f"  NOT FOR PUBLISHING: {rel} would be published (data or database file)")
+        print(
+            f"  NOT FOR PUBLISHING: {rel} would be published (data, database or data pack)"
+        )
     for rel, line, token in report.file_hits:
         print(f"  FILE    {rel}:{line} contains {token}")
     for commit, token in report.history_hits:
