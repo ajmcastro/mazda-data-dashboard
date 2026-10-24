@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change) is done and all decisions are settled. M18–M20 (more of the car's own data: car warnings, tire reading time, warning-lamp flags) follow, with their decisions settled. Next step: "start implementing milestone 18".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change) and M18 (the car's own warnings) are done. M19–M20 (more of the car's own data: tire reading time, warning-lamp flags) follow, with their decisions settled. Next step: "start implementing milestone 19".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -74,7 +74,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M15 | iPhone polish and offline ✅ | installable web app, works in airplane mode, phone navigation, storage safety |
 | M16 | Hosting, docs and CI ✅ | HTTPS static hosting (code only), README guide, parity checks in CI |
 | M17 | Next oil change ✅ | the car's own oil-change countdown: tile, history, alert (planned after M16) |
-| M18 | The car's own warnings | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) (planned after M16) |
+| M18 | The car's own warnings ✅ | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) |
 | M19 | Tire reading time | when each tire pressure was really measured, and how fresh it is (planned after M16) |
 | M20 | Warning-lamp flags | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert (planned after M16) |
 
@@ -371,6 +371,16 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 - **Alert rule** `car_warning_flag` (default severity warning; `critical` can be set per flag in the file): plain-language titles ("The car reports a tire pressure warning: rear left"), raised once per episode, event-based so the 30-day lookback applies. It complements the user-set low-pressure rule (`low_tire_pressure`), which stays.
 - **Sample data** gets a rear-left tire warning flag that comes on shortly after the existing slow leak, so the demo shows both.
 - **Open point:** the meaning of non-zero values (1 vs 2 …) is unknown; the plan treats any non-zero as "warning" and shows the raw value in the detail text. If a real value ever appears, `config/codes/` gets an optional label file for it.
+
+**M18 as built.**
+- `v_car_warning_readings` (every valid reading of the nine flags, with a label, display order, raw value and `is_on`) and `v_car_warning_episodes` (runs of consecutive readings with a flag on; `ongoing` = the run includes the flag's latest reading), both in `views.sql`. The plan's single `v_car_warnings` became these two, so the API and the alert share the run logic. The flag list is one `CASE` using the `signal = '...'` form, so the phone pack includes the signals by itself (a test keeps the view, the alert config's `CAR_WARNING_FLAGS` and the pack signals in step). Eight flags are in `rts`, the door flag `dropnwrn` is in `vis`.
+- `GET /api/status/car-warnings` (a state endpoint): each flag's latest state (`is_on`, raw value, since when, number of runs) in display order, and every run, newest first.
+- **Alert `car_warning_flag`** (default warning; `severities: {flag: critical}` per flag and `ignore_flags` in `config/alerts.yaml`; unknown flag names are a config error): one alert per run, event-based (the lookback applies), titled "The car reports a warning: tire pressure, rear left", with the raw value in the detail and the note that Mazda does not publish the meaning. Complements `low_tire_pressure`, which stays.
+- **UI:** a "Car warnings" panel on Status (all clear or what is on since when, every flag, history of runs) and a red row in the Overview alert strip (`carWarningHeadline`, tested).
+- **Phone:** `carwarnings.ts` in the TypeScript engine and the golden case; parity checked on the sample data and on a copy of the real database.
+- **Sample data:** the rear-left flag comes on at 205 kPa on 20 Jun (the slow leak crosses 210) and stays on until the pressure is back above 225, like a real warning (one run, ongoing); the door flag is added to the door snapshots. Both added without touching the random stream, so no other sample file changed (checked: only the status and door CSVs differ). The sample builds identically in any time zone (test).
+- **Real data (author's export):** all nine flags are 0 in every valid reading (196 status and 181 door readings), so the panel says all clear and no alert is raised. Run `make model` (or `make ingest`) once to get the new views.
+- Open as planned: the meaning of non-zero values is unknown; if a real one ever appears, `config/codes/` can get a label file.
 
 ### M19 — Tire reading time
 - **Time zone first:** the measurement time is in the car's local time. Add `car_timezone` to a small settings file (e.g. `Europe/Lisbon`, with a one-line check that suggests the zone from the data: compare the measurement clock with the snapshot's UTC time) and convert to UTC. Must handle the clock change in late October and invalid parts (`255`, `0` year).

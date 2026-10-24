@@ -5,7 +5,7 @@ use, trips, tire pressure, doors, the alarm, and the diagnostic report that come
 download. It
 turns the raw export files into a database, explains what they contain, and raises **alerts**
 when something deserves attention (a new or recurring fault, a new or spiking warning, a slow
-tire leak, an alarm event, unusually high fuel use, low fuel, an oil change coming up, or a stale
+tire leak, an alarm event, unusually high fuel use, low fuel, an oil change coming up, a warning flag the car itself raises, or a stale
 export).
 
 Everything runs on your machine and your data stays there (see [Privacy](#privacy)).
@@ -278,6 +278,7 @@ each alert is raised once, and an acknowledged alert is never raised again. The 
 | high consumption | a stretch of driving uses far more fuel than your average |
 | low fuel | the latest fuel reading is below a threshold |
 | low tire pressure | a tire reading is below a threshold (check your door-jamb sticker and set it) |
+| car warning flag | one of the car's own warning flags (tire pressure per wheel, tire pressure system, oil level, seat belt, door) is on; once per run, severity settable per flag |
 | oil change due | the car's own oil-change countdown is at or below 1,000 km (it counts in steps of 1,000 km or more) |
 | no new data | the newest data is more than a few days old |
 

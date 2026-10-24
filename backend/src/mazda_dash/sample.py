@@ -59,6 +59,7 @@ class Car:
         self.fuel_pct = 85.0
         self.trip_km = self.trip_fuel = self.trip_s = 0.0
         self.tires = [240.0, 240.0, 240.0, 240.0]  # FL, FR, RL, RR
+        self.tire_warning = [False] * 4  # the car's own warning flag per wheel
         self.events: list[
             tuple[datetime, float]
         ] = []  # (time, odometer) of every drive end
@@ -79,6 +80,8 @@ class Car:
         self.trip_km = self.trip_fuel = self.trip_s = 0.0
 
     def row(self, t: datetime) -> dict[str, float | int]:
+        # same order as before the flags existed, so the random stream (and the rest of the data) is unchanged
+        tires = [self.tire(i, t) for i in range(4)]
         l100 = self.trip_fuel / self.trip_km * 100 if self.trip_km > 0 else 102.2
         return {
             "ododispvalue": round(self.odo, 1),
@@ -89,11 +92,32 @@ class Car:
             "enginestate": 10 if self.trip_km > 0 else 3,
             "fuelsegementdactl": round(self.fuel_pct, 1),
             "smaphremdrvdistnum": int(self.fuel_pct / 100 * TANK_L / 6.9 * 100),
-            "fltprsdispkp": self.tire(0, t),
-            "frtprsdispkp": self.tire(1, t),
-            "rltprsdispkp": self.tire(2, t),
-            "rrtprsdispkp": self.tire(3, t),
+            "fltprsdispkp": tires[0],
+            "frtprsdispkp": tires[1],
+            "rltprsdispkp": tires[2],
+            "rrtprsdispkp": tires[3],
             **self.oil(t),
+            **self.car_warnings(tires),
+        }
+
+    def car_warnings(self, tires: list[int]) -> dict[str, int]:
+        """The car's own warning flags: all clear except the rear left tire, which the car flags once
+        the slow leak has taken it below 210 kPa. Like a real warning it stays on until the pressure
+        is back above 225 kPa (no flicker around the limit). No random numbers are used."""
+        for i, kpa in enumerate(tires):
+            if kpa < 210:
+                self.tire_warning[i] = True
+            elif kpa >= 225:
+                self.tire_warning[i] = False
+        return {
+            "fltyrepresswarn": int(self.tire_warning[0]),
+            "frtyrepresswarn": int(self.tire_warning[1]),
+            "rltyrepresswarn": int(self.tire_warning[2]),
+            "rrtyrepresswarn": int(self.tire_warning[3]),
+            "tpmsstatus": 0,
+            "tpmssystemflt": 0,
+            "oillevelwarning": 0,
+            "seatbeltwrndrq": 0,
         }
 
     def oil(self, t: datetime) -> dict[str, float | int | None]:
@@ -197,6 +221,10 @@ def write_doors(out: Path, rng: random.Random, rows: list[dict]) -> None:
     header = ["vin", "fileid_datetime", "requesttype", "datacreationtime"]
     for s in signals:
         header += [f"{s}_value", f"{s}_validstatus"]
+    header += [
+        "dropnwrn_value",
+        "dropnwrn_validstatus",
+    ]  # the car's door-open warning flag
     body = []
     for r in rows[::2]:
         line = [VIN, _n(r["at"]), "ForgetInform", _z(r["at"] + timedelta(seconds=12))]
@@ -209,7 +237,9 @@ def write_doors(out: Path, rng: random.Random, rows: list[dict]) -> None:
                 value,
                 "Invalid" if rng.random() < 0.03 and s == "drstatdrv" else "Valid",
             ]
-        body.append(line)
+        body.append(
+            line + [0, "Valid"]
+        )  # door-open warning: all clear (no random numbers used)
     _write(out / "all-vis-sample_vis-sample.csv", header, body)
 
 

@@ -45,5 +45,11 @@ rules:
   # The car counts in steps of 1,000 km or more; one alert per service interval.
   oil_change_due: {enabled: true, severity: warning, below_km: 1000}
 
+  # One of the car's own warning flags (tire pressure per wheel, tire pressure system, oil level,
+  # seat belt, door) was on. Raised once per run. `severities` sets a different severity for single flags
+  # (e.g. {rltyrepresswarn: critical}); `ignore_flags` silences flags. Flag names: see CAR_WARNING_FLAGS
+  # in backend/src/mazda_dash/alerts/config.py.
+  car_warning_flag: {enabled: true, severity: warning, severities: {}, ignore_flags: []}
+
   # No new data for more than `max_days` days (based on the clock).
   data_gap: {enabled: true, severity: info, max_days: 3}

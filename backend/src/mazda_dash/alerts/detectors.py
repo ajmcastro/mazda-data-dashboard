@@ -290,6 +290,40 @@ def oil_change_due(ctx: Context) -> list[Candidate]:
     ]
 
 
+def car_warning_flag(ctx: Context) -> list[Candidate]:
+    """One alert per run in which one of the car's own warning flags was on (v_car_warning_episodes).
+    Event-based: runs that began before the lookback window are not raised."""
+    rule = ctx.cfg.rules.car_warning_flag
+    rows = ctx.con.execute(
+        """SELECT flag, label, started_at, last_on_at, readings, max_value, ongoing
+           FROM v_car_warning_episodes WHERE started_at >= ? ORDER BY started_at, flag""",
+        [ctx.since],
+    ).fetchall()
+    out = []
+    for flag, label, started, last, n, value, ongoing in rows:
+        if flag in rule.ignore_flags:
+            continue
+        span = (
+            f"since {_fmt(started)}"
+            if ongoing
+            else f"from {_fmt(started)} to {_fmt(last)}"
+        )
+        out.append(
+            Candidate(
+                "car_warning_flag",
+                f"car_warning_flag:{flag}:{_stamp(started)}",
+                rule.severities.get(flag, rule.severity),
+                f"The car reports a warning: {label}",
+                f"The car's own warning flag ({flag}) was on {span} ({n} reading"
+                f"{'' if n == 1 else 's'}, raw value {_g(value)}). This is the car's flag, not a "
+                "calculation by this app, and Mazda does not publish what the values mean.",
+                started,
+                "/status",
+            )
+        )
+    return out
+
+
 DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "new_dtc": new_dtc,
     "recurring_dtc": recurring_dtc,
@@ -301,4 +335,5 @@ DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "low_tire_pressure": low_tire_pressure,
     "data_gap": data_gap,
     "oil_change_due": oil_change_due,
+    "car_warning_flag": car_warning_flag,
 }

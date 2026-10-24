@@ -55,3 +55,5 @@ export const MONTH_METRICS = [
   'distinct_faults', 'new_faults', 'tire_avg_kpa', 'tire_min_kpa',
 ]
 export const OIL_STEP = ['read_at', 'odometer_km', 'remaining_km', 'serviced']
+export const CAR_WARNING_FLAG = ['flag', 'label', 'is_on', 'value', 'last_read_at', 'readings', 'episodes', 'since']
+export const CAR_WARNING_EPISODE = ['flag', 'label', 'started_at', 'last_on_at', 'readings', 'max_value', 'ongoing']

@@ -1,8 +1,8 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useDoors, useOilService, useStatusTimeline, useTripSegments } from '../api/hooks'
-import type { AlarmEvent, OilService, TripSegment } from '../api/types'
-import { ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
-import { ANIMATE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
+import { useAlarms, useCarWarnings, useDoors, useOilService, useStatusTimeline, useTripSegments } from '../api/hooks'
+import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
+import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
+import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const tipLabel = (v: number | string) => fmtDateTime(new Date(Number(v)).toISOString())
@@ -22,6 +22,7 @@ export default function Status() {
   const alarms = useAlarms()
   const trips = useTripSegments(60)
   const oil = useOilService()
+  const carWarnings = useCarWarnings()
 
   const points = (status.data ?? []).map((s) => ({
     t: ts(s.created_at),
@@ -39,6 +40,13 @@ export default function Status() {
     { key: 'fuel', header: 'Fuel', num: true, sort: (t) => t.fuel_l, render: (t) => fmtNum(Math.max(0, t.fuel_l), 2, 'l') },
     { key: 'cons', header: 'l/100 km', num: true, sort: (t) => t.l_per_100km ?? -1, render: (t) => fmtNum(t.l_per_100km, 1) },
     { key: 'gap', header: 'Gap', num: true, render: (t) => fmtNum(t.gap_hours, 1, 'h') },
+  ]
+  const episodeCols: Column<CarWarningEpisode>[] = [
+    { key: 'flag', header: 'Warning', render: (e) => e.label },
+    { key: 'from', header: 'From', sort: (e) => e.started_at, render: (e) => fmtDateTime(e.started_at) },
+    { key: 'to', header: 'Until', render: (e) => (e.ongoing ? 'still on' : fmtDateTime(e.last_on_at)) },
+    { key: 'n', header: 'Readings', num: true, render: (e) => fmtNum(e.readings) },
+    { key: 'v', header: 'Raw value', num: true, render: (e) => fmtNum(e.max_value) },
   ]
   const alarmCols: Column<AlarmEvent>[] = [
     { key: 'at', header: 'When', render: (a) => fmtDateTime(a.created_at) },
@@ -99,6 +107,43 @@ export default function Status() {
           </QueryState>
         </Panel>
       </div>
+
+      {carWarnings.data?.has_data && (
+        <Panel title="Car warnings" hint="the car's own warning flags">
+          <p style={{ margin: '0 0 10px' }}>
+            {carWarnings.data.all_clear ? (
+              <Badge kind="ok">all clear</Badge>
+            ) : (
+              <Badge kind="critical">warning on</Badge>
+            )}{' '}
+            <span className="muted">
+              {carWarnings.data.all_clear
+                ? `None of the ${carWarnings.data.flags.length} flags is on in the latest readings.`
+                : 'The car itself reports the flags marked ON below.'}
+            </span>
+          </p>
+          <dl className="kv">
+            {carWarnings.data.flags.map((f) => (
+              <div key={f.flag} style={{ display: 'contents' }}>
+                <dt>{f.label}</dt>
+                <dd style={f.is_on ? { color: 'var(--accent)' } : undefined}>
+                  {f.is_on ? `ON since ${fmtDate(f.since)} (raw ${fmtNum(f.value)})` : 'clear'}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          {carWarnings.data.episodes.length > 0 && (
+            <div style={{ marginTop: 14 }}>
+              <div className="sub-h">EVERY TIME A FLAG WAS ON</div>
+              <DataTable rows={carWarnings.data.episodes} columns={episodeCols} rowKey={(e) => `${e.flag}${e.started_at}`} />
+            </div>
+          )}
+          <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>
+            These are flags the car sends. Mazda does not publish what a non-zero value means, so any value other than 0 is
+            treated as a warning.
+          </p>
+        </Panel>
+      )}
 
       {oil.data?.has_data && (
         <Panel title="Oil change countdown" hint="km left until the next oil change, as the car reports it">

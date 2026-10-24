@@ -442,6 +442,36 @@ def maintenance_oil(con: duckdb.DuckDBPyConnection = Con):
     )
 
 
+@app.get("/api/status/car-warnings", response_model=m.CarWarnings)
+def car_warnings(con: duckdb.DuckDBPyConnection = Con):
+    """The car's own warning flags: latest state of each and every run in which one was on.
+    A state, so it ignores the period."""
+    flags = rows(
+        con,
+        """WITH latest AS (
+               SELECT flag, label, sort_order, read_at, value, is_on,
+                      row_number() OVER (PARTITION BY flag ORDER BY read_at DESC) AS rk
+               FROM v_car_warning_readings),
+           counts AS (SELECT flag, count(*) AS readings FROM v_car_warning_readings GROUP BY flag)
+           SELECT l.flag, l.label, l.is_on, l.value, l.read_at AS last_read_at, c.readings,
+                  (SELECT count(*) FROM v_car_warning_episodes e WHERE e.flag = l.flag) AS episodes,
+                  (SELECT min(started_at) FROM v_car_warning_episodes e
+                   WHERE e.flag = l.flag AND e.ongoing) AS since
+           FROM latest l JOIN counts c USING (flag) WHERE l.rk = 1 ORDER BY l.sort_order""",
+    )
+    episodes = rows(
+        con,
+        "SELECT flag, label, started_at, last_on_at, readings, max_value, ongoing "
+        "FROM v_car_warning_episodes ORDER BY started_at DESC, sort_order, flag",
+    )
+    return m.CarWarnings(
+        has_data=bool(flags),
+        all_clear=not any(f["is_on"] for f in flags),
+        flags=flags,
+        episodes=episodes,
+    )
+
+
 # ------------------------------------------------------------ diagnostic tool
 
 

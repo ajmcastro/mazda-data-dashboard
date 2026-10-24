@@ -158,6 +158,10 @@ export const useDiagReports = () =>
 export const useOilService = () =>
   useQuery({ queryKey: ['oil'], queryFn: () => unwrap(client.GET('/api/maintenance/oil')) })
 
+/** The car's own warning flags: a state, so it ignores the selected period. */
+export const useCarWarnings = () =>
+  useQuery({ queryKey: ['car-warnings'], queryFn: () => unwrap(client.GET('/api/status/car-warnings')) })
+
 export const useDiagHistory = () =>
   useQuery({ queryKey: ['diag-history'], queryFn: () => unwrap(client.GET('/api/diag/history')) })
 

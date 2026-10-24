@@ -1,7 +1,7 @@
 // Formatting helpers. Timestamps come from the API as ISO strings in UTC and render in
 // the browser's local timezone.
 
-import type { OilService } from './api/types'
+import type { CarWarningFlag, OilService } from './api/types'
 
 const num = (digits: number) =>
   new Intl.NumberFormat('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits })
@@ -246,4 +246,12 @@ export function oilTile(o: OilService | undefined): { value: string; sub: string
   if (o.km_since_reading != null && o.km_since_reading >= 50) parts.push(`${fmtNum(o.km_since_reading)} km driven since`)
   parts.push('the car counts in steps of 1,000 km or more')
   return { value: fmtNum(o.remaining_km), sub: parts.join(' · '), soon: o.remaining_km <= OIL_SOON_KM }
+}
+
+/** One line for the Overview alert strip about the flags that are on now; null when all clear. */
+export function carWarningHeadline(flags: readonly CarWarningFlag[] | undefined): string | null {
+  const on = (flags ?? []).filter((f) => f.is_on)
+  if (on.length === 0) return null
+  if (on.length === 1) return `The car reports a warning: ${on[0].label}`
+  return `The car reports ${on.length} warnings: ${on.map((f) => f.label).join('; ')}`
 }

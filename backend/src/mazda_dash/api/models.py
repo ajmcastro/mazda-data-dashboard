@@ -377,6 +377,36 @@ class OilService(BaseModel):
     steps: list[OilStep]
 
 
+class CarWarningFlag(BaseModel):
+    """One of the car's own warning flags: its latest state (0 = all clear)."""
+
+    flag: str
+    label: str
+    is_on: bool
+    value: float | None = None  # the raw value of the latest reading
+    last_read_at: datetime
+    readings: int
+    episodes: int  # runs of consecutive readings with the flag on
+    since: datetime | None = None  # when the current run began, if it is on now
+
+
+class CarWarningEpisode(BaseModel):
+    flag: str
+    label: str
+    started_at: datetime
+    last_on_at: datetime
+    readings: int
+    max_value: float
+    ongoing: bool
+
+
+class CarWarnings(BaseModel):
+    has_data: bool
+    all_clear: bool
+    flags: list[CarWarningFlag]
+    episodes: list[CarWarningEpisode]  # newest first
+
+
 class MonthMetrics(BaseModel):
     """One calendar month. Metrics are None when the month has no data for them (a gap, not 0)."""
 

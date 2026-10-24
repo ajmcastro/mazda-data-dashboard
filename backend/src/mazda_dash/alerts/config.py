@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Severity = Literal["info", "warning", "critical"]
 SEVERITY_RANK = {"info": 0, "warning": 1, "critical": 2}
@@ -57,6 +57,36 @@ class OilChangeDue(Rule):
     below_km: float = Field(1000, gt=0)
 
 
+# The flags of v_car_warning_readings (a test keeps this list and the view in step).
+CAR_WARNING_FLAGS = (
+    "fltyrepresswarn",
+    "frtyrepresswarn",
+    "rltyrepresswarn",
+    "rrtyrepresswarn",
+    "tpmsstatus",
+    "tpmssystemflt",
+    "oillevelwarning",
+    "seatbeltwrndrq",
+    "dropnwrn",
+)
+
+
+class CarWarningFlag(Rule):
+    """The car's own warning flag went on. `severities` overrides the severity for single flags."""
+
+    severities: dict[str, Severity] = {}
+    ignore_flags: list[str] = []
+
+    @model_validator(mode="after")
+    def _known_flags(self):
+        for name in [*self.severities, *self.ignore_flags]:
+            if name not in CAR_WARNING_FLAGS:
+                raise ValueError(
+                    f"unknown car warning flag {name!r}; known: {', '.join(CAR_WARNING_FLAGS)}"
+                )
+        return self
+
+
 class Rules(_Strict):
     new_dtc: Rule = Rule()
     recurring_dtc: RecurringDtc = RecurringDtc()
@@ -68,6 +98,7 @@ class Rules(_Strict):
     low_tire_pressure: LowTirePressure = LowTirePressure()
     data_gap: DataGap = DataGap()
     oil_change_due: OilChangeDue = OilChangeDue()
+    car_warning_flag: CarWarningFlag = CarWarningFlag()
 
 
 class Notifications(_Strict):

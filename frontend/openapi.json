@@ -1350,6 +1350,25 @@
         }
       }
     },
+    "/api/status/car-warnings": {
+      "get": {
+        "summary": "Car Warnings",
+        "description": "The car's own warning flags: latest state of each and every run in which one was on.\nA state, so it ignores the period.",
+        "operationId": "car_warnings_api_status_car_warnings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CarWarnings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diag/reports": {
       "get": {
         "summary": "Diag Reports",
@@ -1795,6 +1814,148 @@
           "status"
         ],
         "title": "Alert"
+      },
+      "CarWarningEpisode": {
+        "properties": {
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "last_on_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last On At"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "max_value": {
+            "type": "number",
+            "title": "Max Value"
+          },
+          "ongoing": {
+            "type": "boolean",
+            "title": "Ongoing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag",
+          "label",
+          "started_at",
+          "last_on_at",
+          "readings",
+          "max_value",
+          "ongoing"
+        ],
+        "title": "CarWarningEpisode"
+      },
+      "CarWarningFlag": {
+        "properties": {
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "is_on": {
+            "type": "boolean",
+            "title": "Is On"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "last_read_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Read At"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "episodes": {
+            "type": "integer",
+            "title": "Episodes"
+          },
+          "since": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Since"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag",
+          "label",
+          "is_on",
+          "last_read_at",
+          "readings",
+          "episodes"
+        ],
+        "title": "CarWarningFlag",
+        "description": "One of the car's own warning flags: its latest state (0 = all clear)."
+      },
+      "CarWarnings": {
+        "properties": {
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "all_clear": {
+            "type": "boolean",
+            "title": "All Clear"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/CarWarningFlag"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/CarWarningEpisode"
+            },
+            "type": "array",
+            "title": "Episodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_data",
+          "all_clear",
+          "flags",
+          "episodes"
+        ],
+        "title": "CarWarnings"
       },
       "ContextFault": {
         "properties": {

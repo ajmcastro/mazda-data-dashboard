@@ -1,12 +1,12 @@
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useFuelMonthly, useOdometerDaily, useOilService, useOverview } from '../api/hooks'
+import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview } from '../api/hooks'
 import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
-import { ANIMATE, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, ts } from '../lib'
+import { ANIMATE, carWarningHeadline, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
@@ -15,6 +15,7 @@ export default function OverviewPage() {
   const odometer = useOdometerDaily()
   const fuel = useFuelMonthly()
   const oil = oilTile(useOilService().data)
+  const carWarning = carWarningHeadline(useCarWarnings().data?.flags)
   const o = overview.data
 
   return (
@@ -47,6 +48,12 @@ export default function OverviewPage() {
                 </RangeLink>
               ) : (
                 <div className="alert-row ok"><b>No active faults in the latest read-out</b></div>
+              )}
+              {carWarning && (
+                <RangeLink to="/status" className="alert-row bad">
+                  <b>{carWarning}</b>
+                  <span className="muted">The car's own warning flag: open Status</span>
+                </RangeLink>
               )}
               {o.last_alarm && (
                 <div className="alert-row warn">

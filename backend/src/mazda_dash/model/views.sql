@@ -191,6 +191,46 @@ SELECT i.read_at, i.remaining_km, i.previous_km, i.interval_no,
        s.odometer_km
 FROM i LEFT JOIN v_vehicle_status s ON s.created_at = i.read_at;
 
+-- ------------------------------------------------------------ the car's own warnings
+-- Warning flags the car itself reports, each 0 = all clear. What a non-zero value means is not published:
+-- any non-zero is treated as "the car is warning" and the raw value is kept. Invalid readings are ignored.
+-- To follow another flag, add it to the CASE below (the same list feeds the phone data pack, which keeps
+-- only signals named as signal = '...'). `n` is the display order.
+CREATE OR REPLACE VIEW v_car_warning_readings AS
+WITH named AS (
+    SELECT created_at, signal, value_num,
+           CASE WHEN signal = 'fltyrepresswarn' THEN {'n': 1, 'label': 'tire pressure, front left'}
+                WHEN signal = 'frtyrepresswarn' THEN {'n': 2, 'label': 'tire pressure, front right'}
+                WHEN signal = 'rltyrepresswarn' THEN {'n': 3, 'label': 'tire pressure, rear left'}
+                WHEN signal = 'rrtyrepresswarn' THEN {'n': 4, 'label': 'tire pressure, rear right'}
+                WHEN signal = 'tpmsstatus' THEN {'n': 5, 'label': 'tire pressure system status'}
+                WHEN signal = 'tpmssystemflt' THEN {'n': 6, 'label': 'tire pressure system fault'}
+                WHEN signal = 'oillevelwarning' THEN {'n': 7, 'label': 'oil level'}
+                WHEN signal = 'seatbeltwrndrq' THEN {'n': 8, 'label': 'seat belt reminder'}
+                WHEN signal = 'dropnwrn' THEN {'n': 9, 'label': 'door open'}
+           END AS flag
+    FROM signal_readings
+    WHERE valid IS NOT FALSE AND value_num IS NOT NULL
+)
+SELECT signal AS flag, flag.label AS label, flag.n AS sort_order,
+       created_at AS read_at, value_num AS value, value_num <> 0 AS is_on
+FROM named WHERE flag IS NOT NULL;
+
+-- Runs of consecutive readings with a flag on. ongoing = the run includes the flag's latest reading.
+CREATE OR REPLACE VIEW v_car_warning_episodes AS
+WITH r AS (
+    SELECT *, row_number() OVER (PARTITION BY flag ORDER BY read_at) AS rn,
+           count(*) OVER (PARTITION BY flag) AS total
+    FROM v_car_warning_readings
+), runs AS (
+    SELECT *, rn - row_number() OVER (PARTITION BY flag ORDER BY read_at) AS run
+    FROM r WHERE is_on
+)
+SELECT flag, any_value(label) AS label, any_value(sort_order) AS sort_order,
+       min(read_at) AS started_at, max(read_at) AS last_on_at, count(*) AS readings,
+       max(value) AS max_value, max(rn) = any_value(total) AS ongoing
+FROM runs GROUP BY flag, run;
+
 -- ------------------------------------------------------------------- trips
 -- The car's "trip 1" counters accumulate until reset: trip_km, average economy and
 -- driving time. Fuel used so far = trip_km * l/100km / 100 (the 102.2 raw value

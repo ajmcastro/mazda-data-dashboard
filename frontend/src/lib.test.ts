@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   addDays,
+  carWarningHeadline,
   daysInRange,
   editRange,
   fmtAgo,
@@ -217,5 +218,35 @@ describe('oilTile', () => {
   it('shows nothing without data', () => {
     expect(oilTile(undefined)).toBeNull()
     expect(oilTile({ ...base, has_data: false, remaining_km: null })).toBeNull()
+  })
+})
+
+describe('carWarningHeadline', () => {
+  const flag = (label: string, on: boolean) => ({
+    flag: label,
+    label,
+    is_on: on,
+    value: on ? 1 : 0,
+    last_read_at: '2026-06-30T10:00:00Z',
+    readings: 10,
+    episodes: on ? 1 : 0,
+    since: on ? '2026-06-20T09:00:00Z' : null,
+  })
+
+  it('is null while everything is clear or there is no data', () => {
+    expect(carWarningHeadline(undefined)).toBeNull()
+    expect(carWarningHeadline([flag('oil level', false), flag('door open', false)])).toBeNull()
+  })
+
+  it('names the single flag that is on', () => {
+    expect(carWarningHeadline([flag('oil level', false), flag('tire pressure, rear left', true)])).toBe(
+      'The car reports a warning: tire pressure, rear left',
+    )
+  })
+
+  it('counts and lists several', () => {
+    expect(carWarningHeadline([flag('oil level', true), flag('door open', true)])).toBe(
+      'The car reports 2 warnings: oil level; door open',
+    )
   })
 })

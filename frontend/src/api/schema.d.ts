@@ -392,6 +392,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status/car-warnings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Car Warnings
+         * @description The car's own warning flags: latest state of each and every run in which one was on.
+         *     A state, so it ignores the period.
+         */
+        get: operations["car_warnings_api_status_car_warnings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diag/reports": {
         parameters: {
             query?: never;
@@ -577,6 +598,65 @@ export interface components {
             status: string;
             /** Acknowledged At */
             acknowledged_at?: string | null;
+        };
+        /** CarWarningEpisode */
+        CarWarningEpisode: {
+            /** Flag */
+            flag: string;
+            /** Label */
+            label: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Last On At
+             * Format: date-time
+             */
+            last_on_at: string;
+            /** Readings */
+            readings: number;
+            /** Max Value */
+            max_value: number;
+            /** Ongoing */
+            ongoing: boolean;
+        };
+        /**
+         * CarWarningFlag
+         * @description One of the car's own warning flags: its latest state (0 = all clear).
+         */
+        CarWarningFlag: {
+            /** Flag */
+            flag: string;
+            /** Label */
+            label: string;
+            /** Is On */
+            is_on: boolean;
+            /** Value */
+            value?: number | null;
+            /**
+             * Last Read At
+             * Format: date-time
+             */
+            last_read_at: string;
+            /** Readings */
+            readings: number;
+            /** Episodes */
+            episodes: number;
+            /** Since */
+            since?: string | null;
+        };
+        /** CarWarnings */
+        CarWarnings: {
+            /** Has Data */
+            has_data: boolean;
+            /** All Clear */
+            all_clear: boolean;
+            /** Flags */
+            flags: components["schemas"]["CarWarningFlag"][];
+            /** Episodes */
+            episodes: components["schemas"]["CarWarningEpisode"][];
         };
         /** ContextFault */
         ContextFault: {
@@ -1974,6 +2054,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OilService"];
+                };
+            };
+        };
+    };
+    car_warnings_api_status_car_warnings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CarWarnings"];
                 };
             };
         };
