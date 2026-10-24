@@ -429,6 +429,77 @@ class CarWarnings(BaseModel):
     episodes: list[CarWarningEpisode]  # newest first
 
 
+class WarningFlag(BaseModel):
+    """One of the car's 128 warning-lamp bit flags (only flags that ever change are listed)."""
+
+    flag: str
+    area: str  # powertrain | body
+    bit: int
+    title: str | None = None  # your description, from config/codes/warning_flags.yaml
+    severity: str
+    notes: str | None = None
+    readings: int
+    readings_on: int
+    pct_on: float
+    first_on_at: datetime | None = None
+    last_on_at: datetime | None = None
+    on_now: bool
+    max_value: float
+    first_on_report_day: bool  # first set on a day a diagnostic report was taken
+    episodes: int
+
+
+class WarningFlagEpisode(BaseModel):
+    flag: str
+    started_at: datetime
+    last_on_at: datetime
+    readings: int
+    max_value: float
+    ongoing: bool
+
+
+class WarningFlags(BaseModel):
+    has_data: bool
+    first_read_at: datetime | None = None
+    last_read_at: datetime | None = None
+    flags: list[WarningFlag]
+    episodes: list[WarningFlagEpisode]
+
+
+class FlagHintWarning(BaseModel):
+    code: str
+    title: str
+    severity: str
+    known: bool
+    on_with: int  # readings with the flag on that have this warning code nearby
+    off_with: int
+    share_on: float | None = None  # on_with / all readings with the flag on
+    share_off: float | None = None
+
+
+class FlagHintFault(BaseModel):
+    ecu: str
+    dtc_code: str
+    failure_type: str | None = None
+    title: str
+    severity: str
+    on_with: int
+    off_with: int
+    share_on: float | None = None
+    share_off: float | None = None
+
+
+class WarningFlagHints(BaseModel):
+    """What happens around the times a flag is on. A hint to research from, NOT a meaning."""
+
+    flag: str
+    window_hours: float
+    on_readings: int
+    off_readings: int
+    warnings: list[FlagHintWarning]
+    faults: list[FlagHintFault]
+
+
 class MonthMetrics(BaseModel):
     """One calendar month. Metrics are None when the month has no data for them (a gap, not 0)."""
 

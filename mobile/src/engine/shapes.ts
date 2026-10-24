@@ -64,3 +64,10 @@ export const MONTH_METRICS = [
 export const OIL_STEP = ['read_at', 'odometer_km', 'remaining_km', 'serviced']
 export const CAR_WARNING_FLAG = ['flag', 'label', 'is_on', 'value', 'last_read_at', 'readings', 'episodes', 'since']
 export const CAR_WARNING_EPISODE = ['flag', 'label', 'started_at', 'last_on_at', 'readings', 'max_value', 'ongoing']
+export const WARNING_FLAG = [
+  'flag', 'area', 'bit', 'title', 'severity', 'notes', 'readings', 'readings_on', 'pct_on', 'first_on_at',
+  'last_on_at', 'on_now', 'max_value', 'first_on_report_day', 'episodes',
+]
+export const WARNING_FLAG_EPISODE = ['flag', 'started_at', 'last_on_at', 'readings', 'max_value', 'ongoing']
+export const HINT_WARNING = ['code', 'title', 'severity', 'known', 'on_with', 'off_with', 'share_on', 'share_off']
+export const HINT_FAULT = ['ecu', 'dtc_code', 'failure_type', 'title', 'severity', 'on_with', 'off_with', 'share_on', 'share_off']

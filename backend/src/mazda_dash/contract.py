@@ -228,6 +228,17 @@ def record(client: TestClient) -> list[dict]:
     rec.get("/api/codes/unmapped")
     rec.get("/api/maintenance/oil")
     rec.get("/api/status/car-warnings")
+    rec.get("/api/status/warning-flags")
+    names = [f["flag"] for f in rec.get("/api/status/warning-flags")["flags"]]
+    for name in names:
+        rec.get("/api/status/warning-flags/hints", flag=name)
+    for hours in (0.25, 0.5, 6, 48, 0, 49, -1, "x"):
+        rec.get("/api/status/warning-flags/hints", flag=names[0], window_hours=hours)
+    rec.get(
+        "/api/status/warning-flags/hints", flag="vdt_2_warningpt_1_0"
+    )  # a flag that never changes
+    rec.get("/api/status/warning-flags/hints", flag="nope")
+    rec.get("/api/status/warning-flags/hints")
 
     # --- diagnostic tool
     reports = rec.get("/api/diag/reports")

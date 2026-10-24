@@ -14,6 +14,8 @@ DDL = [
         dtc_code VARCHAR, title VARCHAR, severity VARCHAR, category VARCHAR, notes VARCHAR)""",
     """CREATE OR REPLACE TABLE ref_ecus (ecu VARCHAR, title VARCHAR, notes VARCHAR)""",
     """CREATE OR REPLACE TABLE ref_failure_types (failure_type VARCHAR, title VARCHAR)""",
+    """CREATE OR REPLACE TABLE ref_warning_flags (
+        flag VARCHAR, title VARCHAR, severity VARCHAR, category VARCHAR, notes VARCHAR)""",
 ]
 
 
@@ -54,6 +56,7 @@ def load_lookups(con: duckdb.DuckDBPyConnection, config_dir: Path) -> None:
         ("ref_warning_codes", "warnings.yaml", True),
         ("ref_dtc_codes", "dtcs.yaml", True),
         ("ref_ecus", "ecus.yaml", False),
+        ("ref_warning_flags", "warning_flags.yaml", True),
     ):
         rows = _described(config_dir / file, with_sev)
         if rows:

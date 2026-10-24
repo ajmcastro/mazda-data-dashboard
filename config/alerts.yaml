@@ -51,5 +51,10 @@ rules:
   # in backend/src/mazda_dash/alerts/config.py.
   car_warning_flag: {enabled: true, severity: warning, severities: {}, ignore_flags: []}
 
+  # One of the car's 128 warning-lamp bit flags is set for the first time (within the lookback window).
+  # Almost all are always off, so a first set is news. Severity comes from config/codes/warning_flags.yaml
+  # when you described the flag there; `ignore_flags` silences flags (names like vdt_7_warningbody_1_30).
+  new_warning_flag: {enabled: true, severity: info, ignore_flags: []}
+
   # No new data for more than `max_days` days (based on the clock).
   data_gap: {enabled: true, severity: info, max_days: 3}

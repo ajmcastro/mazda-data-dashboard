@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change), M18 (the car's own warnings) and M19 (tire reading time) are done. M20 (more of the car's own data: warning-lamp flags) follows, with its decisions settled. Next step: "start implementing milestone 20".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change), M18 (the car's own warnings), M19 (tire reading time) and M20 (the warning-lamp flags) are done, so every planned milestone is finished. All planned milestones are done; what is left is under "Ideas not built".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -76,7 +76,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M17 | Next oil change ✅ | the car's own oil-change countdown: tile, history, alert (planned after M16) |
 | M18 | The car's own warnings ✅ | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) |
 | M19 | Tire reading time ✅ | when each tire pressure was really measured, and how fresh it is (planned after M16) |
-| M20 | Warning-lamp flags | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert (planned after M16) |
+| M20 | Warning-lamp flags ✅ | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert (planned after M16) |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -407,6 +407,17 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 - **UI:** a "Warning lamps" panel on Status with the timeline; flags set on the day of a diagnostic report are called out.
 - **Alert rule** `new_warning_flag`: a flag that has never been set before is set for the first time (like `new_warning_code`).
 - **Done when:** the panel, hints, labels and alert work on sample and real data, with identical results in both implementations.
+
+**M20 as built.**
+- **Views** (`views.sql`): `v_warning_flag_readings` (every valid reading of the 128 flags, **only for flags that take more than one value**), `v_warning_flag_episodes` (runs of consecutive readings with a flag on; `ongoing`) and `v_warning_flags` (per flag: readings, readings on, share, first/last on, on now, your title/severity/notes, whether it was first set on a diagnostic-report day, number of runs). `v_unmapped_codes` gained kind `warning flag`, so `make unmapped` and the Overview's "N codes have no description yet" include flags without a meaning.
+- **Labels:** `config/codes/warning_flags.yaml` (title, severity, category, notes, like `warnings.yaml`; ships empty with a clearly marked made-up example, never guesses) loaded into `ref_warning_flags` by `lookups.py`.
+- **API:** `GET /api/status/warning-flags` (flags in power-train-then-body order, every run, the time span of the readings; a state endpoint) and `GET /api/status/warning-flags/hints?flag=&window_hours=` (404 for a flag that does not change). **Hints:** for each warning code and each fault, in how many readings with the flag on / off it appears within the window (default 2 h, up to 48), as a share of the readings with it on / off; only things more common when the flag is on are listed, ranked by that difference (at most 8 each). One request takes about 30 ms on the real data. Presented as "a hint, not a meaning". On the author's data one flag (`vdt_7_warningbody_2_44`, set 3 times) is on exactly when warning `$1B4` is near (100% of its readings against under 1% otherwise): the kind of lead this is for.
+- **Alert `new_warning_flag`** (default info; severity comes from your yaml once you describe the flag; `ignore_flags` with names checked against the `vdt_2_warningpt_N_N` / `vdt_7_warningbody_N_N` pattern): a flag first set inside the lookback window, one alert per flag, mentioning when it is a diagnostic-report day and, without a meaning yet, where to look and where to describe it. On the author's data the two power-train flags first set on 15 Oct will raise one alert each on the first run.
+- **UI:** a "Warning lamps" panel on Status: one row per changing flag (your title or "Power train flag 23", the car's name, badges *on now* / *first set on a report day* / *no meaning yet*, a timeline bar across the data, "on in 94 of 214 readings"), opening a row shows its details and the hints with a 0.5 / 2 / 6 / 24 h window selector. Wording and timeline maths are `lampLabel` / `lampBars` / `fmtShares` (tested).
+- **Phone pack:** the pack scans `views.sql` for signal *families* written `starts_with(signal, '<prefix>')` (`signal_prefixes` in the manifest) and exports only the family members that vary, so 128 flags cost 4 flags' rows (27,392 → about 800 rows on the real data; the real pack is 468 KiB, smaller than before). `ref_warning_flags` joined `TABLES`; the phone app refuses an older pack that lacks the table or the families. The browser engine reproduces Python on every golden, including hints for each flag at several windows and the 404 / 422 cases, and on the real data.
+- **Sample data:** six flags as plain columns like the real file: two that never change (and so never appear), one on in the mornings, two set only on diagnostic-report days, one that first appears in the last days (raising the new-flag alert). Derived from the clock only, no random numbers.
+- **Real data (author's export):** 4 flags change (`vdt_7_warningbody_1_30` on in 94 of 214 readings and 52 runs, `vdt_7_warningbody_2_44` 3, `vdt_2_warningpt_1_23` and `vdt_2_warningpt_2_46` 4 each, the last two first set on the day of the diagnostic report); none has a meaning yet. Run `make model` once.
+- Pitfall found on the way: a view that lists constant flags makes the pack's copy (without them) differ in the view fingerprints; the readings view itself is therefore limited to changing flags, which makes the Mac database and the pack agree by construction.
 
 ### Decisions (all confirmed)
 1. **Order:** M17 oil, M18 car warnings, M19 tire time, M20 lamp flags (easiest and most useful first). Confirmed.

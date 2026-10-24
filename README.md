@@ -5,7 +5,7 @@ use, trips, tire pressure, doors, the alarm, and the diagnostic report that come
 download. It
 turns the raw export files into a database, explains what they contain, and raises **alerts**
 when something deserves attention (a new or recurring fault, a new or spiking warning, a slow
-tire leak, an alarm event, unusually high fuel use, low fuel, an oil change coming up, a warning flag the car itself raises, or a stale
+tire leak, an alarm event, unusually high fuel use, low fuel, an oil change coming up, a warning flag the car itself raises, a warning-lamp flag that appears for the first time, or a stale
 export).
 
 Everything runs on your machine and your data stays there (see [Privacy](#privacy)).
@@ -93,7 +93,7 @@ the made-up VIN `…000001`, and by data that ends on 30 June 2026.
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
-| **Status** | the car's own warning flags (all clear, or which is on since when), the oil-change countdown, fuel and range, tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips, doors and the alarm history |
+| **Status** | the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips, doors and the alarm history |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
 
 **Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults and Status
@@ -104,7 +104,7 @@ last export is a few weeks old, and your last quick choice is remembered in the 
 range is kept in the address, so you can bookmark it (a link with dates always wins over the
 remembered choice), and it follows you from page to page. Things that describe a *state* ignore
 the range: the faults still active in the latest read-out, the alerts list, the car's own
-warning flags, the oil-change countdown and the diagnostic-tool report.
+warning flags, the warning-lamp flags, the oil-change countdown and the diagnostic-tool report.
 
 **Trends.** Charts or a table show how each figure changed month by month: distance, fuel
 consumption, warnings, faults, tire pressure and more. The change against the previous month is
@@ -179,8 +179,8 @@ Things to know:
    newer export) and evaluates the alert rules.
 3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
 
-Run `make unmapped` to see warning and fault codes that have no description yet, then add what
-you learn to `config/codes/*.yaml` and run `make model`.
+Run `make unmapped` to see warning and fault codes (and warning-lamp flags) that have no description
+yet, then add what you learn to `config/codes/*.yaml` and run `make model`.
 
 ### Set your time zone (once)
 
@@ -294,6 +294,7 @@ each alert is raised once, and an acknowledged alert is never raised again. The 
 | low fuel | the latest fuel reading is below a threshold |
 | low tire pressure | a tire measurement is below a threshold (check your door-jamb sticker and set it); counted by when the car measured it, so a repeated reading is one alert |
 | car warning flag | one of the car's own warning flags (tire pressure per wheel, tire pressure system, oil level, seat belt, door) is on; once per run, severity settable per flag |
+| new warning-lamp flag | one of the car's 128 warning-lamp bit flags is set for the first time (almost all never change, so a first set is news) |
 | oil change due | the car's own oil-change countdown is at or below 1,000 km (it counts in steps of 1,000 km or more) |
 | no new data | the newest data is more than a few days old |
 

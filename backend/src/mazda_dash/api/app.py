@@ -487,6 +487,107 @@ def car_warnings(con: duckdb.DuckDBPyConnection = Con):
     )
 
 
+WARNING_FLAG_COLS = (
+    "flag, area, bit, title, severity, notes, readings, readings_on, pct_on, first_on_at, last_on_at, "
+    "on_now, max_value, first_on_report_day, episodes"
+)
+
+
+@app.get("/api/status/warning-flags", response_model=m.WarningFlags)
+def warning_flags(con: duckdb.DuckDBPyConnection = Con):
+    """The warning-lamp bit flags that ever change, with every run in which each was on. A state, so it
+    ignores the period."""
+    flags = rows(
+        con,
+        f"SELECT {WARNING_FLAG_COLS} FROM v_warning_flags "
+        "ORDER BY CASE area WHEN 'powertrain' THEN 0 ELSE 1 END, bit, flag",
+    )
+    episodes = rows(
+        con,
+        "SELECT flag, started_at, last_on_at, readings, max_value, ongoing "
+        "FROM v_warning_flag_episodes ORDER BY flag, started_at",
+    )
+    span = one(
+        con, "SELECT min(read_at) AS a, max(read_at) AS b FROM v_warning_flag_readings"
+    )
+    return m.WarningFlags(
+        has_data=bool(flags),
+        first_read_at=span.get("a"),
+        last_read_at=span.get("b"),
+        flags=flags,
+        episodes=episodes,
+    )
+
+
+# What co-occurs with a flag: for each warning code / fault, in how many readings with the flag on (and
+# off) it appears within the window, ranked by how much more often it is there when the flag is on.
+HINT_SQL = """WITH f AS (SELECT read_at, is_on FROM v_warning_flag_readings WHERE flag = ?),
+    n AS (SELECT count(*) FILTER (WHERE is_on) AS on_n, count(*) FILTER (WHERE NOT is_on) AS off_n FROM f),
+    near AS (
+        SELECT DISTINCT f.read_at, f.is_on, {key_select}
+        FROM f JOIN {source} s ON s.{time} BETWEEN f.read_at - to_microseconds({margin})
+                                              AND f.read_at + to_microseconds({margin})),
+    c AS (
+        SELECT {key_cols}, count(*) FILTER (WHERE is_on) AS on_with, count(*) FILTER (WHERE NOT is_on) AS off_with
+        FROM near GROUP BY {key_cols}),
+    r AS (
+        SELECT c.*, round(on_with * 1.0 / nullif(n.on_n, 0), 3) AS share_on,
+               round(off_with * 1.0 / nullif(n.off_n, 0), 3) AS share_off
+        FROM c CROSS JOIN n)
+    SELECT * FROM r WHERE on_with > 0 AND coalesce(share_on, 0) - coalesce(share_off, 0) > 0
+    ORDER BY coalesce(share_on, 0) - coalesce(share_off, 0) DESC, on_with DESC, {order} LIMIT 8"""
+
+
+@app.get("/api/status/warning-flags/hints", response_model=m.WarningFlagHints)
+def warning_flag_hints(
+    flag: str,
+    window_hours: float = Query(2, gt=0, le=48),
+    con: duckdb.DuckDBPyConnection = Con,
+):
+    """Warning codes and faults that show up around the times a flag is on more than when it is off."""
+    if not one(con, "SELECT flag FROM v_warning_flags WHERE flag = ?", [flag]):
+        raise HTTPException(404, f"No warning flag {flag} that changes")
+    margin = round(window_hours * 3_600_000_000)
+    counts = one(
+        con,
+        "SELECT count(*) FILTER (WHERE is_on) AS on_n, count(*) FILTER (WHERE NOT is_on) AS off_n "
+        "FROM v_warning_flag_readings WHERE flag = ?",
+        [flag],
+    )
+    warnings = rows(
+        con,
+        HINT_SQL.format(
+            source="v_warnings",
+            time="triggered_at",
+            margin=margin,
+            key_select="s.code, s.title, s.severity, s.known",
+            key_cols="code, title, severity, known",
+            order="code",
+        ),
+        [flag],
+    )
+    faults = rows(
+        con,
+        HINT_SQL.format(
+            source="v_dtc_events",
+            time="event_at",
+            margin=margin,
+            key_select="s.ecu, s.dtc_code, s.failure_type, s.title, s.severity",
+            key_cols="ecu, dtc_code, failure_type, title, severity",
+            order="ecu, dtc_code",
+        ),
+        [flag],
+    )
+    return m.WarningFlagHints(
+        flag=flag,
+        window_hours=window_hours,
+        on_readings=counts["on_n"],
+        off_readings=counts["off_n"],
+        warnings=warnings,
+        faults=faults,
+    )
+
+
 # ------------------------------------------------------------ diagnostic tool
 
 

@@ -1,7 +1,7 @@
 // Formatting helpers. Timestamps come from the API as ISO strings in UTC and render in
 // the browser's local timezone.
 
-import type { CarWarningFlag, LatestStatus, OilService, TireReading } from './api/types'
+import type { CarWarningFlag, LatestStatus, OilService, TireReading, WarningFlag, WarningFlagEpisode } from './api/types'
 
 const num = (digits: number) =>
   new Intl.NumberFormat('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits })
@@ -285,4 +285,33 @@ export function tireReadingsNote(readings: readonly TireReading[] | undefined): 
   if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in config/settings.yaml)`)
   if (unknown) parts.push(`${unknown} without a valid measurement time (placed at the snapshot time)`)
   return parts.join('; ')
+}
+
+/** What to call a warning-lamp flag: your description, or where it sits (the car's names are bit numbers). */
+export function lampLabel(f: Pick<WarningFlag, 'title' | 'area' | 'bit'>): string {
+  return f.title ?? `${f.area === 'powertrain' ? 'Power train' : 'Body'} flag ${f.bit}`
+}
+
+/** Bars of a flag's timeline as percentages of the data span; a bar is never thinner than `minWidth` %. */
+export function lampBars(
+  episodes: readonly Pick<WarningFlagEpisode, 'started_at' | 'last_on_at'>[],
+  from: string | null | undefined,
+  to: string | null | undefined,
+  minWidth = 0.7,
+): { left: number; width: number }[] {
+  if (!from || !to) return []
+  const a = Date.parse(from)
+  const span = Date.parse(to) - a
+  if (!(span > 0)) return []
+  return episodes.map((e) => {
+    const left = ((Date.parse(e.started_at) - a) / span) * 100
+    const width = ((Date.parse(e.last_on_at) - Date.parse(e.started_at)) / span) * 100
+    return { left: Math.min(Math.max(left, 0), 100 - minWidth), width: Math.max(width, minWidth) }
+  })
+}
+
+/** "69% of the readings with it on, 58% with it off" for a hint. */
+export function fmtShares(on: number | null | undefined, off: number | null | undefined): string {
+  const pct = (v: number | null | undefined) => `${Math.round((v ?? 0) * 100)}%`
+  return `near in ${pct(on)} of the readings with the flag on, ${pct(off)} with it off`
 }

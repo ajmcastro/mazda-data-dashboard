@@ -433,6 +433,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status/warning-flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Warning Flags
+         * @description The warning-lamp bit flags that ever change, with every run in which each was on. A state, so it
+         *     ignores the period.
+         */
+        get: operations["warning_flags_api_status_warning_flags_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/status/warning-flags/hints": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Warning Flag Hints
+         * @description Warning codes and faults that show up around the times a flag is on more than when it is off.
+         */
+        get: operations["warning_flag_hints_api_status_warning_flags_hints_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diag/reports": {
         parameters: {
             query?: never;
@@ -976,6 +1017,46 @@ export interface components {
             /** Status Offset Minutes */
             status_offset_minutes?: number | null;
         };
+        /** FlagHintFault */
+        FlagHintFault: {
+            /** Ecu */
+            ecu: string;
+            /** Dtc Code */
+            dtc_code: string;
+            /** Failure Type */
+            failure_type?: string | null;
+            /** Title */
+            title: string;
+            /** Severity */
+            severity: string;
+            /** On With */
+            on_with: number;
+            /** Off With */
+            off_with: number;
+            /** Share On */
+            share_on?: number | null;
+            /** Share Off */
+            share_off?: number | null;
+        };
+        /** FlagHintWarning */
+        FlagHintWarning: {
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Severity */
+            severity: string;
+            /** Known */
+            known: boolean;
+            /** On With */
+            on_with: number;
+            /** Off With */
+            off_with: number;
+            /** Share On */
+            share_on?: number | null;
+            /** Share Off */
+            share_off?: number | null;
+        };
         /** FrameSignal */
         FrameSignal: {
             /** Signal */
@@ -1401,6 +1482,94 @@ export interface components {
             severity: string;
             /** Known */
             known: boolean;
+        };
+        /**
+         * WarningFlag
+         * @description One of the car's 128 warning-lamp bit flags (only flags that ever change are listed).
+         */
+        WarningFlag: {
+            /** Flag */
+            flag: string;
+            /** Area */
+            area: string;
+            /** Bit */
+            bit: number;
+            /** Title */
+            title?: string | null;
+            /** Severity */
+            severity: string;
+            /** Notes */
+            notes?: string | null;
+            /** Readings */
+            readings: number;
+            /** Readings On */
+            readings_on: number;
+            /** Pct On */
+            pct_on: number;
+            /** First On At */
+            first_on_at?: string | null;
+            /** Last On At */
+            last_on_at?: string | null;
+            /** On Now */
+            on_now: boolean;
+            /** Max Value */
+            max_value: number;
+            /** First On Report Day */
+            first_on_report_day: boolean;
+            /** Episodes */
+            episodes: number;
+        };
+        /** WarningFlagEpisode */
+        WarningFlagEpisode: {
+            /** Flag */
+            flag: string;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /**
+             * Last On At
+             * Format: date-time
+             */
+            last_on_at: string;
+            /** Readings */
+            readings: number;
+            /** Max Value */
+            max_value: number;
+            /** Ongoing */
+            ongoing: boolean;
+        };
+        /**
+         * WarningFlagHints
+         * @description What happens around the times a flag is on. A hint to research from, NOT a meaning.
+         */
+        WarningFlagHints: {
+            /** Flag */
+            flag: string;
+            /** Window Hours */
+            window_hours: number;
+            /** On Readings */
+            on_readings: number;
+            /** Off Readings */
+            off_readings: number;
+            /** Warnings */
+            warnings: components["schemas"]["FlagHintWarning"][];
+            /** Faults */
+            faults: components["schemas"]["FlagHintFault"][];
+        };
+        /** WarningFlags */
+        WarningFlags: {
+            /** Has Data */
+            has_data: boolean;
+            /** First Read At */
+            first_read_at?: string | null;
+            /** Last Read At */
+            last_read_at?: string | null;
+            /** Flags */
+            flags: components["schemas"]["WarningFlag"][];
+            /** Episodes */
+            episodes: components["schemas"]["WarningFlagEpisode"][];
         };
         /** WarningFrequency */
         WarningFrequency: {
@@ -2173,6 +2342,58 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CarWarnings"];
+                };
+            };
+        };
+    };
+    warning_flags_api_status_warning_flags_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarningFlags"];
+                };
+            };
+        };
+    };
+    warning_flag_hints_api_status_warning_flags_hints_get: {
+        parameters: {
+            query: {
+                flag: string;
+                window_hours?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarningFlagHints"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

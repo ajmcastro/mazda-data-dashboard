@@ -115,6 +115,22 @@ class Car:
             **self.oil(t),
             **self.car_warnings(tires),
             **self.tire_clock(t),
+            **self.lamp_flags(t),
+        }
+
+    def lamp_flags(self, t: datetime) -> dict[str, int]:
+        """A few of the car's 128 warning-lamp bit flags (plain columns, no validity flag, as in the real
+        export): two that never change, one that is on in the mornings, two that come on only on the days
+        diagnostic reports were taken, and one that appears for the first time in the last days. Derived
+        from the clock only (no random numbers)."""
+        report_day = t.date() in {when.date() for when, _ in DIAG_VISITS}
+        return {
+            "vdt_2_warningpt_1_0": 0,  # constant: never listed by the dashboard
+            "vdt_7_warningbody_1_1": 0,
+            "vdt_7_warningbody_1_30": int(t.hour < 12),
+            "vdt_2_warningpt_1_23": int(report_day),
+            "vdt_2_warningpt_2_46": int(report_day and t.hour < 12),
+            "vdt_7_warningbody_2_44": int(t >= datetime(2026, 6, 28)),
         }
 
     def tire_clock(self, t: datetime) -> dict[str, int | None]:
@@ -208,6 +224,11 @@ def build_drives(rng: random.Random) -> tuple[Car, list[dict]]:
     return car, rows
 
 
+def plain_signals(signals: list[str]) -> list[str]:
+    """Signals the real export writes as a plain column (no `_value` / `_validstatus` pair)."""
+    return [s for s in signals if s.startswith("vdt_")]
+
+
 def write_status(out: Path, rows: list[dict]) -> None:
     signals = [k for k in rows[0] if k != "at"]
     header = [
@@ -217,8 +238,13 @@ def write_status(out: Path, rows: list[dict]) -> None:
         "isinservicemode",
         "datacreationtime",
     ]
-    for s in signals:
+    paired = [s for s in signals if s not in plain_signals(signals)]
+    plain = plain_signals(signals)
+    for s in paired:
         header += [f"{s}_value", f"{s}_validstatus"]
+    header += (
+        plain  # plain columns without a validity flag (the warning-lamp bit flags)
+    )
     header += [
         "latitude",
         "longitude",
@@ -232,8 +258,9 @@ def write_status(out: Path, rows: list[dict]) -> None:
             "false",
             _z(r["at"]),
         ]
-        for s in signals:
+        for s in paired:
             line += [r[s], "Valid" if r[s] is not None else "Invalid"]
+        line += [r[s] for s in plain]
         body.append(line + ["", ""])
     _write(out / "all-rts-sample_rts-sample.csv", header, body)
 

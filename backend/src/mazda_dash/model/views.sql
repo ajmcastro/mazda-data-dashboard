@@ -290,6 +290,60 @@ SELECT flag, any_value(label) AS label, any_value(sort_order) AS sort_order,
        max(value) AS max_value, max(rn) = any_value(total) AS ongoing
 FROM runs GROUP BY flag, run;
 
+-- ------------------------------------------------------------- warning-lamp bit flags
+-- The car reports 128 on/off bit flags that look like the state of dashboard warning lamps: 64 for the
+-- power train (vdt_2_warningpt_<word>_<bit>) and 64 for the body (vdt_7_warningbody_<word>_<bit>), plain
+-- columns without a validity flag. Mazda does not publish what they mean, and almost all are always 0, so
+-- ONLY THE FLAGS THAT EVER CHANGE are visible here (the data pack keeps only those rows too, see
+-- varying_in_families in pack.py: keep the two definitions identical). The two families are named with
+-- starts_with(signal, '...') so the pack builder finds them.
+CREATE OR REPLACE VIEW v_warning_flag_readings AS
+WITH family AS (
+    SELECT signal, created_at, value_num FROM signal_readings
+    WHERE source = 'rts' AND valid IS NOT FALSE AND value_num IS NOT NULL
+      AND (starts_with(signal, 'vdt_2_warningpt_') OR starts_with(signal, 'vdt_7_warningbody_'))
+), varying AS (
+    SELECT signal FROM family GROUP BY signal HAVING count(DISTINCT value_num) > 1
+)
+SELECT f.signal AS flag,
+       CASE WHEN starts_with(f.signal, 'vdt_2_warningpt_') THEN 'powertrain' ELSE 'body' END AS area,
+       CAST(regexp_extract(f.signal, '([0-9]+)$', 1) AS INTEGER) AS bit,
+       f.created_at AS read_at, f.value_num AS value, f.value_num <> 0 AS is_on
+FROM family f JOIN varying v ON v.signal = f.signal;
+
+-- Runs of consecutive readings with a flag on. ongoing = the run includes the flag's latest reading.
+CREATE OR REPLACE VIEW v_warning_flag_episodes AS
+WITH r AS (
+    SELECT *, row_number() OVER (PARTITION BY flag ORDER BY read_at) AS rn,
+           count(*) OVER (PARTITION BY flag) AS total
+    FROM v_warning_flag_readings
+), runs AS (
+    SELECT *, rn - row_number() OVER (PARTITION BY flag ORDER BY read_at) AS run
+    FROM r WHERE is_on
+)
+SELECT flag, any_value(area) AS area, any_value(bit) AS bit,
+       min(read_at) AS started_at, max(read_at) AS last_on_at, count(*) AS readings,
+       max(value) AS max_value, max(rn) = any_value(total) AS ongoing
+FROM runs GROUP BY flag, run;
+
+-- One row per flag, with the meaning from config/codes/warning_flags.yaml if you supplied one.
+-- first_on_report_day = it was first set on a day a diagnostic report was taken (UTC).
+CREATE OR REPLACE VIEW v_warning_flags AS
+WITH s AS (
+    SELECT flag, any_value(area) AS area, any_value(bit) AS bit, count(*) AS readings,
+           count(*) FILTER (WHERE is_on) AS readings_on,
+           min(read_at) FILTER (WHERE is_on) AS first_on_at, max(read_at) FILTER (WHERE is_on) AS last_on_at,
+           arg_max(is_on, read_at) AS on_now, max(value) AS max_value
+    FROM v_warning_flag_readings GROUP BY flag
+)
+SELECT s.flag, s.area, s.bit, f.title, coalesce(f.severity, 'unknown') AS severity, f.notes,
+       s.readings, s.readings_on, round(100.0 * s.readings_on / s.readings, 1) AS pct_on,
+       s.first_on_at, s.last_on_at, s.on_now, s.max_value,
+       coalesce(EXISTS (SELECT 1 FROM diag_reports d
+                        WHERE CAST(d.taken_at AS DATE) = CAST(s.first_on_at AS DATE)), false) AS first_on_report_day,
+       (SELECT count(*) FROM v_warning_flag_episodes e WHERE e.flag = s.flag) AS episodes
+FROM s LEFT JOIN ref_warning_flags f ON f.flag = s.flag;
+
 -- ------------------------------------------------------------------- trips
 -- The car's "trip 1" counters accumulate until reset: trip_km, average economy and
 -- driving time. Fuel used so far = trip_km * l/100km / 100 (the 102.2 raw value
@@ -401,4 +455,6 @@ SELECT 'dtc', dtc_code, count(*) FROM v_dtc_events WHERE NOT known GROUP BY dtc_
 UNION ALL
 SELECT 'ecu', d.ecu, count(*) FROM dtc_readings d
 LEFT JOIN ref_ecus e ON e.ecu = d.ecu
-WHERE e.title IS NULL GROUP BY d.ecu;
+WHERE e.title IS NULL GROUP BY d.ecu
+UNION ALL
+SELECT 'warning flag', flag, readings_on FROM v_warning_flags WHERE title IS NULL;

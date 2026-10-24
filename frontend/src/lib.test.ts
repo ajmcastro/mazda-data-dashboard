@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   addDays,
+  fmtShares,
+  lampBars,
+  lampLabel,
   fmtAge,
   carWarningHeadline,
   tireMeasuredNote,
@@ -308,5 +311,43 @@ describe('tire measurement notes', () => {
     expect(note).toContain('3 measurements')
     expect(note).toContain('1 still shown by the car long after')
     expect(note).toContain('1 without a valid measurement time')
+  })
+})
+
+describe('warning lamp helpers', () => {
+  it('names a flag by your description or by where it sits', () => {
+    expect(lampLabel({ title: 'Seat lamp', area: 'body', bit: 30 })).toBe('Seat lamp')
+    expect(lampLabel({ title: null, area: 'powertrain', bit: 23 })).toBe('Power train flag 23')
+    expect(lampLabel({ title: undefined, area: 'body', bit: 44 })).toBe('Body flag 44')
+  })
+
+  it('places the runs on a timeline as percentages, never thinner than the minimum', () => {
+    const from = '2026-01-01T00:00:00Z'
+    const to = '2026-01-11T00:00:00Z' // 10 days
+    const bars = lampBars(
+      [
+        { started_at: '2026-01-03T00:00:00Z', last_on_at: '2026-01-06T00:00:00Z' }, // 20% .. 50%
+        { started_at: '2026-01-08T00:00:00Z', last_on_at: '2026-01-08T00:00:00Z' }, // a single reading
+        { started_at: '2026-01-11T00:00:00Z', last_on_at: '2026-01-11T00:00:00Z' }, // at the very end
+      ],
+      from,
+      to,
+    )
+    expect(bars[0].left).toBeCloseTo(20)
+    expect(bars[0].width).toBeCloseTo(30)
+    expect(bars[1].left).toBeCloseTo(70)
+    expect(bars[1].width).toBe(0.7)
+    expect(bars[2].left + bars[2].width).toBeLessThanOrEqual(100.0001) // stays inside the track
+  })
+
+  it('draws nothing without a usable span', () => {
+    const run = [{ started_at: '2026-01-03T00:00:00Z', last_on_at: '2026-01-04T00:00:00Z' }]
+    expect(lampBars(run, null, '2026-01-11T00:00:00Z')).toEqual([])
+    expect(lampBars(run, '2026-01-11T00:00:00Z', '2026-01-11T00:00:00Z')).toEqual([])
+  })
+
+  it('words the contrast of a hint', () => {
+    expect(fmtShares(0.691, 0.583)).toBe('near in 69% of the readings with the flag on, 58% with it off')
+    expect(fmtShares(1, null)).toBe('near in 100% of the readings with the flag on, 0% with it off')
   })
 })

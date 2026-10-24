@@ -191,7 +191,10 @@ def test_by_default_only_the_signals_the_views_read_are_in_the_pack(built, tmp_p
     kept, _ = _signals_in(out, tmp_path)  # remote-status signals
     everywhere, _ = _signals_in(out, tmp_path / "all", source=None)
     used = set(used_signals())
-    assert kept <= used and len(used) >= 20  # nothing the views do not read ...
+    lamps = {
+        s for s in kept if s.startswith(("vdt_2_warningpt_", "vdt_7_warningbody_"))
+    }
+    assert kept - lamps <= used and len(used) >= 20  # nothing the views do not read ...
     assert {
         "ododispvalue",
         "fuelsegementdactl",
@@ -225,3 +228,34 @@ def test_all_signals_option_keeps_the_rest_but_never_gps(built, tmp_path):
     assert manifest["signals"] == "all"
     assert kept_default < kept_all and rows_default < rows_all
     assert not set(GPS_SIGNALS) & kept_all
+
+
+def test_the_warning_lamp_families_are_read_by_prefix_and_only_changing_flags_are_exported(
+    built, tmp_path
+):
+    """128 bit flags, almost all constant: the views see only the ones that change, so only those rows
+    are in the pack (and the 20 view fingerprints still match, see the rebuild test)."""
+    from mazda_dash.pack import used_signal_prefixes
+
+    db, out, manifest = built
+    assert used_signal_prefixes() == ["vdt_2_warningpt_", "vdt_7_warningbody_"]
+    assert manifest["signal_prefixes"] == used_signal_prefixes()
+    src = duckdb.connect(str(db), read_only=True)
+    varying = {
+        r[0]
+        for r in src.execute(
+            "SELECT signal FROM signal_readings WHERE starts_with(signal, 'vdt_') "
+            "GROUP BY signal HAVING count(DISTINCT value_num) > 1"
+        ).fetchall()
+    }
+    constant = {
+        r[0]
+        for r in src.execute(
+            "SELECT signal FROM signal_readings WHERE starts_with(signal, 'vdt_') "
+            "GROUP BY signal HAVING count(DISTINCT value_num) = 1"
+        ).fetchall()
+    }
+    src.close()
+    assert len(varying) >= 3 and constant  # the sample has both kinds
+    packed, _ = _signals_in(out, tmp_path / "lamps")
+    assert varying <= packed and not constant & packed

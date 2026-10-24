@@ -171,6 +171,19 @@ export const useTires = () => {
   })
 }
 
+/** The car's warning-lamp bit flags that ever change: a state, so it ignores the selected period. */
+export const useWarningFlags = () =>
+  useQuery({ queryKey: ['warning-flags'], queryFn: () => unwrap(client.GET('/api/status/warning-flags')) })
+
+/** What happens around the times a flag is on (loaded when a flag is opened). */
+export const useFlagHints = (flag: string | undefined, windowHours: number) =>
+  useQuery({
+    queryKey: ['flag-hints', flag, windowHours],
+    enabled: Boolean(flag),
+    queryFn: () =>
+      unwrap(client.GET('/api/status/warning-flags/hints', { params: { query: { flag: flag!, window_hours: windowHours } } })),
+  })
+
 export const useDiagHistory = () =>
   useQuery({ queryKey: ['diag-history'], queryFn: () => unwrap(client.GET('/api/diag/history')) })
 

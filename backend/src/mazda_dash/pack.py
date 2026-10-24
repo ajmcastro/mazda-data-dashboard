@@ -49,6 +49,7 @@ TABLES = [
     "ref_ecus",
     "ref_failure_types",
     "ref_settings",
+    "ref_warning_flags",
 ]
 # The one big signal source; the others (vis, alt) are small and exported whole.
 TRIMMED_SOURCE = "rts"
@@ -73,6 +74,33 @@ def views_sql() -> str:
 def used_signals(sql: str | None = None) -> list[str]:
     """The ``signal_readings`` signals that any view reads (every use is ``signal = '<name>'``)."""
     return sorted(set(re.findall(r"signal = '([a-z0-9_]+)'", sql or views_sql())))
+
+
+def used_signal_prefixes(sql: str | None = None) -> list[str]:
+    """Signal *families* that views read, written ``starts_with(signal, '<prefix>')`` (the 128 warning
+    lamp bit flags). Only the members that ever change are exported: see ``varying_in_families``."""
+    return sorted(
+        set(re.findall(r"starts_with\(signal, '([a-z0-9_]+)'\)", sql or views_sql()))
+    )
+
+
+def varying_in_families(
+    con: duckdb.DuckDBPyConnection, prefixes: list[str]
+) -> list[str]:
+    """Family members that take more than one value among their valid readings. A flag that never
+    changes is invisible to the views (``v_warning_flags`` lists only changing ones), so leaving its rows
+    out of the pack changes nothing and saves most of the pack's rows. Same test as the views."""
+    if not prefixes:
+        return []
+    like = " OR ".join(f"starts_with(signal, '{p}')" for p in prefixes)
+    return [
+        r[0]
+        for r in con.execute(
+            f"SELECT signal FROM signal_readings WHERE source = '{TRIMMED_SOURCE}' AND ({like}) "
+            "AND valid IS NOT FALSE AND value_num IS NOT NULL "
+            "GROUP BY signal HAVING count(DISTINCT value_num) > 1 ORDER BY signal"
+        ).fetchall()
+    ]
 
 
 def _sha256(data: bytes) -> str:
@@ -197,13 +225,20 @@ def build_pack(
         ).fetchone()
         sql = views_sql()
         signals = None if all_signals else used_signals(sql)
+        prefixes = used_signal_prefixes(sql)
+        # what the trimmed pack keeps of the remote-status signals: those named, plus the changing flags
+        kept = (
+            None
+            if signals is None
+            else sorted({*signals, *varying_in_families(con, prefixes)})
+        )
         tables: dict[str, dict] = {}
         with tempfile.TemporaryDirectory() as tmp:
             files = {}
             for table in TABLES:
                 path = Path(tmp) / f"{table}.parquet"
                 con.execute(
-                    f"COPY {_select(con, table, signals)} TO '{path}' (FORMAT PARQUET, COMPRESSION {compression})"
+                    f"COPY {_select(con, table, kept)} TO '{path}' (FORMAT PARQUET, COMPRESSION {compression})"
                 )
                 data = path.read_bytes()
                 files[f"tables/{table}.parquet"] = data
@@ -227,6 +262,7 @@ def build_pack(
                 "last_data_day": span[1],
                 "excluded": "GPS positions (latitude, longitude)",
                 "signals": "all" if signals is None else signals,
+                "signal_prefixes": prefixes,
                 "tables": tables,
             }
             out.parent.mkdir(parents=True, exist_ok=True)
@@ -236,7 +272,7 @@ def build_pack(
                 for name, data in files.items():
                     z.writestr(name, data)
         if with_reference:
-            ref = reference(con, signals)
+            ref = reference(con, kept)
             ref["views_sql_sha256"] = manifest["views_sql_sha256"]
             Path(f"{out}.reference.json").write_text(json.dumps(ref, indent=1))
         return manifest

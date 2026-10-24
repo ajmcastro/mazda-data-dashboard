@@ -1,10 +1,11 @@
 """Alert rule configuration (config/alerts.yaml), validated with pydantic."""
 
+import re
 from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 Severity = Literal["info", "warning", "critical"]
 SEVERITY_RANK = {"info": 0, "warning": 1, "critical": 2}
@@ -87,6 +88,26 @@ class CarWarningFlag(Rule):
         return self
 
 
+FLAG_NAME = re.compile(r"^vdt_(2_warningpt|7_warningbody)_\d+_\d+$")
+
+
+class NewWarningFlag(Rule):
+    """A warning-lamp bit flag is set for the first time (inside the lookback window)."""
+
+    severity: Severity = "info"
+    ignore_flags: list[str] = []
+
+    @field_validator("ignore_flags")
+    @classmethod
+    def _names(cls, flags: list[str]) -> list[str]:
+        for flag in flags:
+            if not FLAG_NAME.match(flag):
+                raise ValueError(
+                    f"{flag!r} is not a warning-lamp flag name (like vdt_7_warningbody_1_30)"
+                )
+        return flags
+
+
 class Rules(_Strict):
     new_dtc: Rule = Rule()
     recurring_dtc: RecurringDtc = RecurringDtc()
@@ -99,6 +120,7 @@ class Rules(_Strict):
     data_gap: DataGap = DataGap()
     oil_change_due: OilChangeDue = OilChangeDue()
     car_warning_flag: CarWarningFlag = CarWarningFlag()
+    new_warning_flag: NewWarningFlag = NewWarningFlag()
 
 
 class Notifications(_Strict):

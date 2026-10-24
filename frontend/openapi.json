@@ -1442,6 +1442,77 @@
         }
       }
     },
+    "/api/status/warning-flags": {
+      "get": {
+        "summary": "Warning Flags",
+        "description": "The warning-lamp bit flags that ever change, with every run in which each was on. A state, so it\nignores the period.",
+        "operationId": "warning_flags_api_status_warning_flags_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarningFlags"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/status/warning-flags/hints": {
+      "get": {
+        "summary": "Warning Flag Hints",
+        "description": "Warning codes and faults that show up around the times a flag is on more than when it is off.",
+        "operationId": "warning_flag_hints_api_status_warning_flags_hints_get",
+        "parameters": [
+          {
+            "name": "flag",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Flag"
+            }
+          },
+          {
+            "name": "window_hours",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "maximum": 48,
+              "exclusiveMinimum": 0,
+              "default": 2,
+              "title": "Window Hours"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarningFlagHints"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diag/reports": {
       "get": {
         "summary": "Diag Reports",
@@ -3149,6 +3220,137 @@
         ],
         "title": "FaultContext"
       },
+      "FlagHintFault": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "failure_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Type"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "on_with": {
+            "type": "integer",
+            "title": "On With"
+          },
+          "off_with": {
+            "type": "integer",
+            "title": "Off With"
+          },
+          "share_on": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share On"
+          },
+          "share_off": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Off"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu",
+          "dtc_code",
+          "title",
+          "severity",
+          "on_with",
+          "off_with"
+        ],
+        "title": "FlagHintFault"
+      },
+      "FlagHintWarning": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "known": {
+            "type": "boolean",
+            "title": "Known"
+          },
+          "on_with": {
+            "type": "integer",
+            "title": "On With"
+          },
+          "off_with": {
+            "type": "integer",
+            "title": "Off With"
+          },
+          "share_on": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share On"
+          },
+          "share_off": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Off"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "title",
+          "severity",
+          "known",
+          "on_with",
+          "off_with"
+        ],
+        "title": "FlagHintWarning"
+      },
       "FrameSignal": {
         "properties": {
           "signal": {
@@ -4678,6 +4880,254 @@
           "known"
         ],
         "title": "WarningEvent"
+      },
+      "WarningFlag": {
+        "properties": {
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "area": {
+            "type": "string",
+            "title": "Area"
+          },
+          "bit": {
+            "type": "integer",
+            "title": "Bit"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "readings_on": {
+            "type": "integer",
+            "title": "Readings On"
+          },
+          "pct_on": {
+            "type": "number",
+            "title": "Pct On"
+          },
+          "first_on_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First On At"
+          },
+          "last_on_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last On At"
+          },
+          "on_now": {
+            "type": "boolean",
+            "title": "On Now"
+          },
+          "max_value": {
+            "type": "number",
+            "title": "Max Value"
+          },
+          "first_on_report_day": {
+            "type": "boolean",
+            "title": "First On Report Day"
+          },
+          "episodes": {
+            "type": "integer",
+            "title": "Episodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag",
+          "area",
+          "bit",
+          "severity",
+          "readings",
+          "readings_on",
+          "pct_on",
+          "on_now",
+          "max_value",
+          "first_on_report_day",
+          "episodes"
+        ],
+        "title": "WarningFlag",
+        "description": "One of the car's 128 warning-lamp bit flags (only flags that ever change are listed)."
+      },
+      "WarningFlagEpisode": {
+        "properties": {
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Started At"
+          },
+          "last_on_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last On At"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "max_value": {
+            "type": "number",
+            "title": "Max Value"
+          },
+          "ongoing": {
+            "type": "boolean",
+            "title": "Ongoing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag",
+          "started_at",
+          "last_on_at",
+          "readings",
+          "max_value",
+          "ongoing"
+        ],
+        "title": "WarningFlagEpisode"
+      },
+      "WarningFlagHints": {
+        "properties": {
+          "flag": {
+            "type": "string",
+            "title": "Flag"
+          },
+          "window_hours": {
+            "type": "number",
+            "title": "Window Hours"
+          },
+          "on_readings": {
+            "type": "integer",
+            "title": "On Readings"
+          },
+          "off_readings": {
+            "type": "integer",
+            "title": "Off Readings"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/FlagHintWarning"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "faults": {
+            "items": {
+              "$ref": "#/components/schemas/FlagHintFault"
+            },
+            "type": "array",
+            "title": "Faults"
+          }
+        },
+        "type": "object",
+        "required": [
+          "flag",
+          "window_hours",
+          "on_readings",
+          "off_readings",
+          "warnings",
+          "faults"
+        ],
+        "title": "WarningFlagHints",
+        "description": "What happens around the times a flag is on. A hint to research from, NOT a meaning."
+      },
+      "WarningFlags": {
+        "properties": {
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "first_read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Read At"
+          },
+          "last_read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Read At"
+          },
+          "flags": {
+            "items": {
+              "$ref": "#/components/schemas/WarningFlag"
+            },
+            "type": "array",
+            "title": "Flags"
+          },
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/WarningFlagEpisode"
+            },
+            "type": "array",
+            "title": "Episodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_data",
+          "flags",
+          "episodes"
+        ],
+        "title": "WarningFlags"
       },
       "WarningFrequency": {
         "properties": {

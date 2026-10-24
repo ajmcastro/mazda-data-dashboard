@@ -14,13 +14,19 @@ export interface Manifest {
   first_data_day: string
   last_data_day: string
   signals: string[] | 'all'
+  signal_prefixes?: string[]
   tables: Record<string, { rows: number; bytes: number; sha256: string }>
 }
 
 export class PackError extends Error {}
 
+/** Signal families the views read (`starts_with(signal, '<prefix>')`): the warning-lamp bit flags. */
+export function usedSignalPrefixes(sql: string = viewsSql): string[] {
+  return [...new Set([...sql.matchAll(/starts_with\(signal, '([a-z0-9_]+)'\)/g)].map((m) => m[1]))].sort()
+}
+
 /** Tables the views read that older packs did not have (made before the app needed them). */
-const REQUIRED_TABLES = ['ref_settings']
+const REQUIRED_TABLES = ['ref_settings', 'ref_warning_flags']
 
 /** Every `signal_readings` signal the views read (same rule as `used_signals` in pack.py). */
 export function usedSignals(sql: string = viewsSql): string[] {
@@ -55,6 +61,11 @@ export function readPack(bytes: Uint8Array): { manifest: Manifest; files: Record
     throw new PackError(`This data pack was made by an older version and lacks ${missingTables.join(', ')}. Export it again with make mobile-pack.`)
   }
   if (manifest.signals !== 'all') {
+    const prefixes = manifest.signal_prefixes ?? []
+    const missingFamilies = usedSignalPrefixes().filter((p) => !prefixes.includes(p))
+    if (missingFamilies.length) {
+      throw new PackError(`This data pack was made by an older version and lacks signal families the app needs (${missingFamilies.join(', ')}). Export it again with make mobile-pack.`)
+    }
     const missing = usedSignals().filter((s) => !(manifest.signals as string[]).includes(s))
     if (missing.length) {
       throw new PackError(`This data pack was made by an older version and lacks signals the app needs (${missing.join(', ')}). Export it again.`)

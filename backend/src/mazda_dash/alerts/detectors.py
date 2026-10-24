@@ -326,6 +326,46 @@ def car_warning_flag(ctx: Context) -> list[Candidate]:
     return out
 
 
+def new_warning_flag(ctx: Context) -> list[Candidate]:
+    """A warning-lamp bit flag (one of 128, almost all always off) set for the first time within the
+    lookback window, like a new warning code. The meaning is unknown unless you described it in
+    config/codes/warning_flags.yaml (its severity is used then)."""
+    rule = ctx.cfg.rules.new_warning_flag
+    rows = ctx.con.execute(
+        """SELECT flag, area, bit, title, severity, first_on_at, readings_on, readings, first_on_report_day
+           FROM v_warning_flags WHERE first_on_at >= ? ORDER BY first_on_at, flag""",
+        [ctx.since],
+    ).fetchall()
+    out = []
+    for flag, area, bit, title, sev, first, n_on, n, report_day in rows:
+        if flag in rule.ignore_flags:
+            continue
+        what = title or f"{area} bit {bit}"
+        detail = (
+            f"The flag {flag} ({area}, bit {bit}) was set for the first time on {_fmt(first)}; "
+            f"so far it was on in {n_on} of {n} readings."
+        )
+        if report_day:
+            detail += " That is a day a diagnostic report was taken."
+        if not title:
+            detail += (
+                " Mazda does not publish what it means: Status > Warning lamps shows what happens "
+                "around it, and config/codes/warning_flags.yaml is where to describe it."
+            )
+        out.append(
+            Candidate(
+                "new_warning_flag",
+                f"new_warning_flag:{flag}",
+                sev if sev in ("info", "warning", "critical") else rule.severity,
+                f"New warning-lamp flag set: {what}",
+                detail,
+                first,
+                "/status",
+            )
+        )
+    return out
+
+
 DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "new_dtc": new_dtc,
     "recurring_dtc": recurring_dtc,
@@ -338,4 +378,5 @@ DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "data_gap": data_gap,
     "oil_change_due": oil_change_due,
     "car_warning_flag": car_warning_flag,
+    "new_warning_flag": new_warning_flag,
 }

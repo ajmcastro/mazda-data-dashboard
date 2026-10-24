@@ -263,6 +263,30 @@ select { font: inherit; font-size: 13px; letter-spacing: 0; text-transform: none
 .sub-h { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 8px; }
 .grid.cols-3 > div { min-width: 0; }
 
+/* ---- warning lamps (Status) ---- */
+.lamps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.lamp-row { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }
+.lamp-row.on { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.lamp-head {
+  display: grid; grid-template-columns: minmax(160px, 1.1fr) auto minmax(120px, 2fr) auto; gap: 6px 14px; align-items: center;
+  width: 100%; padding: 8px 12px; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer;
+}
+.lamp-name { display: flex; flex-direction: column; min-width: 0; }
+.lamp-name .mono { font-size: 11px; overflow-wrap: anywhere; }
+.lamp-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.lamp-badges .badge { white-space: nowrap; }
+.lamp-track { position: relative; height: 14px; border-radius: 3px; background: var(--grid); }
+.lamp-track i { position: absolute; top: 0; bottom: 0; background: var(--amber); border-radius: 2px; }
+.lamp-row.on .lamp-track i { background: var(--accent); }
+.lamp-stat { font-size: 12px; white-space: nowrap; }
+.lamp-detail { padding: 0 12px 12px; }
+.hint-list { margin: 4px 0 8px; padding-left: 18px; }
+.hint-list li { margin: 2px 0; font-size: 13px; }
+@media (max-width: 760px) {
+  .lamp-head { grid-template-columns: 1fr; }
+  .lamp-stat { white-space: normal; }
+}
+
 /* ---- date range bar ---- */
 .range-bar {
   display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; margin-bottom: 18px;

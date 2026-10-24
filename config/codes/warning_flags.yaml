@@ -1,0 +1,13 @@
+# Meanings of the car's warning-lamp bit flags (128 of them: `vdt_2_warningpt_*` power train and
+# `vdt_7_warningbody_*` body). Mazda does not publish them, so this file starts empty: never guess.
+# Only the flags that ever change are shown in the dashboard (Status > Warning lamps); the page lists
+# what happened around each one to help you work out what it is.
+#
+# Key = the flag's name as shown in the dashboard. Fields: title, severity (info | warning | critical),
+# category, notes. Run `make model` after editing. A made-up example of the format (NOT what this flag
+# means):
+#
+# vdt_7_warningbody_1_30:
+#   title: Example lamp
+#   severity: info
+#   notes: where you found out, and how sure you are

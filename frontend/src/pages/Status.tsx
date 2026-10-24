@@ -1,6 +1,7 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAlarms, useCarWarnings, useDoors, useOilService, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
+import { WarningLamps } from '../components/WarningLamps'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, tireReadingsNote, ts } from '../lib'
 
@@ -156,6 +157,8 @@ export default function Status() {
           </p>
         </Panel>
       )}
+
+      <WarningLamps />
 
       {oil.data?.has_data && (
         <Panel title="Oil change countdown" hint="km left until the next oil change, as the car reports it">
