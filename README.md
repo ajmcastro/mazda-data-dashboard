@@ -252,6 +252,7 @@ Good to know:
 - **iOS may remove the stored data** after a few weeks without use or when space is low. The app asks
   Safari to keep it and tells you if it was removed; importing the pack file again takes seconds.
 - **Updates.** When a newer version of the app is published, it shows an **Update** button.
+- **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the bottom of the side menu. The choice is remembered per device.
 - Alerts are not re-evaluated on the phone (they come from `make ingest` on the Mac); you can
   acknowledge them on the phone.
 - **Lockdown Mode** (Settings → Privacy & Security) switches off parts of Safari that this app relies on

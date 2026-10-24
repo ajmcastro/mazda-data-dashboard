@@ -2,6 +2,7 @@ import { NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from '@frontend/api/hooks'
 import { DateRangeBar } from '@frontend/components/DateRangeBar'
 import { RangeNavLink } from '@frontend/components/RangeLink'
+import { ThemeCycleButton } from '@frontend/components/ThemeToggle'
 import Alerts from '@frontend/pages/Alerts'
 import Diagnostics from '@frontend/pages/Diagnostics'
 import Faults from '@frontend/pages/Faults'
@@ -64,6 +65,7 @@ function Ready() {
           Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}
         </RangeNavLink>
         <NavLink to="/more" className={moreActive ? 'active' : undefined}>More</NavLink>
+        <ThemeCycleButton className="tab-theme" />
       </nav>
     </div>
   )

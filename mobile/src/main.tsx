@@ -14,6 +14,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
 import { setFetch } from '@frontend/api/client'
+import { initTheme } from '@frontend/theme'
 import App from './App'
 import { DataController } from './controller'
 import { DataProvider } from './data'
@@ -39,6 +40,7 @@ const controller = new DataController({
   onDataChanged: () => queryClient.clear(),
 })
 setFetch(createFetch(controller.api))
+initTheme()
 void controller.init()
 registerServiceWorker()
 

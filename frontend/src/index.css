@@ -18,8 +18,10 @@
   --radius: 10px;
   color-scheme: dark;
 }
+/* Light palette: used when the device is in light mode (unless dark is forced) and when light is forced
+   (Auto / Dark / Light button, see theme.ts). The two blocks must stay identical (theme.test.ts checks). */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme='dark']) {
     --bg: #efebe3;
     --panel: #faf8f3;
     --panel-2: #f1ede4;
@@ -34,6 +36,21 @@
     --grid: rgba(0, 0, 0, 0.07);
     color-scheme: light;
   }
+}
+:root[data-theme='light'] {
+  --bg: #efebe3;
+  --panel: #faf8f3;
+  --panel-2: #f1ede4;
+  --line: #d9d3c6;
+  --text: #1d1e20;
+  --muted: #6c6f75;
+  --accent: #c4212f;
+  --accent-soft: rgba(196, 33, 47, 0.1);
+  --amber: #b97800;
+  --teal: #0f8a72;
+  --steel: #3f6e9b;
+  --grid: rgba(0, 0, 0, 0.07);
+  color-scheme: light;
 }
 
 * { box-sizing: border-box; }
@@ -82,7 +99,22 @@ h2 { font-size: 20px; font-weight: 700; color: var(--muted); }
 .nav a:hover { color: var(--text); background: var(--panel-2); }
 .nav a.active { color: var(--text); background: var(--panel-2); border-left-color: var(--accent); }
 .nav .count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--bg); background: var(--amber); border-radius: 99px; padding: 0 7px; }
-.rail-foot { margin-top: auto; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.rail-foot { margin-top: auto; display: flex; flex-direction: column; gap: 12px; font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.rail-foot:empty { display: none; }
+
+/* ---- appearance toggle (Auto / Dark / Light) ---- */
+.theme-toggle { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid var(--line); border-radius: 99px; background: var(--panel-2); }
+.theme-toggle button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; flex: 1;
+  font: inherit; font-size: 11px; font-weight: 500; color: var(--muted); background: none; border: 0; border-radius: 99px; padding: 5px 9px; cursor: pointer;
+}
+.theme-toggle button:hover { color: var(--text); }
+.theme-toggle button[aria-pressed='true'] { color: var(--text); background: var(--panel); box-shadow: 0 0 0 1px var(--line); }
+.theme-toggle button:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; }
+.theme-toggle svg { width: 14px; height: 14px; flex: none; }
+/* the rail is 180 px wide: words only (the icons are for places with more room) */
+.rail .theme-toggle { width: 100%; }
+.rail .theme-toggle svg { display: none; }
 .main { padding: 28px 34px 60px; max-width: 1280px; width: 100%; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
 .page-head p { margin: 6px 0 0; color: var(--muted); }
@@ -93,7 +125,8 @@ h2 { font-size: 20px; font-weight: 700; color: var(--muted); }
   .nav { flex-direction: row; }
   .nav a { border-left: 0; border-bottom: 3px solid transparent; padding: 8px 10px; }
   .nav a.active { border-bottom-color: var(--accent); }
-  .rail-foot { display: none; }
+  .rail-foot { margin-top: 0; }
+  .rail-foot .vin { display: none; }
   .main { padding: 18px 16px 48px; }
   h1 { font-size: 34px; }
 }

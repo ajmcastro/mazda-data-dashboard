@@ -1,6 +1,7 @@
 import { Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
+import { ThemeToggle } from './components/ThemeToggle'
 import { RangeNavLink as NavLink } from './components/RangeLink'
 import { useRestoreSavedRange } from './range'
 import Alerts from './pages/Alerts'
@@ -53,7 +54,10 @@ export default function App() {
           <NavLink to="/status">Status</NavLink>
           <NavLink to="/diagnostics">Diagnostics</NavLink>
         </nav>
-        <div className="rail-foot">{o?.vin ? `VIN …${o.vin.slice(-6)}` : ''}</div>
+        <div className="rail-foot">
+          <ThemeToggle />
+          {o?.vin && <div className="vin">VIN …{o.vin.slice(-6)}</div>}
+        </div>
       </aside>
       <main className="main">
         {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
