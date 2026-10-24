@@ -1,7 +1,7 @@
 // Formatting helpers. Timestamps come from the API as ISO strings in UTC and render in
 // the browser's local timezone.
 
-import type { CarWarningFlag, OilService } from './api/types'
+import type { CarWarningFlag, LatestStatus, OilService, TireReading } from './api/types'
 
 const num = (digits: number) =>
   new Intl.NumberFormat('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits })
@@ -254,4 +254,35 @@ export function carWarningHeadline(flags: readonly CarWarningFlag[] | undefined)
   if (on.length === 0) return null
   if (on.length === 1) return `The car reports a warning: ${on[0].label}`
   return `The car reports ${on.length} warnings: ${on.map((f) => f.label).join('; ')}`
+}
+
+/** "8 min", "3 h 05 min", "2.6 days": how old something is. */
+export function fmtAge(minutes: number | null | undefined): string {
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return 'unknown'
+  if (Math.abs(minutes) < 1) return 'under a minute'
+  const total = Math.round(Math.abs(minutes)) // whole minutes first, so 59.6 becomes "1 h 00 min", not "60 min"
+  if (total < 60) return `${total} min`
+  if (total < 48 * 60) return `${Math.floor(total / 60)} h ${String(total % 60).padStart(2, '0')} min`
+  return `${(total / 1440).toFixed(1)} days`
+}
+
+/** What the tire panel says about the measurement behind the pressures it shows. */
+export function tireMeasuredNote(s: LatestStatus | undefined): { text: string; stale: boolean } | null {
+  if (!s || s.tire_fl_kpa == null) return null
+  if (!s.tire_measured_at) return { text: 'measurement time unknown', stale: false }
+  const text = `measured ${fmtDateTime(s.tire_measured_at)}, ${fmtAge(s.tire_age_minutes)} before this snapshot`
+  return { text, stale: s.tire_stale === true }
+}
+
+/** Summary line under the tire chart. */
+export function tireReadingsNote(readings: readonly TireReading[] | undefined): string | null {
+  if (!readings?.length) return null
+  const stale = readings.filter((r) => r.stale).length
+  const unknown = readings.filter((r) => !r.time_known).length
+  const parts = [
+    `${readings.length} measurement${readings.length === 1 ? '' : 's'}, each at the time the car took it`,
+  ]
+  if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in config/settings.yaml)`)
+  if (unknown) parts.push(`${unknown} without a valid measurement time (placed at the snapshot time)`)
+  return parts.join('; ')
 }

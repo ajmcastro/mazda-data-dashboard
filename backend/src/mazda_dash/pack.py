@@ -48,6 +48,7 @@ TABLES = [
     "ref_dtc_codes",
     "ref_ecus",
     "ref_failure_types",
+    "ref_settings",
 ]
 # The one big signal source; the others (vis, alt) are small and exported whole.
 TRIMMED_SOURCE = "rts"

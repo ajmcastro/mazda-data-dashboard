@@ -220,15 +220,17 @@ def low_fuel(ctx: Context) -> list[Candidate]:
 
 def low_tire_pressure(ctx: Context) -> list[Candidate]:
     rule = ctx.cfg.rules.low_tire_pressure
+    # keyed on when the car MEASURED the pressure (v_tire_readings), so one low reading that appears in
+    # several snapshots is one alert
     rows = ctx.con.execute(
         """WITH t AS (
-               SELECT created_at, 'front left' AS wheel, tire_fl_kpa AS kpa FROM v_vehicle_status
-               UNION ALL SELECT created_at, 'front right', tire_fr_kpa FROM v_vehicle_status
-               UNION ALL SELECT created_at, 'rear left', tire_rl_kpa FROM v_vehicle_status
-               UNION ALL SELECT created_at, 'rear right', tire_rr_kpa FROM v_vehicle_status)
-           SELECT wheel, CAST(created_at AS DATE), min(kpa), min(created_at) FROM t
-           WHERE kpa < ? AND created_at >= ? GROUP BY wheel, CAST(created_at AS DATE)
-           ORDER BY 4""",
+               SELECT reading_at, 'front left' AS wheel, tire_fl_kpa AS kpa FROM v_tire_readings
+               UNION ALL SELECT reading_at, 'front right', tire_fr_kpa FROM v_tire_readings
+               UNION ALL SELECT reading_at, 'rear left', tire_rl_kpa FROM v_tire_readings
+               UNION ALL SELECT reading_at, 'rear right', tire_rr_kpa FROM v_tire_readings)
+           SELECT wheel, CAST(reading_at AS DATE), min(kpa), min(reading_at) FROM t
+           WHERE kpa < ? AND reading_at >= ? GROUP BY wheel, CAST(reading_at AS DATE)
+           ORDER BY 4, 1""",
         [rule.min_kpa, ctx.since],
     ).fetchall()
     return [

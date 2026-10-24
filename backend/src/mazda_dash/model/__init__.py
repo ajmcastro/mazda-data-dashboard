@@ -10,10 +10,16 @@ from pathlib import Path
 import duckdb
 
 from .lookups import load_lookups
+from .settings import load_settings
 
 
-def build_model(con: duckdb.DuckDBPyConnection, config_dir: Path) -> None:
+def build_model(
+    con: duckdb.DuckDBPyConnection, config_dir: Path, settings_path: Path | None = None
+) -> None:
+    """Lookups and settings first, then the views. The settings file is ``settings.yaml`` next to
+    the ``codes`` folder unless given."""
     load_lookups(con, config_dir)
+    load_settings(con, settings_path or config_dir.parent / "settings.yaml")
     con.execute(resources.files(__package__).joinpath("views.sql").read_text())
 
 

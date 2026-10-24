@@ -162,6 +162,15 @@ export const useOilService = () =>
 export const useCarWarnings = () =>
   useQuery({ queryKey: ['car-warnings'], queryFn: () => unwrap(client.GET('/api/status/car-warnings')) })
 
+/** Tire pressures by the time the car measured them, for the selected period. */
+export const useTires = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['tires', range],
+    queryFn: () => unwrap(client.GET('/api/status/tires', { params: { query: range } })),
+  })
+}
+
 export const useDiagHistory = () =>
   useQuery({ queryKey: ['diag-history'], queryFn: () => unwrap(client.GET('/api/diag/history')) })
 

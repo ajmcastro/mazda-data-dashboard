@@ -88,12 +88,12 @@ the made-up VIN `…000001`, and by data that ends on 30 June 2026.
 
 | Page | What it shows |
 |---|---|
-| **Overview** | odometer, distance, fuel economy, fuel level, tire pressures, and the alerts that need attention |
+| **Overview** | odometer, distance, fuel economy, fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises |
 | **Trends** | every month compared with the one before (see below) |
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
-| **Status** | fuel and range, tire pressure per wheel, recent trips, doors and the alarm history |
+| **Status** | the car's own warning flags (all clear, or which is on since when), the oil-change countdown, fuel and range, tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips, doors and the alarm history |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
 
 **Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults and Status
@@ -103,8 +103,8 @@ ranges count back from your **newest data**, not from today, so they still make 
 last export is a few weeks old, and your last quick choice is remembered in the browser. The
 range is kept in the address, so you can bookmark it (a link with dates always wins over the
 remembered choice), and it follows you from page to page. Things that describe a *state* ignore
-the range: the faults still active in the latest read-out, the alerts list and the
-diagnostic-tool report.
+the range: the faults still active in the latest read-out, the alerts list, the car's own
+warning flags, the oil-change countdown and the diagnostic-tool report.
 
 **Trends.** Charts or a table show how each figure changed month by month: distance, fuel
 consumption, warnings, faults, tire pressure and more. The change against the previous month is
@@ -181,6 +181,21 @@ Things to know:
 
 Run `make unmapped` to see warning and fault codes that have no description yet, then add what
 you learn to `config/codes/*.yaml` and run `make model`.
+
+### Set your time zone (once)
+
+The car reports *when it measured the tire pressures* in its own **local** time. To show that time
+correctly (and to know how old a reading is), the dashboard needs your car's time zone: open
+[config/settings.yaml](config/settings.yaml) and set `car_timezone` to your IANA zone name (for example
+`Europe/Berlin` or `America/New_York`; the file ships with `Europe/Lisbon`, which the demo data uses).
+Then check it against your data:
+
+```bash
+make timezone
+```
+
+It says whether the zone fits (no measurement in the future, most a few minutes before the snapshot) and,
+if not, lists the clocks that do. Apply a change with `make model`.
 
 ### Adding newer data later
 
@@ -277,7 +292,7 @@ each alert is raised once, and an acknowledged alert is never raised again. The 
 | burglar alarm | the alarm status is above normal |
 | high consumption | a stretch of driving uses far more fuel than your average |
 | low fuel | the latest fuel reading is below a threshold |
-| low tire pressure | a tire reading is below a threshold (check your door-jamb sticker and set it) |
+| low tire pressure | a tire measurement is below a threshold (check your door-jamb sticker and set it); counted by when the car measured it, so a repeated reading is one alert |
 | car warning flag | one of the car's own warning flags (tire pressure per wheel, tire pressure system, oil level, seat belt, door) is on; once per run, severity settable per flag |
 | oil change due | the car's own oil-change countdown is at or below 1,000 km (it counts in steps of 1,000 km or more) |
 | no new data | the newest data is more than a few days old |
@@ -296,7 +311,8 @@ file (or run `cd backend && uv run python -m mazda_dash.alerts --notify`).
 | `make setup` | install backend and frontend dependencies |
 | `make ingest` | load `data/` into `db/mazda.duckdb`, rebuild the views, evaluate alerts |
 | `make alerts` | evaluate `config/alerts.yaml` only |
-| `make model` | reload `config/codes/*.yaml` and recreate the SQL views |
+| `make model` | reload `config/codes/*.yaml` and `config/settings.yaml` and recreate the SQL views |
+| `make timezone` | check `car_timezone` in `config/settings.yaml` against your data |
 | `make unmapped` | list codes in your data that have no description |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
 | `make demo` | the same with the synthetic sample data (`make demo-ingest` only loads it) |

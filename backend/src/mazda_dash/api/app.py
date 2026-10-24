@@ -72,12 +72,14 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
             )["v"]
         km = odo["odometer_km"] - base
 
-    st_where, st_params = rng.clause("created_at", "AND")
+    st_where, st_params = rng.clause("s.created_at", "AND")
     status = one(
         con,
-        "SELECT created_at AS at, fuel_level_pct, range_km, tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, "
-        f"tire_rr_kpa FROM v_vehicle_status WHERE fuel_level_pct IS NOT NULL {st_where} "
-        "ORDER BY created_at DESC LIMIT 1",
+        "SELECT s.created_at AS at, s.fuel_level_pct, s.range_km, s.tire_fl_kpa, s.tire_fr_kpa, "
+        "s.tire_rl_kpa, s.tire_rr_kpa, t.measured_at AS tire_measured_at, "
+        "t.age_minutes AS tire_age_minutes, t.stale AS tire_stale "
+        "FROM v_vehicle_status s LEFT JOIN v_tire_snapshots t ON t.created_at = s.created_at "
+        f"WHERE s.fuel_level_pct IS NOT NULL {st_where} ORDER BY s.created_at DESC LIMIT 1",
         st_params,
     )
     diag = one(
@@ -194,6 +196,19 @@ def status_timeline(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con
         "SELECT created_at, odometer_km, fuel_level_pct, range_km, trip_km, engine_state, "
         "tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa "
         f"FROM v_vehicle_status {where} ORDER BY created_at",
+        params,
+    )
+
+
+@app.get("/api/status/tires", response_model=list[m.TireReading])
+def tire_readings(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """Tire pressures by the time the car MEASURED them (see v_tire_readings), oldest first."""
+    where, params = rng.clause("reading_at")
+    return rows(
+        con,
+        "SELECT reading_at, time_known, first_snapshot_at, last_snapshot_at, snapshots, age_minutes, "
+        "last_age_minutes, stale, tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa "
+        f"FROM v_tire_readings {where} ORDER BY reading_at, time_known",
         params,
     )
 

@@ -115,6 +115,65 @@ FROM signal_readings
 WHERE source = 'rts'
 GROUP BY created_at;
 
+-- When the car MEASURED the tire pressures of each status snapshot. The car sends the time as five
+-- numbers (year, month, day, hour, minute) in its own LOCAL time, so ref_settings.car_timezone turns it
+-- into UTC (ICU rules, so DST is handled; a local time that happens twice or never is resolved the way
+-- DuckDB's ICU does). Missing, Invalid or impossible parts (255, year 0, 31 February) give NULL.
+-- age_minutes = how much older the measurement was than the snapshot; stale = older than
+-- ref_settings.tire_stale_hours at that moment. make_timestamp(epoch_us(...)) is used instead of
+-- nesting timezone() calls because the in-browser DuckDB cannot bind the nested form.
+CREATE OR REPLACE VIEW v_tire_snapshots AS
+WITH cfg AS (
+    SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone,
+           coalesce(try_cast(max(value) FILTER (WHERE key = 'tire_stale_hours') AS DOUBLE), 6) AS stale_hours
+    FROM ref_settings
+), parts AS (
+    SELECT created_at,
+           max(value_num) FILTER (WHERE signal = 'tprsdispyear' AND valid IS NOT FALSE) AS y,
+           max(value_num) FILTER (WHERE signal = 'tprsdispmonth' AND valid IS NOT FALSE) AS mo,
+           max(value_num) FILTER (WHERE signal = 'tprsdispdate' AND valid IS NOT FALSE) AS d,
+           max(value_num) FILTER (WHERE signal = 'tprsdisphour' AND valid IS NOT FALSE) AS h,
+           max(value_num) FILTER (WHERE signal = 'tprsdispminute' AND valid IS NOT FALSE) AS mi
+    FROM signal_readings WHERE source = 'rts' GROUP BY created_at
+), local_time AS (
+    SELECT created_at,
+           CASE WHEN y BETWEEN 2000 AND 2100 AND mo BETWEEN 1 AND 12 AND d BETWEEN 1 AND 31
+                     AND h BETWEEN 0 AND 23 AND mi BETWEEN 0 AND 59
+                THEN try(make_timestamp(CAST(y AS BIGINT), CAST(mo AS BIGINT), CAST(d AS BIGINT),
+                                        CAST(h AS BIGINT), CAST(mi AS BIGINT), 0.0))
+           END AS local_ts
+    FROM parts
+), measured AS (
+    SELECT l.created_at, c.stale_hours,
+           make_timestamp(epoch_us(timezone(c.zone, l.local_ts))) AS measured_at
+    FROM local_time l CROSS JOIN cfg c
+)
+SELECT created_at, measured_at,
+       round(date_diff('second', measured_at, created_at) / 60.0, 1) AS age_minutes,
+       date_diff('second', measured_at, created_at) > stale_hours * 3600 AS stale
+FROM measured;
+
+-- One row per distinct tire MEASUREMENT: consecutive snapshots that repeat the same measurement are one
+-- reading. `reading_at` = when it was measured (UTC), or the first snapshot's time when the car sent no valid
+-- measurement time (time_known = false; every such snapshot is its own reading). age_minutes is the age
+-- when first seen, last_age_minutes when last seen (the car may keep showing an old measurement).
+CREATE OR REPLACE VIEW v_tire_readings AS
+WITH s AS (
+    SELECT t.created_at, t.measured_at, t.age_minutes, t.stale,
+           v.tire_fl_kpa, v.tire_fr_kpa, v.tire_rl_kpa, v.tire_rr_kpa,
+           coalesce(t.measured_at, t.created_at) AS reading_at, t.measured_at IS NOT NULL AS time_known
+    FROM v_tire_snapshots t JOIN v_vehicle_status v ON v.created_at = t.created_at
+    WHERE v.tire_fl_kpa IS NOT NULL OR v.tire_fr_kpa IS NOT NULL
+       OR v.tire_rl_kpa IS NOT NULL OR v.tire_rr_kpa IS NOT NULL
+)
+SELECT reading_at, time_known,
+       min(created_at) AS first_snapshot_at, max(created_at) AS last_snapshot_at, count(*) AS snapshots,
+       arg_min(age_minutes, created_at) AS age_minutes, arg_max(age_minutes, created_at) AS last_age_minutes,
+       arg_max(stale, created_at) AS stale,
+       arg_min(tire_fl_kpa, created_at) AS tire_fl_kpa, arg_min(tire_fr_kpa, created_at) AS tire_fr_kpa,
+       arg_min(tire_rl_kpa, created_at) AS tire_rl_kpa, arg_min(tire_rr_kpa, created_at) AS tire_rr_kpa
+FROM s GROUP BY reading_at, time_known;
+
 -- Door / lock / lights snapshots (vis). NULL where the car flagged the value Invalid.
 CREATE OR REPLACE VIEW v_door_status AS
 SELECT created_at,

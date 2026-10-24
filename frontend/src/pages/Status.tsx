@@ -1,8 +1,8 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useCarWarnings, useDoors, useOilService, useStatusTimeline, useTripSegments } from '../api/hooks'
+import { useAlarms, useCarWarnings, useDoors, useOilService, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
-import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
+import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, tireReadingsNote, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const tipLabel = (v: number | string) => fmtDateTime(new Date(Number(v)).toISOString())
@@ -23,6 +23,7 @@ export default function Status() {
   const trips = useTripSegments(60)
   const oil = useOilService()
   const carWarnings = useCarWarnings()
+  const tires = useTires()
 
   const points = (status.data ?? []).map((s) => ({
     t: ts(s.created_at),
@@ -33,6 +34,16 @@ export default function Status() {
     RL: s.tire_rl_kpa ?? null,
     RR: s.tire_rr_kpa ?? null,
   }))
+
+  // one point per MEASUREMENT, at the time the car took it (snapshots repeating it are not extra points)
+  const tirePoints = (tires.data ?? []).map((r) => ({
+    t: ts(r.reading_at),
+    FL: r.tire_fl_kpa ?? null,
+    FR: r.tire_fr_kpa ?? null,
+    RL: r.tire_rl_kpa ?? null,
+    RR: r.tire_rr_kpa ?? null,
+  }))
+  const tireNote = tireReadingsNote(tires.data)
 
   const tripCols: Column<TripSegment>[] = [
     { key: 'end', header: 'Ended', sort: (t) => t.end_at, render: (t) => fmtDateTime(t.end_at) },
@@ -89,10 +100,10 @@ export default function Status() {
           </QueryState>
         </Panel>
 
-        <Panel title="Tire pressure" hint="kPa per wheel">
-          <QueryState query={status}>
+        <Panel title="Tire pressure" hint="kPa per wheel, at the time measured">
+          <QueryState query={tires}>
             <ResponsiveContainer width="100%" height={230}>
-              <LineChart data={points}>
+              <LineChart data={tirePoints}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={fmtTick} minTickGap={36} {...axis} />
                 <YAxis {...axis} width={40} domain={['dataMin - 10', 'dataMax + 10']} />
@@ -104,6 +115,7 @@ export default function Status() {
                 <Line isAnimationActive={ANIMATE} name="rear right" dataKey="RR" stroke="var(--steel)" dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
+            {tireNote && <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tireNote}</p>}
           </QueryState>
         </Panel>
       </div>

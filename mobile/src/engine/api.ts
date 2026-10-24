@@ -8,7 +8,7 @@ import { diagCompare, diagHistory, diagReport, diagReportFrames, diagReports } f
 import { dtcEvents, dtcFrequency, dtcReadouts, dtcSnapshots, faultContext, freezeFrames } from './faults'
 import { carWarnings } from './carwarnings'
 import { maintenanceOil } from './maintenance'
-import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, statusTimeline, tripSegments } from './series'
+import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, statusTimeline, tireReadings, tripSegments } from './series'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
 
@@ -54,6 +54,7 @@ export class Api {
     add('GET', '/api/fuel/monthly', fuelMonthly)
     add('GET', '/api/trips/segments', tripSegments)
     add('GET', '/api/status/timeline', statusTimeline)
+    add('GET', '/api/status/tires', tireReadings)
     add('GET', '/api/doors/timeline', doorsTimeline)
     add('GET', '/api/alarms', alarms)
     add('GET', '/api/warnings/frequency', warningFrequency)

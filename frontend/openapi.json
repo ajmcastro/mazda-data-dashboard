@@ -483,6 +483,79 @@
         }
       }
     },
+    "/api/status/tires": {
+      "get": {
+        "summary": "Tire Readings",
+        "description": "Tire pressures by the time the car MEASURED them (see v_tire_readings), oldest first.",
+        "operationId": "tire_readings_api_status_tires_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TireReading"
+                  },
+                  "title": "Response Tire Readings Api Status Tires Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/doors/timeline": {
       "get": {
         "summary": "Doors Timeline",
@@ -3383,6 +3456,40 @@
               }
             ],
             "title": "Tire Rr Kpa"
+          },
+          "tire_measured_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Measured At"
+          },
+          "tire_age_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Age Minutes"
+          },
+          "tire_stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Stale"
           }
         },
         "type": "object",
@@ -4230,6 +4337,120 @@
           "created_at"
         ],
         "title": "StatusPoint"
+      },
+      "TireReading": {
+        "properties": {
+          "reading_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Reading At"
+          },
+          "time_known": {
+            "type": "boolean",
+            "title": "Time Known"
+          },
+          "first_snapshot_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First Snapshot At"
+          },
+          "last_snapshot_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Snapshot At"
+          },
+          "snapshots": {
+            "type": "integer",
+            "title": "Snapshots"
+          },
+          "age_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age Minutes"
+          },
+          "last_age_minutes": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Age Minutes"
+          },
+          "stale": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale"
+          },
+          "tire_fl_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Fl Kpa"
+          },
+          "tire_fr_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Fr Kpa"
+          },
+          "tire_rl_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Rl Kpa"
+          },
+          "tire_rr_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tire Rr Kpa"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reading_at",
+          "time_known",
+          "first_snapshot_at",
+          "last_snapshot_at",
+          "snapshots"
+        ],
+        "title": "TireReading",
+        "description": "One tire-pressure MEASUREMENT (snapshots that repeat it are folded into it)."
       },
       "TripSegment": {
         "properties": {

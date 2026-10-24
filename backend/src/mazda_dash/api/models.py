@@ -19,6 +19,11 @@ class LatestStatus(BaseModel):
     tire_fr_kpa: float | None = None
     tire_rl_kpa: float | None = None
     tire_rr_kpa: float | None = None
+    tire_measured_at: datetime | None = None  # when the car measured them (UTC)
+    tire_age_minutes: float | None = (
+        None  # how much older than `at` the measurement was
+    )
+    tire_stale: bool | None = None
 
 
 class AlarmEvent(BaseModel):
@@ -91,6 +96,23 @@ class StatusPoint(BaseModel):
     range_km: float | None = None
     trip_km: float | None = None
     engine_state: float | None = None
+    tire_fl_kpa: float | None = None
+    tire_fr_kpa: float | None = None
+    tire_rl_kpa: float | None = None
+    tire_rr_kpa: float | None = None
+
+
+class TireReading(BaseModel):
+    """One tire-pressure MEASUREMENT (snapshots that repeat it are folded into it)."""
+
+    reading_at: datetime  # when it was measured (UTC); the first snapshot's time if time_known is false
+    time_known: bool
+    first_snapshot_at: datetime
+    last_snapshot_at: datetime
+    snapshots: int
+    age_minutes: float | None = None  # age of the measurement when first seen
+    last_age_minutes: float | None = None  # ... and when last seen
+    stale: bool | None = None
     tire_fl_kpa: float | None = None
     tire_fr_kpa: float | None = None
     tire_rl_kpa: float | None = None

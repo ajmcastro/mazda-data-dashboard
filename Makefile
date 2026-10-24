@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
+.PHONY: setup profile ingest model timezone unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
 
 setup:
 	cd backend && uv sync
@@ -29,6 +29,10 @@ reset-db:
 
 model:
 	cd backend && uv run python -m mazda_dash.model --db ../db/mazda.duckdb --config ../config/codes
+
+# Does car_timezone in config/settings.yaml fit your data? (suggests zones when it does not)
+timezone:
+	cd backend && uv run python -m mazda_dash.timezone_check --db ../db/mazda.duckdb --settings ../config/settings.yaml
 
 unmapped:
 	cd backend && uv run python -c "import duckdb; [print(r) for r in duckdb.connect('../db/mazda.duckdb', read_only=True).execute('SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC').fetchall()]"

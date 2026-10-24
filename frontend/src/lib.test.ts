@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   addDays,
+  fmtAge,
   carWarningHeadline,
+  tireMeasuredNote,
+  tireReadingsNote,
   daysInRange,
   editRange,
   fmtAgo,
@@ -248,5 +251,62 @@ describe('carWarningHeadline', () => {
     expect(carWarningHeadline([flag('oil level', true), flag('door open', true)])).toBe(
       'The car reports 2 warnings: oil level; door open',
     )
+  })
+})
+
+describe('fmtAge', () => {
+  it('reads naturally from seconds to days', () => {
+    expect(fmtAge(0.4)).toBe('under a minute')
+    expect(fmtAge(12.1)).toBe('12 min')
+    expect(fmtAge(59.6)).toBe('1 h 00 min')
+    expect(fmtAge(185)).toBe('3 h 05 min')
+    expect(fmtAge(26 * 60)).toBe('26 h 00 min')
+    expect(fmtAge(62 * 60)).toBe('2.6 days')
+    expect(fmtAge(null)).toBe('unknown')
+  })
+})
+
+describe('tire measurement notes', () => {
+  const status = {
+    at: '2026-10-22T17:46:03Z',
+    tire_fl_kpa: 250,
+    tire_measured_at: '2026-10-22T17:34:00Z',
+    tire_age_minutes: 12.1,
+    tire_stale: false,
+  }
+
+  it('says when the tires were measured and how old that was', () => {
+    const n = tireMeasuredNote(status)!
+    expect(n.text).toContain('measured')
+    expect(n.text).toContain('12 min before this snapshot')
+    expect(n.stale).toBe(false)
+  })
+
+  it('flags a stale measurement and an unknown time, and says nothing without pressures', () => {
+    expect(tireMeasuredNote({ ...status, tire_age_minutes: 700, tire_stale: true })!.stale).toBe(true)
+    expect(tireMeasuredNote({ ...status, tire_measured_at: null })).toEqual({ text: 'measurement time unknown', stale: false })
+    expect(tireMeasuredNote({ ...status, tire_fl_kpa: null })).toBeNull()
+    expect(tireMeasuredNote(undefined)).toBeNull()
+  })
+
+  const reading = (stale: boolean, known = true) => ({
+    reading_at: '2026-06-13T08:00:00Z',
+    time_known: known,
+    first_snapshot_at: '2026-06-13T08:10:00Z',
+    last_snapshot_at: '2026-06-13T08:10:00Z',
+    snapshots: 1,
+    age_minutes: known ? 10 : null,
+    last_age_minutes: known ? 10 : null,
+    stale: known ? stale : null,
+    tire_fl_kpa: 240,
+  })
+
+  it('summarises the measurements under the chart', () => {
+    expect(tireReadingsNote([])).toBeNull()
+    expect(tireReadingsNote([reading(false)])).toBe('1 measurement, each at the time the car took it')
+    const note = tireReadingsNote([reading(true), reading(false), reading(false, false)])!
+    expect(note).toContain('3 measurements')
+    expect(note).toContain('1 still shown by the car long after')
+    expect(note).toContain('1 without a valid measurement time')
   })
 })

@@ -6,7 +6,7 @@ import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
-import { ANIMATE, carWarningHeadline, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, ts } from '../lib'
+import { ANIMATE, carWarningHeadline, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, tireMeasuredNote, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
@@ -17,6 +17,7 @@ export default function OverviewPage() {
   const oil = oilTile(useOilService().data)
   const carWarning = carWarningHeadline(useCarWarnings().data?.flags)
   const o = overview.data
+  const tireNote = tireMeasuredNote(o?.status)
 
   return (
     <>
@@ -128,8 +129,14 @@ export default function OverviewPage() {
           </QueryState>
         </Panel>
 
-        <Panel title="Tire pressure" hint={o?.status.at ? fmtDateTime(o.status.at) : ''}>
+        <Panel title="Tire pressure" hint={o?.status.at ? `snapshot ${fmtDateTime(o.status.at)}` : ''}>
           {o && <Tires fl={o.status.tire_fl_kpa} fr={o.status.tire_fr_kpa} rl={o.status.tire_rl_kpa} rr={o.status.tire_rr_kpa} />}
+          {tireNote && (
+            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0', color: tireNote.stale ? 'var(--amber)' : undefined }}>
+              {tireNote.text}
+              {tireNote.stale && ' · old: the car had not measured since'}
+            </p>
+          )}
         </Panel>
       </div>
 

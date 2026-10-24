@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change) and M18 (the car's own warnings) are done. M19–M20 (more of the car's own data: tire reading time, warning-lamp flags) follow, with their decisions settled. Next step: "start implementing milestone 19".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change), M18 (the car's own warnings) and M19 (tire reading time) are done. M20 (more of the car's own data: warning-lamp flags) follows, with its decisions settled. Next step: "start implementing milestone 20".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -75,7 +75,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M16 | Hosting, docs and CI ✅ | HTTPS static hosting (code only), README guide, parity checks in CI |
 | M17 | Next oil change ✅ | the car's own oil-change countdown: tile, history, alert (planned after M16) |
 | M18 | The car's own warnings ✅ | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) |
-| M19 | Tire reading time | when each tire pressure was really measured, and how fresh it is (planned after M16) |
+| M19 | Tire reading time ✅ | when each tire pressure was really measured, and how fresh it is (planned after M16) |
 | M20 | Warning-lamp flags | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert (planned after M16) |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
@@ -388,6 +388,17 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 - **UI:** the tire panels say "measured 18:02, 41 min before this snapshot"; the Status tire chart uses the measurement time on its axis (fewer duplicate points); stale readings (older than a configurable number of hours) are marked.
 - **Alerts:** `low_tire_pressure` keys on the measurement time instead of the snapshot time, so one low reading counted in several snapshots raises one alert.
 - **Done when:** both implementations convert times identically (DST edge cases in the goldens) and the demo data has readings whose measurement is older than the snapshot.
+
+**M19 as built.**
+- **Settings file** `config/settings.yaml` (`car_timezone`, `tire_stale_hours`), loaded into a `ref_settings` table by `build_model` (unknown settings, an invalid time zone name or a stale limit of 0 are errors; defaults UTC and 6 h when the file is missing). The table is in the data pack (`TABLES`), so the phone reads the same values; the phone app refuses an older pack without it with a clear message. `make timezone` (`timezone_check.py`) tells whether the configured zone fits the data and groups the zones that do by the clock offset they imply (it cannot tell apart zones that behaved alike during your data, so it says to choose the one where you live).
+- **Views** (`views.sql`): `v_tire_snapshots` (per status snapshot: `measured_at` in UTC, `age_minutes`, `stale`) and `v_tire_readings` (one row per distinct measurement; repeats are folded, with first and last age and the number of snapshots; a snapshot with no valid time is its own reading with `time_known = false`). **The conversion is a single `make_timestamp(epoch_us(timezone(zone, local_time)))`** because the in-browser DuckDB crashes or cannot bind `timezone()` calls nested in each other; Python and the browser agree on every case tested.
+- **API:** `GET /api/status/tires` (period-aware, by measurement time) and three new fields on the Overview `status` (`tire_measured_at`, `tire_age_minutes`, `tire_stale`).
+- **Alert:** `low_tire_pressure` now keys on the measurement time (`v_tire_readings`), so a low reading repeated in several snapshots is one alert dated when it was measured. Snapshots without a time behave as before.
+- **UI:** the Overview tire panel says "measured 30 Jun, 18:56, 5 min before this snapshot" (amber "old" when stale); the Status tire chart plots one point per measurement at the time it was taken with a note counting stale and unknown-time readings. Wording is in `fmtAge` / `tireMeasuredNote` / `tireReadingsNote` (tested).
+- **Phone:** `tireReadings` in the TypeScript engine, the extended status, and goldens. **DST edge cases are in the goldens**: `contract.py` adds 17 clock readings to the temporary database it records from (the forward and back clock changes of Lisbon on 2026-03-29 and 2026-10-25, a leap day, impossible dates, 255 and year 0), never to the sample files, and the browser engine reproduces every one (also on the author's real data).
+- **Sample data:** the demo car measures 2–41 minutes before each drive ends, so its clock runs through the March clock change; snapshots taken after the car stood still for hours show old measurements (9 stale, one of 62 hours), nine repeats are folded, and one snapshot has no valid time. Added without changing the random stream (only the status CSV differs); `tzdata` was added as a backend dependency so the zone database is the same everywhere.
+- **Real data (author's export):** with `Europe/Lisbon` the measurement times fit perfectly (196 snapshots, none in the future, median 12 minutes old, oldest 26 hours, 6 snapshots stale, 185 distinct measurements). Run `make model` once to get the settings table and the views.
+- Pitfall found on the way: `at` is a reserved word in DuckDB (the column is `reading_at`).
 
 ### M20 — Warning-lamp flags (the 128 bit flags)
 - **View and API:** `v_warning_flags`: per flag, readings set, share of readings, first and last seen, and the timeline of when it was on; only flags that ever change are listed by default. `GET /api/status/warning-flags`.

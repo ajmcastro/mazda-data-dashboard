@@ -15,7 +15,14 @@ export const DOOR_POINT = [
   'lock_driver', 'lock_passenger', 'hazard_switch', 'light_switch', 'invalid_signals',
 ]
 export const ALARM_EVENT = ['created_at', 'burglar_status', 'alarm_reason']
-export const LATEST_STATUS = ['at', 'fuel_level_pct', 'range_km', 'tire_fl_kpa', 'tire_fr_kpa', 'tire_rl_kpa', 'tire_rr_kpa']
+export const LATEST_STATUS = [
+  'at', 'fuel_level_pct', 'range_km', 'tire_fl_kpa', 'tire_fr_kpa', 'tire_rl_kpa', 'tire_rr_kpa',
+  'tire_measured_at', 'tire_age_minutes', 'tire_stale',
+]
+export const TIRE_READING = [
+  'reading_at', 'time_known', 'first_snapshot_at', 'last_snapshot_at', 'snapshots', 'age_minutes',
+  'last_age_minutes', 'stale', 'tire_fl_kpa', 'tire_fr_kpa', 'tire_rl_kpa', 'tire_rr_kpa',
+]
 export const WARNING_FREQUENCY = [
   'code', 'title', 'severity', 'known', 'events', 'pct_of_events', 'days_seen', 'first_seen', 'last_seen',
 ]

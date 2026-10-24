@@ -19,6 +19,9 @@ export interface Manifest {
 
 export class PackError extends Error {}
 
+/** Tables the views read that older packs did not have (made before the app needed them). */
+const REQUIRED_TABLES = ['ref_settings']
+
 /** Every `signal_readings` signal the views read (same rule as `used_signals` in pack.py). */
 export function usedSignals(sql: string = viewsSql): string[] {
   return [...new Set([...sql.matchAll(/signal = '([a-z0-9_]+)'/g)].map((m) => m[1]))].sort()
@@ -46,6 +49,10 @@ export function readPack(bytes: Uint8Array): { manifest: Manifest; files: Record
     throw new PackError(
       `This data pack has format ${manifest.format}; this app reads format ${SUPPORTED_FORMAT}. Update the app or export the pack again.`,
     )
+  }
+  const missingTables = REQUIRED_TABLES.filter((t) => !(t in manifest.tables))
+  if (missingTables.length) {
+    throw new PackError(`This data pack was made by an older version and lacks ${missingTables.join(', ')}. Export it again with make mobile-pack.`)
   }
   if (manifest.signals !== 'all') {
     const missing = usedSignals().filter((s) => !(manifest.signals as string[]).includes(s))

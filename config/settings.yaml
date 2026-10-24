@@ -1,0 +1,12 @@
+# Settings of your car and of the dashboard (the code descriptions are in config/codes/).
+# Edit, then run `make model` (or `make ingest`) to apply them; `make timezone` checks the time zone
+# against your data.
+
+# The time zone of the clock the car uses for "when were the tire pressures measured". It is the car's
+# LOCAL time (not UTC), so it needs a zone to be turned into UTC. Use an IANA name such as
+# Europe/Lisbon, Europe/Berlin, America/New_York. Wrong zone = wrong measurement times (a measurement
+# that appears to be in the future, or hours old). The demo data uses Europe/Lisbon.
+car_timezone: Europe/Lisbon
+
+# A tire reading counts as stale when the car still showed a measurement older than this many hours.
+tire_stale_hours: 6

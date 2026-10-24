@@ -13,13 +13,24 @@ import argparse
 import csv
 import random
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 VIN = "SAMPLEVIN00000001"
 START = datetime(2026, 3, 1)
 END = datetime(2026, 6, 30)
 TANK_L = 56.0
+TIRE_CLOCK_SIGNALS = (
+    "tprsdispyear",
+    "tprsdispmonth",
+    "tprsdispdate",
+    "tprsdisphour",
+    "tprsdispminute",
+)
+CAR_CLOCK = ZoneInfo(
+    "Europe/Lisbon"
+)  # the demo car's local time (config/settings.yaml says the same)
 ECUS = ["BCM", "ECM", "ADU", "DCM", "IC", "EPS", "DSC", "CGW"]
 # Invented codes: the ids only mimic the format of the real ones.
 WARNING_CODES = [
@@ -60,6 +71,9 @@ class Car:
         self.trip_km = self.trip_fuel = self.trip_s = 0.0
         self.tires = [240.0, 240.0, 240.0, 240.0]  # FL, FR, RL, RR
         self.tire_warning = [False] * 4  # the car's own warning flag per wheel
+        self.tire_measured = START - timedelta(
+            hours=1
+        )  # when the car last measured the tires (UTC)
         self.events: list[
             tuple[datetime, float]
         ] = []  # (time, odometer) of every drive end
@@ -74,6 +88,8 @@ class Car:
         self.trip_s += seconds
         self.fuel_pct -= fuel / TANK_L * 100
         self.events.append((end, self.odo))
+        # the car measured the tires 2-41 minutes before the drive ended (from the clock: no random numbers)
+        self.tire_measured = end - timedelta(minutes=2 + end.minute * 3 % 40)
         return end
 
     def reset_trip(self) -> None:
@@ -98,7 +114,22 @@ class Car:
             "rrtprsdispkp": tires[3],
             **self.oil(t),
             **self.car_warnings(tires),
+            **self.tire_clock(t),
         }
+
+    def tire_clock(self, t: datetime) -> dict[str, int | None]:
+        """When the tires were last measured, as the car sends it: five numbers in LOCAL time. Snapshots
+        taken a long time after the last drive show an old measurement (stale). Now and then the car
+        sends no time (Invalid), chosen from the clock like the oil dropouts."""
+        if int((t - datetime(1970, 1, 1)).total_seconds()) % 53 == 35:
+            return dict.fromkeys(TIRE_CLOCK_SIGNALS)
+        local = self.tire_measured.replace(tzinfo=UTC).astimezone(CAR_CLOCK)
+        return dict(
+            zip(
+                TIRE_CLOCK_SIGNALS,
+                (local.year, local.month, local.day, local.hour, local.minute),
+            )
+        )
 
     def car_warnings(self, tires: list[int]) -> dict[str, int]:
         """The car's own warning flags: all clear except the rear left tire, which the car flags once

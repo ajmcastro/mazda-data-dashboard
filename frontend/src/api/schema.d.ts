@@ -146,6 +146,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status/tires": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tire Readings
+         * @description Tire pressures by the time the car MEASURED them (see v_tire_readings), oldest first.
+         */
+        get: operations["tire_readings_api_status_tires_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/doors/timeline": {
         parameters: {
             query?: never;
@@ -1031,6 +1051,12 @@ export interface components {
             tire_rl_kpa?: number | null;
             /** Tire Rr Kpa */
             tire_rr_kpa?: number | null;
+            /** Tire Measured At */
+            tire_measured_at?: string | null;
+            /** Tire Age Minutes */
+            tire_age_minutes?: number | null;
+            /** Tire Stale */
+            tire_stale?: boolean | null;
         };
         /**
          * MonthMetrics
@@ -1248,6 +1274,45 @@ export interface components {
             trip_km?: number | null;
             /** Engine State */
             engine_state?: number | null;
+            /** Tire Fl Kpa */
+            tire_fl_kpa?: number | null;
+            /** Tire Fr Kpa */
+            tire_fr_kpa?: number | null;
+            /** Tire Rl Kpa */
+            tire_rl_kpa?: number | null;
+            /** Tire Rr Kpa */
+            tire_rr_kpa?: number | null;
+        };
+        /**
+         * TireReading
+         * @description One tire-pressure MEASUREMENT (snapshots that repeat it are folded into it).
+         */
+        TireReading: {
+            /**
+             * Reading At
+             * Format: date-time
+             */
+            reading_at: string;
+            /** Time Known */
+            time_known: boolean;
+            /**
+             * First Snapshot At
+             * Format: date-time
+             */
+            first_snapshot_at: string;
+            /**
+             * Last Snapshot At
+             * Format: date-time
+             */
+            last_snapshot_at: string;
+            /** Snapshots */
+            snapshots: number;
+            /** Age Minutes */
+            age_minutes?: number | null;
+            /** Last Age Minutes */
+            last_age_minutes?: number | null;
+            /** Stale */
+            stale?: boolean | null;
             /** Tire Fl Kpa */
             tire_fl_kpa?: number | null;
             /** Tire Fr Kpa */
@@ -1612,6 +1677,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StatusPoint"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tire_readings_api_status_tires_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TireReading"][];
                 };
             };
             /** @description Validation Error */

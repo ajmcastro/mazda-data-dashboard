@@ -1,7 +1,7 @@
 /** Overview and the time-series endpoints (port of the first half of `api/app.py`). */
 import type { Handler } from './context'
 import {
-  ALARM_EVENT, DOOR_POINT, FUEL_MONTH, LATEST_STATUS, ODOMETER_DAY, STATUS_POINT, TRIP_SEGMENT,
+  ALARM_EVENT, DOOR_POINT, FUEL_MONTH, LATEST_STATUS, ODOMETER_DAY, STATUS_POINT, TIRE_READING, TRIP_SEGMENT,
 } from './shapes'
 import { pick } from './http'
 
@@ -35,10 +35,13 @@ export const overview: Handler = async ({ con, range }) => {
     km = (odo.odometer_km as number) - base
   }
 
-  const st = rng.clause('created_at', 'AND')
+  const st = rng.clause('s.created_at', 'AND')
   const status = await con.one(
-    'SELECT created_at AS at, fuel_level_pct, range_km, tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa ' +
-      `FROM v_vehicle_status WHERE fuel_level_pct IS NOT NULL ${st.sql} ORDER BY created_at DESC LIMIT 1`,
+    'SELECT s.created_at AS at, s.fuel_level_pct, s.range_km, s.tire_fl_kpa, s.tire_fr_kpa, ' +
+      's.tire_rl_kpa, s.tire_rr_kpa, t.measured_at AS tire_measured_at, ' +
+      't.age_minutes AS tire_age_minutes, t.stale AS tire_stale ' +
+      'FROM v_vehicle_status s LEFT JOIN v_tire_snapshots t ON t.created_at = s.created_at ' +
+      `WHERE s.fuel_level_pct IS NOT NULL ${st.sql} ORDER BY s.created_at DESC LIMIT 1`,
     st.params,
   )
   const diag = await con.one('SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC, report_id LIMIT 1')
@@ -136,6 +139,20 @@ export const statusTimeline: Handler = async ({ con, range }) => {
       params,
     ),
     STATUS_POINT,
+  )
+}
+
+/** Tire pressures by the time the car MEASURED them (see v_tire_readings), oldest first. */
+export const tireReadings: Handler = async ({ con, range }) => {
+  const { sql, params } = range().clause('reading_at')
+  return shaped(
+    await con.rows(
+      'SELECT reading_at, time_known, first_snapshot_at, last_snapshot_at, snapshots, age_minutes, ' +
+        'last_age_minutes, stale, tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa ' +
+        `FROM v_tire_readings ${sql} ORDER BY reading_at, time_known`,
+      params,
+    ),
+    TIRE_READING,
   )
 }
 

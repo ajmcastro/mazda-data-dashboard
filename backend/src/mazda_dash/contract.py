@@ -14,10 +14,11 @@ import json
 import os
 import shutil
 import tempfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from urllib.parse import urlencode
 
+import duckdb
 from fastapi.testclient import TestClient
 
 from .alerts import evaluate
@@ -34,6 +35,7 @@ RANGE_ENDPOINTS = [
     "/api/fuel/monthly",
     "/api/trips/segments",
     "/api/status/timeline",
+    "/api/status/tires",
     "/api/doors/timeline",
     "/api/alarms",
     "/api/warnings/frequency",
@@ -43,6 +45,52 @@ RANGE_ENDPOINTS = [
     "/api/dtcs/events",
     "/api/dtcs/readouts",
 ]
+
+
+# Tire-measurement clock readings (year, month, day, hour, minute, in the car's local time) that are
+# hard: Lisbon's clocks go forward 01:00 -> 02:00 on 2026-03-29 (01:30 does not exist) and back
+# 02:00 -> 01:00 on 2026-10-25 (01:30 happens twice), a leap day, and values that are impossible or
+# mean "unknown" (255, year 0). They are added to the temporary database the goldens are recorded from
+# (never to the sample files), so Python and the in-browser engine must convert them identically.
+TIRE_CLOCK_EDGE_CASES = [
+    (2026, 3, 29, 0, 30), (2026, 3, 29, 1, 30), (2026, 3, 29, 2, 30),
+    (2026, 10, 25, 0, 30), (2026, 10, 25, 1, 30), (2026, 10, 25, 2, 30),
+    (2026, 12, 31, 23, 59), (2028, 2, 29, 12, 0), (2026, 1, 1, 0, 0),
+    (2027, 2, 29, 12, 0), (2026, 2, 30, 10, 0), (2026, 13, 1, 0, 0), (2026, 5, 32, 0, 0),
+    (2026, 5, 1, 24, 0), (2026, 5, 1, 12, 60), (0, 255, 255, 255, 255), (1999, 6, 1, 12, 0),
+]  # fmt: skip
+CLOCK_SIGNALS = (
+    "tprsdispyear",
+    "tprsdispmonth",
+    "tprsdispdate",
+    "tprsdisphour",
+    "tprsdispminute",
+)
+
+
+def add_tire_clock_snapshots(
+    con, cases, start: datetime, invalid_part: int | None = None
+) -> list[datetime]:
+    """Insert one status snapshot per clock reading (a minute apart from `start`), with tire pressures
+    so each becomes a reading. With ``invalid_part`` that part of every snapshot is flagged Invalid."""
+    times = []
+    for i, parts in enumerate(cases):
+        t = start + timedelta(minutes=i)
+        times.append(t)
+        signals = dict(zip(CLOCK_SIGNALS, parts, strict=True))
+        signals |= {
+            "fltprsdispkp": 230,
+            "frtprsdispkp": 231,
+            "rltprsdispkp": 232,
+            "rrtprsdispkp": 233,
+        }
+        for j, (signal, value) in enumerate(signals.items()):
+            ok = not (invalid_part is not None and j == invalid_part)
+            con.execute(
+                "INSERT INTO signal_readings VALUES ('rts', 'EDGE', 'RemoteConfirm', ?, NULL, ?, ?, ?, ?)",
+                [t, signal, str(value), value, ok],
+            )
+    return times
 
 
 def _ranges(first: date, last: date) -> list[dict]:
@@ -232,6 +280,11 @@ def generate(out: Path, source_db: Path | None = None) -> dict:
         else:
             ingest(REPO / "sample_data", db, REPO / "config" / "codes")
             evaluate(db, REPO / "config" / "alerts.yaml")
+        edge = duckdb.connect(str(db))
+        add_tire_clock_snapshots(
+            edge, TIRE_CLOCK_EDGE_CASES, datetime(2026, 4, 2, 3, 0, 0)
+        )
+        edge.close()
         build_pack(db, out / "sample.cx5pack")
         previous = os.environ.get("MAZDA_DB")
         os.environ["MAZDA_DB"] = str(db)
