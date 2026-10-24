@@ -59,7 +59,7 @@ export const dtcEvents: Handler = async ({ con, q, range }) => {
     await con.rows(
       'SELECT transaction_id, event_at, odometer_km, ecu, dtc_code, failure_type, title, severity, ' +
         'failure_type_title, system, confirmed, pending, test_failed, warning_indicator ' +
-        `FROM v_dtc_events ${where} ORDER BY event_at DESC, ecu, dtc_code LIMIT ?`,
+        `FROM v_dtc_events ${where} ORDER BY event_at DESC, ecu, dtc_code, failure_type, transaction_id LIMIT ?`,
       [...params, limit],
     ),
     DTC_EVENT,
@@ -85,7 +85,7 @@ export const dtcSnapshots: Handler = async ({ con, q }) => {
     await con.rows(
       'SELECT transaction_id, record_number, snapshot_at, odometer_km, signal, value, value_num ' +
         'FROM v_dtc_snapshot_signals WHERE ecu = ? AND dtc_code = ? ' +
-        'ORDER BY snapshot_at DESC NULLS LAST, record_number, signal',
+        'ORDER BY snapshot_at DESC NULLS LAST, record_number, signal, transaction_id',
       [ecu, dtcCode],
     ),
     SNAPSHOT_SIGNAL,
@@ -105,7 +105,7 @@ export const freezeFrames: Handler = async ({ con, q }) => {
   const signals = new Map<string, Map<string, Record<string, unknown>>>()
   for (const r of await con.rows(
     'SELECT record_number, snapshot_at, signal, value, value_num FROM v_dtc_snapshot_signals ' +
-      'WHERE ecu = ? AND dtc_code = ? ORDER BY signal',
+      'WHERE ecu = ? AND dtc_code = ? ORDER BY signal, transaction_id',
     [ecu, dtcCode],
   )) {
     // the same frame repeats across read-outs with identical values; keep one copy
@@ -145,11 +145,11 @@ export const faultContext: Handler = async ({ con, q }) => {
   const margin = Math.round(windowHours * 3_600_000_000)
   const warnings = await con.rows(
     'SELECT triggered_at, code, title, severity FROM v_warnings ' +
-      `WHERE triggered_at BETWEEN ? - to_microseconds(${margin}) AND ? + to_microseconds(${margin}) ORDER BY triggered_at`,
+      `WHERE triggered_at BETWEEN ? - to_microseconds(${margin}) AND ? + to_microseconds(${margin}) ORDER BY triggered_at, code`,
     [at, at],
   )
   const others = await con.rows(
-    'SELECT ecu, dtc_code, failure_type, title FROM v_dtc_events WHERE transaction_id = ? ORDER BY ecu, dtc_code',
+    'SELECT ecu, dtc_code, failure_type, title FROM v_dtc_events WHERE transaction_id = ? ORDER BY ecu, dtc_code, failure_type',
     [transactionId],
   )
   const status = await con.one(
@@ -157,7 +157,7 @@ export const faultContext: Handler = async ({ con, q }) => {
       'tire_fr_kpa, tire_rl_kpa, tire_rr_kpa, ' +
       'abs(date_diff(\'second\', created_at, ?)) / 60.0 AS offset_minutes FROM v_vehicle_status ' +
       "WHERE abs(date_diff('second', created_at, ?)) <= 3 * 3600 " +
-      "ORDER BY abs(date_diff('second', created_at, ?)) LIMIT 1",
+      "ORDER BY abs(date_diff('second', created_at, ?)), created_at LIMIT 1",
     [at, at, at],
   )
   const offset = status.offset_minutes

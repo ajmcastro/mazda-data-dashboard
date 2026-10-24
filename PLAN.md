@@ -283,6 +283,7 @@ Re-implement the API inside the browser with **identical JSON**.
 - The audit refuses any `*.cx5pack` that git would publish (a gitignored one is fine), with a test.
 - The phone app typechecks, tests and builds with only `mobile/node_modules` installed (checked with `frontend/node_modules` moved away), which is what CI has.
 - README: new section "Use it on your iPhone" (publish, `make mobile-pack`, AirDrop to Files, Add to Home Screen, import, update, privacy, storage eviction, Lockdown Mode, Android note), new commands, privacy and development text. `CLAUDE.md`: the "keep both implementations in step" rule.
+- **First CI run found a flaky ordering (fixed):** `warnings/events` sorted equal timestamps differently on the CI machine (more CPU threads than the author's Mac), so the contract test failed there only. Every `ORDER BY` of the API now ends in columns that make the order total (trips, warning events, fault events, snapshots, diagnostic reports and OBD rows, fault context), in Python and TypeScript; the goldens were regenerated with DuckDB limited to 1, 2 and 4 threads and all replay identically.
 - **Not verifiable from here:** the first real deployment (needs the repository setting and a push) and the real-iPhone install/offline test with the hosted site and the author's own pack. Do that and note the result here.
 
 ### Phone layout audit (the current app at an iPhone width of 390 px, measured)

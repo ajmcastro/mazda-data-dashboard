@@ -41,7 +41,7 @@ export const overview: Handler = async ({ con, range }) => {
       `FROM v_vehicle_status WHERE fuel_level_pct IS NOT NULL ${st.sql} ORDER BY created_at DESC LIMIT 1`,
     st.params,
   )
-  const diag = await con.one('SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC LIMIT 1')
+  const diag = await con.one('SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC, report_id LIMIT 1')
   const seg = rng.clause('end_at')
   const economy = await con.one(
     `SELECT 100 * sum(fuel_l) / nullif(sum(km), 0) AS v FROM v_trip_segments ${seg.sql}`,
@@ -121,7 +121,7 @@ export const tripSegments: Handler = async ({ con, q, range }) => {
   const limit = q.int('limit', 500, 1, 5000)
   const { sql, params } = range().clause('end_at')
   return shaped(
-    await con.rows(`SELECT * FROM v_trip_segments ${sql} ORDER BY end_at DESC LIMIT ?`, [...params, limit]),
+    await con.rows(`SELECT * FROM v_trip_segments ${sql} ORDER BY end_at DESC, start_at DESC LIMIT ?`, [...params, limit]),
     TRIP_SEGMENT,
   )
 }

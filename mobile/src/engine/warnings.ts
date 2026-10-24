@@ -46,7 +46,7 @@ export const warningEvents: Handler = async ({ con, q, range }) => {
   const total = (await con.one(`SELECT count(*) AS n FROM v_warnings ${where}`, params)).n
   const items = await con.rows(
     'SELECT transaction_id, triggered_at, odometer_km, code, title, severity, known ' +
-      `FROM v_warnings ${where} ORDER BY triggered_at DESC NULLS LAST LIMIT ? OFFSET ?`,
+      `FROM v_warnings ${where} ORDER BY triggered_at DESC NULLS LAST, code, transaction_id LIMIT ? OFFSET ?`,
     [...params, limit, offset],
   )
   return { total, items: shaped(items, WARNING_EVENT) }

@@ -82,7 +82,7 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     )
     diag = one(
         con,
-        "SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC LIMIT 1",
+        "SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC, report_id LIMIT 1",
     )
     seg_where, seg_params = rng.clause("end_at")
     economy = one(
@@ -181,7 +181,7 @@ def trip_segments(
     where, params = rng.clause("end_at")
     return rows(
         con,
-        f"SELECT * FROM v_trip_segments {where} ORDER BY end_at DESC LIMIT ?",
+        f"SELECT * FROM v_trip_segments {where} ORDER BY end_at DESC, start_at DESC LIMIT ?",
         [*params, limit],
     )
 
@@ -264,7 +264,7 @@ def warning_events(
     items = rows(
         con,
         "SELECT transaction_id, triggered_at, odometer_km, code, title, severity, known "
-        f"FROM v_warnings {where} ORDER BY triggered_at DESC NULLS LAST LIMIT ? OFFSET ?",
+        f"FROM v_warnings {where} ORDER BY triggered_at DESC NULLS LAST, code, transaction_id LIMIT ? OFFSET ?",
         [*params, limit, offset],
     )
     return m.WarningPage(total=total, items=items)
@@ -323,7 +323,7 @@ def dtc_events(
         con,
         "SELECT transaction_id, event_at, odometer_km, ecu, dtc_code, failure_type, title, severity, "
         "failure_type_title, system, confirmed, pending, test_failed, warning_indicator "
-        f"FROM v_dtc_events {where} ORDER BY event_at DESC, ecu, dtc_code LIMIT ?",
+        f"FROM v_dtc_events {where} ORDER BY event_at DESC, ecu, dtc_code, failure_type, transaction_id LIMIT ?",
         [*params, limit],
     )
 
@@ -345,7 +345,7 @@ def dtc_snapshots(ecu: str, dtc_code: str, con: duckdb.DuckDBPyConnection = Con)
         con,
         "SELECT transaction_id, record_number, snapshot_at, odometer_km, signal, value, value_num "
         "FROM v_dtc_snapshot_signals WHERE ecu = ? AND dtc_code = ? "
-        "ORDER BY snapshot_at DESC NULLS LAST, record_number, signal",
+        "ORDER BY snapshot_at DESC NULLS LAST, record_number, signal, transaction_id",
         [ecu, dtc_code],
     )
 
@@ -432,7 +432,7 @@ def diag_reports(con: duckdb.DuckDBPyConnection = Con):
         "(SELECT count(*) FROM diag_values v WHERE v.report_id = r.report_id) AS values, "
         "(SELECT count(*) FROM diag_dtcs d WHERE d.report_id = r.report_id) AS dtcs, "
         "(SELECT count(*) FROM diag_obd_tests t WHERE t.report_id = r.report_id) AS obd_tests "
-        "FROM diag_reports r ORDER BY r.taken_at DESC, r.source_file",
+        "FROM diag_reports r ORDER BY r.taken_at DESC, r.source_file, r.report_id",
     )
 
 
@@ -448,7 +448,7 @@ def diag_history(con: duckdb.DuckDBPyConnection = Con):
         "AS monitors_passed, "
         "(SELECT count(*) FROM diag_dtcs d WHERE d.report_id = r.report_id) AS dtcs_listed "
         "FROM diag_reports r LEFT JOIN v_diag_summary s USING (report_id) "
-        "ORDER BY r.taken_at, r.source_file",
+        "ORDER BY r.taken_at, r.source_file, r.report_id",
     )
 
 
@@ -502,7 +502,7 @@ def diag_report(report_id: str, con: duckdb.DuckDBPyConnection = Con):
         obd_tests=rows(
             con,
             "SELECT ecu, obdmid, test, min_value, max_value, value, unit, in_range, position "
-            "FROM v_diag_obd WHERE report_id = ? ORDER BY ecu, obdmid, test",
+            "FROM v_diag_obd WHERE report_id = ? ORDER BY ecu, obdmid, test, value, min_value, max_value, unit",
             [report_id],
         ),
         aes=rows(
@@ -581,7 +581,7 @@ def freeze_frames(ecu: str, dtc_code: str, con: duckdb.DuckDBPyConnection = Con)
     for r in rows(
         con,
         "SELECT record_number, snapshot_at, signal, value, value_num FROM v_dtc_snapshot_signals "
-        "WHERE ecu = ? AND dtc_code = ? ORDER BY signal",
+        "WHERE ecu = ? AND dtc_code = ? ORDER BY signal, transaction_id",
         [ecu, dtc_code],
     ):
         # the same frame repeats across read-outs with identical values; keep one copy
@@ -629,13 +629,13 @@ def fault_context(
     warnings = rows(
         con,
         "SELECT triggered_at, code, title, severity FROM v_warnings "
-        "WHERE triggered_at BETWEEN ? AND ? ORDER BY triggered_at",
+        "WHERE triggered_at BETWEEN ? AND ? ORDER BY triggered_at, code",
         [at - margin, at + margin],
     )
     others = rows(
         con,
         "SELECT ecu, dtc_code, failure_type, title FROM v_dtc_events WHERE transaction_id = ? "
-        "ORDER BY ecu, dtc_code",
+        "ORDER BY ecu, dtc_code, failure_type",
         [transaction_id],
     )
     status = one(
@@ -644,7 +644,7 @@ def fault_context(
         "tire_fr_kpa, tire_rl_kpa, tire_rr_kpa, "
         "abs(date_diff('second', created_at, ?)) / 60.0 AS offset_minutes FROM v_vehicle_status "
         "WHERE abs(date_diff('second', created_at, ?)) <= 3 * 3600 "
-        "ORDER BY abs(date_diff('second', created_at, ?)) LIMIT 1",
+        "ORDER BY abs(date_diff('second', created_at, ?)), created_at LIMIT 1",
         [at, at, at],
     )
     offset = status.pop("offset_minutes", None)

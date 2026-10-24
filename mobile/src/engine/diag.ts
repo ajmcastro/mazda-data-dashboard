@@ -20,7 +20,7 @@ async function reportOr404(con: Con, reportId: string): Promise<Record<string, u
 }
 
 export const diagReports: Handler = async ({ con }) =>
-  shaped(await con.rows(`${INFO_SQL} ORDER BY r.taken_at DESC, r.source_file`), DIAG_REPORT_INFO)
+  shaped(await con.rows(`${INFO_SQL} ORDER BY r.taken_at DESC, r.source_file, r.report_id`), DIAG_REPORT_INFO)
 
 /** Every diagnostic-tool report with its headline numbers, oldest first. */
 export const diagHistory: Handler = async ({ con }) =>
@@ -33,7 +33,7 @@ export const diagHistory: Handler = async ({ con }) =>
         'AS monitors_passed, ' +
         '(SELECT count(*) FROM diag_dtcs d WHERE d.report_id = r.report_id) AS dtcs_listed ' +
         'FROM diag_reports r LEFT JOIN v_diag_summary s USING (report_id) ' +
-        'ORDER BY r.taken_at, r.source_file',
+        'ORDER BY r.taken_at, r.source_file, r.report_id',
     ),
     DIAG_HISTORY,
   )
@@ -93,7 +93,7 @@ export const diagReport: Handler = async ({ con, path }) => {
     obd_tests: shaped(
       await con.rows(
         'SELECT ecu, obdmid, test, min_value, max_value, value, unit, in_range, position ' +
-          'FROM v_diag_obd WHERE report_id = ? ORDER BY ecu, obdmid, test',
+          'FROM v_diag_obd WHERE report_id = ? ORDER BY ecu, obdmid, test, value, min_value, max_value, unit',
         [id],
       ),
       OBD_TEST,
