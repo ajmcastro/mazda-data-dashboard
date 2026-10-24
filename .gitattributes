@@ -1,0 +1,4 @@
+# generated files are committed and compared byte for byte in CI: keep them LF everywhere
+sample_data/** text eol=lf
+frontend/openapi.json text eol=lf
+frontend/src/api/schema.d.ts text eol=lf

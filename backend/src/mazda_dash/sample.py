@@ -43,7 +43,9 @@ def _n(t: datetime) -> str:
 
 def _write(path: Path, header: list[str], rows: list[list]) -> None:
     with path.open("w", newline="") as f:
-        w = csv.writer(f, quoting=csv.QUOTE_ALL)
+        # LF, not csv's default CRLF: git stores these files with LF, so CRLF made them look changed
+        # on machines that do not convert line endings (CI)
+        w = csv.writer(f, quoting=csv.QUOTE_ALL, lineterminator="\n")
         w.writerow(header)
         w.writerows(rows)
 
