@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest model timezone unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
+.PHONY: setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
 
 setup:
 	cd backend && uv sync
@@ -80,16 +80,20 @@ mobile-pack:
 mobile-demo-pack: demo-ingest
 	cd backend && uv run python -m mazda_dash.pack --db ../db/demo.duckdb --out ../mobile/public/demo.cx5pack
 
-mobile-install:
+# the phone app's packages (installed on first use, again when package-lock.json changes)
+mobile/node_modules: mobile/package-lock.json
 	cd mobile && npm install
+	@touch mobile/node_modules
+
+mobile-install: mobile/node_modules
 
 # Phone app on http://localhost:5174 (demo data bundled). HOST=1 lets a phone on the same Wi-Fi open it;
 # stop it with Ctrl+C afterwards. Import your own pack from the app's Data screen (make mobile-pack).
-mobile-dev: mobile-demo-pack
+mobile-dev: mobile/node_modules mobile-demo-pack
 	cd mobile && npm run dev -- $(if $(HOST),--host,)
 
 # Production build into mobile/dist (what gets hosted); includes the synthetic demo pack only
-mobile-build: mobile-demo-pack
+mobile-build: mobile/node_modules mobile-demo-pack
 	cd mobile && npm run build
 
 # ---- phone data engine (M13): the TypeScript re-implementation of the API, proven against the Python one ----
@@ -104,8 +108,13 @@ mobile-golden-real:
 	cd backend && uv run python -m mazda_dash.contract --db ../db/mazda.duckdb --out ../mobile/contract/real
 	cd mobile && CONTRACT_DIR=contract/real npm test
 
-mobile-typecheck:
+mobile-typecheck: mobile/node_modules
 	cd mobile && npm run typecheck
 
-mobile-test: mobile-golden mobile-typecheck
+mobile-test: mobile/node_modules mobile-golden mobile-typecheck
 	cd mobile && npm test
+
+# Re-take the README screenshots from the synthetic demo data (needs Google Chrome; starts and stops its own
+# servers on :8000, :5173 and :5174, so stop `make dev` first). Set CHROME_PATH if Chrome is elsewhere.
+screenshots: demo-ingest mobile-demo-pack mobile/node_modules
+	cd docs/screenshots && npm install --no-audit --no-fund && node capture.mjs

@@ -52,9 +52,9 @@ One row per transaction: `COPIED_DT_TM`, `WARNING_TRIGGER_OCCURRENCE_TM` (2 null
 
 ### `rts` — remote vehicle status (214 rows)
 `requesttype=RemoteConfirm`, `isinservicemode=false` (constant). Mostly constant signals (163 of 237 columns); useful varying ones:
-`ododispvalue` (odometer, km, 59.1→6,243.0), `drv1avlfuele/g` (available fuel/range), `drv1drvtm`, `drv1distnc` (trip), `enginestate`, `powercontrolstatus`, `fuelsegementdactl` (fuel gauge segments), tire-pressure display values (`fltprsdispkp`, `frtprsdispkp`, `rltprsdispkp`, `rrtprsdispkp` in kPa, with `tprsdisp*` timestamp parts), `remoildistk/m` (distance left until the next oil change in km / miles, steps of 1,000 km; `65535` = unknown, see `v_oil_readings`), seatbelt and occupant-sensor flags.
+`ododispvalue` (odometer, km, 59.1→6,243.0), `drv1avlfuele/g` (available fuel/range), `drv1drvtm`, `drv1distnc` (trip), `enginestate`, `powercontrolstatus`, `fuelsegementdactl` (fuel gauge segments), tire-pressure display values (`fltprsdispkp`, `frtprsdispkp`, `rltprsdispkp`, `rrtprsdispkp` in kPa, with `tprsdispyear/month/date/hour/minute` = when the car measured them, in **its local time**, see `v_tire_readings`), `remoildistk/m` (distance left until the next oil change in km / miles, steps of 1,000 km; `65535` = unknown, see `v_oil_readings`), seatbelt and occupant-sensor flags.
 - **Plain columns without a validity flag** (easy to miss: most columns are `_value` pairs): 6 `*_seatbelt_used` flags, 128 `vdt_2_warningpt_*` / `vdt_7_warningbody_*` warning bit flags (almost always 0; `vdt_7_warningbody_1_30` is 1 in 94 rows), and `latitude` / `longitude` — **location, populated in only 1 of 214 rows**. Treat as personal data (never commit; see the privacy rules in `PLAN.md`).
-- Always-constant (ignore initially): `tpmsstatus`, `oillevelwarning`, `remainingmileage`, maintenance settings, etc.
+- Used as *the car's own warning flags* (all 0 in this export): `fltyrepresswarn`, `frtyrepresswarn`, `rltyrepresswarn`, `rrtyrepresswarn`, `tpmsstatus`, `tpmssystemflt`, `oillevelwarning`, `seatbeltwrndrq` (see `v_car_warning_readings`). Constant and unused: `remainingmileage`, the maintenance-reminder settings (`mntsetdist`, `remregdist`: `65535` / `255` = not set up), etc.
 - Note 74 `Invalid`-status occurrences are counted across these columns; filter on `_validstatus`.
 
 ### `vis` — vehicle info status (197 rows)
@@ -102,7 +102,8 @@ Created by `make ingest` in `db/mazda.duckdb` (gitignored). All timestamps are n
 | `diag_values`, `diag_dtcs`, `diag_snapshots`, `diag_obd_tests` | per `report_id` | Mode 9 counters, DTC lists (`dtcs`, `rob_dtcs`), snapshot data, Mode 6 tests |
 | `ingest_runs` | – | audit log of rows read / new per file |
 | `alerts` | `dedup_key` | raised by the alert rules (`config/alerts.yaml`); `status` new / acknowledged. Lives in the same file, so `make reset-db` loses acknowledgements |
-| `ref_warning_codes`, `ref_dtc_codes`, `ref_ecus`, `ref_failure_types` | code | rebuilt from `config/codes/*.yaml` by `make model` |
+| `ref_warning_codes`, `ref_dtc_codes`, `ref_ecus`, `ref_failure_types`, `ref_warning_flags` | code | rebuilt from `config/codes/*.yaml` by `make model` |
+| `ref_settings` | setting | rebuilt from `config/settings.yaml` by `make model` (`car_timezone`, `tire_stale_hours`) |
 
 Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers, 1,166 DTC readings (106 faults, 906 none, 154 read errors), 137 snapshots (2,745 values), 42,108 signal readings, 1 diagnostic report.
 
@@ -139,4 +140,4 @@ Freeze-frame signal units (km/h, rpm, V, ...) are not in the CSV; the frontend a
 
 ## Where the API goes beyond the views
 
-The API is a thin layer over these views, with two exceptions. Endpoints that take a period (`from` / `to`) re-aggregate inside the endpoint so the range applies *before* grouping: `fuel/monthly`, `warnings/frequency` and `dtcs/frequency` mirror `v_fuel_monthly`, `v_warning_frequency` and `v_dtc_frequency` (the last one always keeps faults still active in the latest read-out). The Trends page's monthly figures (`/api/trends/monthly`) are computed in `backend/src/mazda_dash/api/trends.py`: distance from the odometer, consumption from trip segments, counts from the event tables, and `days_covered` / `partial` per month.
+The API is a thin layer over these views, with three exceptions. Endpoints that take a period (`from` / `to`) re-aggregate inside the endpoint so the range applies *before* grouping: `fuel/monthly`, `warnings/frequency` and `dtcs/frequency` mirror `v_fuel_monthly`, `v_warning_frequency` and `v_dtc_frequency` (the last one always keeps faults still active in the latest read-out). The Trends page's monthly figures (`/api/trends/monthly`) are computed in `backend/src/mazda_dash/api/trends.py`: distance from the odometer, consumption from trip segments, counts from the event tables, and `days_covered` / `partial` per month. The **hints** of `/api/status/warning-flags/hints` are also computed in the endpoint: for one flag, which warning codes and faults appear within a window of the readings with the flag on, compared with the readings with it off (the SQL is in `api/app.py` and, identically, `mobile/src/engine/warningflags.ts`).

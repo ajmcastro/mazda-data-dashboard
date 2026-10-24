@@ -1,33 +1,48 @@
 # CX-5 Telemetry
 
-A local dashboard for the vehicle data Mazda holds about your car: warnings, fault codes, fuel
-use, trips, tire pressure, doors, the alarm, and the diagnostic report that comes with the
-download. It
-turns the raw export files into a database, explains what they contain, and raises **alerts**
-when something deserves attention (a new or recurring fault, a new or spiking warning, a slow
-tire leak, an alarm event, unusually high fuel use, low fuel, an oil change coming up, a warning flag the car itself raises, a warning-lamp flag that appears for the first time, or a stale
-export).
+**A private dashboard for the data your Mazda sends to Mazda.** Mazda lets you download a copy of it, but
+what you get is a pile of CSV files. This project turns them into a database, a dashboard and alerts that
+run entirely on your own computer, and puts the same dashboard on your iPhone, **offline, with the data on
+the phone**.
 
-Everything runs on your machine and your data stays there (see [Privacy](#privacy)).
+- **See**: odometer, distance and fuel economy, trips, tire pressure (and when the car really measured it),
+  the car's own oil-change countdown, warnings, fault codes with their freeze frames, the diagnostic-tool
+  report, and a month-by-month comparison.
+- **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, unusually high fuel
+  use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
+- **Stay private**: nothing is uploaded anywhere. The data stays in a file on your machine (and, if you
+  want it, on your phone); the phone app makes no network request at all once installed.
+- **Try it first**: no Mazda data needed. `make demo` runs the dashboard on synthetic data, and the phone
+  app has a live demo: <https://ajmcastro.github.io/mazda-data-dashboard/> (open it on a phone, tap
+  *Load demo data*).
 
 ![Overview](docs/screenshots/overview.png)
 
 <table>
+  <tr>
+    <td><img src="docs/screenshots/warning-lamps.png" alt="Warning lamps: the car's bit flags that ever change, with a timeline and hints"></td>
+    <td><img src="docs/screenshots/status.png" alt="Status: tire pressure at the time it was measured, oil-change countdown, fuel, trips"></td>
+  </tr>
   <tr>
     <td><img src="docs/screenshots/trends.png" alt="Month-by-month trends"></td>
     <td><img src="docs/screenshots/alerts.png" alt="Alerts"></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/faults.png" alt="Fault explorer with freeze frames"></td>
-    <td><img src="docs/screenshots/status.png" alt="Fuel, tires, trips and doors"></td>
-  </tr>
-  <tr>
     <td><img src="docs/screenshots/diagnostics.png" alt="Diagnostic tool report"></td>
-    <td><img src="docs/screenshots/warnings.png" alt="Warnings"></td>
   </tr>
 </table>
 
-*(Screenshots show the synthetic demo data in `sample_data/`, not a real car.)*
+**On the iPhone** (offline, installable; dark and light follow the phone, or choose):
+
+<p>
+  <img src="docs/screenshots/phone-overview.png" alt="Overview on an iPhone, dark" width="230">
+  <img src="docs/screenshots/phone-overview-light.png" alt="Overview on an iPhone, light" width="230">
+  <img src="docs/screenshots/phone-alerts.png" alt="Alerts on an iPhone" width="230">
+  <img src="docs/screenshots/phone-lamps.png" alt="Warning lamps on an iPhone" width="230">
+</p>
+
+*(Screenshots show the synthetic demo data in `sample_data/`, not a real car. `make screenshots` retakes them.)*
 
 > **Unofficial.** This project is not affiliated with or endorsed by Mazda. The meaning of most
 > warning and fault codes is not public, so the app ships with descriptions only where they are
@@ -39,8 +54,8 @@ Everything runs on your machine and your data stays there (see [Privacy](#privac
 
 ### 1. Install the tools
 
-You need three tools (plus `git` to download the code). Developed on macOS; Linux should work;
-on Windows use WSL (below).
+You need three tools (plus `git` to download the code). Developed on macOS; the tests and builds also
+run on Linux (Ubuntu) in CI; on Windows use WSL (below, not tested by the author).
 
 | Tool | What for | macOS | Linux (Debian / Ubuntu) |
 |---|---|---|---|
@@ -95,6 +110,15 @@ the made-up VIN `…000001`, and by data that ends on 30 June 2026.
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
 | **Status** | the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips, doors and the alarm history |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
+
+**Words used here.** A *warning code* is one of the `$XXX` codes in the warnings export (Mazda does not
+publish their meaning). A *fault* (DTC) is a trouble code stored by one of the car's control units (ECUs),
+with *freeze-frame* data captured when it appeared. A *snapshot* or *reading* is one status report the car
+sent. The *car's own warnings* are nine on/off flags it raises itself (tire pressure per wheel, tire
+pressure system, oil level, seat belt, door). The *warning lamps* are 128 further bit flags that look like
+dashboard lamps; almost all never change, and what they mean is unknown, so the dashboard shows the few
+that do change and what happens around them. A *data pack* (`.cx5pack`) is your database exported for the
+phone app.
 
 **Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults and Status
 pages limits everything to a *from – to* range of days (UTC, both included). Use the quick
@@ -225,12 +249,31 @@ Things to know:
 - A gap between two exports stays a gap in the charts. The "no new data" alert reminds you
   when it is time to ask for a newer export.
 
+### After updating the code
+
+When you pull a newer version of this project:
+
+```bash
+git pull
+make setup    # new or changed dependencies
+make model    # recreate the SQL views and reload config/codes and config/settings.yaml
+```
+
+`make model` is needed whenever the views changed (the dashboard says "no such view" or a page is empty
+until you run it); your data is not touched. If you use the phone app, run `make mobile-pack` and import
+the new pack (the app refuses an older pack with a message saying so). The app itself offers an **Update**
+button when a new version is published.
+
 ## Use it on your iPhone (offline, with your data on the phone)
 
 The `mobile/` folder is the same dashboard as an offline web app: your data lives **on the phone**
 and the app works without the Mac, without Wi-Fi and without any server. The Mac version above is
 unaffected. It is read-only: new Mazda exports still go through `make ingest` on the Mac, then a new
 data pack goes to the phone.
+
+**Just want to look?** Open <https://ajmcastro.github.io/mazda-data-dashboard/> on your phone (or any
+browser) and tap **Load demo data**: that is this project's own published copy of the app, with
+synthetic data. To use your own data, publish your own copy as described next (so the address is yours).
 
 **1. Publish the app (once).** The repository has a GitHub Actions workflow that builds the app and
 publishes it on GitHub Pages. In your copy of the repository open **Settings → Pages → Build and
@@ -268,7 +311,9 @@ Good to know:
 - **iOS may remove the stored data** after a few weeks without use or when space is low. The app asks
   Safari to keep it and tells you if it was removed; importing the pack file again takes seconds.
 - **Updates.** When a newer version of the app is published, it shows an **Update** button.
-- **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the bottom of the side menu. The choice is remembered per device.
+- **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of
+  the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the
+  bottom of the side menu. The choice is remembered per device.
 - Alerts are not re-evaluated on the phone (they come from `make ingest` on the Mac); you can
   acknowledge them on the phone.
 - **Lockdown Mode** (Settings → Privacy & Security) switches off parts of Safari that this app relies on
@@ -276,7 +321,8 @@ Good to know:
   start, turn Lockdown Mode off for Safari or for this site. A very old iPhone will also be slow to
   start (a few seconds with real data).
 - Android: the app should work in Chrome ("Install app"), but it has not been tested on a device.
-- To try the app on the Mac: `make mobile-dev` and open http://localhost:5174.
+- To try the app on the Mac: `make mobile-dev` (installs its packages the first time) and open
+  <http://localhost:5174>.
 
 ## Alerts
 
@@ -307,59 +353,93 @@ file (or run `cd backend && uv run python -m mazda_dash.alerts --notify`).
 
 ## Commands
 
+Run them from the project folder. The first group is what you need to use the dashboard.
+
 | Command | What it does |
 |---|---|
 | `make setup` | install backend and frontend dependencies |
 | `make ingest` | load `data/` into `db/mazda.duckdb`, rebuild the views, evaluate alerts |
-| `make alerts` | evaluate `config/alerts.yaml` only |
-| `make model` | reload `config/codes/*.yaml` and `config/settings.yaml` and recreate the SQL views |
-| `make timezone` | check `car_timezone` in `config/settings.yaml` against your data |
-| `make unmapped` | list codes in your data that have no description |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
 | `make demo` | the same with the synthetic sample data (`make demo-ingest` only loads it) |
-| `make sample-data` | regenerate `sample_data/` (deterministic) |
-| `make types` | regenerate the frontend's TypeScript types from the API schema |
-| `make test` / `make lint` | backend and frontend tests / checks |
+| `make model` | reload `config/codes/*.yaml` and `config/settings.yaml` and recreate the SQL views |
+| `make timezone` | check `car_timezone` in `config/settings.yaml` against your data |
+| `make alerts` | evaluate `config/alerts.yaml` only |
+| `make unmapped` | list codes and flags in your data that have no description |
 | `make mobile-pack` | export your database as `db/mazda.cx5pack` for the phone app |
-| `make mobile-dev` / `make mobile-build` | run / build the phone app (`mobile/`) with the demo data |
-| `make mobile-test` | check that the phone app's TypeScript engine answers exactly like the Python API |
-| `make format` | format the backend code |
-| `make profile` | per-file data profiling reports in `docs/profile/` |
+| `make mobile-dev` | run the phone app on this computer (with the demo data bundled) |
 | `make audit` | check for private values before publishing (see [Privacy](#privacy)) |
 | `make reset-db` | **delete** `db/mazda.duckdb`, including acknowledged alerts |
+
+For development (see [Development](#development)):
+
+| Command | What it does |
+|---|---|
+| `make test` / `make lint` / `make format` | backend and frontend tests / checks / backend formatting |
+| `make types` | regenerate the frontend's TypeScript types from the API schema |
+| `make sample-data` | regenerate `sample_data/` (deterministic) |
+| `make mobile-test` | check that the phone app's TypeScript engine answers exactly like the Python API |
+| `make mobile-golden`, `make mobile-golden-real` | record the Python API's answers for those tests (on the sample data / on your own database) |
+| `make mobile-install`, `make mobile-typecheck`, `make mobile-build`, `make mobile-demo-pack` | the phone app's packages, type check, production build, demo data pack |
+| `make screenshots` | retake the README screenshots from the demo data (needs Google Chrome) |
+| `make profile` | per-file data profiling reports in `docs/profile/` |
 | `make clean` | remove generated profiling reports and tool caches |
 
 ## How it works
 
 ```
-data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + code lookups──▶ FastAPI ──▶ React dashboard
-                                   │                 ▲
-                                   └──alert rules────┘  (config/alerts.yaml → alerts table)
+data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code descriptions──▶ FastAPI ──▶ React dashboard
+                                   │   ▲        (config/codes, config/settings.yaml)
+                                   │   └──alert rules (config/alerts.yaml)
+                                   │
+                  make mobile-pack ▼
+                          data pack ──AirDrop──▶ iPhone: DuckDB in the browser ──▶ the same React pages
+                                                 (a TypeScript copy of the API, kept identical by tests)
 ```
 
 - `backend/src/mazda_dash/ingest`: parsers for each file kind (idempotent; sentinel values such
   as `2147483647` become NULL).
-- `backend/src/mazda_dash/model`: lookup tables from `config/codes/` and the SQL views the API
-  and alerts read ([view catalogue](docs/data-dictionary.md)).
+- `backend/src/mazda_dash/model`: lookup tables from `config/codes/`, the settings, and the SQL views the
+  API and alerts read ([view catalogue](docs/data-dictionary.md)).
 - `backend/src/mazda_dash/alerts`: one detector per rule; each alert is raised once.
 - `backend/src/mazda_dash/api`: read-only JSON API (plus acknowledging alerts) and the monthly
   figures for the Trends page.
+- `backend/src/mazda_dash/pack.py`: exports the database as the phone's data pack.
 - `frontend/`: Vite, React, TypeScript, Recharts. Types are generated from the API's OpenAPI
   schema.
 - `mobile/`: the same pages as an offline phone app. DuckDB runs in the browser (WebAssembly) on a
   data pack exported by `make mobile-pack`, and a TypeScript port of the API answers the pages;
   contract tests keep it identical to the Python API.
+- `config/`: your settings (`settings.yaml`), the alert rules (`alerts.yaml`) and your descriptions of
+  codes and flags (`codes/*.yaml`). `sample_data/`: the synthetic export. `docs/`: the data dictionary
+  and screenshots. `data/` and `db/` (git-ignored) hold your files and databases.
 
 [PLAN.md](PLAN.md) has the design decisions and the milestones this was built in.
+
+## Limitations
+
+- **One car.** The dashboard assumes a single vehicle (every table keeps the VIN, but nothing handles
+  several).
+- **Mazda does not publish the meaning of most codes.** Warning codes (`$XXX`), many fault details, the
+  alarm codes and the 128 warning-lamp flags are shown as they are; you add descriptions yourself in
+  `config/codes/`. Several signal interpretations (fuel, oil, tire time) are inferred from the data, see the
+  [data dictionary](docs/data-dictionary.md). Treat this as a curiosity tool, not diagnostics.
+- **The export is a snapshot.** The data comes in files you request (see above); there is no live feed.
+  Gaps between exports stay gaps.
+- **The phone app is a read-only viewer.** It does not read Mazda's files or evaluate alerts; the Mac does
+  that and sends a data pack. iOS may delete stored web-app data (you re-import the pack).
+- Tested with one real export (a CX-5, Europe, 2026) plus the synthetic data. Other models, markets or
+  firmware may differ; issues and sample files without personal data are welcome.
 
 ## Privacy
 
 Vehicle exports contain your VIN, and may contain GPS positions. `data/`, `db/` and `*.duckdb`
 are git-ignored, and nothing you load is sent anywhere: the dashboard talks only to the API on
-your own machine. The one outside request is the page fonts, which the browser fetches from
-Google Fonts (no data is sent, and the dashboard still works without them). The phone app bundles
-its fonts and makes no outside request at all. Data packs (`*.cx5pack`, which hold the VIN) are
+your own machine. The fonts are bundled, so neither the dashboard nor the phone app makes any request
+to an outside host. Data packs (`*.cx5pack`, which hold the VIN) are
 git-ignored too.
+
+The published phone app (GitHub Pages) is static code plus the synthetic demo data: it never receives
+your data, which you import from your own phone's storage.
 
 If you fork this project, or publish your own copy, run:
 
@@ -369,7 +449,9 @@ make audit
 
 It reads the private values (VINs, positions) from your `data/` folder and searches every file
 git would publish **and the whole git history** for them, and lists the commit author emails
-for review. The tests and the sample data use only made-up values.
+for review. The tests and the sample data use only made-up values. **When you report a problem, do not
+post your VIN, your export files or a data pack**: describe the problem, or reproduce it with the demo
+data.
 
 ## Troubleshooting
 
@@ -383,6 +465,14 @@ for review. The tests and the sample data use only made-up values.
   again.
 - **`npm install` fails**: use `make setup`; `frontend/.npmrc` sets the option this project's
   dependencies need.
+- **A page is empty or an error mentions a missing view or table after updating**: run `make model`
+  (see [After updating the code](#after-updating-the-code)).
+- **Tire measurement times look wrong** (in the future, or hours old): the time zone in
+  `config/settings.yaml` does not match your car; run `make timezone`.
+- **The phone app says a data pack is from an older version**: run `make mobile-pack` again and import the
+  new file.
+- **`make screenshots` or `make mobile-dev` says a port is in use**: stop `make dev` (ports 8000, 5173,
+  5174) first.
 
 ## Development
 
@@ -392,11 +482,22 @@ make lint          # ruff, oxlint, tsc
 make mobile-test   # phone app: contract tests against the Python API, types
 ```
 
-CI runs the same checks (plus a format check and production builds), verifies that the generated
-types and sample data are up to date, replays the Python API's answers against the phone app's
+CI (GitHub Actions) runs the same checks plus a format check and production builds, verifies that the
+generated types and sample data are up to date, replays the Python API's answers against the phone app's
 engine, and runs the privacy audit. The phone app is published by `.github/workflows/pages.yml`.
-When you change an API endpoint, change its twin in `mobile/src/engine/` in the same commit. See [CLAUDE.md](CLAUDE.md) for a tour of the
-code for contributors and coding assistants.
+When you change an API endpoint, change its twin in `mobile/src/engine/` in the same commit.
+
+Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). [CLAUDE.md](CLAUDE.md) is a tour of the
+code (written for coding assistants, useful for people too).
+
+## About this project
+
+Designed and directed by Antonio Castro, and built together with [Claude Code](https://claude.com/claude-code)
+(Anthropic's AI coding assistant): milestone by milestone, from a plan written first to code, tests and
+documentation, with every step reviewed and run on the owner's own car data. The commits carry
+`Co-Authored-By: Claude`, and [CLAUDE.md](CLAUDE.md) is the guide the assistant works from. The results are
+checked by tests that do not depend on the assistant: the contract tests between the two API
+implementations, the privacy audit, and CI. Not affiliated with Mazda or Anthropic.
 
 ## License
 

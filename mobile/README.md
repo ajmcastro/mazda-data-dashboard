@@ -31,7 +31,8 @@ real pack over the network.
 
 | Path | What |
 |---|---|
-| `src/main.tsx`, `src/App.tsx` | start-up and the phone layout (bottom tab bar) around the shared pages |
+| `src/main.tsx`, `src/App.tsx` | start-up and the phone layout (bottom tab bar, appearance button) around the shared pages |
+| `src/pwa.ts`, `sw.template.js`, `public/manifest.webmanifest` | install and offline: the service worker (written into `dist/sw.js` at build time), its update prompt, the web app manifest |
 | `src/controller.ts` | the data on the device: engine start, stored pack, import / replace / delete |
 | `src/storage.ts` | IndexedDB: pack and acknowledgements |
 | `src/engine-browser.ts` | DuckDB-WASM in a Web Worker (one query at a time) |
@@ -57,7 +58,7 @@ A production build is an installable web app: on an iPhone open the hosted addre
 **Add to Home Screen**. It saves itself on the phone (about 36 MB, once; the Data screen says
 "Works offline: yes" when it is done) and then opens with no connection. When a newer build is
 published the app offers an **Update** button. Service workers need `https://` (or `localhost`), so
-this works on the hosted site (M16) and on `localhost` in the iOS Simulator, not from
+this works on the hosted site and on `localhost` in the iOS Simulator, not from
 `make mobile-dev HOST=1` over plain http (there the app still runs, but is not installable).
 
 Test it locally: `make mobile-build`, `cd mobile && npm run preview`, open `http://localhost:5174`,
@@ -68,3 +69,5 @@ asks Safari to keep it, tells you if it was removed, and the `.cx5pack` file (ke
 the real copy: importing it again takes a few seconds.
 
 Icons: `python3 scripts/make_icons.py` redraws them into `public/`.
+
+Note that this app and the Mac dashboard share their pages (`../frontend/src`), their SQL (`../backend/src/mazda_dash/model/views.sql`) and, through tests, their API: see [CONTRIBUTING.md](../CONTRIBUTING.md) for the rules about changing them.

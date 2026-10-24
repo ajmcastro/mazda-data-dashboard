@@ -1,0 +1,9 @@
+{
+  "name": "mazda-dash-screenshots",
+  "private": true,
+  "type": "module",
+  "description": "Takes the README screenshots from the synthetic demo data (make screenshots)",
+  "dependencies": {
+    "puppeteer-core": "^24.0.0"
+  }
+}
