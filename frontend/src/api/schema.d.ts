@@ -372,6 +372,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/maintenance/oil": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Maintenance Oil
+         * @description The car's own oil-change countdown. A state, so it ignores the period.
+         */
+        get: operations["maintenance_oil_api_maintenance_oil_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/diag/reports": {
         parameters: {
             query?: never;
@@ -1008,6 +1028,48 @@ export interface components {
             km_since_previous?: number | null;
             /** Days Since Previous */
             days_since_previous?: number | null;
+        };
+        /**
+         * OilService
+         * @description The car's own countdown to the next oil change (not a calculation).
+         */
+        OilService: {
+            /** Has Data */
+            has_data: boolean;
+            /** Remaining Km */
+            remaining_km?: number | null;
+            /** Read At */
+            read_at?: string | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Km Since Reading */
+            km_since_reading?: number | null;
+            /** Interval Started At */
+            interval_started_at?: string | null;
+            /**
+             * Intervals
+             * @default 0
+             */
+            intervals: number;
+            /** Steps */
+            steps: components["schemas"]["OilStep"][];
+        };
+        /**
+         * OilStep
+         * @description A change of the car's oil countdown (the car counts in coarse steps).
+         */
+        OilStep: {
+            /**
+             * Read At
+             * Format: date-time
+             */
+            read_at: string;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Remaining Km */
+            remaining_km: number;
+            /** Serviced */
+            serviced: boolean;
         };
         /** Overview */
         Overview: {
@@ -1892,6 +1954,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    maintenance_oil_api_maintenance_oil_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OilService"];
                 };
             };
         };

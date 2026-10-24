@@ -53,6 +53,10 @@ class DataGap(Rule):
     max_days: float = Field(3, gt=0)
 
 
+class OilChangeDue(Rule):
+    below_km: float = Field(1000, gt=0)
+
+
 class Rules(_Strict):
     new_dtc: Rule = Rule()
     recurring_dtc: RecurringDtc = RecurringDtc()
@@ -63,6 +67,7 @@ class Rules(_Strict):
     low_fuel: LowFuel = LowFuel()
     low_tire_pressure: LowTirePressure = LowTirePressure()
     data_gap: DataGap = DataGap()
+    oil_change_due: OilChangeDue = OilChangeDue()
 
 
 class Notifications(_Strict):

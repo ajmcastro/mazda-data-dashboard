@@ -70,7 +70,7 @@ Quick ranges (M9): the preset maths is pure and tested in `lib.ts` (`PRESETS`, `
 
 A report's id is a hash of the dump's content, so different dumps (even same date and VIN) are separate reports and an identical copy under another file name is skipped. `GET /api/diag/history` returns one headline row per report (oldest first) for the history table and charts (`components/ReportHistory.tsx`). The Diagnostics page keeps its selection in the URL (`?report=` and `?compare=`, via `pickReport` in `lib.ts`; an unknown id falls back to the newest report with a notice) and always orders a comparison from the earlier to the later report. `sample.py` writes three visits (`DIAG_VISITS`); changing them means updating `tests/test_diag_reports.py` and `tests/test_sample.py`.
 
-## Offline phone app (M12–M16 done)
+## Offline phone app (M12–M16 done; M17 added the oil countdown)
 
 `PLAN.md` ("Standalone offline app for iPhone") describes the planned `mobile/` app. Done so far (M12, a feasibility spike): `backend/src/mazda_dash/pack.py` exports the database as a `.cx5pack` (Parquet tables + manifest; GPS positions excluded; `--reference` adds per-view fingerprints), and `mobile/` holds a throwaway spike page that proves DuckDB-WASM rebuilds all views from the pack identically in Chrome, desktop Safari and iOS Safari 27 in the Simulator (`make mobile-spike-prod`; results in `mobile/spike-results/`). Measured numbers and the go decision are in `PLAN.md`. `*.cx5pack` files contain a VIN: they are gitignored and must never be served on the network (the spike serves only `mobile/public/demo.cx5pack`, built from the synthetic data). The existing `frontend/` and `backend/` runtime are unchanged by this work.
 

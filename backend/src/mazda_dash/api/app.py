@@ -406,6 +406,42 @@ def acknowledge(alert_id: int, con: duckdb.DuckDBPyConnection = RwCon):
     return found[0]
 
 
+# ---------------------------------------------------------------- maintenance
+
+
+@app.get("/api/maintenance/oil", response_model=m.OilService)
+def maintenance_oil(con: duckdb.DuckDBPyConnection = Con):
+    """The car's own oil-change countdown. A state, so it ignores the period."""
+    latest = one(
+        con,
+        "SELECT read_at, remaining_km, odometer_km, interval_started_at FROM v_oil_readings "
+        "ORDER BY read_at DESC LIMIT 1",
+    )
+    steps = rows(
+        con,
+        "SELECT read_at, odometer_km, remaining_km, coalesce(remaining_km > previous_km, false) AS serviced "
+        "FROM v_oil_readings WHERE previous_km IS DISTINCT FROM remaining_km ORDER BY read_at",
+    )
+    newest = one(con, "SELECT max(odometer_km) AS v FROM v_odometer_readings")["v"]
+    at_reading = latest.get("odometer_km")
+    return m.OilService(
+        has_data=bool(latest),
+        remaining_km=latest.get("remaining_km"),
+        read_at=latest.get("read_at"),
+        odometer_km=at_reading,
+        km_since_reading=(
+            round(max(0.0, newest - at_reading), 1)
+            if newest is not None and at_reading is not None
+            else None
+        ),
+        interval_started_at=latest.get("interval_started_at"),
+        intervals=one(
+            con, "SELECT count(DISTINCT interval_no) AS n FROM v_oil_readings"
+        )["n"],
+        steps=steps,
+    )
+
+
 # ------------------------------------------------------------ diagnostic tool
 
 

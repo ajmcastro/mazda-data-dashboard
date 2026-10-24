@@ -1,17 +1,27 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useDoors, useStatusTimeline, useTripSegments } from '../api/hooks'
-import type { AlarmEvent, TripSegment } from '../api/types'
+import { useAlarms, useDoors, useOilService, useStatusTimeline, useTripSegments } from '../api/hooks'
+import type { AlarmEvent, OilService, TripSegment } from '../api/types'
 import { ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const tipLabel = (v: number | string) => fmtDateTime(new Date(Number(v)).toISOString())
 
+/** Chart points: every step of the countdown, plus the latest reading so the line reaches it. */
+function oilPoints(o: OilService) {
+  const points = o.steps.map((s) => ({ t: ts(s.read_at), km: s.remaining_km }))
+  if (o.read_at && o.remaining_km != null && ts(o.read_at) !== points.at(-1)?.t) {
+    points.push({ t: ts(o.read_at), km: o.remaining_km })
+  }
+  return points
+}
+
 export default function Status() {
   const status = useStatusTimeline()
   const doors = useDoors(1)
   const alarms = useAlarms()
   const trips = useTripSegments(60)
+  const oil = useOilService()
 
   const points = (status.data ?? []).map((s) => ({
     t: ts(s.created_at),
@@ -89,6 +99,24 @@ export default function Status() {
           </QueryState>
         </Panel>
       </div>
+
+      {oil.data?.has_data && (
+        <Panel title="Oil change countdown" hint="km left until the next oil change, as the car reports it">
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={oilPoints(oil.data)} margin={{ right: 18, top: 5 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={fmtTick} minTickGap={36} {...axis} />
+              <YAxis {...axis} width={44} domain={[0, 'auto']} />
+              <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
+              <Line isAnimationActive={ANIMATE} type="stepAfter" name="km left" dataKey="km" stroke="var(--amber)" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+          <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>
+            This is the car's own countdown, not a calculation. It moves in steps of 1,000 km or more, and a jump
+            up means the oil was changed ({oil.data.intervals} service interval{oil.data.intervals === 1 ? '' : 's'} in the data).
+          </p>
+        </Panel>
+      )}
 
       <div className="grid trips" style={{ marginTop: 14 }}>
         <Panel title="Recent trips" hint="between status snapshots">

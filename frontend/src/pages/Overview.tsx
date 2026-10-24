@@ -1,12 +1,12 @@
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useFuelMonthly, useOdometerDaily, useOverview } from '../api/hooks'
+import { useFuelMonthly, useOdometerDaily, useOilService, useOverview } from '../api/hooks'
 import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
-import { ANIMATE, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
+import { ANIMATE, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
@@ -14,6 +14,7 @@ export default function OverviewPage() {
   const overview = useOverview()
   const odometer = useOdometerDaily()
   const fuel = useFuelMonthly()
+  const oil = oilTile(useOilService().data)
   const o = overview.data
 
   return (
@@ -89,6 +90,11 @@ export default function OverviewPage() {
                 sub={`range ≈ ${fmtNum(o.status.range_km)} km`}
                 alert={(o.status.fuel_level_pct ?? 100) < 15}
               />
+              {oil && (
+                <div className="oil-tile">
+                  <Stat label="Next oil change" value={oil.value} unit="km left" sub={oil.sub} alert={oil.soon} />
+                </div>
+              )}
             </div>
           </>
         )}

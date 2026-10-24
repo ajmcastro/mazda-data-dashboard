@@ -1,6 +1,8 @@
 // Formatting helpers. Timestamps come from the API as ISO strings in UTC and render in
 // the browser's local timezone.
 
+import type { OilService } from './api/types'
+
 const num = (digits: number) =>
   new Intl.NumberFormat('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits })
 
@@ -232,4 +234,16 @@ export function reportLabel(r: { taken_at?: string | null; odometer_km?: number 
     ? new Date(r.taken_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : 'unknown date'
   return `${when} · ${fmtNum(r.odometer_km, 0, 'km')} · ${r.source_file}`
+}
+
+/** Shown as "due soon" at or below this many km left (the default of the oil_change_due alert rule). */
+export const OIL_SOON_KM = 1000
+
+/** Wording for the oil-change tile. The number is the car's own, not a calculation. */
+export function oilTile(o: OilService | undefined): { value: string; sub: string; soon: boolean } | null {
+  if (!o?.has_data || o.remaining_km === null || o.remaining_km === undefined) return null
+  const parts = [`reported ${fmtDate(o.read_at)}${o.odometer_km != null ? ` at ${fmtNum(o.odometer_km)} km` : ''}`]
+  if (o.km_since_reading != null && o.km_since_reading >= 50) parts.push(`${fmtNum(o.km_since_reading)} km driven since`)
+  parts.push('the car counts in steps of 1,000 km or more')
+  return { value: fmtNum(o.remaining_km), sub: parts.join(' · '), soon: o.remaining_km <= OIL_SOON_KM }
 }

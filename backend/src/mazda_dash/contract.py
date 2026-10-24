@@ -178,6 +178,7 @@ def record(client: TestClient) -> list[dict]:
     rec.get("/api/dtcs/context")
 
     rec.get("/api/codes/unmapped")
+    rec.get("/api/maintenance/oil")
 
     # --- diagnostic tool
     reports = rec.get("/api/diag/reports")

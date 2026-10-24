@@ -154,6 +154,10 @@ export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefin
 export const useDiagReports = () =>
   useQuery({ queryKey: ['diag-reports'], queryFn: () => unwrap(client.GET('/api/diag/reports')) })
 
+/** The car's own oil-change countdown: a state, so it ignores the selected period. */
+export const useOilService = () =>
+  useQuery({ queryKey: ['oil'], queryFn: () => unwrap(client.GET('/api/maintenance/oil')) })
+
 export const useDiagHistory = () =>
   useQuery({ queryKey: ['diag-history'], queryFn: () => unwrap(client.GET('/api/diag/history')) })
 

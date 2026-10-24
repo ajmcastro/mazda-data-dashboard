@@ -168,6 +168,29 @@ SELECT day, odometer_km,
        day - lag(day) OVER (ORDER BY day) AS days_since_previous
 FROM d;
 
+-- ------------------------------------------------------------------- oil change
+-- Distance left until the next oil change, as the car reports it (remoildistk, km). The car counts in
+-- coarse steps (1,000 km or more) and sends 65535 when it does not know; those and Invalid readings are
+-- dropped. A reading higher than the one before means the counter was reset (an oil change): interval_no
+-- counts the service intervals and interval_started_at is when the current one was first seen.
+CREATE OR REPLACE VIEW v_oil_readings AS
+WITH r AS (
+    SELECT created_at AS read_at, value_num AS remaining_km
+    FROM signal_readings
+    WHERE source = 'rts' AND signal = 'remoildistk' AND valid IS NOT FALSE
+      AND value_num IS NOT NULL AND value_num < 65535
+), w AS (
+    SELECT *, lag(remaining_km) OVER (ORDER BY read_at) AS previous_km FROM r
+), i AS (
+    SELECT *, CAST(sum(CASE WHEN remaining_km > previous_km THEN 1 ELSE 0 END)
+                   OVER (ORDER BY read_at) AS INTEGER) AS interval_no
+    FROM w
+)
+SELECT i.read_at, i.remaining_km, i.previous_km, i.interval_no,
+       min(i.read_at) OVER (PARTITION BY i.interval_no) AS interval_started_at,
+       s.odometer_km
+FROM i LEFT JOIN v_vehicle_status s ON s.created_at = i.read_at;
+
 -- ------------------------------------------------------------------- trips
 -- The car's "trip 1" counters accumulate until reset: trip_km, average economy and
 -- driving time. Fuel used so far = trip_km * l/100km / 100 (the 102.2 raw value

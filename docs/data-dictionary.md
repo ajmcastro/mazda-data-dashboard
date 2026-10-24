@@ -52,7 +52,7 @@ One row per transaction: `COPIED_DT_TM`, `WARNING_TRIGGER_OCCURRENCE_TM` (2 null
 
 ### `rts` — remote vehicle status (214 rows)
 `requesttype=RemoteConfirm`, `isinservicemode=false` (constant). Mostly constant signals (163 of 237 columns); useful varying ones:
-`ododispvalue` (odometer, km, 59.1→6,243.0), `drv1avlfuele/g` (available fuel/range), `drv1drvtm`, `drv1distnc` (trip), `enginestate`, `powercontrolstatus`, `fuelsegementdactl` (fuel gauge segments), tire-pressure display values (`fltprsdispkp`, `frtprsdispkp`, `rltprsdispkp`, `rrtprsdispkp` in kPa, with `tprsdisp*` timestamp parts), `remoildistk/m` (oil change distance), seatbelt and occupant-sensor flags.
+`ododispvalue` (odometer, km, 59.1→6,243.0), `drv1avlfuele/g` (available fuel/range), `drv1drvtm`, `drv1distnc` (trip), `enginestate`, `powercontrolstatus`, `fuelsegementdactl` (fuel gauge segments), tire-pressure display values (`fltprsdispkp`, `frtprsdispkp`, `rltprsdispkp`, `rrtprsdispkp` in kPa, with `tprsdisp*` timestamp parts), `remoildistk/m` (distance left until the next oil change in km / miles, steps of 1,000 km; `65535` = unknown, see `v_oil_readings`), seatbelt and occupant-sensor flags.
 - **Plain columns without a validity flag** (easy to miss: most columns are `_value` pairs): 6 `*_seatbelt_used` flags, 128 `vdt_2_warningpt_*` / `vdt_7_warningbody_*` warning bit flags (almost always 0; `vdt_7_warningbody_1_30` is 1 in 94 rows), and `latitude` / `longitude` — **location, populated in only 1 of 214 rows**. Treat as personal data (never commit; see the privacy rules in `PLAN.md`).
 - Always-constant (ignore initially): `tpmsstatus`, `oillevelwarning`, `remainingmileage`, maintenance settings, etc.
 - Note 74 `Invalid`-status occurrences are counted across these columns; filter on `_validstatus`.
@@ -119,6 +119,7 @@ Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers,
 | `v_dtc_snapshot_signals` | freeze-frame signals joined to their DTC |
 | `v_vehicle_status` | wide remote-status timeline: odometer, fuel level, range, trip counters, engine state, tire pressures (kPa); `Invalid` signals are NULL. Latitude/longitude are deliberately left out |
 | `v_door_status`, `v_alarm_events` | door/lock/light snapshots; burglar alarm status and reason |
+| `v_oil_readings` | the car's own oil-change countdown (`remoildistk`, km left): valid readings only (`65535` = unknown and `Invalid` are dropped), with the previous value, the service interval (a reading higher than the one before = the oil was changed) and the odometer at the time. The car counts in coarse steps (1,000 km or more); it is the car's value, not a calculation |
 | `v_odometer_readings`, `v_odometer_daily` | odometer from every source; daily max and km since the previous day with data |
 | `v_trip_log`, `v_trip_segments`, `v_fuel_monthly` | trip-1 counters, consumption between consecutive snapshots, monthly km / litres / l per 100 km |
 | `v_diag_values`, `v_diag_summary` | diagnostic-tool counters; lifetime and recent distance, fuel and l/100 km |

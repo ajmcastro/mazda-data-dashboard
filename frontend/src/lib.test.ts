@@ -6,6 +6,7 @@ import {
   fmtAgo,
   fmtNum,
   matchPreset,
+  oilTile,
   parseDay,
   pickReport,
   pivotDaily,
@@ -179,5 +180,42 @@ describe('diagnostic report selection', () => {
     expect(label).toContain('5,781\u202fkm')
     expect(label.endsWith('dump.txt')).toBe(true)
     expect(reportLabel({ taken_at: null, odometer_km: null, source_file: 'x.txt' })).toBe('unknown date · — · x.txt')
+  })
+})
+
+describe('oilTile', () => {
+  const base = {
+    has_data: true,
+    remaining_km: 9000,
+    read_at: '2026-10-04T07:50:28Z',
+    odometer_km: 5306.7,
+    km_since_reading: 0,
+    interval_started_at: '2026-06-12T23:04:08Z',
+    intervals: 1,
+    steps: [],
+  }
+
+  it('says what the car reported, with its odometer and the coarse steps', () => {
+    const t = oilTile(base)!
+    expect(t.value).toBe('9,000')
+    expect(t.soon).toBe(false)
+    expect(t.sub).toContain('at 5,307 km')
+    expect(t.sub).toContain('steps of 1,000 km')
+    expect(t.sub).not.toContain('driven since')
+  })
+
+  it('mentions the distance driven since the reading once it is noticeable', () => {
+    expect(oilTile({ ...base, km_since_reading: 49 })!.sub).not.toContain('driven since')
+    expect(oilTile({ ...base, km_since_reading: 1234 })!.sub).toContain('1,234 km driven since')
+  })
+
+  it('is flagged as due soon at 1,000 km or less', () => {
+    expect(oilTile({ ...base, remaining_km: 1000 })!.soon).toBe(true)
+    expect(oilTile({ ...base, remaining_km: 2000 })!.soon).toBe(false)
+  })
+
+  it('shows nothing without data', () => {
+    expect(oilTile(undefined)).toBeNull()
+    expect(oilTile({ ...base, has_data: false, remaining_km: null })).toBeNull()
   })
 })

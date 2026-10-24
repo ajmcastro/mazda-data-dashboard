@@ -93,7 +93,23 @@ class Car:
             "frtprsdispkp": self.tire(1, t),
             "rltprsdispkp": self.tire(2, t),
             "rrtprsdispkp": self.tire(3, t),
+            **self.oil(t),
         }
+
+    def oil(self, t: datetime) -> dict[str, float | int | None]:
+        """The car's oil countdown: 5,000 km after the last service (at 0 km), shown in 1,000 km steps.
+        Like the real car it sometimes sends 65535 (unknown) or an Invalid reading; chosen from the
+        clock, not the random generator, so the rest of the sample data stays as it was."""
+        left = max(0, 5000 - int(self.odo // 1000) * 1000)
+        second = int(t.timestamp())
+        if second % 29 == 0:
+            return {"remoildistk": 65535, "remoildistm": 65535}
+        if second % 41 == 1:
+            return {
+                "remoildistk": None,
+                "remoildistm": None,
+            }  # written as an Invalid reading
+        return {"remoildistk": left, "remoildistm": round(left * 0.621371 / 100) * 100}
 
     def tire(self, i: int, t: datetime) -> int:
         value = self.tires[i] + self.rng.choice([-5, 0, 0, 5])
@@ -160,7 +176,7 @@ def write_status(out: Path, rows: list[dict]) -> None:
             _z(r["at"]),
         ]
         for s in signals:
-            line += [r[s], "Valid"]
+            line += [r[s], "Valid" if r[s] is not None else "Invalid"]
         body.append(line + ["", ""])
     _write(out / "all-rts-sample_rts-sample.csv", header, body)
 

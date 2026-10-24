@@ -1331,6 +1331,25 @@
         }
       }
     },
+    "/api/maintenance/oil": {
+      "get": {
+        "summary": "Maintenance Oil",
+        "description": "The car's own oil-change countdown. A state, so it ignores the period.",
+        "operationId": "maintenance_oil_api_maintenance_oil_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OilService"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/diag/reports": {
       "get": {
         "summary": "Diag Reports",
@@ -3526,6 +3545,126 @@
           "odometer_km"
         ],
         "title": "OdometerDay"
+      },
+      "OilService": {
+        "properties": {
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "remaining_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remaining Km"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "km_since_reading": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Since Reading"
+          },
+          "interval_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interval Started At"
+          },
+          "intervals": {
+            "type": "integer",
+            "title": "Intervals",
+            "default": 0
+          },
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/OilStep"
+            },
+            "type": "array",
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_data",
+          "steps"
+        ],
+        "title": "OilService",
+        "description": "The car's own countdown to the next oil change (not a calculation)."
+      },
+      "OilStep": {
+        "properties": {
+          "read_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Read At"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "remaining_km": {
+            "type": "number",
+            "title": "Remaining Km"
+          },
+          "serviced": {
+            "type": "boolean",
+            "title": "Serviced"
+          }
+        },
+        "type": "object",
+        "required": [
+          "read_at",
+          "remaining_km",
+          "serviced"
+        ],
+        "title": "OilStep",
+        "description": "A change of the car's oil countdown (the car counts in coarse steps)."
       },
       "Overview": {
         "properties": {

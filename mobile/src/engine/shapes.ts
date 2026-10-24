@@ -54,3 +54,4 @@ export const MONTH_METRICS = [
   'days_driven', 'driving_hours', 'avg_speed_kmh', 'warning_events', 'warning_codes', 'fault_readouts',
   'distinct_faults', 'new_faults', 'tire_avg_kpa', 'tire_min_kpa',
 ]
+export const OIL_STEP = ['read_at', 'odometer_km', 'remaining_km', 'serviced']

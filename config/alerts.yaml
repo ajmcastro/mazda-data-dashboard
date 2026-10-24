@@ -41,5 +41,9 @@ rules:
   # Check your door-jamb sticker for the right value; 200 is a deliberately low default.
   low_tire_pressure: {enabled: true, severity: warning, min_kpa: 200}
 
+  # The car's own oil-change countdown (km until the next change) is at or below this value.
+  # The car counts in steps of 1,000 km or more; one alert per service interval.
+  oil_change_due: {enabled: true, severity: warning, below_km: 1000}
+
   # No new data for more than `max_days` days (based on the clock).
   data_gap: {enabled: true, severity: info, max_days: 3}

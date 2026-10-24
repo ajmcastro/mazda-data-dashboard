@@ -264,6 +264,32 @@ def data_gap(ctx: Context) -> list[Candidate]:
     ]
 
 
+def oil_change_due(ctx: Context) -> list[Candidate]:
+    """The car's own countdown (v_oil_readings) is at or below the limit. A state, so no lookback;
+    one alert per service interval (a reset of the countdown starts a new interval)."""
+    rule = ctx.cfg.rules.oil_change_due
+    row = ctx.con.execute(
+        """SELECT read_at, remaining_km, odometer_km, interval_started_at FROM v_oil_readings
+           ORDER BY read_at DESC LIMIT 1"""
+    ).fetchone()
+    if not row or row[1] > rule.below_km:
+        return []
+    at, remaining, odo, started = row
+    return [
+        Candidate(
+            "oil_change_due",
+            f"oil_change_due:{_stamp(started)}",
+            rule.severity,
+            f"Oil change due soon: about {remaining:,.0f} km left",
+            f"The car reported {remaining:,.0f} km until the next oil change on {_fmt(at)}"
+            + (f" (odometer {_km(odo)})." if odo is not None else ".")
+            + " It counts in steps of 1,000 km or more, so the real distance can be less.",
+            at,
+            "/status",
+        )
+    ]
+
+
 DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "new_dtc": new_dtc,
     "recurring_dtc": recurring_dtc,
@@ -274,4 +300,5 @@ DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "low_fuel": low_fuel,
     "low_tire_pressure": low_tire_pressure,
     "data_gap": data_gap,
+    "oil_change_due": oil_change_due,
 }

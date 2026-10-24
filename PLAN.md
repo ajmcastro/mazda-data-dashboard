@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done: the offline phone app in `mobile/` is complete except for the real-iPhone test after the first deployment and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 17".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine), M14 (the app shell), M15 (iPhone polish and offline) and M16 (hosting, docs and CI) are done and the offline phone app is live and tested on a real iPhone. M17 (next oil change) is done and all decisions are settled. M18–M20 (more of the car's own data: car warnings, tire reading time, warning-lamp flags) follow, with their decisions settled. Next step: "start implementing milestone 18".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -73,7 +73,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M14 | Standalone app shell ✅ | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
 | M15 | iPhone polish and offline ✅ | installable web app, works in airplane mode, phone navigation, storage safety |
 | M16 | Hosting, docs and CI ✅ | HTTPS static hosting (code only), README guide, parity checks in CI |
-| M17 | Next oil change | the car's own oil-change countdown: tile, history, alert (planned after M16) |
+| M17 | Next oil change ✅ | the car's own oil-change countdown: tile, history, alert (planned after M16) |
 | M18 | The car's own warnings | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) (planned after M16) |
 | M19 | Tire reading time | when each tire pressure was really measured, and how fresh it is (planned after M16) |
 | M20 | Warning-lamp flags | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert (planned after M16) |
@@ -353,6 +353,16 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 - **Alert:** rule `oil_change_due` in `config/alerts.yaml` (default: below 1,000 km remaining, one alert per service interval).
 - **Also:** the sample data gets an oil countdown (with the `65535` dropouts) and a due-soon episode; the TypeScript engine, goldens and pack follow automatically.
 - **Done when:** the tile, chart and alert work with sample and real data, `65535` never shows, and Python and TypeScript agree on the golden files.
+
+**M17 as built.**
+- `v_oil_readings` (in `views.sql`): valid `remoildistk` readings only (`65535` and `Invalid` dropped), with the previous value, `interval_no` (a reading higher than the one before = the oil was changed) and `interval_started_at`, joined to the odometer of the same snapshot. The plan's name `v_oil_service` became `v_oil_readings`, like the other reading views.
+- `GET /api/maintenance/oil` (a state endpoint: ignores the period): the latest valid countdown with its time and odometer, the km driven since it was read (shown honestly next to it; the number itself is the car's, not a calculation), the number of service intervals seen, and the history of steps (`serviced` = the countdown went up).
+- **Alert `oil_change_due`** (`config/alerts.yaml`, default warning at or below 1,000 km; at or below, because the car counts in 1,000 km steps and "below" would only fire at the very end): a state rule with no lookback, one alert per service interval (`oil_change_due:<interval start>`), so a new interval after an oil change can alert again. Unit tests cover dropouts, intervals, re-runs, thresholds, severity and switching off.
+- **UI:** an Overview tile "Next oil change: 9,000 km left" (amber at 1,000 km or less) saying when and at what odometer the car reported it and that it counts in coarse steps; a step chart "Oil change countdown" on Status. Wording lives in `oilTile()` (tested).
+- **Phone:** `maintenance.ts` in the TypeScript engine, the new golden case, and the signal reaches the trimmed pack by itself (`remoildistk` is in `views.sql`; tested). Sample and real data agree between Python and TypeScript (checked on a copy of the real database with the view built).
+- **Sample data:** the countdown runs 5,000 → 1,000 km over the demo period with seven `65535` dropouts and one Invalid reading (chosen from the clock, not the random generator, so no other sample file changed), ending due soon, so the demo shows the tile, the chart and the alert.
+- **Real data (author's export):** 14,000 → 12,000 → 11,000 → 9,000 km; the latest valid reading is 9,000 km (22 Oct, odometer 6,243 km), one service interval, three `65535` readings and 18 invalid ones ignored. **Run `make model` once** so an existing database gets the new view (`make ingest` does it too).
+- Not done (by design): the maintenance-reminder signals (`mntsetdist`, `remregdist`: not set up in the car) are not shown.
 
 ### M18 — Alerts from the car's own warnings
 - **View and API:** `v_car_warnings`: for each of the nine flags above (and any later ones), the latest state and the periods it was non-zero. `GET /api/status/car-warnings`. Readings flagged `Invalid` are ignored.

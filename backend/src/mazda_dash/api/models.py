@@ -353,6 +353,30 @@ class FaultContext(BaseModel):
     status_offset_minutes: float | None = None
 
 
+class OilStep(BaseModel):
+    """A change of the car's oil countdown (the car counts in coarse steps)."""
+
+    read_at: datetime
+    odometer_km: float | None = None
+    remaining_km: float
+    serviced: bool  # the countdown went up: an oil change
+
+
+class OilService(BaseModel):
+    """The car's own countdown to the next oil change (not a calculation)."""
+
+    has_data: bool
+    remaining_km: float | None = None
+    read_at: datetime | None = None
+    odometer_km: float | None = None  # at that reading
+    km_since_reading: float | None = (
+        None  # driven since, up to the newest odometer value
+    )
+    interval_started_at: datetime | None = None
+    intervals: int = 0  # service intervals seen (1 + number of oil changes)
+    steps: list[OilStep]
+
+
 class MonthMetrics(BaseModel):
     """One calendar month. Metrics are None when the month has no data for them (a gap, not 0)."""
 
