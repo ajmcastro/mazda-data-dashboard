@@ -44,7 +44,7 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     odo = one(
         con,
         f"SELECT read_at, odometer_km FROM v_odometer_readings {odo_where} "
-        "ORDER BY odometer_km DESC LIMIT 1",
+        "ORDER BY odometer_km DESC, read_at DESC LIMIT 1",
         odo_params,
     )
     span = one(
@@ -231,7 +231,7 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"round(100.0 * count(*) / (SELECT count(*) FROM warning_events {where}), 1) AS pct_of_events, "
         "count(DISTINCT CAST(triggered_at AS DATE)) AS days_seen, "
         "min(triggered_at) AS first_seen, max(triggered_at) AS last_seen "
-        f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC",
+        f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
 
@@ -300,7 +300,7 @@ def dtc_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
                    e.active AS active_in_latest_readout
             FROM everything e LEFT JOIN inside i USING (ecu, dtc_code, failure_type)
             WHERE i.readouts > 0 OR e.active
-            ORDER BY e.active DESC, last_seen DESC""",
+            ORDER BY e.active DESC, last_seen DESC, e.ecu, e.dtc_code, e.failure_type""",
         params,
     )
 
@@ -334,7 +334,7 @@ def dtc_readouts(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     return rows(
         con,
         "SELECT transaction_id, event_at, odometer_km, faults, read_errors, ecus_reported "
-        f"FROM v_dtc_readout_summary {where} ORDER BY event_at DESC",
+        f"FROM v_dtc_readout_summary {where} ORDER BY event_at DESC, transaction_id",
         params,
     )
 
@@ -352,7 +352,9 @@ def dtc_snapshots(ecu: str, dtc_code: str, con: duckdb.DuckDBPyConnection = Con)
 
 @app.get("/api/codes/unmapped", response_model=list[m.UnmappedCode])
 def unmapped(con: duckdb.DuckDBPyConnection = Con):
-    return rows(con, "SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC")
+    return rows(
+        con, "SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC, code"
+    )
 
 
 ALERT_COLS = "alert_id, rule, severity, title, detail, link, occurred_at, created_at, status, acknowledged_at"

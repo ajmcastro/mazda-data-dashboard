@@ -6,9 +6,9 @@ independently versioned build; the ``.duckdb`` storage format is not guaranteed 
 versions, Parquet is. The app rebuilds the SQL views from ``model/views.sql``.
 
 A phone should hold as little as it needs, and a small pack loads faster: GPS positions
-(``latitude`` / ``longitude``) are always left out, and by default so is every signal that no view
-reads. ``signal_readings`` holds 200 signals but ``views.sql`` uses 24, which is about a tenth of
-its rows. The round-trip test proves the views are identical either way.
+(``latitude`` / ``longitude``) are always left out, and by default so is every remote-status
+(``rts``) signal that no view reads. ``signal_readings`` holds 200 signals but ``views.sql`` uses 24,
+which is about a tenth of its rows. The round-trip test proves the views are identical either way.
 
 With ``--reference`` a second file ``<pack>.reference.json`` is written for tests: per view, a SQL
 *fingerprint* query (row count plus per-column counts and sums or min/max) and the value it must
@@ -49,6 +49,8 @@ TABLES = [
     "ref_ecus",
     "ref_failure_types",
 ]
+# The one big signal source; the others (vis, alt) are small and exported whole.
+TRIMMED_SOURCE = "rts"
 # GPS positions never leave the Mac, whatever else is exported.
 GPS_SIGNALS = ("latitude", "longitude")
 # Created empty when the database has no such table yet (alerts are only created on first evaluation).
@@ -145,19 +147,28 @@ def _select(
 ) -> str:
     """What to export for a table, as a parenthesised subquery.
 
-    ``signals``: keep only these ``signal_readings`` signals (None = all except GPS)."""
+    ``signals``: keep only these ``signal_readings`` signals of the ``rts`` source (None = all
+    signals; GPS is never exported)."""
     if table == "alerts" and not _has_table(con, "alerts"):
         return f"({EMPTY_ALERTS})"
-    where = ""
     if table == "signal_readings":
+        gps = ", ".join(f"'{g}'" for g in GPS_SIGNALS)
         if signals is None:
-            where = " WHERE signal NOT IN ({})".format(
-                ", ".join(f"'{g}'" for g in GPS_SIGNALS)
-            )
-        else:
-            kept = [g for g in signals if g not in GPS_SIGNALS]
-            where = " WHERE signal IN ({})".format(", ".join(f"'{g}'" for g in kept))
-    return f'(SELECT * FROM "{table}"{where})'
+            return f"(SELECT * FROM signal_readings WHERE signal NOT IN ({gps}))"
+        kept = ", ".join(f"'{g}'" for g in signals if g not in GPS_SIGNALS)
+        # Only the big remote-status source is trimmed. Other sources are small and some views count
+        # across all their signals (v_door_status.invalid_signals), so they stay whole. A trimmed
+        # snapshot keeps one row if it would vanish, because the view has one row per snapshot.
+        return (
+            f"(SELECT * EXCLUDE (rk, has_kept) FROM (SELECT *, "
+            f"row_number() OVER (PARTITION BY created_at ORDER BY rowid) AS rk, "
+            f"bool_or(signal IN ({kept})) OVER (PARTITION BY created_at) AS has_kept "
+            f"FROM signal_readings WHERE source = '{TRIMMED_SOURCE}' AND signal NOT IN ({gps})) "
+            f"WHERE signal IN ({kept}) OR (NOT has_kept AND rk = 1) "
+            f"UNION ALL SELECT * FROM signal_readings "
+            f"WHERE source IS DISTINCT FROM '{TRIMMED_SOURCE}' AND signal NOT IN ({gps}))"
+        )
+    return f'(SELECT * FROM "{table}")'
 
 
 def build_pack(

@@ -1,4 +1,4 @@
-.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-spike mobile-spike-prod mobile-variants
+.PHONY: setup profile ingest model unmapped alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-spike mobile-spike-prod mobile-variants mobile-golden mobile-golden-real mobile-test mobile-typecheck
 
 setup:
 	cd backend && uv sync
@@ -94,3 +94,21 @@ mobile-spike-prod: mobile-demo-pack
 mobile-variants:
 	cd backend && for v in "a-full-zstd --all-signals --compression zstd" "b-trim-zstd --compression zstd" "c-trim-snappy --compression snappy" "d-trim-raw --compression uncompressed"; do \
 		set -- $$v; name=$$1; shift; uv run python -m mazda_dash.pack --db ../db/mazda.duckdb --out ../db/variants/$$name.cx5pack "$$@"; done
+
+# ---- phone data engine (M13): the TypeScript re-implementation of the API, proven against the Python one ----
+
+# Record what the real Python API answers on the sample data (+ the pack the engine loads) into mobile/contract/
+mobile-golden:
+	cd backend && uv run python -m mazda_dash.contract --out ../mobile/contract
+
+# Same on YOUR database (copied first), to catch what the small sample hides. Contains your VIN: mobile/contract/real
+# is gitignored; delete it afterwards (rm -r mobile/contract/real).
+mobile-golden-real:
+	cd backend && uv run python -m mazda_dash.contract --db ../db/mazda.duckdb --out ../mobile/contract/real
+	cd mobile && CONTRACT_DIR=contract/real npm test
+
+mobile-typecheck:
+	cd mobile && npm run typecheck
+
+mobile-test: mobile-golden mobile-typecheck
+	cd mobile && npm test

@@ -63,3 +63,18 @@ make mobile-spike-prod HOST=1
    twice (second round in reverse order) and shows the load times in a table.
 4. Press Ctrl+C on the Mac when done (`HOST=1` exposes the demo data to your Wi-Fi). Delete the
    AirDropped packs from the phone's Files app afterwards if you do not want to keep them there.
+
+## The data engine (M13)
+
+`src/engine/` is the Python API in TypeScript, so the existing pages can run on the phone with no
+server. `createFetch(api)` answers `/api/...` from DuckDB-WASM, and `loadPack()` fills it from a
+`.cx5pack`. It is not wired into a page yet (that is M14).
+
+```bash
+make mobile-test          # records the Python API's answers on the sample data, then replays them here
+make mobile-golden-real   # same on your own database; then: rm -r mobile/contract/real (it holds your VIN)
+```
+
+When you change an endpoint in `backend/src/mazda_dash/api/`, change its twin in `src/engine/` and run
+`make mobile-test`: any difference in the JSON (a value, a missing field, the order of rows) fails with the
+request and the path of the first difference.

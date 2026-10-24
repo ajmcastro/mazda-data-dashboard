@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13–M16 (the offline phone app in `mobile/`) are planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 13".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
+**Status: M1–M11 are done. M12 (feasibility spike) is done with a final GO. M13 (the phone's data engine) is done. M14–M16 (the rest of the offline phone app in `mobile/`) are planned and all decisions are settled. M17–M20 (more of the car's own data: oil change, car warnings, tire reading time, warning-lamp flags) are planned to follow M16, with their decisions settled. Next step: "start implementing milestone 14".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs.
 
 ## Decisions
 
@@ -69,7 +69,7 @@ Makefile  README.md  PLAN.md  CLAUDE.md  LICENSE
 | M10 | Choose any diagnostic report | always-visible picker, report history, three sample reports |
 | M11 | Monthly comparison ("Trends") | cards and table with change vs the previous month |
 | M12 | Standalone feasibility spike ✅ | data pack export, DuckDB in the browser runs the views; **GO**; confirmed in Chrome, Safari, the iOS Simulator and a real iPhone |
-| M13 | Standalone data engine | the API's 28 routes re-implemented in TypeScript, proven identical by contract tests |
+| M13 | Standalone data engine | the API's routes re-implemented in TypeScript, proven identical by contract tests (done) |
 | M14 | Standalone app shell | `mobile/` app reusing the existing screens, import/replace/delete data on the device |
 | M15 | iPhone polish and offline | installable web app, works in airplane mode, phone navigation, storage safety |
 | M16 | Hosting, docs and CI | HTTPS static hosting (code only), README guide, parity checks in CI |
@@ -228,6 +228,16 @@ Re-implement the API inside the browser with **identical JSON**.
 - Alert acknowledgement stored locally and merged over the pack's alerts.
 - **Contract tests (the safeguard against drift):** a script runs the real Python API on the sample data for a matrix of requests (no range, a month, a single day, an empty range, a range cutting months, bad input, every report id, each endpoint's filters) and saves the responses as golden JSON files. The TypeScript engine must reproduce every one byte for byte (modulo key order). CI regenerates the goldens and fails on any diff.
 - **Done when:** all golden tests pass, with the Python API remaining the reference implementation.
+
+**M13 as built.**
+- `mobile/src/engine/` is the Python API in TypeScript: the same SQL (copied statement for statement), the same response shapes (`shapes.ts` mirrors `api/models.py`; fields not in a model are dropped and missing ones are `null`, as Pydantic does), the same error statuses and `detail` messages (404, 405, 422, and 503 when no data is loaded), `Z`-suffixed timestamps (six fractional digits when not zero) and Python's `round()` semantics for the trends figures (`pyround.ts`). 27 data routes plus `/api/health`.
+- `createFetch(api)` is a drop-in `fetch` for `/api/...`; everything else goes to the network. `loadPack()` (fflate + DuckDB-WASM) replaces the database content from a `.cx5pack`, checks format, signals and checksums, and runs `views.sql` unchanged.
+- Alert acknowledgements: the in-browser `alerts` table is updated and each acknowledgement is also written to an `AckStore` keyed by the alert's `dedup_key`; `replayAcks()` re-applies them after the pack is loaded again, so they survive a restart and a newer pack. (M14 supplies the IndexedDB store; M13 has the interface and an in-memory one.)
+- **Contract tests.** `make mobile-golden` runs the real Python API on the sample data for a matrix of 352 requests (all 14 period endpoints × 15 period shapes: open, half-open, a month, partial months, a single day, first/last day, empty future and past, invalid; every endpoint's filters, limits and offsets; every code/ECU/read-out/report/pair; bad input; the alert changes in a fixed order; unknown path and wrong method) and writes `mobile/contract/golden.json` plus the pack. `mobile/test/contract.test.ts` replays each request on DuckDB-WASM in Node (the same engine as the phone) and requires equal JSON: floats within 1e-9, key order ignored, array order exact. Python's FastAPI validation-error structure is not part of the contract (only the 422 status). A Python test (`test_contract.py`) fails if an API route has no successful golden case, so a new route cannot be added without being covered.
+- `make mobile-golden-real` runs the same matrix on your own database (copied first, as alert requests change state): 419 requests, all identical. This found two things the sample data hid, both fixed:
+  1. **Pack trimming bug (from M12):** `v_door_status.invalid_signals` counts invalid readings across *all* `vis` signals, but trimming dropped the ones no view names. Only the big `rts` source is trimmed now (the small `vis` and `alt` are whole), and a snapshot of only unused signals keeps one row so the view still has its row. `test_pack.py` has a regression test with such rows.
+  2. **Ties:** equal sort keys came out in a different order in the two engines. The Python API gained tie-breakers (warning frequency by code, fault frequency by ECU/code/type, read-outs by transaction id, unmapped codes by code, the newest reading at the maximum odometer). The order of equal items changed only where it was undefined before.
+- Not done here (by design): CI wiring of the golden regeneration (M16), the IndexedDB store and the engine bootstrap in the browser (M14).
 
 #### M14 — Standalone app shell
 - `mobile/` Vite project: its own `App` layout (with the bottom tab bar), reuses `frontend/src` pages via alias, mounts them on the in-browser engine.

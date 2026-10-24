@@ -20,3 +20,4 @@ db/
 *.cx5pack.reference.json
 mobile/spike-results/
 *.tsbuildinfo
+mobile/contract/

@@ -85,9 +85,8 @@ def test_gps_positions_are_not_in_the_pack(built, tmp_path):
     assert "latitude" in manifest["excluded"]
 
 
-def test_a_browser_style_rebuild_reproduces_every_view(built, tmp_path):
+def _assert_rebuild_reproduces_views(out: Path, tmp_path: Path) -> None:
     """Load the Parquet files into an empty database, run views.sql, check every fingerprint."""
-    _, out, _ = built
     ref = json.loads(Path(f"{out}.reference.json").read_text())
     with zipfile.ZipFile(out) as z:
         z.extractall(tmp_path)
@@ -111,6 +110,37 @@ def test_a_browser_style_rebuild_reproduces_every_view(built, tmp_path):
             con.execute(f"SELECT count(*) FROM {table}").fetchone()[0] == rows
             or table == "signal_readings"
         )
+
+
+def test_a_browser_style_rebuild_reproduces_every_view(built, tmp_path):
+    _, out, _ = built
+    _assert_rebuild_reproduces_views(out, tmp_path)
+
+
+def test_trimming_keeps_views_that_count_across_a_whole_source(built, tmp_path):
+    """Real data has readings of signals no view names: an invalid one still counts in
+    v_door_status.invalid_signals, and a snapshot of only unnamed signals is still a row of
+    v_vehicle_status. Trimming must not change either (found by replaying the API on real data)."""
+    db, _, _ = built
+    copy = tmp_path / "extra.duckdb"
+    copy.write_bytes(db.read_bytes())
+    con = duckdb.connect(str(copy))
+    con.execute(
+        "INSERT INTO signal_readings VALUES "
+        "('vis', 'V', 'x', TIMESTAMP '2026-05-01 10:00:00', NULL, 'unnamed_vis_signal', '1', 1, false), "
+        "('vis', 'V', 'x', TIMESTAMP '2026-05-01 10:00:00', NULL, 'drstatdrv', '0', 0, true), "
+        "('rts', 'V', 'x', TIMESTAMP '2026-05-01 11:00:00', NULL, 'unnamed_rts_signal', '1', 1, true), "
+        "('rts', 'V', 'x', TIMESTAMP '2026-05-01 11:00:00', NULL, 'another_unnamed', '2', 2, true)"
+    )
+    con.close()
+    out = tmp_path / "extra.cx5pack"
+    build_pack(copy, out, with_reference=True)
+    _assert_rebuild_reproduces_views(out, tmp_path / "x")
+    kept, _ = _signals_in(out, tmp_path / "k", source=None)
+    assert "unnamed_vis_signal" in kept  # small sources are exported whole
+    assert (
+        len({"unnamed_rts_signal", "another_unnamed"} & kept) == 1
+    )  # one row keeps the snapshot
 
 
 def test_the_reference_records_the_view_script_it_belongs_to(built):
@@ -141,20 +171,25 @@ def test_an_unprepared_database_gets_a_clear_message(tmp_path):
         build_pack(empty, tmp_path / "x.cx5pack")
 
 
-def _signals_in(pack: Path, tmp: Path) -> tuple[set[str], int]:
+def _signals_in(
+    pack: Path, tmp: Path, source: str | None = "rts"
+) -> tuple[set[str], int]:
+    """Distinct signals and row count of the pack's signal_readings (of one source, or all)."""
     with zipfile.ZipFile(pack) as z:
         z.extract("tables/signal_readings.parquet", tmp)
     con = duckdb.connect()
     path = tmp / "tables/signal_readings.parquet"
-    rows = con.execute(f"SELECT DISTINCT signal FROM '{path}'").fetchall()
+    where = f"WHERE source = '{source}'" if source else ""
+    rows = con.execute(f"SELECT DISTINCT signal FROM '{path}' {where}").fetchall()
     return {r[0] for r in rows}, con.execute(
-        f"SELECT count(*) FROM '{path}'"
+        f"SELECT count(*) FROM '{path}' {where}"
     ).fetchone()[0]
 
 
 def test_by_default_only_the_signals_the_views_read_are_in_the_pack(built, tmp_path):
     _, out, manifest = built
-    kept, _ = _signals_in(out, tmp_path)
+    kept, _ = _signals_in(out, tmp_path)  # remote-status signals
+    everywhere, _ = _signals_in(out, tmp_path / "all", source=None)
     used = set(used_signals())
     assert kept <= used and len(used) >= 20  # nothing the views do not read ...
     assert {
@@ -162,9 +197,9 @@ def test_by_default_only_the_signals_the_views_read_are_in_the_pack(built, tmp_p
         "fuelsegementdactl",
         "drstatdrv",
         "burglarstatus",
-    } <= kept  # ... and what they do
+    } <= everywhere  # ... and what they do (the small vis / alt sources are whole)
     assert manifest["signals"] == sorted(used)
-    assert not set(GPS_SIGNALS) & kept
+    assert not set(GPS_SIGNALS) & everywhere
 
 
 def test_every_signal_used_by_a_view_is_found_by_the_scan():
@@ -190,15 +225,3 @@ def test_all_signals_option_keeps_the_rest_but_never_gps(built, tmp_path):
     assert manifest["signals"] == "all"
     assert kept_default < kept_all and rows_default < rows_all
     assert not set(GPS_SIGNALS) & kept_all
-
-
-def test_a_trimmed_and_a_full_pack_give_identical_views(built, tmp_path):
-    """The point of trimming: the 20 view fingerprints do not change."""
-    db, out, _ = built
-    full = tmp_path / "f.cx5pack"
-    build_pack(db, full, all_signals=True, with_reference=True)
-    trimmed = json.loads(Path(f"{out}.reference.json").read_text())["views"]
-    everything = json.loads(Path(f"{full}.reference.json").read_text())["views"]
-    assert {k: v["expected"] for k, v in trimmed.items()} == {
-        k: v["expected"] for k, v in everything.items()
-    }
