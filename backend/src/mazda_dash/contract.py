@@ -290,7 +290,9 @@ def generate(out: Path, source_db: Path | None = None) -> dict:
             shutil.copyfile(source_db, db)
         else:
             ingest(
-                REPO / "sample_data", db, REPO / "config" / "models" / "cx5" / "codes"
+                REPO / "sample_data" / "cx5",
+                db,
+                REPO / "config" / "models" / "cx5" / "codes",
             )
             evaluate(db, REPO / "config" / "models" / "cx5" / "alerts.yaml")
         edge = duckdb.connect(str(db))

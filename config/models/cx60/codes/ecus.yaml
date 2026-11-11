@@ -1,0 +1,3 @@
+# ECU abbreviations from `ECU_NAME_MKT` of this model. This file starts empty; null or missing = unknown.
+# The format is in config/models/cx5/codes/ecus.yaml. Run `make model MODEL=cx60` after editing.
+{}

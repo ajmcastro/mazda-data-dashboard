@@ -20,7 +20,12 @@ from pathlib import Path
 VIN_RE = re.compile(r"\bVIN\s+([A-HJ-NPR-Z0-9]{17})\b")
 SENSITIVE_COLUMNS = {"vin", "latitude", "longitude"}
 # Obviously fake values used by the sample data and tests; never reported.
-SAFE = {"SAMPLEVIN00000001", "TESTVIN0000000001"}
+SAFE = {
+    "SAMPLEVIN00000001",
+    "SAMPLEVIN00000002",
+    "TESTVIN0000000001",
+    "TESTVIN0000000002",
+}
 
 
 @dataclass

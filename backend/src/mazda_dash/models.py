@@ -8,9 +8,13 @@ shared between models, least of all the descriptions of codes.
 Before this layout existed there was one car: raw files directly in ``data/`` and ``db/mazda.duckdb``.
 They are still read, as the model ``cx5``, until ``python -m mazda_dash.models migrate`` moves them.
 
-Usage: python -m mazda_dash.models show | ids | db | data | migrate [--yes]"""
+``MAZDA_DB_PREFIX`` (the demo sets ``demo-``) puts every database at db/<prefix><id>.duckdb and turns the
+single-car fallback off, so a demo never touches your own databases.
+
+Usage: python -m mazda_dash.models show | ids [--with-db] | db | data | migrate [--yes]"""
 
 import argparse
+import os
 import re
 import shutil
 import sys
@@ -46,6 +50,7 @@ class Model:
     db_path: Path
     config_dir: Path
     legacy: tuple[str, ...] = ()  # what is still in the single-car layout: "data", "db"
+    db_prefix: str = ""  # MAZDA_DB_PREFIX: the demo keeps its databases apart from yours (demo-cx5.duckdb)
 
     @property
     def codes_dir(self) -> Path:
@@ -61,7 +66,7 @@ class Model:
 
     @property
     def pack_path(self) -> Path:
-        return self.db_path.parent / f"{self.id}.cx5pack"
+        return self.db_path.parent / f"{self.db_prefix}{self.id}.cx5pack"
 
 
 @dataclass(frozen=True)
@@ -130,12 +135,13 @@ def _load_model(root: Path, model_id: str) -> Model:
     if not isinstance(default, bool):
         raise ModelConfigError(f"{path}: default must be true or false")
 
+    prefix = os.environ.get("MAZDA_DB_PREFIX", "")
     data_dir, db_path, legacy = (
         root / "data" / model_id,
-        root / "db" / f"{model_id}.duckdb",
+        root / "db" / f"{prefix}{model_id}.duckdb",
         [],
     )
-    if model_id == LEGACY_MODEL:
+    if model_id == LEGACY_MODEL and not prefix:
         if not _has_files(data_dir) and _has_files(root / "data"):
             data_dir = root / "data"
             legacy.append("data")
@@ -152,6 +158,7 @@ def _load_model(root: Path, model_id: str) -> Model:
         db_path=db_path,
         config_dir=config_dir,
         legacy=tuple(legacy),
+        db_prefix=prefix,
     )
 
 
@@ -252,12 +259,23 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("command", choices=["show", "ids", "db", "data", "migrate"])
     ap.add_argument("--yes", action="store_true", help="migrate without asking")
+    ap.add_argument(
+        "--with-db",
+        action="store_true",
+        help="ids: only the models that have a database",
+    )
     add_model_option(ap)
     args = ap.parse_args(argv)
     try:
         registry = load_registry(args.root)
         if args.command == "ids":
-            print(" ".join(registry.ids))
+            print(
+                " ".join(
+                    mm.id
+                    for mm in registry.models
+                    if mm.db_path.exists() or not args.with_db
+                )
+            )
         elif args.command == "show":
             for m in registry.models:
                 star = " (default)" if m is registry.default else ""

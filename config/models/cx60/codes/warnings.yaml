@@ -1,0 +1,5 @@
+# Descriptions of this model's warning codes (`$`-prefixed, as in WARNING_LIST). Mazda does not publish
+# them and they can differ between models, so nothing is copied from another model: this file starts
+# empty. Never guess a title; an unknown code is shown as unknown. The format is in
+# config/models/cx5/codes/warnings.yaml. Run `make model MODEL=cx60` after editing.
+{}

@@ -1,4 +1,6 @@
 # The car models the dashboard shows, in display order. Each id needs config/models/<id>/model.yaml;
-# its raw exports go in data/<id>/ and its database is db/<id>.duckdb. See "How to add a model" in the README.
+# its raw exports go in data/<id>/ and its database is db/<id>.duckdb. See "Car models" in the README.
+# A model without data yet stays out of the model selector until something has been ingested for it.
 models:
   - cx5
+  - cx60

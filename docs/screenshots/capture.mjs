@@ -41,7 +41,7 @@ async function waitFor(url) {
   throw new Error(`${url} did not start`)
 }
 
-start('uv', ['run', 'uvicorn', 'mazda_dash.api.app:app', '--port', '8000'], path.join(root, 'backend'), { MAZDA_DB: '../db/demo.duckdb' })
+start('uv', ['run', 'uvicorn', 'mazda_dash.api.app:app', '--port', '8000'], path.join(root, 'backend'), { MAZDA_DB_PREFIX: 'demo-' })
 start('npm', ['run', 'dev', '--', '--port', '5173', '--strictPort'], path.join(root, 'frontend'))
 start('npm', ['run', 'dev'], path.join(root, 'mobile'))
 await Promise.all([waitFor('http://127.0.0.1:8000/api/health'), waitFor('http://localhost:5173/'), waitFor('http://localhost:5174/')])
@@ -49,11 +49,12 @@ await Promise.all([waitFor('http://127.0.0.1:8000/api/health'), waitFor('http://
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--no-sandbox'] })
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-// The demo data ends on 30 June 2026; pretend it is the day after, so "last reading 1 day ago" stays true
-// whenever the screenshots are taken.
-function pretendItIsJuly2026() {
+// The CX-5 demo data ends on 30 June 2026 and the CX-60's on 31 July: pretend it is the day after the end of
+// the data shown (month index 6 = 1 July, 7 = 1 August), so "last reading 1 day ago" stays true whenever the
+// screenshots are taken.
+function pretendItIs(year, month) {
   const RealDate = Date
-  const offset = RealDate.UTC(2026, 6, 1, 12, 0, 0) - RealDate.now()
+  const offset = RealDate.UTC(year, month, 1, 12, 0, 0) - RealDate.now()
   globalThis.Date = class extends RealDate {
     constructor(...args) {
       if (args.length === 0) super(RealDate.now() + offset)
@@ -65,9 +66,9 @@ function pretendItIsJuly2026() {
   }
 }
 
-async function newPage(width, height, scale, scheme = 'dark') {
+async function newPage(width, height, scale, scheme = 'dark', clock = [2026, 6]) {
   const page = await browser.newPage()
-  await page.evaluateOnNewDocument(pretendItIsJuly2026)
+  await page.evaluateOnNewDocument(pretendItIs, ...clock)
   await page.setViewport({ width, height, deviceScaleFactor: scale })
   await page.emulateMediaFeatures([
     { name: 'prefers-color-scheme', value: scheme },
@@ -114,6 +115,14 @@ await shoot('warning-lamps.png', '/status', async (p) => {
 })
 await shoot('diagnostics.png', '/diagnostics')
 await mac.close()
+
+// the second demo model, to show the model selector at work (its data ends on 31 July)
+const mac60 = await newPage(1280, 860, 1.5, 'dark', [2026, 7])
+await mac60.goto('http://localhost:5173/?model=cx60', { waitUntil: 'networkidle0' })
+await sleep(1100)
+await mac60.screenshot({ path: path.join(out, 'overview-cx60.png') })
+console.log('wrote overview-cx60.png')
+await mac60.close()
 
 // ---- the phone app (390 x 844, loaded with the demo pack)
 async function phone(file, hash, { scheme = 'dark', theme, prepare } = {}) {

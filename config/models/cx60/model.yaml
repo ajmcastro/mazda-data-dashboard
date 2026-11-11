@@ -1,0 +1,6 @@
+# One car model. The id must match the folder name (lower case letters and digits).
+# Put this car's exports in data/cx60/ and run `make ingest MODEL=cx60`.
+id: cx60
+name: Mazda CX-60
+# platform: ...       # optional: the platform code that appears in Mazda's file names
+# pages: [trends]     # optional: pages this model has no data for (overview cannot be hidden)

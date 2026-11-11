@@ -1,0 +1,4 @@
+# Descriptions of this model's diagnostic trouble codes. Mazda does not publish them and they can differ
+# between models, so nothing is copied from another model: this file starts empty. Never guess a title.
+# The format is in config/models/cx5/codes/dtcs.yaml. Run `make model MODEL=cx60` after editing.
+{}

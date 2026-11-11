@@ -1,0 +1,3 @@
+# Meanings of this car's warning-lamp bit flags. Mazda does not publish them: this file starts empty.
+# The format is in config/models/cx5/codes/warning_flags.yaml. Run `make model MODEL=cx60` after editing.
+{}

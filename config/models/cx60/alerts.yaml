@@ -1,0 +1,3 @@
+# Alert rules of this model. Empty = the built-in defaults (every rule on, default thresholds).
+# config/models/cx5/alerts.yaml lists every rule and option with comments; copy what you want to change.
+{}

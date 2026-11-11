@@ -221,3 +221,21 @@ def test_the_audit_reads_every_model_folder(tmp_path):
     folder.mkdir()
     (folder / "all-rts_rts-x.csv").write_text('"vin","a"\n"REALVIN1234567890","1"\n')
     assert collect_tokens(tmp_path, []) == {"REALVIN1234567890"}
+
+
+def test_the_demo_prefix_keeps_the_databases_apart(tmp_path, monkeypatch):
+    root = make_root(tmp_path, ("cx5", "cx60"))
+    single_car_install(root)  # the single-car fallback must not leak into a demo
+    monkeypatch.setenv("MAZDA_DB_PREFIX", "demo-")
+    cx5 = resolve("cx5", root)
+    assert cx5.db_path == root / "db" / "demo-cx5.duckdb" and cx5.legacy == ()
+    assert cx5.data_dir == root / "data" / "cx5"
+    assert resolve("cx60", root).pack_path == root / "db" / "demo-cx60.cx5pack"
+
+
+def test_ids_with_a_database_only(tmp_path, capsys):
+    root = make_root(tmp_path, ("cx5", "cx60"))
+    (root / "db").mkdir()
+    (root / "db" / "cx60.duckdb").write_text("x")
+    assert main(["ids", "--with-db", "--root", str(root)]) == 0
+    assert capsys.readouterr().out.split() == ["cx60"]

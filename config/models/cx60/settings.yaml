@@ -1,0 +1,9 @@
+# Settings of this car (config/models/cx5/settings.yaml has the full explanation).
+# Edit, then run `make model MODEL=cx60`; `make timezone MODEL=cx60` checks the zone against your data.
+
+# The time zone of the clock the car uses for "when were the tire pressures measured": its LOCAL time.
+# An IANA name such as Europe/Berlin or America/New_York. The demo data of this model uses Europe/Berlin.
+car_timezone: Europe/Berlin
+
+# A tire reading counts as stale when the car still showed a measurement older than this many hours.
+tire_stale_hours: 6

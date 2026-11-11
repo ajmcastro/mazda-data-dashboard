@@ -24,7 +24,7 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": [
         "-c",
-        "cd backend && MAZDA_DB=../db/demo.duckdb uv run uvicorn mazda_dash.api.app:app --port 8000"
+        "cd backend && MAZDA_DB_PREFIX=demo- uv run uvicorn mazda_dash.api.app:app --port 8000"
       ],
       "port": 8000
     },

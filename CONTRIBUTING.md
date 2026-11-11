@@ -48,7 +48,7 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
    browser. Name single signals as `signal = '<name>'` and families as `starts_with(signal, '<prefix>')` (the
    phone pack builder reads them from the file); do not nest `timezone()` calls (the in-browser DuckDB cannot
    run them).
-4. **Generated files are compared byte for byte in CI** (`sample_data/`, `frontend/openapi.json`,
+4. **Generated files are compared byte for byte in CI** (`sample_data/<model>/`, `frontend/openapi.json`,
    `frontend/src/api/schema.d.ts`): after changing the API run `make types`, after changing the sample
    generator run `make sample-data`, and commit the result. Generators must not depend on the machine's time
    zone, locale or line endings.

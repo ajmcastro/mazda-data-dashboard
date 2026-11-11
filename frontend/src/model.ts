@@ -22,7 +22,6 @@ export function useCurrentModel() {
     settled: !query.isPending,
     id: model?.id ?? requested ?? FALLBACK.id,
     name: model?.name ?? FALLBACK.name,
-    multi: models.length > 1,
   }
 }
 

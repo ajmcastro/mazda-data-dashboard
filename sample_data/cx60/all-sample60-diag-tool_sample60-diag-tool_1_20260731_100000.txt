@@ -1,0 +1,69 @@
+Collect Diagnostic Information
+
+Date:2026/07/31
+Time:12:00:00
+TimeZone:UTC+0200
+
+
+ODO:4415km
+
+Mode 9
+ModuleName:ECM
+VIN   SAMPLEVIN00000002
+CALID   SAMPLECALID000000
+CVN   0000000000000000000000000000000000000000
+IPT
+   (OBDCOND) = 120
+   (IGNCNTR) = 222
+   (CATCOMP1) = 150
+ECUNAME   ECM-EngineControl
+TG/EFN
+VOD - Engine Run/Idle Time
+   (IGNCNTR_R) = 40
+   (IGNCNTR_L) = 222
+   (ERT_R) = 52000 s
+   (ERT_L) = 343308 s
+VOD - Distance/Fuel Used
+   (DT_R) = 780.0 km
+   (DT_L) = 4370.8 km
+   (FC_R) = 53.04 l
+   (FC_L) = 338.74 l
+AAF #1 OCC Vehicle Data
+   (AAF1_TIME1_R) = 4294967295 s
+   (AAF1_TIME1_L) = 120 s
+AES ID and Status
+   (AESIDx) = 1814
+   (AESIDx_Activity_State) = Not Active
+   (AESIDx) = 181A
+   (AESIDx_Activity_State) = Not Active
+Mode 9 Workaround
+
+
+
+dtcs
+ModuleName:DSC
+C1A50:87-28
+
+Rob_dtcs
+ModuleName:DCM
+XB2A92:00-28
+
+SnapshotData
+ModuleName:DSC
+DTC:C1A50:87-28
+RecordNumber:01
+APP:12.5 %
+ODOMETER:4412.8 km
+VSS:48 km/h
+VPWR:13.1 V
+AMB_TEMP:21 ℃
+ECT:88 ℃
+ENG_RPM:1900 RPM
+POWER_MODE:ON
+SHIFT_POS:Drive
+Mode 6
+ModuleName:ECM
+OBDMID: 1, Test: 80, Min: 0.000, Max: 1.000, Value: 0.000
+OBDMID: 2, Test: 3, Min: 300.000 mV, Max: 310.000 mV, Value: 303.100 mV
+OBDMID: 21, Test: 82, Min: 0.89 g, Max: 655.35 g, Value: 2.38 g
+OBDMID: 42, Test: 80, Min: 5 Ohm, Max: 450 Ohm, Value: 100 Ohm

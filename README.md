@@ -33,6 +33,10 @@ the phone**.
   </tr>
 </table>
 
+With more than one car model loaded, the sidebar has a model selector (here the second demo car, a CX-60):
+
+![Overview of the second demo model, a CX-60](docs/screenshots/overview-cx60.png)
+
 **On the iPhone** (offline, installable; dark and light follow the phone, or choose):
 
 <p>
@@ -42,7 +46,7 @@ the phone**.
   <img src="docs/screenshots/phone-lamps.png" alt="Warning lamps on an iPhone" width="230">
 </p>
 
-*(Screenshots show the synthetic demo data in `sample_data/`, not a real car. `make screenshots` retakes them.)*
+*(Screenshots show the synthetic demo data in `sample_data/<model>/`, not a real car. `make screenshots` retakes them.)*
 
 > **Unofficial.** This project is not affiliated with or endorsed by Mazda. The meaning of most
 > warning and fault codes is not public, so the app ships with descriptions only where they are
@@ -394,7 +398,7 @@ For development (see [Development](#development)):
 |---|---|
 | `make test` / `make lint` / `make format` | backend and frontend tests / checks / backend formatting |
 | `make types` | regenerate the frontend's TypeScript types from the API schema |
-| `make sample-data` | regenerate `sample_data/` (deterministic) |
+| `make sample-data` | regenerate `sample_data/<model>/` for every model (deterministic) |
 | `make mobile-test` | check that the phone app's TypeScript engine answers exactly like the Python API |
 | `make mobile-golden`, `make mobile-golden-real` | record the Python API's answers for those tests (on the sample data / on your own database) |
 | `make mobile-install`, `make mobile-typecheck`, `make mobile-build`, `make mobile-demo-pack` | the phone app's packages, type check, production build, demo data pack |
@@ -428,7 +432,7 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code de
   data pack exported by `make mobile-pack`, and a TypeScript port of the API answers the pages;
   contract tests keep it identical to the Python API.
 - `config/`: your settings (`settings.yaml`), the alert rules (`alerts.yaml`) and your descriptions of
-  codes and flags (`codes/*.yaml`). `sample_data/`: the synthetic export. `docs/`: the data dictionary
+  codes and flags (`codes/*.yaml`). `sample_data/`: the synthetic exports, one folder per model. `docs/`: the data dictionary
   and screenshots. `data/` and `db/` (git-ignored) hold your files and databases.
 
 [PLAN.md](PLAN.md) has the design decisions and the milestones this was built in.
