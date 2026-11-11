@@ -14,7 +14,12 @@ tire_stale_hours: 6
 # Optional: an estimated fuel cost (cost per 100 km on Trends, Compare and the Overview). It is an estimate:
 # the litres the car reports for each trip times the price you enter, NOT what you paid. Remove the # to use it,
 # then run `make model`. One entry per date, oldest first; a single price: `fuel_price_per_l: 1.75`.
-# fuel_currency: EUR
-# fuel_prices:
-#   - {from: 2026-03-01, per_l: 1.72}
-#   - {from: 2026-05-15, per_l: 1.81}
+fuel_currency: EUR
+fuel_prices:
+   - {from: 2026-06-01, per_l: 1.907}
+   - {from: 2026-07-01, per_l: 1.920}
+   - {from: 2026-08-01, per_l: 1.958}
+   - {from: 2026-09-01, per_l: 2.079}
+   - {from: 2026-10-01, per_l: 2.094}
+   - {from: 2026-11-01, per_l: 1.922}
+
