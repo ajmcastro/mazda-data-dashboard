@@ -85,6 +85,31 @@ Came inside the zip download from the Mazda Vehicle Data portal, together with t
 - Meaning of `$` warning codes, `DTC_STATUS_FLAG` values, burglar/alarm reason codes, `HOURS`/`MINUTES` in `war`.
 - Units of the `dtc-ssr` signals: the CSV has none. The frontend adds units for the signals the tool dump confirms (see the end of this file); the rest are shown raw.
 
+## Model differences
+
+The pipeline treats every Mazda model the same way: the same seven CSV kinds plus the diagnostic-tool dump, the
+same columns, sentinels, join keys and `_value` / `_validstatus` pairs (everything above). What can differ per
+model, and where this project keeps it, so that **nothing from one model leaks into another**:
+
+| What differs | Where it lives | What happens when it differs |
+|---|---|---|
+| Platform code in the file names (`24pf` in the author's CX-5) | nowhere: files are found by their `_<kind>-` part | nothing; any code works |
+| Which remote-status signals the car sends (`rts`, `vis`) | the data; `views.sql` names the ones it reads | a missing signal is an empty reading, never an error; `make compat` lists them and the views they feed |
+| Meaning of warning codes (`$XXX`), fault codes, ECU names, lamp flags | `config/models/<id>/codes/*.yaml` | never shared or borrowed: an undescribed code stays "no description yet" |
+| The car's local time zone (tire measurement clock), stale limit | `config/models/<id>/settings.yaml` | per model; `make timezone MODEL=<id>` checks it |
+| Alert rules and thresholds | `config/models/<id>/alerts.yaml` | per model; built-in defaults when absent |
+| Pages with no data for the model | `pages:` in `config/models/<id>/model.yaml` | the page leaves the navigation |
+| How many diagnostic reports, and when | the exports you download | each dump is a report of its own (content hash) |
+| The vehicle | one VIN per model folder | `make ingest` warns when a database holds two |
+
+**What is verified and what is not.** Only one real export has been analysed: a CX-5 (platform 24PF, Europe,
+2026), described in the rest of this file. The second model in the repository, a CX-60, exists in
+`sample_data/cx60/` as **synthetic** data made to differ on purpose (another platform code, VIN, period and car
+time zone, a diagnostic tool clock at UTC+0200, other codes and faults, two reports instead of three, no oil
+countdown, two signals the CX-5 lacks); nothing in it says how a real CX-60 export looks. Signals a hybrid or
+electric model would add (battery state, charging, electric range) are not read by any view yet: they appear
+as "read by no view" in `make compat` until someone with such an export adds them (PLAN.md, M28).
+
 ## Database schema
 
 Created by `make ingest` in `db/<id>.duckdb` (gitignored). All timestamps are naive UTC; sentinels are NULL; re-running is idempotent (rows are keyed as below and skipped if present, never updated).

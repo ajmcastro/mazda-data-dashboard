@@ -5,6 +5,9 @@ to be written down anywhere. The tool then looks for them in every file git woul
 (tracked files and untracked files that are not ignored) and in the whole git history, and
 lists the commit author emails for you to review.
 
+``--data`` is searched recursively, so every model's folder (data/cx5/, data/cx60/, ...) is covered. The
+synthetic data in ``sample_data/<model>/`` must hold only the synthetic VINs and no position.
+
 Usage: python -m mazda_dash.audit --data ../data --repo ..   (exit status 1 when something is found)
 """
 
@@ -38,11 +41,16 @@ class Report:
         default_factory=list
     )  # commit, masked token
     bad_files: list[str] = field(default_factory=list)
+    sample_tokens: list[str] = field(
+        default_factory=list
+    )  # private-looking values in sample_data/<model>/ (masked)
     emails: list[str] = field(default_factory=list)
 
     @property
     def clean(self) -> bool:
-        return not (self.file_hits or self.history_hits or self.bad_files)
+        return not (
+            self.file_hits or self.history_hits or self.bad_files or self.sample_tokens
+        )
 
 
 def mask(token: str) -> str:
@@ -84,6 +92,11 @@ def audit(data_dir: Path, repo: Path, extra: list[str] | None = None) -> Report:
     tokens = collect_tokens(data_dir, extra or [])
     report.tokens = len(tokens)
     files = publishable_files(repo)
+    # the synthetic data of every model must hold only the synthetic VINs and no position: a real value
+    # pasted there (or a generator that starts copying one) would be published with the repository
+    sample = repo / "sample_data"
+    if sample.is_dir():
+        report.sample_tokens = sorted(mask(t) for t in collect_tokens(sample, []))
 
     for path in files:
         rel = str(path.relative_to(repo))
@@ -129,6 +142,10 @@ def main() -> None:
     for rel in report.bad_files:
         print(
             f"  NOT FOR PUBLISHING: {rel} would be published (data, database or data pack)"
+        )
+    for token in report.sample_tokens:
+        print(
+            f"  SAMPLE  sample_data/ holds {token}, which is not one of the synthetic VINs"
         )
     for rel, line, token in report.file_hits:
         print(f"  FILE    {rel}:{line} contains {token}")

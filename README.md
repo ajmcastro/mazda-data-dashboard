@@ -10,6 +10,8 @@ the phone**.
   report, and a month-by-month comparison.
 - **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, unusually high fuel
   use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
+- **Several cars**: one folder of exports, one database and one set of code descriptions per Mazda model
+  (the CX-5, and a CX-60 set up the same way), with a model selector on the Mac and on the phone.
 - **Stay private**: nothing is uploaded anywhere. The data stays in a file on your machine (and, if you
   want it, on your phone); the phone app makes no network request at all once installed.
 - **Try it first**: no Mazda data needed. `make demo` runs the dashboard on synthetic data, and the phone
@@ -212,14 +214,64 @@ yet, then add what you learn to `config/models/cx5/codes/*.yaml` and run `make m
 
 ### Car models
 
-With more than one model the dashboard shows a **model selector** at the top of the sidebar. The choice is in the address (`?model=cx60`, so a link opens the same car), is remembered for next time, and keeps your period when it makes sense (a quick range such as *Last 30 days* is counted again from the other model's newest day). A model without data yet says where to put its files.
+The dashboard is organised by car model, so one install can follow several cars (a CX-5 and a CX-60, say).
+Each model has its own:
 
-The dashboard is organised by car model. `config/models.yaml` lists the models (today `cx5`); each one has
-its own raw exports in `data/<id>/`, its own database `db/<id>.duckdb` and its own configuration in
-`config/models/<id>/` (`model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`). Nothing is shared
-between models, least of all the descriptions of codes. `make models` shows where everything is; `make compat` tells what a new model's data lacks. A model without `alerts.yaml` or `settings.yaml` (or code descriptions) uses the built-in defaults (all alert rules on, time zone UTC), never another model's files. `make ingest` warns when a model's data holds more than one VIN or its folder is empty.
-`MODEL=<id>` limits a command to one model (`MODEL=cx60 make ingest`); without it, `make ingest`, `model`,
-`alerts`, `timezone`, `unmapped` and `mobile-pack` run for every model, and `make reset-db` asks you to name one.
+| What | Where |
+|---|---|
+| raw exports | `data/<id>/` (git-ignored) |
+| database | `db/<id>.duckdb` (git-ignored) |
+| configuration | `config/models/<id>/`: `model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml` |
+| phone data pack | `db/<id>.cx5pack` (git-ignored, holds the VIN) |
+| synthetic demo data | `sample_data/<id>/` (committed) |
+
+`config/models.yaml` lists the models in display order (`cx5` and `cx60` are set up). **Nothing is shared
+between models**, least of all the descriptions of codes: Mazda does not publish them and they can differ
+from one model to the next. A model without `alerts.yaml` or `settings.yaml` uses the built-in defaults (every
+alert rule on, time zone UTC), never another model's files. `make models` shows where everything is.
+
+`MODEL=<id>` limits a command to one model (`MODEL=cx60 make ingest`). Without it, `make ingest` visits every
+model, `make model`, `alerts`, `timezone`, `unmapped`, `compat` and `mobile-pack` run for every model that
+already has a database, and `make reset-db` asks you to name one. A model's folder holds **one car**:
+`make ingest` warns when it finds two VINs in a model's data.
+
+**In the dashboard** (and in the phone app) a *model selector* appears at the top once two models have data. The
+choice is in the address (`?model=cx60`, so a link opens the same car), is remembered for next time, and
+keeps your period when it makes sense (a quick range such as *Last 30 days* is counted again from the other
+model's newest day). A model without data yet stays out of the list; the address `?model=cx60` says where to
+put its files.
+
+#### How to add a model
+
+Say you have an export for another car (here an MX-30, id `mx30`). Run these from the project folder:
+
+1. **Describe the model.** Copy a model's configuration folder and edit its `model.yaml` (`id` must match the
+   folder name: lower-case letters and digits; `name` is what the selector shows; `platform` is optional),
+   then add the id to the list in `config/models.yaml`:
+
+   ```bash
+   cp -r config/models/cx60 config/models/mx30
+   ```
+
+   The copied code descriptions start empty on purpose. Set `car_timezone` in the new `settings.yaml` to where
+   the car lives (`make timezone MODEL=mx30` checks it against your data).
+2. **Put the exports in `data/mx30/`**, exactly as Mazda sent them. The file names carry the platform code of
+   the car (`24pf` in the author's CX-5 files); it does not matter what it is, files are recognised by the
+   `_war-`, `_dtc-d-`, ... part (see [Load it](#load-it)).
+3. **Load them:** `make ingest MODEL=mx30`. It reports what it read and warns about an empty folder or a
+   second VIN.
+4. **See what the data lacks:** `make compat MODEL=mx30`. It lists the signals the dashboard reads that this
+   car does not send (with the views they feed: that part of the dashboard will be empty, nothing breaks),
+   and the signals it sends that nothing reads yet. Then `make unmapped MODEL=mx30` lists the codes with no
+   description, which you fill in under `config/models/mx30/codes/` as you learn them (`make model
+   MODEL=mx30` applies the changes).
+5. **Look at it:** `make dev`; the model appears in the selector. For the phone: `make mobile-pack` writes
+   `db/mx30.cx5pack`; import it next to the others.
+
+If `make compat` reports missing signals that matter to you (a plug-in hybrid has battery and charging
+signals no view reads yet), the dashboard needs a new view for them: that is a code change, see
+[CONTRIBUTING](CONTRIBUTING.md). The CX-60 in the repository is set up with *synthetic* data only (a car that
+differs from the CX-5 on purpose); no real CX-60 export has been tried yet.
 
 **If you used an earlier version** with the files directly in `data/` and `db/mazda.duckdb`: nothing breaks,
 they are still read as the `cx5` model. `make migrate-models` moves them into `data/cx5/` and `db/cx5.duckdb`
@@ -439,18 +491,18 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code de
 
 ## Limitations
 
-- **One car.** The dashboard assumes a single vehicle (every table keeps the VIN, but nothing handles
-  several).
+- **One car per model.** A model's folder and database hold one vehicle; several cars of the same model (two
+  VINs in one folder) are not separated (`make ingest` warns). Cars of different models are fine.
 - **Mazda does not publish the meaning of most codes.** Warning codes (`$XXX`), many fault details, the
   alarm codes and the 128 warning-lamp flags are shown as they are; you add descriptions yourself in
-  `config/codes/`. Several signal interpretations (fuel, oil, tire time) are inferred from the data, see the
+  `config/models/<id>/codes/`. Several signal interpretations (fuel, oil, tire time) are inferred from the data, see the
   [data dictionary](docs/data-dictionary.md). Treat this as a curiosity tool, not diagnostics.
 - **The export is a snapshot.** The data comes in files you request (see above); there is no live feed.
   Gaps between exports stay gaps.
 - **The phone app is a read-only viewer.** It does not read Mazda's files or evaluate alerts; the Mac does
   that and sends a data pack. iOS may delete stored web-app data (you re-import the pack).
-- Tested with one real export (a CX-5, Europe, 2026) plus the synthetic data. Other models, markets or
-  firmware may differ; issues and sample files without personal data are welcome.
+- Tested with one real export (a CX-5, Europe, 2026) plus the synthetic data (which includes a second,
+  deliberately different model). Other models, markets or firmware may differ (`make compat` shows what); issues and sample files without personal data are welcome.
 
 ## Privacy
 

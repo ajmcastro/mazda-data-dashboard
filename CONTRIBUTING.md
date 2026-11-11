@@ -56,6 +56,14 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
 6. **No outside requests from either app**: fonts and everything else are bundled (`@fontsource` packages in
    `frontend/` and `mobile/`); do not add a CDN, an analytics script or a web font link.
 7. **Pages should work in both themes and on a phone**: use the CSS variables, and check the phone width.
+8. **Everything is per car model.** Every API route reaches a database through `Con` / `RwCon` (so it takes
+   `?model=`; `tests/test_api_models.py` fails when a route does not), every path to a model's data, database
+   or configuration comes from `mazda_dash/models.py` (never a hard-coded `../data` or `../db/...`), and every
+   frontend hook takes the model from `useRangeQuery()` in both the request and the query key. Code
+   descriptions are never shared between models.
+9. **A new model** needs `config/models/<id>/`, a line in `config/models.yaml`, and, to be demonstrated, a
+   profile in `sample.py` (`PROFILES`) and `make sample-data`. The CX-5 profile must keep producing the same
+   bytes. Follow the README's "How to add a model"; `tests/test_add_a_model.py` does exactly that.
 
 ## Pull requests
 

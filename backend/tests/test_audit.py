@@ -112,3 +112,32 @@ def test_sample_data_is_clean_and_deterministic(tmp_path):
     for p in a.iterdir():
         assert p.read_bytes() == (b / p.name).read_bytes()
     assert collect_tokens(a, []) == set()  # only the safe sample VIN, no positions
+
+
+def test_the_real_sample_data_of_every_model_is_clean():
+    """The committed synthetic data of every model holds only the synthetic VINs and no position."""
+    repo_root = Path(__file__).parents[2]
+    folders = sorted(
+        p.name for p in (repo_root / "sample_data").iterdir() if p.is_dir()
+    )
+    assert {"cx5", "cx60"} <= set(folders)
+    assert collect_tokens(repo_root / "sample_data", []) == set()
+
+
+def test_a_private_value_in_any_models_sample_data_is_reported(repo):
+    repo_dir, _ = repo
+    folder = repo_dir / "sample_data" / "cx9"
+    folder.mkdir(parents=True)
+    (folder / "all-war-s_war-s.csv").write_text(f'"VIN","other"\n"{SECRET_VIN}","a"\n')
+    (repo_dir / "sample_data" / "cx5").mkdir()
+    (repo_dir / "sample_data" / "cx5" / "all-war-s_war-s.csv").write_text(
+        '"VIN"\n"SAMPLEVIN00000001"\n"SAMPLEVIN00000002"\n'
+    )
+    report = audit(tmp_empty(repo_dir), repo_dir)  # no real data needed for this check
+    assert report.sample_tokens == [mask(SECRET_VIN)] and not report.clean
+
+
+def tmp_empty(repo_dir: Path) -> Path:
+    empty = repo_dir.parent / "no-data"
+    empty.mkdir(exist_ok=True)
+    return empty
