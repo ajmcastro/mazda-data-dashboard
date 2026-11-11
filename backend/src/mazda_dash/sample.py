@@ -30,7 +30,7 @@ TIRE_CLOCK_SIGNALS = (
 )
 CAR_CLOCK = ZoneInfo(
     "Europe/Lisbon"
-)  # the demo car's local time (config/settings.yaml says the same)
+)  # the demo car's local time (config/models/cx5/settings.yaml says the same)
 ECUS = ["BCM", "ECM", "ADU", "DCM", "IC", "EPS", "DSC", "CGW"]
 # Invented codes: the ids only mimic the format of the real ones.
 WARNING_CODES = [

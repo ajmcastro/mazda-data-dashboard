@@ -1,11 +1,26 @@
-.PHONY: setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
+.PHONY: models migrate-models setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
+
+# ---- car models (PLAN.md M21-M28) ----
+# MODEL=cx60 acts on one model (ids are listed in config/models.yaml). Without it, the commands that load,
+# rebuild or check (ingest, model, alerts, timezone, unmapped, mobile-pack) act on every model; the ones that
+# delete or need a single database (reset-db, mobile-golden-real) refuse when there are several.
+MODELS = $(if $(MODEL),$(MODEL),$(shell cd backend && uv run python -m mazda_dash.models ids))
+ONE = $(if $(MODEL),--model $(MODEL),)
+
+# the models, with where each one's data, database and configuration live
+models:
+	cd backend && uv run python -m mazda_dash.models show
+
+# move a single-car install (data/*.csv, db/mazda.duckdb) into data/cx5/ and db/cx5.duckdb; shows the moves and asks first
+migrate-models:
+	cd backend && uv run python -m mazda_dash.models migrate
 
 setup:
 	cd backend && uv sync
 	cd frontend && npm install
 
 profile:
-	cd backend && uv run python -m mazda_dash.profile ../data ../docs/profile
+	cd backend && uv run python -m mazda_dash.profile "$$(uv run python -m mazda_dash.models data $(ONE))" ../docs/profile
 
 test:
 	cd backend && uv run pytest
@@ -22,20 +37,20 @@ clean:
 	rm -rf docs/profile backend/.pytest_cache backend/.ruff_cache
 
 ingest:
-	cd backend && uv run python -m mazda_dash.ingest --data ../data --db ../db/mazda.duckdb
+	cd backend && for m in $(MODELS); do echo "== $$m"; uv run python -m mazda_dash.ingest --model $$m || exit 1; done
 
 reset-db:
-	rm -f db/mazda.duckdb db/mazda.duckdb.wal
+	cd backend && db="$$(uv run python -m mazda_dash.models db $(ONE))" && rm -f "$$db" "$$db.wal"
 
 model:
-	cd backend && uv run python -m mazda_dash.model --db ../db/mazda.duckdb --config ../config/codes
+	cd backend && for m in $(MODELS); do echo "== $$m"; uv run python -m mazda_dash.model --model $$m || exit 1; done
 
-# Does car_timezone in config/settings.yaml fit your data? (suggests zones when it does not)
+# Does car_timezone in config/models/<id>/settings.yaml fit your data? (suggests zones when it does not)
 timezone:
-	cd backend && uv run python -m mazda_dash.timezone_check --db ../db/mazda.duckdb --settings ../config/settings.yaml
+	cd backend && for m in $(MODELS); do echo "== $$m"; uv run python -m mazda_dash.timezone_check --model $$m; done
 
 unmapped:
-	cd backend && uv run python -c "import duckdb; [print(r) for r in duckdb.connect('../db/mazda.duckdb', read_only=True).execute('SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC').fetchall()]"
+	cd backend && for m in $(MODELS); do echo "== $$m"; uv run python -c "import duckdb, sys; [print(r) for r in duckdb.connect(sys.argv[1], read_only=True).execute('SELECT * FROM v_unmapped_codes ORDER BY kind, occurrences DESC').fetchall()]" "$$(uv run python -m mazda_dash.models db --model $$m)"; done
 
 api:
 	cd backend && uv run uvicorn mazda_dash.api.app:app --reload --port 8000
@@ -53,7 +68,7 @@ types:
 	cd frontend && npm run types
 
 alerts:
-	cd backend && uv run python -m mazda_dash.alerts --db ../db/mazda.duckdb --config ../config/alerts.yaml
+	cd backend && for m in $(MODELS); do echo "== $$m"; uv run python -m mazda_dash.alerts --model $$m || exit 1; done
 
 # Synthetic data in the same format as the Mazda exports (no personal data), committed in sample_data/
 sample-data:
@@ -61,7 +76,7 @@ sample-data:
 
 # Try the app without your own data: load sample_data/ into db/demo.duckdb and serve it
 demo-ingest:
-	cd backend && uv run python -m mazda_dash.ingest --data ../sample_data --db ../db/demo.duckdb --config ../config/codes --alerts-config ../config/alerts.yaml
+	cd backend && uv run python -m mazda_dash.ingest --model cx5 --data ../sample_data --db ../db/demo.duckdb
 
 demo: demo-ingest
 	MAZDA_DB=../db/demo.duckdb $(MAKE) -j2 api web
@@ -72,9 +87,9 @@ audit:
 
 # ---- offline phone app (mobile/), see PLAN.md M12-M16 ----
 
-# Data pack of YOUR database (db/mazda.duckdb) to copy to the phone (AirDrop / Files). Contains your VIN.
+# Data pack of YOUR database (db/<model>.cx5pack) to copy to the phone (AirDrop / Files). Contains your VIN.
 mobile-pack:
-	cd backend && uv run python -m mazda_dash.pack --db ../db/mazda.duckdb --out ../db/mazda.cx5pack
+	cd backend && for m in $(MODELS); do uv run python -m mazda_dash.pack --model $$m || exit 1; done
 
 # Data pack of the synthetic demo database: the phone app ships it as its "Load demo data"
 mobile-demo-pack: demo-ingest
@@ -105,7 +120,7 @@ mobile-golden:
 # Same on YOUR database (copied first), to catch what the small sample hides. Contains your VIN: mobile/contract/real
 # is gitignored; delete it afterwards (rm -r mobile/contract/real).
 mobile-golden-real:
-	cd backend && uv run python -m mazda_dash.contract --db ../db/mazda.duckdb --out ../mobile/contract/real
+	cd backend && uv run python -m mazda_dash.contract --db "$$(uv run python -m mazda_dash.models db $(ONE))" --out ../mobile/contract/real
 	cd mobile && CONTRACT_DIR=contract/real npm test
 
 mobile-typecheck: mobile/node_modules

@@ -1,4 +1,4 @@
-"""Alert rule configuration (config/alerts.yaml), validated with pydantic."""
+"""Alert rule configuration (config/models/cx5/alerts.yaml), validated with pydantic."""
 
 import re
 from pathlib import Path

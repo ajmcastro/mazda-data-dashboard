@@ -8,6 +8,7 @@ import duckdb
 
 from ..alerts import evaluate, report
 from ..model import build_model
+from ..models import add_model_option, resolve
 from .csv_loaders import LOADERS, ORDER
 from .diag_parser import parse_diag_file
 from .schema import init_schema
@@ -77,10 +78,17 @@ def ingest(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--data", type=Path, default=Path("../data"))
-    ap.add_argument("--db", type=Path, default=Path("../db/mazda.duckdb"))
-    ap.add_argument("--config", type=Path, default=Path("../config/codes"))
-    ap.add_argument("--alerts-config", type=Path, default=Path("../config/alerts.yaml"))
+    add_model_option(ap)
+    ap.add_argument(
+        "--data", type=Path, help="raw exports (default: the model's data folder)"
+    )
+    ap.add_argument("--db", type=Path, help="database (default: the model's)")
+    ap.add_argument(
+        "--config", type=Path, help="code descriptions (default: the model's)"
+    )
+    ap.add_argument(
+        "--alerts-config", type=Path, help="alert rules (default: the model's)"
+    )
     ap.add_argument(
         "--no-alerts", action="store_true", help="skip evaluating alert rules"
     )
@@ -88,8 +96,15 @@ def main() -> None:
         "--notify", action="store_true", help="desktop notification for new alerts"
     )
     args = ap.parse_args()
-    for kind, name, read, new in ingest(args.data, args.db, args.config):
+    model = resolve(args.model, args.root)
+    if model.legacy:
+        print(
+            f"note: {model.id} is still in the single-car layout ({', '.join(model.legacy)}); "
+            "`make migrate-models` moves it"
+        )
+    data, db = args.data or model.data_dir, args.db or model.db_path
+    for kind, name, read, new in ingest(data, db, args.config or model.codes_dir):
         print(f"{kind:8} read={read:6} new={new:6}  {name}")
-    print("database:", args.db)
+    print("database:", db)
     if not args.no_alerts:
-        report(*evaluate(args.db, args.alerts_config, args.notify))
+        report(*evaluate(db, args.alerts_config or model.alerts_path, args.notify))

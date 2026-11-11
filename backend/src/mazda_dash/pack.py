@@ -29,6 +29,8 @@ from pathlib import Path
 
 import duckdb
 
+from .models import add_model_option, resolve
+
 PACK_FORMAT = 1
 TABLES = [
     "warning_events",
@@ -282,8 +284,9 @@ def build_pack(
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--db", type=Path, default=Path("../db/mazda.duckdb"))
-    ap.add_argument("--out", type=Path, default=Path("../db/mazda.cx5pack"))
+    add_model_option(ap)
+    ap.add_argument("--db", type=Path, help="database (default: the model's)")
+    ap.add_argument("--out", type=Path, help="pack file (default: db/<model>.cx5pack)")
     ap.add_argument(
         "--reference",
         action="store_true",
@@ -300,6 +303,8 @@ def main() -> None:
         help="keep signals no view reads (bigger, slower to load)",
     )
     args = ap.parse_args()
+    model = resolve(args.model, args.root)
+    args.db, args.out = args.db or model.db_path, args.out or model.pack_path
     manifest = build_pack(
         args.db,
         args.out,

@@ -1,0 +1,4 @@
+# The car models the dashboard shows, in display order. Each id needs config/models/<id>/model.yaml;
+# its raw exports go in data/<id>/ and its database is db/<id>.duckdb. See "How to add a model" in the README.
+models:
+  - cx5

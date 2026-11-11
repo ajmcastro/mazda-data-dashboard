@@ -96,7 +96,7 @@ make demo    # loads the synthetic sample data, then serves it
 Open <http://localhost:5173> in your browser. Stop the demo with Ctrl+C in the terminal.
 
 The demo has its own database (`db/demo.duckdb`) and never touches your real one
-(`db/mazda.duckdb`). You can tell you are looking at the demo by the sidebar footer, which shows
+(`db/<id>.duckdb`). You can tell you are looking at the demo by the sidebar footer, which shows
 the made-up VIN `…000001`, and by data that ends on 30 June 2026.
 
 ## What is in the dashboard
@@ -164,8 +164,8 @@ available depends on your vehicle's specification.
    for download** (about an hour in one reported case). The portal also offers data
    dictionaries tailored to your vehicle, which explain the fields of your export.
 5. **Download the zip file.** It contains the CSV files and the diagnostic report (a `.txt`
-   file with `diag-tool` in its name). Unzip it and copy those files **directly into `data/`**
-   (not into a sub-folder: only the top level of `data/` is read), then continue below.
+   file with `diag-tool` in its name). Unzip it and copy those files **directly into `data/cx5/`**
+   (not into a sub-folder of it: only the top level of the model's folder is read), then continue below.
 
 The portal's own screens are Mazda's and may change, so they are not reproduced here.
 
@@ -187,7 +187,7 @@ Things to know:
 
 ### Load it
 
-1. Put your export files in `data/` (the folder is git-ignored). Files are recognised by name:
+1. Put your export files in `data/cx5/` (git-ignored; `cx5` is the model, see [Car models](#car-models)). Files are recognised by name:
 
    | Contains | File name pattern |
    |---|---|
@@ -199,18 +199,32 @@ Things to know:
    | alarm status | `*_alt-*.csv` |
    | diagnostic tool report | `*diag-tool*.txt` |
 
-2. `make ingest`: loads everything into `db/mazda.duckdb` (safe to re-run whenever you get a
+2. `make ingest`: loads everything into `db/<id>.duckdb` (safe to re-run whenever you get a
    newer export) and evaluates the alert rules.
 3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
 
 Run `make unmapped` to see warning and fault codes (and warning-lamp flags) that have no description
-yet, then add what you learn to `config/codes/*.yaml` and run `make model`.
+yet, then add what you learn to `config/models/cx5/codes/*.yaml` and run `make model`.
+
+### Car models
+
+The dashboard is organised by car model. `config/models.yaml` lists the models (today `cx5`); each one has
+its own raw exports in `data/<id>/`, its own database `db/<id>.duckdb` and its own configuration in
+`config/models/<id>/` (`model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`). Nothing is shared
+between models, least of all the descriptions of codes. `make models` shows where everything is.
+`MODEL=<id>` limits a command to one model (`MODEL=cx60 make ingest`); without it, `make ingest`, `model`,
+`alerts`, `timezone`, `unmapped` and `mobile-pack` run for every model, and `make reset-db` asks you to name one.
+
+**If you used an earlier version** with the files directly in `data/` and `db/mazda.duckdb`: nothing breaks,
+they are still read as the `cx5` model. `make migrate-models` moves them into `data/cx5/` and `db/cx5.duckdb`
+(it shows what it will move and asks first, and never overwrites). Your own edits in `config/` need moving
+by hand into `config/models/cx5/` (`codes/`, `settings.yaml`, `alerts.yaml`).
 
 ### Set your time zone (once)
 
 The car reports *when it measured the tire pressures* in its own **local** time. To show that time
 correctly (and to know how old a reading is), the dashboard needs your car's time zone: open
-[config/settings.yaml](config/settings.yaml) and set `car_timezone` to your IANA zone name (for example
+[config/models/cx5/settings.yaml](config/models/cx5/settings.yaml) and set `car_timezone` to your IANA zone name (for example
 `Europe/Berlin` or `America/New_York`; the file ships with `Europe/Lisbon`, which the demo data uses).
 Then check it against your data:
 
@@ -225,9 +239,9 @@ if not, lists the clocks that do. Apply a change with `make model`.
 
 You can keep adding exports as you receive them; history is never lost.
 
-1. Put the new files in `data/`. Replacing the old files with the new ones is fine, and so is
-   keeping both. Only the top level of `data/` is read, so moving older exports into
-   `data/archive/` (also git-ignored) keeps them without reloading them.
+1. Put the new files in `data/cx5/`. Replacing the old files with the new ones is fine, and so is
+   keeping both. Only the top level of that folder is read, so moving older exports into
+   `data/cx5/archive/` (also git-ignored) keeps them without reloading them.
 2. Run `make ingest`. Only rows that are not in the database yet are added. Every row is matched
    by its transaction id or timestamp, so an export that overlaps (or repeats) earlier data
    creates no duplicates, and a cumulative export that starts from the beginning is fine too.
@@ -240,9 +254,9 @@ Diagnostics page.
 
 Things to know:
 
-- Your history lives in `db/mazda.duckdb`, not in `data/`. **Don't run `make reset-db`** unless
+- Your history lives in `db/<id>.duckdb`, not in `data/`. **Don't run `make reset-db`** unless
   you mean to start over: it deletes the database, including your acknowledged alerts. Copy
-  `db/mazda.duckdb` somewhere safe now and then, and keep your original export files.
+  `db/<id>.duckdb` somewhere safe now and then, and keep your original export files.
 - Only new rows are inserted; rows already stored are never updated. If Mazda corrects an old
   value in a later export, the stored value stays. (To rebuild from scratch, run
   `make reset-db` and then `make ingest` with **all** your export files in `data/`.)
@@ -256,7 +270,7 @@ When you pull a newer version of this project:
 ```bash
 git pull
 make setup    # new or changed dependencies
-make model    # recreate the SQL views and reload config/codes and config/settings.yaml
+make model    # recreate the SQL views and reload config/codes and config/models/<id>/settings.yaml
 ```
 
 `make model` is needed whenever the views changed (the dashboard says "no such view" or a page is empty
@@ -289,10 +303,10 @@ caches an app from a secure address.
 
 ```bash
 make ingest        # if you have new exports (see "Adding newer data later")
-make mobile-pack   # writes db/mazda.cx5pack
+make mobile-pack   # writes db/cx5.cx5pack
 ```
 
-**3. Move it to the phone.** AirDrop `db/mazda.cx5pack` to the iPhone and save it in **Files**
+**3. Move it to the phone.** AirDrop `db/cx5.cx5pack` to the iPhone and save it in **Files**
 (iCloud Drive is good: it keeps the file as your backup).
 
 **4. Install the app.** Open the site address in **Safari**, tap **Share → Add to Home Screen**, and
@@ -326,7 +340,7 @@ Good to know:
 
 ## Alerts
 
-`make ingest` (or `make alerts`) evaluates the rules in [config/alerts.yaml](config/alerts.yaml);
+`make ingest` (or `make alerts`) evaluates the rules in [config/models/<id>/alerts.yaml](config/models/<id>/alerts.yaml);
 each alert is raised once, and an acknowledged alert is never raised again. The rules:
 
 | Rule | Raises an alert when |
@@ -358,17 +372,18 @@ Run them from the project folder. The first group is what you need to use the da
 | Command | What it does |
 |---|---|
 | `make setup` | install backend and frontend dependencies |
-| `make ingest` | load `data/` into `db/mazda.duckdb`, rebuild the views, evaluate alerts |
+| `make models`, `make migrate-models` | show the car models and where their files are; move a single-car install into the model folders |
+| `make ingest` | load `data/` into `db/<id>.duckdb`, rebuild the views, evaluate alerts |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
 | `make demo` | the same with the synthetic sample data (`make demo-ingest` only loads it) |
-| `make model` | reload `config/codes/*.yaml` and `config/settings.yaml` and recreate the SQL views |
-| `make timezone` | check `car_timezone` in `config/settings.yaml` against your data |
-| `make alerts` | evaluate `config/alerts.yaml` only |
+| `make model` | reload `config/models/cx5/codes/*.yaml` and `config/models/<id>/settings.yaml` and recreate the SQL views |
+| `make timezone` | check `car_timezone` in `config/models/<id>/settings.yaml` against your data |
+| `make alerts` | evaluate `config/models/<id>/alerts.yaml` only |
 | `make unmapped` | list codes and flags in your data that have no description |
-| `make mobile-pack` | export your database as `db/mazda.cx5pack` for the phone app |
+| `make mobile-pack` | export your database as `db/cx5.cx5pack` for the phone app |
 | `make mobile-dev` | run the phone app on this computer (with the demo data bundled) |
 | `make audit` | check for private values before publishing (see [Privacy](#privacy)) |
-| `make reset-db` | **delete** `db/mazda.duckdb`, including acknowledged alerts |
+| `make reset-db` | **delete** `db/<id>.duckdb`, including acknowledged alerts |
 
 For development (see [Development](#development)):
 
@@ -388,8 +403,8 @@ For development (see [Development](#development)):
 
 ```
 data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code descriptions──▶ FastAPI ──▶ React dashboard
-                                   │   ▲        (config/codes, config/settings.yaml)
-                                   │   └──alert rules (config/alerts.yaml)
+                                   │   ▲        (config/codes, config/models/<id>/settings.yaml)
+                                   │   └──alert rules (config/models/<id>/alerts.yaml)
                                    │
                   make mobile-pack ▼
                           data pack ──AirDrop──▶ iPhone: DuckDB in the browser ──▶ the same React pages
@@ -468,7 +483,7 @@ data.
 - **A page is empty or an error mentions a missing view or table after updating**: run `make model`
   (see [After updating the code](#after-updating-the-code)).
 - **Tire measurement times look wrong** (in the future, or hours old): the time zone in
-  `config/settings.yaml` does not match your car; run `make timezone`.
+  `config/models/<id>/settings.yaml` does not match your car; run `make timezone`.
 - **The phone app says a data pack is from an older version**: run `make mobile-pack` again and import the
   new file.
 - **`make screenshots` or `make mobile-dev` says a port is in use**: stop `make dev` (ports 8000, 5173,

@@ -6,7 +6,7 @@ phone**. No server, no account, and no request to any host but its own. The Mac 
 
 How it works (details and measurements in `../PLAN.md`):
 
-- `make mobile-pack` on the Mac exports your database as `db/mazda.cx5pack` (Parquet tables in a zip,
+- `make mobile-pack` on the Mac exports your database as `db/cx5.cx5pack` (Parquet tables in a zip,
   GPS positions left out). It contains your VIN: keep it private.
 - On the phone the app starts DuckDB (WebAssembly), loads the pack, rebuilds the SQL views from
   `backend/src/mazda_dash/model/views.sql`, and answers the pages' `/api/...` requests with

@@ -1,10 +1,11 @@
-"""Alerts engine: rules in config/alerts.yaml -> alerts table. Use ``python -m mazda_dash.alerts``."""
+"""Alerts engine: rules in config/models/cx5/alerts.yaml -> alerts table. Use ``python -m mazda_dash.alerts``."""
 
 import argparse
 from pathlib import Path
 
 import duckdb
 
+from ..models import add_model_option, resolve
 from .config import load_config
 from .engine import run_alerts
 from .notify import notify_desktop
@@ -37,10 +38,16 @@ def report(created: list[Candidate], open_count: int) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--db", type=Path, default=Path("../db/mazda.duckdb"))
-    ap.add_argument("--config", type=Path, default=Path("../config/alerts.yaml"))
+    add_model_option(ap)
+    ap.add_argument("--db", type=Path, help="database (default: the model's)")
+    ap.add_argument("--config", type=Path, help="alert rules (default: the model's)")
     ap.add_argument(
         "--notify", action="store_true", help="send a desktop notification (macOS)"
     )
     args = ap.parse_args()
-    report(*evaluate(args.db, args.config, args.notify))
+    model = resolve(args.model, args.root)
+    report(
+        *evaluate(
+            args.db or model.db_path, args.config or model.alerts_path, args.notify
+        )
+    )

@@ -128,7 +128,7 @@ def test_config_validation(tmp_path):
     with pytest.raises(ValueError, match="alerts.yaml"):
         load_config(bad)
     assert load_config(tmp_path / "missing.yaml").lookback_days == 30
-    shipped = Path(__file__).parents[2] / "config" / "alerts.yaml"
+    shipped = Path(__file__).parents[2] / "config" / "models" / "cx5" / "alerts.yaml"
     assert load_config(shipped).rules.burglar_alarm.severity == "critical"
 
 

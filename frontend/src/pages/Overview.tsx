@@ -66,7 +66,7 @@ export default function OverviewPage() {
               {o.unmapped_codes > 0 && (
                 <div className="alert-row">
                   <b>{o.unmapped_codes} codes have no description yet</b>
-                  <span className="muted">Edit <span className="mono">config/codes/*.yaml</span> and run <span className="mono">make model</span></span>
+                  <span className="muted">Edit <span className="mono">config/models/cx5/codes/*.yaml</span> and run <span className="mono">make model</span></span>
                 </div>
               )}
             </div>

@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: complete. All twenty planned milestones (M1–M20) are done**: the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone) and four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags). What is left is under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
+**Status: complete. All twenty planned milestones (M1–M20) are done**: the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone) and four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags). What is left is under "Ideas not built". **Next (planned, not started): support for several car models, M21–M28, see "Several car models".** This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
 
 ## Decisions
 
@@ -81,6 +81,7 @@ The README has a one-line description of each: `setup`, `ingest`, `alerts`, `mod
 | M18 | The car's own warnings ✅ | alerts from the car's built-in warning flags (tires, tire system, oil level, belts, doors) |
 | M19 | Tire reading time ✅ | when each tire pressure was really measured, and how fresh it is |
 | M20 | Warning-lamp flags ✅ | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert |
+| M21–M28 | Several car models (planned) | model registry, per-model data/config/database, API and dashboard model selector, synthetic second model, phone app with several packs, docs/CI/audit; M28 (real CX-60 data) is conditional. Details under "Several car models" |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -430,14 +431,126 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 3. **Default thresholds:** oil change due below 1,000 km; tire data "stale" after 6 hours; car warning flags severity `warning`. Confirmed.
 4. **Phone app:** all four ship to it in the same milestone (the engine and golden tests are extended each time), not as a separate catch-up. Confirmed.
 
+## Several car models (M21–M27, planned)
+
+**Goal.** Support more than the CX-5 (first target: the CX-60) in the whole app, not only in ingestion: each model has its own raw exports in its own folder, its own database and configuration, and the dashboard (Mac and phone) lets the user choose which model to look at. **Hard constraints:** a CX-5-only install keeps working, with no visible model chrome beyond a label; nothing from one model leaks into another (data, alerts, code descriptions); the privacy rules (no VIN committed, no real pack deployed) apply to every model.
+
+### What the code looks like today (why this is mostly plumbing)
+- Ingestion is already model-agnostic: files are found by the `_<kind>-` part of the name (`*_war-*.csv`, …), so the platform code in the name (`24pf`) is not used. The `rts`/`vis`/`alt` signals are stored in long form and views read them by `signal = '<name>'`, so a signal that a model lacks is simply an empty reading, not an error.
+- What is single-car by construction: one `data/` folder, one `db/mazda.duckdb`, one `config/` (code descriptions, alert rules and `car_timezone` all describe *the* car), `MAZDA_DB` read by `api/db.py`, no model in the frontend's query keys or URLs, and one pack in the phone app's storage.
+
+### Decisions (confirmed)
+| Topic | Choice | Why |
+|---|---|---|
+| Storage | **One DuckDB file per model** (`db/<model>.duckdb`), not one shared database with a `model` column | `views.sql`, the alerts engine, the pack, the TypeScript engine and every golden test stay as they are; a model cannot leak into another; deleting or resetting one model is one file. A shared database would mean a model column in every table, view, key and `dedup_key` |
+| Model id | A short slug: `cx5`, `cx60` (lower case, `[a-z0-9]+`); the display name and platform code live in `model.yaml` | Used in folder names, URLs, file names and the API |
+| Raw data | `data/<model>/` (e.g. `data/cx5/`, `data/cx60/`), same file kinds as today | What was asked for. Existing flat `data/` keeps working as the `cx5` folder during migration (see M21) |
+| Configuration | `config/models/<model>/` with `model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`; a missing `alerts.yaml` or `settings.yaml` falls back to a shared `config/defaults/` (never the code descriptions) | Warning codes (`$182`), DTC meanings and flag labels can differ per platform, so descriptions must not be shared; alert thresholds and time zone usually differ per car |
+| API | Every route takes `model` (query parameter, default = the only model, or the first in `models.yaml` order); `GET /api/models` lists them | Same pattern as `date_range`; one FastAPI app serves all models, one short-lived read-only connection per request on the chosen file |
+| Frontend | The model is part of the URL (`?model=cx60`) and of every query key, carried by the same link helpers as the date range; the last choice is remembered in `localStorage` (`cx5.model`) | Bookmarkable; no stale data from another model; same mechanism as the range, so it is already proven |
+| Phone | One pack per model, several packs stored on the device, a model switcher in the app | A pack is already one database; the engine is untouched |
+| Model-specific features | Out of scope at first: pages show whatever the model's data has; a model can hide a page with `pages:` in `model.yaml` | A plug-in hybrid (CX-60 PHEV battery and charging signals) needs a real export to design; see M28 |
+
+### Milestones
+| | Milestone | Outcome |
+|---|---|---|
+| M21 | Model registry and folder layout ✅ | `config/models/<id>/model.yaml`, `data/<id>/`, `db/<id>.duckdb`, a loader that validates them, migration of the existing CX-5 files, `MODEL=` in the Makefile |
+| M22 | Per-model ingest, configuration and alerts | `make ingest` for one or all models, per-model codes/alerts/settings, a signal-compatibility report for a new model |
+| M23 | API: choose the model | `/api/models`, `model` on every route, per-model alert writes, regenerated types |
+| M24 | Dashboard: model switcher | selector in the rail, model in URL and query keys, model-aware titles, tests |
+| M25 | Synthetic second model | `sample_data/cx60/` (different platform code, signals and time zone), `make demo` serves both, tests and screenshots |
+| M26 | Phone app: several models | one pack per model, several packs on the device, switcher, per-model goldens |
+| M27 | Docs, CI and privacy audit | README and CLAUDE.md, data dictionary "model differences", audit and CI over every model, "add a model" guide |
+| M28 | First real CX-60 export (conditional) | adapt views, codes and pages to what the real data shows; only starts once an export exists |
+
+Each milestone is implemented only on request, like the earlier ones, and ends with a summary and a check that it works. Order matters: M21–M24 give a working Mac dashboard with several models; M25 gives it something to demonstrate and test with; M26 follows because it is the largest and depends on the contract tests of M23.
+
+### M21 — Model registry and folder layout ✅ done
+- **Registry:** `config/models.yaml` lists the models in display order; each has `config/models/<id>/model.yaml` (`id`, `name` such as "Mazda CX-60", optional `platform` such as `24PF`, optional `pages` to hide pages, optional `default: true`). A new `mazda_dash/models.py` loads and validates it (slug rules, unknown keys are errors, duplicate ids, missing folder) and gives the rest of the code one `Model` object (`data_dir`, `db_path`, `config_dir`). With a single model the app behaves as today.
+- **Folders:** raw files for a model go in `data/<id>/`, the database is `db/<id>.duckdb`, the sample data in `sample_data/<id>/`. `.gitignore` already covers `data/` and `db/`; add nothing that could commit a model's real files.
+- **Migration of the existing CX-5 install (no data lost):** `make migrate-models` moves `data/*.csv|txt` to `data/cx5/`, `db/mazda.duckdb` to `db/cx5.duckdb` and `config/{settings,alerts}.yaml`, `config/codes/` to `config/models/cx5/`, after printing what it will do and asking; it refuses to overwrite. Until it is run, a flat `data/` and `db/mazda.duckdb` are still read as `cx5` with a one-line notice, so nobody's install breaks on `git pull`. `MAZDA_DB` keeps working as an override for one model (tests, demo).
+- **Makefile:** `MODEL=cx60 make ingest|model|alerts|timezone|unmapped|reset-db|pack`; without `MODEL`, commands that write act on every model (`ingest`, `model`, `alerts`) and commands that reset or delete need one (`reset-db` refuses to wipe all models silently).
+- **Done when:** the registry validates (tests for every error), the migration is tested on a temporary copy of a CX-5 tree, and the existing test suite passes unchanged on the `cx5` model.
+
+**M21 as built.**
+- **Registry:** `mazda_dash/models.py` (`load_registry`, `resolve`, `Model` with `data_dir`, `db_path`, `config_dir`, `codes_dir`, `settings_path`, `alerts_path`, `pack_path`), `config/models.yaml` (`models: [cx5]`) and `config/models/cx5/model.yaml`. Validation errors name the file and the fix (`tests/test_models.py`: slugs, duplicates, id/folder mismatch, unknown keys, bad `pages`, two defaults, missing folders).
+- **Config moved in the repository itself** (`git mv`): `config/codes/`, `settings.yaml` and `alerts.yaml` now live in `config/models/cx5/`, so the migration command only moves private files (`data/` and `db/`), not config. A fork with its own edits in the old places has to move them by hand (said in the README). Messages in the UI and in alert texts that name these files say `config/models/cx5/...` for now; they become model-aware in M24.
+- **Single-car layout still works:** raw files directly in `data/` and `db/mazda.duckdb` are read as `cx5` (and only `cx5`) until `make migrate-models`; the new folders win when both exist. `make migrate-models` (`python -m mazda_dash.models migrate`) lists every move, asks, never overwrites, leaves other models' folders, dotfiles and `demo.duckdb` alone, and moves `data/*` (including `archive/`), `mazda.duckdb(.wal)` and `mazda.cx5pack`. **It has not been run on the author's real files**: the fallback keeps them working, run it when convenient.
+- **CLIs:** `ingest`, `model`, `alerts`, `timezone_check` and `pack` take `--model` (default: the default model) and still accept explicit `--data/--db/--config/...`; the API's database is `MAZDA_DB` or else the default model's. Makefile: `MODEL=` and `MODELS` (all models when unset) on `ingest`, `model`, `alerts`, `timezone`, `unmapped`, `mobile-pack`; `reset-db` and `mobile-golden-real` need `MODEL` when there are several models; new `make models` and `make migrate-models`. `make mobile-pack` writes `db/<id>.cx5pack` (was `db/mazda.cx5pack`).
+- **Audit:** `make audit` now reads `data/` recursively, otherwise it would have found no VIN once the files moved into `data/cx5/` (test added).
+- **Not in M21 (by plan):** `sample_data/` stays flat until M25; the API and the dashboard ignore models until M23/M24; ingest runs one model per call (the Makefile loops), the VIN check and `make compat` are M22.
+- **Checked:** backend 190 tests, frontend 60, `make mobile-test` (408), lint, and `TZ=UTC make types sample-data` leaves no diff; `make demo-ingest`, `make timezone` and `make unmapped` work, the last two on the real database through the single-car fallback.
+
+### M22 — Per-model ingest, configuration and alerts
+- **Ingest:** `ingest(model)` reads `data/<id>/` into `db/<id>.duckdb` and builds the model with that model's config; the CLI takes `--model` (default: all). A model folder with no recognisable files is reported, not silently skipped. The VIN-per-file check warns when one model's folder contains two different VINs (the plan assumes one car per model; see "Open questions").
+- **Config per model:** `build_model` takes the model's `config/models/<id>/` (codes, `settings.yaml` with its own `car_timezone` and `tire_stale_hours`); `alerts.yaml` is read per model with a fallback to `config/defaults/alerts.yaml`. `make unmapped` and `make timezone` take the model. Code descriptions never fall back to another model: an unmapped code stays "unmapped" (CLAUDE.md rule: never invent titles).
+- **Compatibility report (`make compat MODEL=cx60`):** compares what `views.sql` reads (signals as `signal = '…'`, `starts_with` families, ECU and warning kinds) with what the model's database contains, and lists the signals the views want but the model lacks and the signals the model has that nothing reads yet. This is how a new model is brought up without guessing, and it is the input for M28.
+- **Alerts:** the engine runs per model database; `dedup_key` needs no model part because the databases are separate. Optional desktop notification titles include the model name.
+- **Done when:** two temporary models with different data and different configs ingest side by side, and tests prove that alerts, code descriptions and time zones of one do not appear in the other.
+
+### M23 — API: choose the model
+- **Backend:** a `model` dependency (like `date_range`, in `api/models.py`) resolves the query parameter to a `Model` (default when omitted and only one exists or one is marked default; 404 with the list of valid ids otherwise) and `api/db.py` opens that model's file read-only; the alert write endpoints use the same resolution with the short read-write connection (503 while `make ingest` holds that model's lock). `GET /api/models` returns id, name, platform, hidden pages, whether the database exists and its data span, so the UI can show "no data yet" for a model whose folder is empty.
+- **Every existing route gets the parameter**, including the alerts, diagnostics and state endpoints (they are state, not period, but they still belong to a model). A new test, next to `PERIOD_ENDPOINTS`, lists the routes and asserts that each one accepts `model`, answers differently for two different models and answers the default when omitted; a route that forgets the dependency fails it (same idea as the golden-case test).
+- **Types:** `make types` regenerates `schema.d.ts` and `openapi.json`.
+- **Phone twin:** none yet; the TypeScript engine is single-database by design (a pack = one model) and keeps its routes as they are. The `model` parameter is ignored by the engine in M23 and handled in M26.
+- **Done when:** the old API tests pass with the default model, the new matrix passes with two models, and `make mobile-test` still passes.
+
+### M24 — Dashboard: model switcher
+- **UI:** a model selector at the top of the rail (and in the phone-width top bar), hidden when there is only one model (the single title says "Mazda CX-5" taken from `model.yaml`, no longer hard-coded). Titles, the page `<title>`, empty states and README-style wording stop saying "CX-5" literally.
+- **State:** `?model=` in the URL next to `from` / `to`; `useModel()` in `frontend/src/model.ts` (pure helpers `sanitizeModel`, `restoreModel` in `lib.ts`, tested like the range helpers); the choice is remembered in `localStorage` `cx5.model` and re-applied once per page load when the address has no model, like `useRestoreSavedRange`. Every hook in `api/hooks.ts` puts the model in its query key and in the request (one place: `useRangeQuery`-style helper), and `RangeLink` / `RangeNavLink` carry it, so switching model never shows another model's cached numbers.
+- **Switching behaviour:** the date range is re-clamped to the new model's `/api/span` (a CX-60 that starts later must not inherit an empty CX-5 range); the open fault, report or flag selection is cleared because ids belong to a model; an unknown or data-less model shows a clear message ("no data for Mazda CX-60 yet: put the exports in `data/cx60/` and run `make ingest`"). A model that hides a page in `model.yaml` hides its navigation entry and redirects its address.
+- **Done when:** unit tests for the helpers and query keys pass, a manual check with the two models shows no cross-contamination (verified in the browser against the demo), the single-model view is visually unchanged apart from the label, and light and dark themes both work.
+
+### M25 — Synthetic second model
+- **Data:** `sample.py` generates `sample_data/cx60/` as well as `sample_data/cx5/` (the current flat `sample_data/` moves to `cx5/`): a different platform code in the file names (so ingestion's independence from it stays tested), a different time zone and tire thresholds, a fuel/odometer profile of its own, a different set of warning codes, a few signals the CX-5 lacks and a few it has that the CX-5 lacks, and a different number of diagnostic reports. All synthetic, VIN `SAMPLEVIN00000002`, nothing from a real car; deterministic and independent of the machine's time zone (the CI byte-for-byte rule still applies; the existing test that builds the sample in three zones covers both models).
+- **Demo:** `make demo` ingests every sample model into its own database in `db/` (`demo-cx5.duckdb`, `demo-cx60.duckdb`, never touching the real databases) and serves both; `make demo MODEL=cx60` opens that one.
+- **Tests:** `tests/test_sample.py` covers both models; alerts differ between them by design; the compatibility report on the second sample model lists the intentionally missing signals.
+- **Screenshots:** `capture.mjs` takes the switcher and a second-model page; `make screenshots` stays deterministic.
+- **Done when:** the demo shows two models, switching between them changes every page, and CI's generated-files check passes in a clean clone (`TZ=UTC make types sample-data`).
+
+### M26 — Phone app: several models
+- **Pack:** `pack.py` exports one pack per model (`db/<id>.cx5pack`; the manifest gains `model: {id, name, platform}`, and the pack version number is bumped so the phone can refuse an older pack with a clear message, as it did for M19 and M20). `make mobile-pack MODEL=cx60`; with no `MODEL`, packs for all models. GPS positions stay excluded and the pack rules (gitignored, never served, never deployed) apply to every pack.
+- **Device:** the DataController stores several packs in IndexedDB keyed by model id (import, replace and delete per model; storage-safety warnings sum all models), remembers the last model, and opens the engine on the chosen pack (one DuckDB-WASM instance, the previous pack's tables dropped when switching; queries still run one at a time). The engine and its routes are unchanged: a pack is one model.
+- **UI:** the switcher from M24 reads the models from the stored packs (the phone has no `/api/models`); the import screen says which model a file is for. The service worker's precache list gets only `demo-cx5.cx5pack` and `demo-cx60.cx5pack` (synthetic).
+- **Contract tests:** `contract.py` records goldens per sample model (`mobile/contract/<model>/`); `make mobile-test` replays each model on the TypeScript engine. A Python test still fails when a route has no golden case; a second one fails when a model has no goldens. `make mobile-golden-real` accepts a model and still says to delete the folder afterwards (it holds a VIN).
+- **Hosting:** GitHub Pages publishes only the two demo packs; CI and `pages.yml` fail on any other `.cx5pack`, as today.
+- **Done when:** both demo packs load on the phone, switching works offline, deleting one model leaves the other, and the goldens agree for both models (also checked on a real CX-5 pack).
+
+### M27 — Docs, CI and privacy audit
+- **Docs:** README (how to add a model, folder layout, `MODEL=`, switcher), CONTRIBUTING, `docs/data-dictionary.md` gets a "Model differences" section (what is common across models and where they diverge: signals, codes, time zone, file naming, platform code), CLAUDE.md is updated (architecture, commands, the rule that every route takes `model`, the per-model config and the "code descriptions never shared" rule), and this file's layout and Makefile sections.
+- **Audit:** `make audit` collects VINs and positions from **every** `data/<id>/` and greps the publishable files and the whole git history for them; it must also fail on a real VIN in any `sample_data/<id>/`.
+- **CI:** the matrix runs ruff, pytest, the front-end checks and `mobile-test` with both sample models; the generated-files check covers `sample_data/*`; the `.cx5pack` guard covers all models.
+- **"Add a model" guide:** four steps (create the folder and `model.yaml`, copy the exports into `data/<id>/`, `make ingest MODEL=<id>`, `make compat MODEL=<id>`, then describe the codes) with what to do when `make compat` reports missing signals.
+- **Done when:** a new model can be added by following the guide alone (checked by adding a third throw-away model in a test), and CI is green.
+
+### M28 — First real CX-60 export (conditional)
+Only when a real export exists; the design of this milestone depends on what it shows, so it is deliberately not detailed. Expected work: run `make compat MODEL=cx60`, read the signals that differ, extend `views.sql` (and the TypeScript engine, goldens and pack in the same change, as always) for signals the CX-5 does not have (a plug-in hybrid would add battery state, charging and electric range), decide whether those become Overview tiles, a Status panel or a new page, fill `config/models/cx60/codes/` with descriptions the owner supplies, check `car_timezone`, and retake the screenshots if the UI changes. Open points to settle then: whether file names differ more than the platform code, whether the diagnostic-tool dump has other sections, and whether the fuel model (consumption from trip segments) still holds for a hybrid.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| A route forgets the `model` parameter and answers from the default model | The route-matrix test (M23) fails; the frontend's single query-key helper means a hook cannot skip the model |
+| Cached data from one model shows under another | The model is in every query key; switching clears selections; a test covers the key builder |
+| The migration moves or overwrites a real file | Prints the plan first, asks, refuses to overwrite, works on copies in its test; the flat layout keeps working until migrated |
+| A CX-60 export has other columns or signals than expected | Ingestion already tolerates unknown signals; `make compat` shows what is missing; views return empty rather than fail; M28 handles real differences |
+| Code descriptions of the CX-5 are wrongly applied to the CX-60 | Descriptions are per model with no fallback; unmapped codes are listed per model |
+| The phone app grows with several packs | One pack per model is the same size as today (about 0.5 MiB real); the delete/replace flow and storage warning already exist; only one pack is open at a time |
+| Sample data for a second model makes CI's byte-for-byte check fragile | Same generator rules as today (no machine time zone, locale or CRLF) and the three-time-zone test covers both models |
+
+### Points confirmed
+1. **One database per model** (`db/<id>.duckdb`), not a shared database with a `model` column. Confirmed.
+2. **Folder names:** short slugs, `data/cx5/` and `data/cx60/`; the display name lives in `model.yaml`. Confirmed.
+3. **One car per model folder.** Two cars of the same model (two VINs in one folder) are not supported: ingest warns when it finds two VINs. A *vehicle* level under the model would be a separate, later milestone. Confirmed.
+4. **Existing names stay:** the `cx5.*` keys in `localStorage`, the `.cx5pack` extension and the README title are kept (renaming would break saved settings and existing packs); only visible titles become model-aware. Confirmed.
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.
 - **Time zone of `COPIED_DT_TM` / `fileid_datetime`.** Assumed UTC (the diagnostic tool dump states its own offset, which is applied). The tire measurement clock is the car's *local* time and has its own setting (`car_timezone`, M19).
-- **Several vehicles.** Partly handled: every table keeps its `vin`, but the dashboard assumes one car.
-- **Other models, markets and firmware.** Only one real export (a CX-5, Europe, 2026) was available; others may differ.
+- **Several vehicles.** Partly handled: every table keeps its `vin`, but the dashboard assumes one car per model (see "Several car models").
+- **Other models, markets and firmware.** Only one real export (a CX-5, Europe, 2026) was available; others may differ. Multi-model support is planned in M21–M28.
 - Resolved: the warnings table is mostly repeats of the same few codes, so alerts are based on new codes and unusual days, not on every row.
 
 ## Ideas not built
 
-Email or push notifications; support for several vehicles in the UI; parsing Mazda's zip and CSV files on the phone (so the Mac is not needed at all); Android testing on a real device; Windows support without WSL; a published Docker image; the maintenance-reminder signals (`mntsetdist`, `remregdist`), which are not set up in the author's car.
+Email or push notifications; several cars of the same model (a vehicle level under the model, see "Several car models"); parsing Mazda's zip and CSV files on the phone (so the Mac is not needed at all); Android testing on a real device; Windows support without WSL; a published Docker image; the maintenance-reminder signals (`mntsetdist`, `remregdist`), which are not set up in the author's car.

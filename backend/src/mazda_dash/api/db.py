@@ -6,11 +6,14 @@ from pathlib import Path
 import duckdb
 from fastapi import HTTPException
 
-DEFAULT_DB = "../db/mazda.duckdb"
+from ..models import load_registry
 
 
 def db_path() -> Path:
-    return Path(os.environ.get("MAZDA_DB", DEFAULT_DB))
+    """``MAZDA_DB`` when set (tests, the demo), else the default model's database."""
+    if "MAZDA_DB" in os.environ:
+        return Path(os.environ["MAZDA_DB"])
+    return load_registry().default.db_path
 
 
 def get_con() -> Iterator[duckdb.DuckDBPyConnection]:

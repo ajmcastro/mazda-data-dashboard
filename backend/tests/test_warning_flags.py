@@ -16,7 +16,7 @@ from mazda_dash.api.app import app
 from mazda_dash.ingest import ingest
 from mazda_dash.sample import generate
 
-CONFIG = Path(__file__).parents[2] / "config"
+CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5"
 T0 = datetime(
     2026, 6, 13, 8, 0
 )  # the conftest warnings and fault are at 08:45 and 09:23 this day

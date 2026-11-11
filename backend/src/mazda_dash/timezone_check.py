@@ -1,10 +1,10 @@
-"""Check ``car_timezone`` (config/settings.yaml) against your data, and suggest zones that fit.
+"""Check ``car_timezone`` (config/models/<id>/settings.yaml) against your data, and suggest zones that fit.
 
 The car sends "when were the tire pressures measured" in its own LOCAL time. If the zone is wrong the
 measurements land in the future or hours in the past. A right zone gives ages that are never negative
 and, for most snapshots, a few minutes (the car measures while driving and reports soon after).
 
-Usage: python -m mazda_dash.timezone_check --db ../db/mazda.duckdb --settings ../config/settings.yaml
+Usage: python -m mazda_dash.timezone_check [--model cx5]
 (exit status 1 when the configured zone does not fit)"""
 
 import argparse
@@ -16,6 +16,8 @@ from zoneinfo import ZoneInfo, available_timezones
 
 import duckdb
 import yaml
+
+from .models import add_model_option, resolve
 
 # a car can stand for days (the demo has a 62 hour old one), but not for a month
 MAX_AGE_MIN = 30 * 24 * 60
@@ -127,11 +129,17 @@ def suggestion_groups(readings, zones: list[str]) -> list[tuple[str, list[str]]]
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--db", type=Path, default=Path("../db/mazda.duckdb"))
-    ap.add_argument("--settings", type=Path, default=Path("../config/settings.yaml"))
+    add_model_option(ap)
+    ap.add_argument("--db", type=Path, help="database (default: the model's)")
+    ap.add_argument(
+        "--settings", type=Path, help="settings file (default: the model's)"
+    )
     args = ap.parse_args()
+    model = resolve(args.model, args.root)
+    args.db = args.db or model.db_path
+    settings_path = args.settings or model.settings_path
     settings = (
-        yaml.safe_load(args.settings.read_text()) if args.settings.exists() else {}
+        yaml.safe_load(settings_path.read_text()) if settings_path.exists() else {}
     )
     zone = str((settings or {}).get("car_timezone", "UTC"))
     r = check(args.db, zone)

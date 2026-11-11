@@ -49,7 +49,7 @@ def mask(token: str) -> str:
 def collect_tokens(data_dir: Path, extra: list[str]) -> set[str]:
     """Private values found in the raw exports, plus any ``extra`` ones given explicitly."""
     tokens = {t for t in extra if t}
-    for path in sorted(data_dir.glob("*.csv")) if data_dir.exists() else []:
+    for path in sorted(data_dir.rglob("*.csv")) if data_dir.exists() else []:
         with path.open(newline="", errors="replace") as f:
             reader = csv.DictReader(f)
             columns = [
@@ -57,7 +57,7 @@ def collect_tokens(data_dir: Path, extra: list[str]) -> set[str]:
             ]
             for row in reader:
                 tokens.update(row[c] for c in columns if row[c])
-    for path in sorted(data_dir.glob("*.txt")) if data_dir.exists() else []:
+    for path in sorted(data_dir.rglob("*.txt")) if data_dir.exists() else []:
         tokens.update(VIN_RE.findall(path.read_text(errors="replace")))
     return {t for t in tokens if t not in SAFE and len(t) >= 5}
 

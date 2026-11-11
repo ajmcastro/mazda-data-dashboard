@@ -11,7 +11,7 @@ from mazda_dash.api.app import app
 from mazda_dash.ingest import ingest
 from mazda_dash.sample import generate
 
-CONFIG = Path(__file__).parents[2] / "config" / "codes"
+CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 METRICS = [
     "distance_km", "l_per_100km", "fuel_l_est", "drives", "days_driven", "driving_hours",
     "avg_speed_kmh", "warning_events", "warning_codes", "fault_readouts", "distinct_faults",

@@ -133,7 +133,7 @@ export default function DataScreen() {
           <h2>Getting your data here</h2>
           <ol>
             <li>On your Mac, in the project folder, run <span className="mono">make mobile-pack</span>.</li>
-            <li>AirDrop <span className="mono">db/mazda.cx5pack</span> to this phone and save it in Files.</li>
+            <li>AirDrop <span className="mono">db/cx5.cx5pack</span> to this phone and save it in Files.</li>
             <li>Tap <b>Import data pack</b> and choose that file.</li>
           </ol>
           <p className="muted">

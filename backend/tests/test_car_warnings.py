@@ -18,7 +18,7 @@ from mazda_dash.ingest import ingest
 from mazda_dash.pack import used_signals, views_sql
 from mazda_dash.sample import generate
 
-CONFIG = Path(__file__).parents[2] / "config"
+CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5"
 T0 = datetime(2026, 5, 1, 8, 0)
 FLAG = "rltyrepresswarn"
 

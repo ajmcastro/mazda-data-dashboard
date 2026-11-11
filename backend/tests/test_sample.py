@@ -7,7 +7,7 @@ from mazda_dash.alerts import evaluate
 from mazda_dash.ingest import ingest
 from mazda_dash.sample import VIN, generate
 
-CONFIG = __import__("pathlib").Path(__file__).parents[2] / "config"
+CONFIG = __import__("pathlib").Path(__file__).parents[2] / "config" / "models" / "cx5"
 
 
 @pytest.fixture(scope="module")

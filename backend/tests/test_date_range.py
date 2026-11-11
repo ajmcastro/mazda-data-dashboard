@@ -10,7 +10,7 @@ from mazda_dash.api.app import app
 from mazda_dash.ingest import ingest
 from mazda_dash.sample import generate
 
-CONFIG = Path(__file__).parents[2] / "config" / "codes"
+CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 PERIOD_ENDPOINTS = [
     "/api/odometer/daily", "/api/fuel/monthly", "/api/trips/segments", "/api/status/timeline",
     "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily",

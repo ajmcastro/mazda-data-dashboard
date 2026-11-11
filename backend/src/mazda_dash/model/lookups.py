@@ -1,4 +1,4 @@
-"""Load the editable code descriptions (``config/codes/*.yaml``) into ``ref_*`` tables."""
+"""Load the editable code descriptions (``config/models/cx5/codes/*.yaml``) into ``ref_*`` tables."""
 
 from pathlib import Path
 

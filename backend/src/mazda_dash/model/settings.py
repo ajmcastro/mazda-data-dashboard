@@ -1,4 +1,4 @@
-"""Settings (``config/settings.yaml``) as a ``ref_settings`` table, so the SQL views and the phone app's
+"""Settings (``config/models/cx5/settings.yaml``) as a ``ref_settings`` table, so the SQL views and the phone app's
 copy of them read the same values."""
 
 from pathlib import Path

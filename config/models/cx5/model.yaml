@@ -1,0 +1,6 @@
+# One car model. The id must match the folder name (lower case letters and digits).
+id: cx5
+name: Mazda CX-5
+platform: 24PF        # optional: the platform code that appears in Mazda's file names
+default: true         # the model shown when none is chosen (optional with a single model)
+# pages: [trends]     # optional: pages this model has no data for (overview cannot be hidden)

@@ -65,7 +65,7 @@ export default function Warnings() {
       <div className="page-head">
         <div>
           <h1>Warnings</h1>
-          <p>Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in <span className="mono">config/codes/warnings.yaml</span>.</p>
+          <p>Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in <span className="mono">config/models/cx5/codes/warnings.yaml</span>.</p>
         </div>
       </div>
 

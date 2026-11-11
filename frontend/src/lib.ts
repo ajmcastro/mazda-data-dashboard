@@ -282,7 +282,7 @@ export function tireReadingsNote(readings: readonly TireReading[] | undefined): 
   const parts = [
     `${readings.length} measurement${readings.length === 1 ? '' : 's'}, each at the time the car took it`,
   ]
-  if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in config/settings.yaml)`)
+  if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in config/models/cx5/settings.yaml)`)
   if (unknown) parts.push(`${unknown} without a valid measurement time (placed at the snapshot time)`)
   return parts.join('; ')
 }

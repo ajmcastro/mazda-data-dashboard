@@ -13,7 +13,7 @@ reproduce it with the synthetic demo data (`make demo`) or describe the shape of
 ## What helps most
 
 - **What a code or flag means**, with how you know (owner's manual, dealer, a source): see
-  `config/codes/*.yaml` and the notes in [docs/data-dictionary.md](docs/data-dictionary.md). Descriptions
+  `config/models/cx5/codes/*.yaml` and the notes in [docs/data-dictionary.md](docs/data-dictionary.md). Descriptions
   must be known or user-supplied; please do not guess.
 - **Other models and markets**: whether the export looks the same, and what differs (without personal data).
 - Bug reports with the page, what you expected, and the demo data or a description that reproduces it.

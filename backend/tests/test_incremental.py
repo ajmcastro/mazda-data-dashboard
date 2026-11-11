@@ -14,7 +14,7 @@ import pytest
 from mazda_dash.ingest import ingest
 from mazda_dash.sample import generate
 
-CONFIG = Path(__file__).parents[2] / "config" / "codes"
+CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 TIME_COLUMN = {
     "war": "COPIED_DT_TM",
     "dtc-h": "COPIED_DT_TM",

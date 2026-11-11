@@ -46,7 +46,7 @@ export default function Alerts() {
         <div>
           <h1>Alerts</h1>
           <p>
-            Raised by the rules in <span className="mono">config/alerts.yaml</span> each time you run{' '}
+            Raised by the rules in <span className="mono">config/models/cx5/alerts.yaml</span> each time you run{' '}
             <span className="mono">make ingest</span>. Acknowledged alerts are not raised again.
           </p>
         </div>

@@ -18,7 +18,7 @@ from mazda_dash.pack import (
 )
 from mazda_dash.sample import generate
 
-CONFIG = Path(__file__).parents[2] / "config" / "codes"
+CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 
 
 @pytest.fixture(scope="module")

@@ -106,7 +106,7 @@ function Row({ f, data }: { f: WarningFlag; data: WarningFlags }) {
           </p>
           {!f.title && (
             <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
-              Once you know what it is, describe it in <span className="mono">config/codes/warning_flags.yaml</span> and run{' '}
+              Once you know what it is, describe it in <span className="mono">config/models/cx5/codes/warning_flags.yaml</span> and run{' '}
               <span className="mono">make model</span>.
             </p>
           )}
