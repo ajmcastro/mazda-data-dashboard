@@ -7,15 +7,17 @@ Thanks for looking. This is a small personal project made public; issues and pul
 Mazda's exports contain your **VIN** and sometimes GPS positions. Never put your export files, your
 database, a data pack (`*.cx5pack`) or your VIN in an issue, a pull request, a screenshot or a commit.
 `data/`, `db/` and `*.cx5pack` are git-ignored; `make audit` checks the files and the whole git history
-for the private values found in your `data/` folder, and CI refuses a data pack. To show a problem,
+for the private values found in your `data/` folders (it also checks that `sample_data/` holds only made-up VINs), and CI refuses a data pack. To show a problem,
 reproduce it with the synthetic demo data (`make demo`) or describe the shape of the data.
 
 ## What helps most
 
 - **What a code or flag means**, with how you know (owner's manual, dealer, a source): see
-  `config/models/cx5/codes/*.yaml` and the notes in [docs/data-dictionary.md](docs/data-dictionary.md). Descriptions
-  must be known or user-supplied; please do not guess.
+  `config/models/<id>/codes/*.yaml` (per car model) and the notes in [docs/data-dictionary.md](docs/data-dictionary.md).
+  Descriptions must be known or user-supplied; please do not guess.
 - **Other models and markets**: whether the export looks the same, and what differs (without personal data).
+  `make compat MODEL=<id>` after loading an export lists the signals the dashboard reads that the car does not send;
+  that output (no VIN in it) is a good start for an issue.
 - Bug reports with the page, what you expected, and the demo data or a description that reproduces it.
 
 ## Set up and check
@@ -29,6 +31,7 @@ make test            # backend (pytest) and frontend (vitest)
 make lint            # ruff, oxlint, tsc
 make mobile-test     # the phone app: contract tests against the Python API, type check
 make audit           # privacy audit of the files and the git history
+make types sample-data   # regenerate the committed generated files after changing the API or the sample generator
 ```
 
 CI runs all of these plus the production builds.
@@ -64,6 +67,15 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
 9. **A new model** needs `config/models/<id>/`, a line in `config/models.yaml`, and, to be demonstrated, a
    profile in `sample.py` (`PROFILES`) and `make sample-data`. The CX-5 profile must keep producing the same
    bytes. Follow the README's "How to add a model"; `tests/test_add_a_model.py` does exactly that.
+10. **The phone caches each car's figures.** `/api/trends/monthly` and `/api/garage` are also stored on the phone for
+    cars that are not loaded (`SUMMARY_VERSION` in `mobile/src/controller.ts`): when you change either answer (a field
+    or the maths), raise `SUMMARY_VERSION`, or a stale figure will be shown.
+11. **A new metric on Trends** also needs an entry in `COMPARABILITY` (`frontend/src/compare.ts`: is it fair to set
+    across two cars, and why), in `PERIOD_UNAVAILABLE` if it cannot be added up from months, and `money: true` if it
+    is an amount. Compare says "higher" and "lower" between two cars, never "better" or "worse", and uses the
+    good/bad colours only for the same car over time.
+12. **Tests must not depend on your own configuration.** The files in `config/models/<id>/` are the owner's (their
+    code descriptions, their fuel prices): tests that need settings pass their own (`ingest(..., settings_path)`).
 
 ## Pull requests
 

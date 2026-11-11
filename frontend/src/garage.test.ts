@@ -32,8 +32,8 @@ describe('labels', () => {
     expect(oilLine({ oil_remaining_km: null })).toBe('not reported')
   })
   it('adds the new alerts to a selector entry only when there are some', () => {
-    expect(optionLabel('Mazda CX-5', 3)).toBe('Mazda CX-5 · 3 new alerts')
-    expect(optionLabel('Mazda CX-5', 1)).toBe('Mazda CX-5 · 1 new alert')
+    expect(optionLabel('Mazda CX-5', 3)).toBe('Mazda CX-5 · 3 alerts')
+    expect(optionLabel('Mazda CX-5', 1)).toBe('Mazda CX-5 · 1 alert')
     expect(optionLabel('Mazda CX-5', 0)).toBe('Mazda CX-5')
     expect(optionLabel('Mazda CX-5', undefined)).toBe('Mazda CX-5') // no answer for that car: nothing to show
     expect(optionLabel('Mazda CX-60', undefined, false)).toBe('Mazda CX-60 (no data yet)')

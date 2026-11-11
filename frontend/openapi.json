@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Mazda CX-5 dashboard API",
+    "title": "Mazda data dashboard API",
     "version": "0.2.0"
   },
   "paths": {

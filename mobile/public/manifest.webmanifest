@@ -1,7 +1,7 @@
 {
-  "name": "CX-5 Telemetry",
-  "short_name": "CX-5",
-  "description": "Your Mazda CX-5 data, offline on this phone.",
+  "name": "Mazda Data Dashboard",
+  "short_name": "Mazda Data",
+  "description": "Your Mazda data, offline on this phone.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

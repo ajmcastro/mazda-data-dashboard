@@ -1,17 +1,19 @@
-# CX-5 Telemetry
+# Mazda Data Dashboard
 
 **A private dashboard for the data your Mazda sends to Mazda.** Mazda lets you download a copy of it, but
 what you get is a pile of CSV files. This project turns them into a database, a dashboard and alerts that
 run entirely on your own computer, and puts the same dashboard on your iPhone, **offline, with the data on
 the phone**.
 
-- **See**: odometer, distance and fuel economy, trips, tire pressure (and when the car really measured it),
-  the car's own oil-change countdown, warnings, fault codes with their freeze frames, the diagnostic-tool
-  report, and a month-by-month comparison.
+- **See**: odometer, distance and fuel economy (and, if you enter a fuel price, an *estimated* cost), trips,
+  tire pressure (and when the car really measured it), the car's own oil-change countdown, warnings, fault
+  codes with their freeze frames, the diagnostic-tool report, a month-by-month comparison, and a comparison of
+  two cars or of two periods of one car.
 - **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, unusually high fuel
   use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
 - **Several cars**: one folder of exports, one database and one set of code descriptions per Mazda model
-  (the CX-5, and a CX-60 set up the same way), with a model selector on the Mac and on the phone.
+  (the CX-5, and a CX-60 set up the same way), a model selector, an *All cars* overview and a *Compare* page,
+  on the Mac and on the phone.
 - **Stay private**: nothing is uploaded anywhere. The data stays in a file on your machine (and, if you
   want it, on your phone); the phone app makes no network request at all once installed.
 - **Try it first**: no Mazda data needed. `make demo` runs the dashboard on synthetic data, and the phone
@@ -35,9 +37,17 @@ the phone**.
   </tr>
 </table>
 
-With more than one car model loaded, the sidebar has a model selector (here the second demo car, a CX-60):
+With more than one car model loaded, the sidebar has a model selector (here the second demo car, a CX-60), an
+*All cars* page and a *Compare* page (two cars, or two periods of one car):
 
 ![Overview of the second demo model, a CX-60](docs/screenshots/overview-cx60.png)
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/all-cars.png" alt="All cars: a card per car model with its headline figures, new alerts and faults"></td>
+    <td><img src="docs/screenshots/compare.png" alt="Compare: two car models side by side, each figure marked comparable or not"></td>
+  </tr>
+</table>
 
 **On the iPhone** (offline, installable; dark and light follow the phone, or choose):
 
@@ -110,10 +120,10 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`�
 
 | Page | What it shows |
 |---|---|
-| **Overview** | odometer, distance, fuel economy, fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises |
-| **Trends** | every month compared with the one before (see below) |
+| **Overview** | odometer, distance, fuel economy (with the estimated cost per 100 km when a fuel price is set), fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises |
+| **Trends** | every month compared with the one before, including the estimated fuel cost when a fuel price is set (see below) |
 | **All cars** (also on the phone, under *More*) | one card per car model with data: the odometer, the last 30 days, fuel level, the car's own next-oil-change countdown, new alerts, faults still listed, the car's own warnings that are on, and a note when its newest reading is more than a week old. The model selector also shows each car's new alerts |
-| **Compare** (also on the phone, under *More*) | **two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of one car** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad |
+| **Compare** (also on the phone, under *More*) | **two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar |
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
@@ -135,7 +145,7 @@ buttons (Last week, Last 2 weeks, Last 30 / 60 / 90 days, All time) or type your
 ranges count back from your **newest data**, not from today, so they still make sense when your
 last export is a few weeks old, and your last quick choice is remembered in the browser. The
 range is kept in the address, so you can bookmark it (a link with dates always wins over the
-remembered choice), and it follows you from page to page. Things that describe a *state* ignore
+remembered choice), and it follows you from page to page. (*All cars* and *Compare* do not use it: they look at each car's own newest data or whole history.) Things that describe a *state* ignore
 the range: the faults still active in the latest read-out, the alerts list, the car's own
 warning flags, the warning-lamp flags, the oil-change countdown and the diagnostic-tool report.
 
@@ -143,7 +153,7 @@ warning flags, the warning-lamp flags, the oil-change countdown and the diagnost
 consumption, warnings, faults, tire pressure and more. The change against the previous month is
 green when it is good for that figure (less fuel use), red when it is bad, and grey when neither
 direction is better (distance). Months the period cuts through are marked *partial*; tick
-**per day** to compare them fairly with full months. A month with no data is a gap, never a zero.
+**per day** to compare them fairly with full months. A month with no data is a gap, never a zero. With a fuel price set (see [Fuel cost](#fuel-cost-optional)) two *estimated cost* figures appear next to the consumption.
 
 **Diagnostics.** Pick any report from the **Report** list (the choice is kept in the address,
 e.g. `?report=…`), see how the car's counters and fuel economy changed from one report to the next
@@ -196,7 +206,7 @@ Things to know:
 
 ### Load it
 
-1. Put your export files in `data/cx5/` (git-ignored; `cx5` is the model, see [Car models](#car-models)). Files are recognised by name:
+1. Put your export files in `data/cx5/` (git-ignored; `cx5` is the model: for another car use its own folder, see [Car models](#car-models)). Files are recognised by name:
 
    | Contains | File name pattern |
    |---|---|
@@ -213,7 +223,7 @@ Things to know:
 3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
 
 Run `make unmapped` to see warning and fault codes (and warning-lamp flags) that have no description
-yet, then add what you learn to `config/models/cx5/codes/*.yaml` and run `make model`.
+yet, then add what you learn to `config/models/<id>/codes/*.yaml` (for the CX-5, `config/models/cx5/codes/`) and run `make model`.
 
 ### Car models
 
@@ -242,7 +252,7 @@ already has a database, and `make reset-db` asks you to name one. A model's fold
 choice is in the address (`?model=cx60`, so a link opens the same car), is remembered for next time, and
 keeps your period when it makes sense (a quick range such as *Last 30 days* is counted again from the other
 model's newest day). A model without data yet stays out of the list; the address `?model=cx60` says where to
-put its files.
+put its files. Each entry also shows that car's new alerts ("Mazda CX-5 · 15 alerts"), and the *All cars* page puts every car's headline figures side by side.
 
 #### How to add a model
 
@@ -286,7 +296,7 @@ by hand into `config/models/cx5/` (`codes/`, `settings.yaml`, `alerts.yaml`).
 The car reports *when it measured the tire pressures* in its own **local** time. To show that time
 correctly (and to know how old a reading is), the dashboard needs your car's time zone: open
 [config/models/cx5/settings.yaml](config/models/cx5/settings.yaml) and set `car_timezone` to your IANA zone name (for example
-`Europe/Berlin` or `America/New_York`; the file ships with `Europe/Lisbon`, which the demo data uses).
+`Europe/Berlin` or `America/New_York`; the file in the repository has the author's zone, `Europe/Lisbon`).
 Then check it against your data:
 
 ```bash
@@ -309,6 +319,8 @@ fuel_prices:                    # the price of a litre from a date on; one entry
   - {from: 2026-03-01, per_l: 1.72}
   - {from: 2026-05-15, per_l: 1.81}
 ```
+
+**The `settings.yaml` files in the repository hold the author's own prices (EUR, from June 2026): replace them with the prices you pay, or remove the `fuel_currency` and `fuel_prices` lines to switch the cost figures off.** (The demo uses its own prices, kept with the sample data, and never your settings.)
 
 A single price is enough if it never changed (`fuel_price_per_l: 1.75` instead of the list; the oldest price also
 applies before its date). Each trip is priced with the price in force on its day, so a price change shows up in the
@@ -351,7 +363,7 @@ When you pull a newer version of this project:
 ```bash
 git pull
 make setup    # new or changed dependencies
-make model    # recreate the SQL views and reload config/codes and config/models/<id>/settings.yaml
+make model    # recreate the SQL views and reload each model's code descriptions and settings (config/models/<id>/)
 ```
 
 `make model` is needed whenever the views changed (the dashboard says "no such view" or a page is empty
@@ -391,11 +403,11 @@ make mobile-pack   # writes db/<model>.cx5pack for every model that has data, e.
 (iCloud Drive is good: it keeps the file as your backup).
 
 **4. Install the app.** Open the site address in **Safari**, tap **Share → Add to Home Screen**, and
-open the new "CX-5" icon. The first start downloads the app once (about 36 MB). When the **Data**
+open the new "Mazda Data" icon. The first start downloads the app once (about 36 MB). When the **Data**
 screen says **Works offline: yes**, you can switch Wi-Fi off.
 
 **5. Import your data.** On the Data screen tap **Import data pack** and choose the file (repeat for each car model: a selector at the top then switches between them). Or try
-**Load demo data** first. To update later, make a new pack and use **Replace with another pack**
+**Load demo data** first. To update later, make a new pack and use **Add or replace a data pack**
 (alerts you acknowledged on the phone stay acknowledged).
 
 Good to know:
@@ -409,6 +421,9 @@ Good to know:
 - **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of
   the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the
   bottom of the side menu. The choice is remembered per device.
+- **Compare and All cars** (under *More*, with two cars stored): the phone holds one car in memory at a time, so the
+  first time you open one of them it loads each car once to prepare its figures (a few seconds, with a message), and
+  keeps them for next time. Replacing a pack refreshes that car's figures.
 - Alerts are not re-evaluated on the phone (they come from `make ingest` on the Mac); you can
   acknowledge them on the phone.
 - **Lockdown Mode** (Settings → Privacy & Security) switches off parts of Safari that this app relies on
@@ -421,7 +436,7 @@ Good to know:
 
 ## Alerts
 
-`make ingest` (or `make alerts`) evaluates the rules in [config/models/<id>/alerts.yaml](config/models/<id>/alerts.yaml);
+`make ingest` (or `make alerts`) evaluates the rules in each model's `alerts.yaml` (for example [config/models/cx5/alerts.yaml](config/models/cx5/alerts.yaml));
 each alert is raised once, and an acknowledged alert is never raised again. The rules:
 
 | Rule | Raises an alert when |
@@ -448,7 +463,7 @@ file (or run `cd backend && uv run python -m mazda_dash.alerts --notify`).
 
 ## Commands
 
-Run them from the project folder. The first group is what you need to use the dashboard.
+Run them from the project folder. The first group is what you need to use the dashboard. `MODEL=<id>` limits a command to one car model (see [Car models](#car-models)).
 
 | Command | What it does |
 |---|---|
@@ -458,14 +473,14 @@ Run them from the project folder. The first group is what you need to use the da
 | `make ingest` | load `data/` into `db/<id>.duckdb`, rebuild the views, evaluate alerts |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
 | `make demo` | the same with the synthetic sample data (`make demo-ingest` only loads it) |
-| `make model` | reload `config/models/cx5/codes/*.yaml` and `config/models/<id>/settings.yaml` and recreate the SQL views |
+| `make model` | reload each model's `config/models/<id>/codes/*.yaml` and `settings.yaml` and recreate the SQL views |
 | `make timezone` | check `car_timezone` in `config/models/<id>/settings.yaml` against your data |
 | `make alerts` | evaluate `config/models/<id>/alerts.yaml` only |
 | `make unmapped` | list codes and flags in your data that have no description |
 | `make mobile-pack` | export each model's database as `db/<model>.cx5pack` for the phone app |
 | `make mobile-dev` | run the phone app on this computer (with the demo data bundled) |
 | `make audit` | check for private values before publishing (see [Privacy](#privacy)) |
-| `make reset-db` | **delete** `db/<id>.duckdb`, including acknowledged alerts |
+| `make reset-db` | **delete** `db/<id>.duckdb`, including acknowledged alerts (with several models, name one: `MODEL=<id>`) |
 
 For development (see [Development](#development)):
 
@@ -484,8 +499,8 @@ For development (see [Development](#development)):
 ## How it works
 
 ```
-data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code descriptions──▶ FastAPI ──▶ React dashboard
-                                   │   ▲        (config/codes, config/models/<id>/settings.yaml)
+data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code descriptions──▶ FastAPI ──▶ React dashboard
+                                   │   ▲        (config/models/<id>/codes, settings.yaml)
                                    │   └──alert rules (config/models/<id>/alerts.yaml)
                                    │
                   make mobile-pack ▼
@@ -495,7 +510,8 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code de
 
 - `backend/src/mazda_dash/ingest`: parsers for each file kind (idempotent; sentinel values such
   as `2147483647` become NULL).
-- `backend/src/mazda_dash/model`: lookup tables from `config/codes/`, the settings, and the SQL views the
+- `backend/src/mazda_dash/models.py`: the car-model registry (where each model's data, database and configuration are).
+- `backend/src/mazda_dash/model`: lookup tables from `config/models/<id>/codes/`, the settings (and fuel prices), and the SQL views the
   API and alerts read ([view catalogue](docs/data-dictionary.md)).
 - `backend/src/mazda_dash/alerts`: one detector per rule; each alert is raised once.
 - `backend/src/mazda_dash/api`: read-only JSON API (plus acknowledging alerts) and the monthly
@@ -506,8 +522,9 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code de
 - `mobile/`: the same pages as an offline phone app. DuckDB runs in the browser (WebAssembly) on a
   data pack exported by `make mobile-pack`, and a TypeScript port of the API answers the pages;
   contract tests keep it identical to the Python API.
-- `config/`: your settings (`settings.yaml`), the alert rules (`alerts.yaml`) and your descriptions of
-  codes and flags (`codes/*.yaml`). `sample_data/`: the synthetic exports, one folder per model. `docs/`: the data dictionary
+- `config/`: `models.yaml` (the list of car models) and, per model in `config/models/<id>/`, your settings
+  (`settings.yaml`), the alert rules (`alerts.yaml`) and your descriptions of codes and flags (`codes/*.yaml`).
+  `sample_data/`: the synthetic exports (and demo settings), one folder per model. `docs/`: the data dictionary
   and screenshots. `data/` and `db/` (git-ignored) hold your files and databases.
 
 [PLAN.md](PLAN.md) has the design decisions and the milestones this was built in.
@@ -522,6 +539,7 @@ data/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your code de
   [data dictionary](docs/data-dictionary.md). Treat this as a curiosity tool, not diagnostics.
 - **The export is a snapshot.** The data comes in files you request (see above); there is no live feed.
   Gaps between exports stay gaps.
+- **The fuel cost is an estimate.** The litres the car reports times the price you enter: not what you paid, and nothing for electricity.
 - **The phone app is a read-only viewer.** It does not read Mazda's files or evaluate alerts; the Mac does
   that and sends a data pack. iOS may delete stored web-app data (you re-import the pack).
 - Tested with one real export (a CX-5, Europe, 2026) plus the synthetic data (which includes a second,
@@ -544,20 +562,23 @@ If you fork this project, or publish your own copy, run:
 make audit
 ```
 
-It reads the private values (VINs, positions) from your `data/` folder and searches every file
-git would publish **and the whole git history** for them, and lists the commit author emails
-for review. The tests and the sample data use only made-up values. **When you report a problem, do not
+It reads the private values (VINs, positions) from every model's folder in `data/` and searches every file
+git would publish **and the whole git history** for them, checks that the synthetic data in `sample_data/` holds
+only made-up VINs, and lists the commit author emails for review. The tests and the sample data use only made-up values. **When you report a problem, do not
 post your VIN, your export files or a data pack**: describe the problem, or reproduce it with the demo
 data.
 
 ## Troubleshooting
 
 - **"Database … not found - run `make ingest` first"**: you have not loaded any data yet. Put
-  your files in `data/` and run `make ingest`, or try `make demo`.
+  your files in `data/<id>/` and run `make ingest`, or try `make demo`.
 - **"Database is busy" when acknowledging an alert**: `make ingest` is running and holds the
   database; wait for it to finish.
 - **Charts are empty or say "No data in this period"**: look at the period bar and press
   **All time**.
+- **The model selector does not show my second car**: it lists only models that have data. Put the car's exports
+  in `data/<id>/` and run `make ingest MODEL=<id>`. (The address `?model=<id>` shows where to put the files.)
+- **The cost figures are missing**: no fuel price is set for that car; see [Fuel cost](#fuel-cost-optional).
 - **Port 8000 or 5173 already in use**: stop the other program using it, then run `make dev`
   again.
 - **`npm install` fails**: use `make setup`; `frontend/.npmrc` sets the option this project's

@@ -40,7 +40,7 @@ export default function App() {
   const { id, name, model, models } = useCurrentModel()
   useRestoreSavedRange(useRestoreSavedModel())
   useEffect(() => {
-    document.title = `${name} Telemetry`
+    document.title = `${shortModelName(name)} · Mazda Data Dashboard`
   }, [name])
   const o = overview.data
   const hidden = model?.hidden_pages

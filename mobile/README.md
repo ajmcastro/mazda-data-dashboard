@@ -1,6 +1,6 @@
 # Phone app (`mobile/`)
 
-The CX-5 dashboard as an offline web app for an iPhone: the same pages as the Mac app
+The Mazda Data Dashboard as an offline web app for an iPhone: the same pages as the Mac app
 (`../frontend/src`, shared through the `@frontend` alias), running on the data stored **on the
 phone**. No server, no account, and no request to any host but its own. The Mac app is untouched.
 
@@ -11,7 +11,7 @@ How it works (details and measurements in `../PLAN.md`):
 - On the phone the app starts DuckDB (WebAssembly), loads the pack, rebuilds the SQL views from
   `backend/src/mazda_dash/model/views.sql`, and answers the pages' `/api/...` requests with
   `src/engine/`, a TypeScript port of the Python API proven identical by contract tests.
-- **Compare cars** and **All cars** (More): the engine holds one car at a time, so each stored car's monthly figures (the answer of `/api/trends/monthly` without a period) and its `/api/garage` card (a few KiB together) are cached in IndexedDB the first time that car is loaded, keyed by the pack and by a version of the engine's answer. The first time you open one of these pages, cars that have never been loaded are loaded one after the other ("Preparing the comparison…") and the car you were looking at comes back; after that it opens at once, offline too. Replacing or deleting a pack discards its figures.
+- **Compare** and **All cars** (More): the engine holds one car at a time, so each stored car's monthly figures (the answer of `/api/trends/monthly` without a period) and its `/api/garage` card (a few KiB together) are cached in IndexedDB the first time that car is loaded, keyed by the pack and by a version of the engine's answer. The first time you open one of these pages, cars that have never been loaded are loaded one after the other ("Preparing the comparison…") and the car you were looking at comes back; after that it opens at once, offline too. Replacing or deleting a pack discards its figures.
 - The packs (one per car model) and the alert acknowledgements made on the phone (kept per model) are kept in the browser's IndexedDB. One model is loaded in the engine at a time, the one the address names (`#/?model=cx60`); a model selector at the top of the screen switches (it appears with two or more packs). Importing the pack of another model only stores it, so the address and the data on screen never disagree.
 
 ## Run it

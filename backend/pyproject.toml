@@ -1,7 +1,7 @@
 [project]
 name = "mazda-dash"
 version = "0.1.0"
-description = "Analysis and dashboard for Mazda CX-5 telemetry exports"
+description = "Analysis and dashboard for Mazda telemetry exports (several car models)"
 authors = [
     { name = "Antonio Castro" }
 ]

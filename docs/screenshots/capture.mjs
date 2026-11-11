@@ -114,6 +114,7 @@ await shoot('warning-lamps.png', '/status', async (p) => {
   await sleep(1500)
 })
 await shoot('diagnostics.png', '/diagnostics')
+await shoot('compare.png', '/compare')
 await mac.close()
 
 // the second demo model, to show the model selector at work (its data ends on 31 July)
@@ -123,6 +124,14 @@ await sleep(1100)
 await mac60.screenshot({ path: path.join(out, 'overview-cx60.png') })
 console.log('wrote overview-cx60.png')
 await mac60.close()
+
+// all the cars at a glance (clock on 1 August 2026: the CX-5's data is then a month old and says so)
+const garage = await newPage(1280, 860, 1.5, 'dark', [2026, 7])
+await garage.goto('http://localhost:5173/garage', { waitUntil: 'networkidle0' })
+await sleep(1500)
+await garage.screenshot({ path: path.join(out, 'all-cars.png') })
+console.log('wrote all-cars.png')
+await garage.close()
 
 // ---- the phone app (390 x 844, loaded with the demo pack)
 async function phone(file, hash, { scheme = 'dark', theme, prepare } = {}) {
@@ -162,20 +171,20 @@ await phone('phone-lamps.png', '#/status', {
     * { box-sizing: border-box }
     body { margin: 0; width: 1280px; height: 640px; overflow: hidden; position: relative; color: #e9e6df;
            font-family: Sans, sans-serif; background: radial-gradient(900px 500px at 85% -10%, rgba(224,53,69,.28), transparent 60%), #0d0e10 }
-    .text { position: absolute; left: 64px; top: 84px; width: 560px }
-    h1 { font: 800 118px/0.92 Big, sans-serif; margin: 0; letter-spacing: .01em; text-transform: uppercase }
+    .text { position: absolute; left: 64px; top: 70px; width: 600px }
+    h1 { font: 800 90px/0.96 Big, sans-serif; margin: 0; letter-spacing: .01em; text-transform: uppercase; white-space: nowrap }
     h1 span { color: #e03545 }
     p { font-size: 27px; line-height: 1.38; margin: 24px 0 0; color: #c9c5bb }
-    .chips { position: absolute; left: 64px; bottom: 56px; width: 560px; display: flex; flex-wrap: wrap; gap: 10px; font-size: 19px }
+    .chips { position: absolute; left: 64px; bottom: 50px; width: 590px; display: flex; flex-wrap: wrap; gap: 10px; font-size: 19px }
     .chips b { font-weight: 500; border: 1px solid #3a3f46; border-radius: 99px; padding: 7px 16px; color: #b9b5ab }
     .shot { position: absolute; border-radius: 18px; border: 1px solid #2a2e34; box-shadow: 0 24px 60px rgba(0,0,0,.6) }
     .mac { left: 830px; top: 150px; width: 540px; height: 470px; object-fit: cover; object-position: top left }
     .phone { left: 676px; top: 56px; width: 250px; height: 536px; object-fit: cover; object-position: top; transform: rotate(-3deg); z-index: 2 }
   </style>
-  <div class="text"><h1>CX-5<br><span>Telemetry</span></h1>
-  <p>Your Mazda's data as a private dashboard: on your computer, and offline on your iPhone.</p></div>
-  <div class="chips"><b>Fuel &amp; trips</b><b>Tire pressure</b><b>Fault codes</b><b>Alerts</b><b>Offline iPhone app</b><b>Open source</b></div>
-  <img class="shot mac" src="${img('overview.png')}"><img class="shot phone" src="${img('phone-overview.png')}">`
+  <div class="text"><h1>Mazda<br>Data <span>Dashboard</span></h1>
+  <p>The data your Mazdas send to Mazda, as a private dashboard: every car on your computer, and offline on your iPhone.</p></div>
+  <div class="chips"><b>Fuel &amp; trips</b><b>Fault codes</b><b>Alerts</b><b>Several cars</b><b>Compare</b><b>Offline iPhone app</b><b>Open source</b></div>
+  <img class="shot mac" src="${img('all-cars.png')}"><img class="shot phone" src="${img('phone-overview.png')}">`
   const file = path.join(out, 'social-preview.html')
   const { writeFileSync, unlinkSync } = await import('node:fs')
   writeFileSync(file, html)

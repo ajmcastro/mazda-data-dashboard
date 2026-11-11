@@ -34,5 +34,6 @@ export function oilLine(g: Pick<Garage, 'oil_remaining_km'>): string {
 /** The text of a model selector entry: the name, with the new alerts when there are some. */
 export function optionLabel(name: string, newAlerts: number | undefined, hasData = true): string {
   const suffix = hasData ? '' : ' (no data yet)'
-  return newAlerts ? `${name} · ${alertsLabel(newAlerts)}${suffix}` : `${name}${suffix}`
+  // short on purpose: the selector is a narrow box and a long entry gets cut off
+  return newAlerts ? `${name} · ${newAlerts} alert${newAlerts === 1 ? '' : 's'}${suffix}` : `${name}${suffix}`
 }

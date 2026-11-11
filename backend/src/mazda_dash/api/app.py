@@ -18,7 +18,7 @@ from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
 from .selection import registry
 from .trends import PRICED, monthly_metrics
 
-app = FastAPI(title="Mazda CX-5 dashboard API", version="0.2.0")
+app = FastAPI(title="Mazda data dashboard API", version="0.2.0")
 Con = Depends(get_con)
 RwCon = Depends(get_rw_con)
 Range = Depends(date_range)

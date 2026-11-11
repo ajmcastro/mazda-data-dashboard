@@ -33,7 +33,7 @@ One row per warning event (all `X_TRANSACTION_ID` and trigger times unique; no d
 - Code frequency: `$210` 6,922 (≈ always present — likely a status/informational code, not a fault), `$2FE` 2,410, `$226` 840, `$290` 462, `$182` 232, `$2CD` 121, `$21D` 57, `$1B4` 37, `$000` 32, then rare ones (`$187 $184 $2DA $25E $08D $246 $260 $049 $072 $086 $0B5 $20F`).
 - `HOURS`/`MINUTES` look like a time-since offset; **sentinel `2147483647` (INT32_MAX) = unknown** (13 rows). `ODO_INFORMATION_KM = -1` = unknown (7 rows). Odometer in the data goes up to 6,243 km.
 - Volume: 936 / 1,234 / 2,268 / 1,445 / 1,156 rows for Jun–Oct, so event volume is high; alerts must be rate-based, not per-row.
-- Meaning of `$` codes: unknown, to be mapped by the user (`config/codes/`).
+- Meaning of `$` codes: unknown, to be mapped by the user (`config/models/<id>/codes/`).
 
 ### `dtc-d` — DTC detail (1,166 rows, 47 transactions)
 - One row per ECU per read-out (26 distinct `ECU_NAME_MKT`, e.g. BCM, DCM, DSC, EPS, ADU, ECM, IC…), whether or not it has a fault.
@@ -127,7 +127,7 @@ Created by `make ingest` in `db/<id>.duckdb` (gitignored). All timestamps are na
 | `diag_values`, `diag_dtcs`, `diag_snapshots`, `diag_obd_tests` | per `report_id` | Mode 9 counters, DTC lists (`dtcs`, `rob_dtcs`), snapshot data, Mode 6 tests |
 | `ingest_runs` | – | audit log of rows read / new per file |
 | `alerts` | `dedup_key` | raised by the alert rules (`config/models/<id>/alerts.yaml`); `status` new / acknowledged. Lives in the same file, so `make reset-db` loses acknowledgements |
-| `ref_warning_codes`, `ref_dtc_codes`, `ref_ecus`, `ref_failure_types`, `ref_warning_flags` | code | rebuilt from `config/models/cx5/codes/*.yaml` by `make model` |
+| `ref_warning_codes`, `ref_dtc_codes`, `ref_ecus`, `ref_failure_types`, `ref_warning_flags` | code | rebuilt from `config/models/<id>/codes/*.yaml` by `make model` |
 | `ref_settings` | setting | rebuilt from `config/models/<id>/settings.yaml` by `make model` (`car_timezone`, `tire_stale_hours`, and `fuel_currency` when a fuel price is set) |
 | `ref_fuel_prices` | `valid_from` | the fuel price per litre from a date on (`fuel_prices` / `fuel_price_per_l` of the same file); empty when no price is set. The view `v_fuel_prices` gives each price its span (`valid_to` = the next price's date; the earliest price also applies before its own date). The cost figures are the litres of each trip (`v_trip_segments.fuel_l`) times the price in force on its day, so they are **estimates**, not what was paid |
 
@@ -135,7 +135,7 @@ Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers,
 
 ## Views and code lookups
 
-`make model` (also run by `make ingest`) loads `config/models/cx5/codes/*.yaml` into `ref_*` tables and recreates these views. Codes without a description fall back to `Unknown warning $XXX` / `Unknown DTC XXXXX` with `known = false`; `make unmapped` lists them (`v_unmapped_codes`).
+`make model` (also run by `make ingest`) loads the model's `config/models/<id>/codes/*.yaml` into `ref_*` tables and recreates these views. Codes without a description fall back to `Unknown warning $XXX` / `Unknown DTC XXXXX` with `known = false`; `make unmapped` lists them (`v_unmapped_codes`).
 
 | View | What it gives |
 |---|---|
@@ -152,6 +152,7 @@ Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers,
 | `v_warning_flag_readings`, `v_warning_flag_episodes`, `v_warning_flags` | the car's **128 warning-lamp bit flags** (`vdt_2_warningpt_<word>_<bit>` for the power train and `vdt_7_warningbody_<word>_<bit>` for the body: plain columns, no validity flag, 0/1). They look like the state of dashboard warning lamps; Mazda does not publish them and almost all never change, so **only flags that take more than one value are visible** (4 of 128 in the author's export). Per flag: readings, readings on, share, first and last on, whether it is on now, the runs in which it was on, and whether it was first set on a day a diagnostic report was taken (in the author's data the two power-train flags were first set on 15 Oct, the day of the report). Your own meanings come from `config/models/<id>/codes/warning_flags.yaml` (`ref_warning_flags`); flags without one appear in `v_unmapped_codes` as kind `warning flag`. Hints (`/api/status/warning-flags/hints`) rank the `$` warning codes and faults that appear within a few hours of the readings with a flag on more often than of those with it off, as a starting point for finding out what a flag is, not a finding |
 | `v_odometer_readings`, `v_odometer_daily` | odometer from every source; daily max and km since the previous day with data |
 | `v_trip_log`, `v_trip_segments`, `v_fuel_monthly` | trip-1 counters, consumption between consecutive snapshots, monthly km / litres / l per 100 km |
+| `v_fuel_prices` | the fuel price in force from a date to the next one, from `ref_fuel_prices` (the earliest price also applies before its own date); empty without a price. Joined to `v_trip_segments` by the day of each trip to turn litres into an **estimated** cost (never what was paid) |
 | `v_diag_values`, `v_diag_summary` | diagnostic-tool counters; lifetime and recent distance, fuel and l/100 km |
 | `v_diag_obd` | Mode 6 monitor results with `in_range` (value within its min/max) and `position` (0 = at min, 1 = at max) |
 | `v_diag_aes` | AES id / activity-state pairs from the tool dump (28 ids, all "Not Active" in the current report) |
@@ -166,4 +167,4 @@ Freeze-frame signal units (km/h, rpm, V, ...) are not in the CSV; the frontend a
 
 ## Where the API goes beyond the views
 
-The API is a thin layer over these views, with three exceptions. Endpoints that take a period (`from` / `to`) re-aggregate inside the endpoint so the range applies *before* grouping: `fuel/monthly`, `warnings/frequency` and `dtcs/frequency` mirror `v_fuel_monthly`, `v_warning_frequency` and `v_dtc_frequency` (the last one always keeps faults still active in the latest read-out). The Trends page's monthly figures (`/api/trends/monthly`) are computed in `backend/src/mazda_dash/api/trends.py`: distance from the odometer, consumption from trip segments, counts from the event tables, and `days_covered` / `partial` per month. The **hints** of `/api/status/warning-flags/hints` are also computed in the endpoint: for one flag, which warning codes and faults appear within a window of the readings with the flag on, compared with the readings with it off (the SQL is in `api/app.py` and, identically, `mobile/src/engine/warningflags.ts`).
+The API is a thin layer over these views, with a few exceptions. Endpoints that take a period (`from` / `to`) re-aggregate inside the endpoint so the range applies *before* grouping: `fuel/monthly`, `warnings/frequency` and `dtcs/frequency` mirror `v_fuel_monthly`, `v_warning_frequency` and `v_dtc_frequency` (the last one always keeps faults still active in the latest read-out). The Trends page's monthly figures (`/api/trends/monthly`) are computed in `backend/src/mazda_dash/api/trends.py`: distance from the odometer, consumption from trip segments, counts from the event tables, and `days_covered` / `partial` per month. The **hints** of `/api/status/warning-flags/hints` are also computed in the endpoint: for one flag, which warning codes and faults appear within a window of the readings with the flag on, compared with the readings with it off (the SQL is in `api/app.py` and, identically, `mobile/src/engine/warningflags.ts`). The **estimated fuel cost** is also built in the endpoints: `cost_per_100km` and `fuel_cost_est` in the monthly figures and the period cost on the Overview join each trip to the price in force on its day (`v_fuel_prices`), in `api/trends.py` / `api/app.py` and identically in `mobile/src/engine/`. `GET /api/garage` (the "All cars" card) adds nothing new: it calls the overview for the 30 days up to the newest day with data, the oil countdown and the car's own warnings. `GET /api/models` is not about one model's data at all (it lists the models and whether each has a database).
