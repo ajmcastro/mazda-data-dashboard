@@ -11,6 +11,7 @@ How it works (details and measurements in `../PLAN.md`):
 - On the phone the app starts DuckDB (WebAssembly), loads the pack, rebuilds the SQL views from
   `backend/src/mazda_dash/model/views.sql`, and answers the pages' `/api/...` requests with
   `src/engine/`, a TypeScript port of the Python API proven identical by contract tests.
+- **Compare cars** (More): the engine holds one car at a time, so each stored car's monthly figures (the answer of `/api/trends/monthly` without a period, a few KiB) are cached in IndexedDB the first time that car is loaded, keyed by the pack and by a version of the engine's answer. The first time you open Compare, cars that have never been loaded are loaded one after the other ("Preparing the comparison…") and the car you were looking at comes back; after that it opens at once, offline too. Replacing or deleting a pack discards its figures.
 - The packs (one per car model) and the alert acknowledgements made on the phone (kept per model) are kept in the browser's IndexedDB. One model is loaded in the engine at a time, the one the address names (`#/?model=cx60`); a model selector at the top of the screen switches (it appears with two or more packs). Importing the pack of another model only stores it, so the address and the data on screen never disagree.
 
 ## Run it
@@ -36,6 +37,7 @@ real pack over the network.
 | `src/controller.ts` | the data on the device: engine start, the stored packs (one per model), import / switch / delete |
 | `src/storage.ts` | IndexedDB: packs (keyed by model) and acknowledgements (prefixed by model) |
 | `src/engine-browser.ts` | DuckDB-WASM in a Web Worker (one query at a time) |
+| `src/CompareGate.tsx` | the Compare page on the phone: prepares the cached figures of the stored cars first |
 | `src/DataScreen.tsx` | import, demo (both demo cars), pack information per model, delete one or all |
 | `src/engine/` | the Python API in TypeScript (`api.ts` routes, one file per area, `pack.ts` loader) |
 | `test/` | contract tests (replay the Python API's answers), controller and engine tests |

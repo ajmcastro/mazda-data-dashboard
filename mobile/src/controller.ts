@@ -11,8 +11,8 @@ import { replayAcks } from './engine/alerts'
 import { Con, type RawDb } from './engine/db'
 import { clearDatabase, loadPack, readPack, type Manifest } from './engine/pack'
 import {
-  deleteAllStoredData, deleteStoredModel, discardLegacyPack, ModelAckStore, readStoredPacks, writeStoredPack,
-  type StoredPack,
+  deleteAllStoredData, deleteStoredModel, discardLegacyPack, ModelAckStore, readStoredPacks, readStoredSummaries,
+  writeStoredPack, writeStoredSummary, type StoredPack,
 } from './storage'
 
 export type Status = 'starting' | 'empty' | 'loading' | 'ready' | 'error'
@@ -31,6 +31,12 @@ export interface ModelPack {
   info: PackInfo
 }
 
+/**
+ * The version of the engine's monthly answer the cached summaries were made from. Raise it whenever
+ * `/api/trends/monthly` (its fields or its maths) changes, so no summary of the old answer is ever shown.
+ */
+export const SUMMARY_VERSION = 1
+
 export interface DataState {
   status: Status
   /** what is going on, for the loading screen */
@@ -41,6 +47,10 @@ export interface DataState {
   current: string | null
   /** every pack stored on the device */
   packs: ModelPack[]
+  /** the models whose monthly figures are cached for the Compare page (a car not loaded can only be compared from these) */
+  summaries: string[]
+  /** the comparison is being prepared: other cars are loaded one after the other, then the one shown again */
+  preparing: boolean
   /** shown on the data screen; the data in use (if any) is untouched unless the status is 'error' without info */
   error: string | null
   /** the browser promised to keep the data (null = unknown / not asked yet) */
@@ -114,8 +124,8 @@ const asPack = (p: StoredPack): ModelPack => ({ id: p.manifest.model.id, name: p
 export class DataController {
   readonly api: Api
   private state: DataState = {
-    status: 'starting', message: 'Starting the data engine…', info: null, current: null, packs: [], error: null,
-    persisted: null, lost: null,
+    status: 'starting', message: 'Starting the data engine…', info: null, current: null, packs: [], summaries: [],
+    preparing: false, error: null, persisted: null, lost: null,
   }
   private readonly listeners = new Set<() => void>()
   private raw: RawDb | null = null
@@ -123,6 +133,7 @@ export class DataController {
   private readonly acks = new ModelAckStore()
   private readonly memory: Memory
   private stored = new Map<string, StoredPack>()
+  private summaryCache = new Map<string, unknown[]>()
 
   constructor(private readonly deps: ControllerDeps) {
     this.api = deps.api ?? new Api({ acks: this.acks })
@@ -170,11 +181,41 @@ export class DataController {
     return [...this.stored.values()].map(asPack)
   }
 
+  private summaryKey(p: StoredPack): string {
+    return `${SUMMARY_VERSION}:${p.savedAt}`
+  }
+
+  /** Puts the cached summaries (those still made from the pack and the answer version stored now) into the engine. */
+  private publishSummaries(): void {
+    this.api.setSummaries(this.summaryCache)
+    this.set({ summaries: [...this.summaryCache.keys()].filter((id) => this.stored.has(id)) })
+  }
+
+  private async loadSummaries(): Promise<void> {
+    const saved = await readStoredSummaries()
+    this.summaryCache = new Map(
+      Object.entries(saved)
+        .filter(([id, s]) => this.stored.has(id) && s.key === this.summaryKey(this.stored.get(id)!))
+        .map(([id, s]) => [id, s.monthly]),
+    )
+  }
+
+  /** The monthly figures of the model loaded now, over all its data, kept for the Compare page (once per pack). */
+  private async summariseLoaded(stored: StoredPack): Promise<void> {
+    const id = stored.manifest.model.id
+    if (this.summaryCache.has(id)) return
+    const answer = await this.api.handle('GET', '/api/trends/monthly')
+    if (answer.status !== 200 || !Array.isArray(answer.body)) return // the comparison just will not offer this car
+    this.summaryCache.set(id, answer.body)
+    await writeStoredSummary(id, { key: this.summaryKey(stored), monthly: answer.body })
+  }
+
   /** On launch: start the engine and load the model last shown (or the one the address asks for). */
   async init(requested?: string | null): Promise<void> {
     try {
       const [raw, packs, legacy] = await Promise.all([this.engineReady(), readStoredPacks(), discardLegacyPack()])
       this.stored = new Map(packs.map((p) => [p.manifest.model.id, p]))
+      await this.loadSummaries()
       if (!packs.length) {
         // data that was here before and is not any more: the browser removed it (iOS does that to sites not opened for a while)
         this.publishModels(null)
@@ -201,6 +242,8 @@ export class DataController {
     await replayAcks(new Con(raw), this.acks)
     this.api.use(raw, id)
     this.stored.set(id, { ...stored, manifest })
+    await this.summariseLoaded(stored)
+    this.publishSummaries()
     this.publishModels(id)
     this.deps.onDataChanged?.()
     this.memory.write({ name: stored.name, lastDay: manifest.last_data_day })
@@ -242,6 +285,7 @@ export class DataController {
       const raw = await this.engineReady()
       const stored: StoredPack = { bytes, name, savedAt: new Date().toISOString(), manifest }
       const id = manifest.model.id
+      this.summaryCache.delete(id) // a new pack: its cached figures are of the old one
       const show = options.show ?? (previous === null || previous === id)
       if (show) {
         this.api.use(null)
@@ -250,6 +294,7 @@ export class DataController {
       } else {
         await writeStoredPack(stored)
         this.stored.set(id, stored)
+        this.publishSummaries()
         this.publishModels(previous)
         this.deps.onDataChanged?.()
         this.set({ packs: this.packs(), error: null })
@@ -296,6 +341,8 @@ export class DataController {
     if (wasCurrent) this.api.use(null)
     await deleteStoredModel(id)
     this.stored.delete(id)
+    this.summaryCache.delete(id)
+    this.publishSummaries()
     const next = [...this.stored.values()][0]
     if (!next) return this.deleteAll()
     if (wasCurrent) {
@@ -313,10 +360,48 @@ export class DataController {
     if (this.raw) await clearDatabase(this.raw)
     await deleteAllStoredData()
     this.stored.clear()
+    this.summaryCache.clear()
+    this.publishSummaries()
     this.publishModels(null)
     this.memory.write(null) // deleted on purpose: not "lost"
     this.deps.onDataChanged?.()
-    this.set({ status: 'empty', message: '', info: null, current: null, packs: [], error: null, lost: null })
+    this.set({ status: 'empty', message: '', info: null, current: null, packs: [], summaries: [], error: null, lost: null })
+  }
+
+  /**
+   * Makes sure every stored car has its monthly figures cached, so the Compare page can show a car that is not
+   * loaded. A pack that has never been loaded since it was imported is loaded now, one after the other, and the
+   * model that was shown is loaded again at the end. The status stays `loading` for the whole time.
+   */
+  async prepareComparison(): Promise<boolean> {
+    const original = this.state.current
+    const missing = [...this.stored.keys()].filter((id) => !this.summaryCache.has(id))
+    if (!original || this.state.preparing || !missing.length) return true
+    this.set({ preparing: true, status: 'loading', message: 'Preparing the comparison…' })
+    try {
+      const raw = await this.engineReady()
+      for (const id of missing) {
+        const stored = this.stored.get(id)!
+        this.set({ message: `Preparing the comparison: loading ${stored.manifest.model.name}…` })
+        this.api.use(null)
+        await loadPack(raw, stored.bytes.slice())
+        this.api.use(raw, id)
+        await this.summariseLoaded(stored)
+      }
+      return true
+    } catch (e) {
+      this.set({ error: describe(e) })
+      return false
+    } finally {
+      // back to the car that was shown, whatever happened
+      try {
+        this.api.use(null)
+        await this.activate(await this.engineReady(), this.stored.get(original)!)
+      } catch (e) {
+        this.set({ status: 'error', message: '', error: describe(e) })
+      }
+      this.set({ preparing: false })
+    }
   }
 
   clearError(): void {

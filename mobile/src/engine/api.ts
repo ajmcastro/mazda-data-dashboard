@@ -50,6 +50,7 @@ export class Api {
   private con: Con | null = null
   private loadedModel: string | null = null
   private models: ModelInfo[] = []
+  private summaries = new Map<string, unknown[]>()
   private readonly routes: Route[] = []
   private readonly database: string
 
@@ -104,6 +105,14 @@ export class Api {
     this.loadedModel = raw ? model : null
   }
 
+  /**
+   * The monthly figures of cars that are not loaded, for the Compare page: `/api/trends/monthly?model=<id>`
+   * without a period is answered from here. Anything else about another model is still refused.
+   */
+  setSummaries(summaries: Map<string, unknown[]>): void {
+    this.summaries = summaries
+  }
+
   /** What GET /api/models answers (the packs stored on this phone). */
   setModels(models: ModelInfo[]): void {
     this.models = models
@@ -120,6 +129,11 @@ export class Api {
       if (route.method !== method.toUpperCase()) continue
       try {
         const asked = u.searchParams.get('model')
+        const summary =
+          asked && path === '/api/trends/monthly' && method.toUpperCase() === 'GET' && !u.searchParams.has('from') && !u.searchParams.has('to')
+            ? this.summaries.get(asked)
+            : undefined
+        if (asked && summary && this.loadedModel !== null && asked !== this.loadedModel) return { status: 200, body: summary }
         if (asked && path !== '/api/models' && this.loadedModel !== null && asked !== this.loadedModel) {
           // same answer as the Python API for a model it does not know
           const ids = this.models.map((x) => x.id).join(', ')

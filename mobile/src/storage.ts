@@ -14,17 +14,18 @@ export interface StoredPack {
 }
 
 const DB = 'cx5'
-const VERSION = 2
+const VERSION = 3 // 3: the summaries store
 const LEGACY_PACK = 'pack' // version 1 kept a single pack here (format 1: it can no longer be read)
 const PACKS = 'packs'
 const ACKS = 'acks'
+const SUMMARIES = 'summaries'
 
 function open(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB, VERSION)
     req.onupgradeneeded = () => {
       const db = req.result
-      for (const store of [LEGACY_PACK, PACKS, ACKS]) {
+      for (const store of [LEGACY_PACK, PACKS, ACKS, SUMMARIES]) {
         if (!db.objectStoreNames.contains(store)) db.createObjectStore(store)
       }
     }
@@ -59,6 +60,39 @@ export async function writeStoredPack(pack: StoredPack): Promise<void> {
   await tx([PACKS], 'readwrite', (t) => void t.objectStore(PACKS).put(pack, pack.manifest.model.id))
 }
 
+/**
+ * What the Compare page needs of a car that is not loaded in the engine: its monthly figures over all its
+ * data (the answer of `/api/trends/monthly` without a period). Kept with a key that says which pack and
+ * which version of the engine's answer it was made from, so a replaced pack or a changed answer discards it.
+ */
+export interface StoredSummary {
+  key: string
+  monthly: unknown[]
+}
+
+export async function readStoredSummaries(): Promise<Record<string, StoredSummary>> {
+  const db = await open()
+  try {
+    return await new Promise((resolve, reject) => {
+      const out: Record<string, StoredSummary> = {}
+      const req = db.transaction([SUMMARIES], 'readonly').objectStore(SUMMARIES).openCursor()
+      req.onsuccess = () => {
+        const cursor = req.result
+        if (!cursor) return resolve(out)
+        out[String(cursor.key)] = cursor.value as StoredSummary
+        cursor.continue()
+      }
+      req.onerror = () => reject(req.error)
+    })
+  } finally {
+    db.close()
+  }
+}
+
+export async function writeStoredSummary(model: string, summary: StoredSummary): Promise<void> {
+  await tx([SUMMARIES], 'readwrite', (t) => void t.objectStore(SUMMARIES).put(summary, model))
+}
+
 /** A pack left by the first version of the app (before several models); it is removed when found. */
 export async function discardLegacyPack(): Promise<boolean> {
   const found = await tx([LEGACY_PACK], 'readonly', (t) => t.objectStore(LEGACY_PACK).count())
@@ -77,8 +111,9 @@ export async function deleteStoredModel(model: string): Promise<void> {
   const db = await open()
   try {
     await new Promise<void>((resolve, reject) => {
-      const t = db.transaction([PACKS, ACKS], 'readwrite')
+      const t = db.transaction([PACKS, ACKS, SUMMARIES], 'readwrite')
       t.objectStore(PACKS).delete(model)
+      t.objectStore(SUMMARIES).delete(model)
       const acks = t.objectStore(ACKS)
       const req = acks.openCursor()
       req.onsuccess = () => {
@@ -98,9 +133,10 @@ export async function deleteStoredModel(model: string): Promise<void> {
 
 /** Removes every pack and every acknowledgement. */
 export async function deleteAllStoredData(): Promise<void> {
-  await tx([PACKS, ACKS, LEGACY_PACK], 'readwrite', (t) => {
+  await tx([PACKS, ACKS, LEGACY_PACK, SUMMARIES], 'readwrite', (t) => {
     t.objectStore(PACKS).clear()
     t.objectStore(ACKS).clear()
+    t.objectStore(SUMMARIES).clear()
     t.objectStore(LEGACY_PACK).clear()
   })
 }

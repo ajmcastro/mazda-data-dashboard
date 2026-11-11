@@ -86,7 +86,8 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M21–M27 | Several car models ✅ | model registry, per-model data/config/database, API and dashboard model selector, synthetic second model, phone app with several packs, docs/CI/audit. M28 (a real CX-60 export) is conditional and not started. Details under "Several car models" |
 | M29 | Compare two models (Mac) ✅ | `/compare`: two cars, months in common, per day, comparability labels |
 | M33 | Estimated fuel cost ✅ | a fuel price per car in its settings: cost per 100 km and fuel cost on Trends, Overview and Compare |
-| M30–M32 | Comparing (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
+| M30 | Compare on the phone ✅ | the Compare page offline, from per-car summaries cached in IndexedDB |
+| M31–M32 | Comparing (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -667,12 +668,21 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 - **Not in this milestone:** the phone (M30), the cost figures (M33), comparing periods (M31).
 - **Checked:** frontend 94 tests (25 new), lint, backend 242, `make mobile-test` 802 (unchanged), and in the browser with both demo cars.
 
-### M30 — Compare on the phone
+### M30 — Compare on the phone ✅ done
 - **Why it is not free:** the phone's engine loads one pack at a time, so `GET /api/trends/monthly?model=<other>` cannot be answered from the database that is open.
 - **Mechanism:** for each stored pack the phone keeps a **summary**: the answer of `/api/trends/monthly` without a period (a few KiB of JSON), computed once by the engine when the pack is loaded and stored in IndexedDB (a new `summaries` store, keyed by model and by the pack's `savedAt`, so replacing or deleting a pack discards it). When the Compare page opens and a stored model has no fresh summary, the app loads that pack, computes the summary, stores it and goes back to the model that was on screen, with a visible "Preparing the comparison" message; the second visit is instant.
 - **Engine:** `Api` answers `/api/trends/monthly?model=<other>` from the summary when no `from` / `to` is given (the Compare page never sends one); with a period it still refuses another model as today. The golden tests of each model already contain the all-time monthly answer, so a test asserts that the summary of each sample pack equals it exactly.
 - **UI:** a "Compare" entry in More; offline like the rest; nothing leaves the device.
 - **Done when:** the two demo packs compare on the phone in airplane mode, a replaced pack invalidates its summary, and `make mobile-test` passes.
+
+**M30 as built.**
+- **Summaries:** each stored car's monthly figures over all its data (the engine's own answer to `/api/trends/monthly` without a period) are kept in IndexedDB (storage v3, store `summaries`), keyed by the pack's `savedAt` **and a `SUMMARY_VERSION`** (the plan only said the pack; the version makes a changed answer, such as M33's cost fields, discard every old summary). A summary is made whenever a car is loaded into the engine (once per pack) and a replaced or deleted pack drops its own.
+- **Preparing:** `controller.prepareComparison()` loads the cars that have no summary (an imported-but-never-shown car) one after the other, then loads the car that was shown again; the status stays `loading` ("Preparing the comparison: loading Mazda CX-60…") and `preparing` is true so the address-follower does not fight it. With one car, or all summaries present, it does nothing.
+- **Engine:** `Api.setSummaries`; `/api/trends/monthly?model=<other>` is answered from a summary **only without `from` / `to`** (the Compare page never sends one); a period, any other route or method, or a car without a summary is still refused like another model always was (tests).
+- **UI:** "Compare cars" under More (when two cars have data and show Trends) opens `CompareGate`, which prepares the figures and then shows the shared Compare page unchanged; a failure is shown once, not retried.
+- **Checked (phone viewport, real dev build, both demo cars):** after *Load demo data* the first open of Compare briefly shows the loading screen (the CX-60 had never been loaded), then the page with the same figures as the Mac (May–June, 12.70 against 14.30 EUR/100 km); after a reload it opens straight away (the summaries came from storage); switching the car in the selector keeps the page, with the cars swapped; no sideways scroll. Not checked: airplane mode with the installed app (the figures are in IndexedDB like the packs), a real iPhone.
+- **Tests:** mobile 813 (11 new: the cached figures equal the engine's answer for that car, prepare, nothing to prepare with one car, survives a relaunch without recomputing, replaced and deleted packs, a figure of another version is ignored, the period / other routes / methods are refused).
+- **Also:** the demo packs had to be rebuilt (`make mobile-demo-pack`) because M33 added a table to the pack; the stored-pack test that opened the database at version 2 now opens it at its current version.
 
 ### M31 — Compare two periods of one car
 - **What:** the same page with a mode switch, *Two cars* | *Two periods*: A and B are each a (car, from, to), with quick choices ("this month and the same month a year ago", "the last 30 days and the 30 before", "before and after a date you pick", useful after changing tires or after a service).

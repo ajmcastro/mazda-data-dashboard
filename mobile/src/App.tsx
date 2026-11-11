@@ -16,6 +16,7 @@ import Warnings from '@frontend/pages/Warnings'
 import { isPageHidden } from '@frontend/lib'
 import { useCurrentModel } from '@frontend/model'
 import { useRangeSearch, useRestoreSavedRange } from '@frontend/range'
+import CompareGate from './CompareGate'
 import DataScreen from './DataScreen'
 import { useController, useData } from './data'
 import { applyUpdate, usePwa } from './pwa'
@@ -23,7 +24,7 @@ import { applyUpdate, usePwa } from './pwa'
 // Pages about a period get the date-range bar (same list as the Mac app)
 const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
 
-function More({ hidden }: { hidden: readonly string[] | undefined }) {
+function More({ hidden, canCompare }: { hidden: readonly string[] | undefined; canCompare: boolean }) {
   const link = (to: string, label: string) => (isPageHidden(to, hidden) ? null : <RangeNavLink to={to}>{label}</RangeNavLink>)
   return (
     <>
@@ -31,6 +32,7 @@ function More({ hidden }: { hidden: readonly string[] | undefined }) {
       <nav className="more-list" aria-label="More pages">
         {link('/warnings', 'Warnings')}
         {link('/status', 'Status')}
+        {canCompare && <RangeNavLink to="/compare">Compare cars</RangeNavLink>}
         {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">Diagnostics</RangeNavLink>}
         <NavLink to="/data">Data on this phone</NavLink>
       </nav>
@@ -42,8 +44,10 @@ function Ready() {
   const overview = useOverview()
   const { pathname } = useLocation()
   const search = useRangeSearch()
-  const { model } = useCurrentModel()
+  const { model, models } = useCurrentModel()
   useRestoreSavedRange()
+  // two cars that have data and show the Trends page can be compared
+  const canCompare = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length >= 2
   const o = overview.data
   const hidden = model?.hidden_pages
   const tab = (to: string, label: ReactNode) =>
@@ -52,7 +56,7 @@ function Ready() {
   const page = (path: string, element: ReactNode) => (
     <Route path={path} element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element} />
   )
-  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/data'].includes(pathname)
+  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/data'].includes(pathname)
   return (
     <div className="m-shell">
       <main className="main">
@@ -67,8 +71,9 @@ function Ready() {
             {page('/warnings', <Warnings />)}
             {page('/status', <Status />)}
             {page('/diagnostics', <Diagnostics />)}
+            <Route path="/compare" element={<CompareGate />} />
             <Route path="/data" element={<DataScreen />} />
-            <Route path="/more" element={<More hidden={hidden} />} />
+            <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>
@@ -103,11 +108,12 @@ function UpdateBanner() {
  */
 function useFollowTheAddress() {
   const controller = useController()
-  const { status, current } = useData()
+  const { status, current, preparing } = useData()
   const { model } = useCurrentModel()
   useEffect(() => {
-    if (status === 'ready' && model && model.id !== current) void controller.switchTo(model.id)
-  }, [controller, status, current, model])
+    // not while the comparison is being prepared: the engine passes through the other cars on purpose
+    if (status === 'ready' && !preparing && model && model.id !== current) void controller.switchTo(model.id)
+  }, [controller, status, current, preparing, model])
 }
 
 export default function MobileApp() {

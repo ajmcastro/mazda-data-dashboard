@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto'
 import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DataController } from '../src/controller'
-import { readStoredPacks } from '../src/storage'
+import { DataController, SUMMARY_VERSION } from '../src/controller'
+import { readStoredPacks, readStoredSummaries } from '../src/storage'
 import { nodeDb } from './support/node-db'
 
 const packOf = (model: string) => new Uint8Array(readFileSync(new URL(`../contract/${model}/sample.cx5pack`, import.meta.url)))
@@ -252,7 +252,7 @@ describe('several car models on the device', () => {
     const c = launch()
     await c.init() // creates the storage
     await new Promise<void>((resolve, reject) => {
-      const open = indexedDB.open('cx5', 2)
+      const open = indexedDB.open('cx5')
       open.onsuccess = () => {
         const t = open.result.transaction(['pack'], 'readwrite')
         t.objectStore('pack').put({ name: 'old.cx5pack' }, 'current')
@@ -268,5 +268,123 @@ describe('several car models on the device', () => {
     await later.init()
     expect(later.getState().error).toBeNull() // it was removed, so the message is shown once
   }, 120_000)
+})
+
+describe('comparing cars on the device', () => {
+  beforeEach(wipe, 60_000)
+
+  const monthly = async (c: DataController, model?: string) => {
+    const res = await c.api.handle('GET', `/api/trends/monthly${model ? `?model=${model}` : ''}`)
+    return { status: res.status, body: res.body as { month: string }[] }
+  }
+
+  it('caches the figures of the model loaded, once per pack', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    expect(c.getState().summaries).toEqual(['cx5'])
+    const saved = await readStoredSummaries()
+    expect(saved.cx5.key).toMatch(new RegExp(`^${SUMMARY_VERSION}:`))
+    expect(saved.cx5.monthly).toEqual((await monthly(c)).body) // what the engine answers for the loaded car
+  }, 180_000)
+
+  it('cannot answer for a car that is stored but has no figures yet, then prepares them', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack') // stored only: never loaded
+    expect(c.getState().summaries).toEqual(['cx5'])
+    expect((await monthly(c, 'cx60')).status).toBe(404)
+
+    expect(await c.prepareComparison()).toBe(true)
+    // the car that was shown is shown again, and both cars have figures
+    expect(c.getState()).toMatchObject({ status: 'ready', current: 'cx5', preparing: false })
+    expect(c.getState().summaries.sort()).toEqual(['cx5', 'cx60'])
+    expect((await c.api.handle('GET', '/api/span')).body).toEqual({ first_day: '2026-03-01', last_day: '2026-06-30' })
+
+    const other = await monthly(c, 'cx60')
+    expect(other.status).toBe(200)
+    expect(other.body.map((m) => m.month)).toEqual(['2026-04', '2026-05', '2026-06', '2026-07'])
+  }, 300_000)
+
+  it('the cached figures are exactly what the engine answers when that car is loaded', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack')
+    await c.prepareComparison()
+    const cached = (await monthly(c, 'cx60')).body
+    await c.switchTo('cx60')
+    expect((await monthly(c)).body).toEqual(cached)
+    expect((await monthly(c, 'cx5')).body.length).toBeGreaterThan(0) // and now cx5 comes from its cache
+  }, 300_000)
+
+  it('only answers the all-time monthly figures for a car that is not loaded', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack')
+    await c.prepareComparison()
+    for (const url of ['/api/trends/monthly?model=cx60&from=2026-05-01', '/api/trends/monthly?model=cx60&to=2026-06-30', '/api/overview?model=cx60', '/api/alerts?model=cx60']) {
+      expect((await c.api.handle('GET', url)).status, url).toBe(404)
+    }
+    expect((await c.api.handle('POST', '/api/alerts/acknowledge-all?model=cx60')).status).toBe(404)
+  }, 300_000)
+
+  it('keeps the figures for the next launch and does not recompute them', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack')
+    await c.prepareComparison()
+    lastShown = 'cx5'
+    const next = launch()
+    await next.init()
+    expect(next.getState().summaries.sort()).toEqual(['cx5', 'cx60']) // straight from storage, nothing loaded for them
+    expect((await monthly(next, 'cx60')).status).toBe(200)
+  }, 300_000)
+
+  it('a replaced pack discards its figures; a deleted one too', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack')
+    await c.prepareComparison()
+    const before = (await readStoredSummaries()).cx60.key
+
+    await c.importPack(packOf('cx60'), 'b2.cx5pack') // another pack of the same car, stored only
+    expect(c.getState().summaries).toEqual(['cx5']) // the old figures are not offered for the new pack
+    expect((await monthly(c, 'cx60')).status).toBe(404)
+    await c.prepareComparison()
+    expect((await readStoredSummaries()).cx60.key).not.toBe(before)
+
+    await c.deleteModel('cx60')
+    expect(c.getState().summaries).toEqual(['cx5'])
+    expect(Object.keys(await readStoredSummaries())).toEqual(['cx5'])
+    await c.deleteAll()
+    expect(await readStoredSummaries()).toEqual({})
+  }, 400_000)
+
+  it('ignores figures made from another version of the answer', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    // a leftover from an older version of the app's maths
+    const { writeStoredSummary } = await import('../src/storage')
+    await writeStoredSummary('cx5', { key: `0:${c.getState().info!.savedAt}`, monthly: [{ month: 'stale' }] })
+    lastShown = 'cx5'
+    const next = launch()
+    await next.init()
+    expect((await monthly(next)).body.map((m) => m.month)).not.toContain('stale')
+    expect((await readStoredSummaries()).cx5.key).toMatch(new RegExp(`^${SUMMARY_VERSION}:`)) // made again
+  }, 200_000)
+
+  it('with one car there is nothing to prepare', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    expect(await c.prepareComparison()).toBe(true)
+    expect(c.getState()).toMatchObject({ status: 'ready', preparing: false })
+  }, 180_000)
 })
 

@@ -192,3 +192,29 @@ describe('the pack names its car model', () => {
     expect(() => readPack(pack(noModel))).toThrow(/does not say which car model/)
   })
 })
+
+describe('summaries of cars that are not loaded', () => {
+  let api: Api
+  beforeAll(async () => {
+    ;({ api } = await fresh())
+    api.setSummaries(new Map([['cx60', [{ month: '2026-05' }]]]))
+  }, 120_000)
+
+  it('answers the all-time monthly figures of that car from its summary', async () => {
+    expect(await api.handle('GET', '/api/trends/monthly?model=cx60')).toEqual({ status: 200, body: [{ month: '2026-05' }] })
+  })
+  it('the loaded car is answered by the engine, not by a summary', async () => {
+    api.setSummaries(new Map([['cx5', [{ month: 'from-summary' }]]]))
+    const res = await api.handle('GET', '/api/trends/monthly?model=cx5')
+    expect(res.status).toBe(200)
+    expect(JSON.stringify(res.body)).not.toContain('from-summary')
+    api.setSummaries(new Map([['cx60', [{ month: '2026-05' }]]]))
+  })
+  it('refuses a period, other routes, other methods and cars without a summary', async () => {
+    api.setModels([])
+    for (const url of ['/api/trends/monthly?model=cx60&from=2026-05-01', '/api/trends/monthly?model=cx60&to=2026-06-01', '/api/span?model=cx60', '/api/trends/monthly?model=mx30']) {
+      expect((await api.handle('GET', url)).status, url).toBe(404)
+    }
+    expect((await api.handle('POST', '/api/trends/monthly?model=cx60')).status).toBe(405)
+  })
+})

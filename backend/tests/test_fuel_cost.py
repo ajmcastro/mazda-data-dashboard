@@ -33,13 +33,18 @@ def prices(con):
 def test_no_price_means_no_cost_and_an_empty_table(tmp_path):
     con, values = settings(tmp_path, "car_timezone: Europe/Lisbon\n")
     assert prices(con) == [] and "fuel_currency" not in values
-    # the shipped configuration of both real models sets no price: nothing is invented
+    con, values = settings(tmp_path, "# only comments\ncar_timezone: UTC\n")
+    assert prices(con) == []
+
+
+def test_the_shipped_settings_of_every_model_are_valid():
+    """Whatever price the owner has set, the files in the repository must load (and a price needs its currency)."""
     for model in ("cx5", "cx60"):
         con = duckdb.connect()
         values = load_settings(
             con, REPO / "config" / "models" / model / "settings.yaml"
         )
-        assert prices(con) == [] and "fuel_currency" not in values
+        assert (len(prices(con)) > 0) == ("fuel_currency" in values), model
 
 
 def test_one_price_applies_to_all_the_data(tmp_path):
@@ -121,10 +126,15 @@ def demo(tmp_path_factory):
         )
         out[pid] = db
     # the same CX-5 data without any price
+    bare = (
+        root / "bare-settings.yaml"
+    )  # explicit: the real settings may hold the owner's prices
+    bare.write_text("car_timezone: Europe/Lisbon\n")
     ingest(
         root / "cx5",
         root / "noprice.duckdb",
         REPO / "config" / "models" / "cx5" / "codes",
+        bare,
     )
     out["noprice"] = root / "noprice.duckdb"
     return out
