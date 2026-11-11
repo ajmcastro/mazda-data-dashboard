@@ -1,4 +1,4 @@
-.PHONY: models migrate-models setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
+.PHONY: models migrate-models compat setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
 
 # ---- car models (PLAN.md M21-M28) ----
 # MODEL=cx60 acts on one model (ids are listed in config/models.yaml). Without it, the commands that load,
@@ -14,6 +14,10 @@ models:
 # move a single-car install (data/*.csv, db/mazda.duckdb) into data/cx5/ and db/cx5.duckdb; shows the moves and asks first
 migrate-models:
 	cd backend && uv run python -m mazda_dash.models migrate
+
+# which signals the views read are missing from a model's data, and which of its signals nothing reads yet
+compat:
+	cd backend && for m in $(MODELS); do uv run python -m mazda_dash.compat --model $$m || true; done
 
 setup:
 	cd backend && uv sync

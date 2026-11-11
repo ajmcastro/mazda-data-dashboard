@@ -455,7 +455,7 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 | | Milestone | Outcome |
 |---|---|---|
 | M21 | Model registry and folder layout ✅ | `config/models/<id>/model.yaml`, `data/<id>/`, `db/<id>.duckdb`, a loader that validates them, migration of the existing CX-5 files, `MODEL=` in the Makefile |
-| M22 | Per-model ingest, configuration and alerts | `make ingest` for one or all models, per-model codes/alerts/settings, a signal-compatibility report for a new model |
+| M22 | Per-model ingest, configuration and alerts ✅ | `make ingest` for one or all models, per-model codes/alerts/settings, a signal-compatibility report for a new model |
 | M23 | API: choose the model | `/api/models`, `model` on every route, per-model alert writes, regenerated types |
 | M24 | Dashboard: model switcher | selector in the rail, model in URL and query keys, model-aware titles, tests |
 | M25 | Synthetic second model | `sample_data/cx60/` (different platform code, signals and time zone), `make demo` serves both, tests and screenshots |
@@ -481,12 +481,21 @@ Each milestone is implemented only on request, like the earlier ones, and ends w
 - **Not in M21 (by plan):** `sample_data/` stays flat until M25; the API and the dashboard ignore models until M23/M24; ingest runs one model per call (the Makefile loops), the VIN check and `make compat` are M22.
 - **Checked:** backend 190 tests, frontend 60, `make mobile-test` (408), lint, and `TZ=UTC make types sample-data` leaves no diff; `make demo-ingest`, `make timezone` and `make unmapped` work, the last two on the real database through the single-car fallback.
 
-### M22 — Per-model ingest, configuration and alerts
+### M22 — Per-model ingest, configuration and alerts ✅ done
 - **Ingest:** `ingest(model)` reads `data/<id>/` into `db/<id>.duckdb` and builds the model with that model's config; the CLI takes `--model` (default: all). A model folder with no recognisable files is reported, not silently skipped. The VIN-per-file check warns when one model's folder contains two different VINs (the plan assumes one car per model; see "Open questions").
 - **Config per model:** `build_model` takes the model's `config/models/<id>/` (codes, `settings.yaml` with its own `car_timezone` and `tire_stale_hours`); `alerts.yaml` is read per model with a fallback to `config/defaults/alerts.yaml`. `make unmapped` and `make timezone` take the model. Code descriptions never fall back to another model: an unmapped code stays "unmapped" (CLAUDE.md rule: never invent titles).
 - **Compatibility report (`make compat MODEL=cx60`):** compares what `views.sql` reads (signals as `signal = '…'`, `starts_with` families, ECU and warning kinds) with what the model's database contains, and lists the signals the views want but the model lacks and the signals the model has that nothing reads yet. This is how a new model is brought up without guessing, and it is the input for M28.
 - **Alerts:** the engine runs per model database; `dedup_key` needs no model part because the databases are separate. Optional desktop notification titles include the model name.
 - **Done when:** two temporary models with different data and different configs ingest side by side, and tests prove that alerts, code descriptions and time zones of one do not appear in the other.
+
+**M22 as built.**
+- **Most of M22's plumbing already existed from M21** (per-model paths, `--model` on every CLI, per-model config folders, the Makefile loops), so this milestone added what was still missing and proved the isolation with a test.
+- **Isolation test** (`tests/test_model_isolation.py`): two models with different VINs, platform codes in the file names, warning codes, descriptions, time zones and alert rules are ingested and evaluated side by side; the test asserts that each database holds only its own VIN, that a description in one model is not used by the other (its code stays unmapped), that each uses its own `car_timezone`, and that alerts follow each model's own `alerts.yaml` and data.
+- **Ingest warnings:** a model whose folder has no export files is reported (`warning: no export files for Mazda CX60 in ...`) and, when it has no database yet, none is created (an empty file would look like a model with data); a database that holds more than one VIN is reported with the VINs masked, because a model is one car.
+- **Compatibility report** (`make compat`, `mazda_dash/compat.py`): for each model, how many of the signals the views read are in its data, which are missing (with the views they feed), which are present but never valid, the two warning-flag families (signals and how many change), which export kinds were loaded, and how many signals nothing reads (`--all` lists them, `--strict` exits 1 when something is missing). On the author's CX-5 all 39 named signals are present and 33 of 200 signals are read by no view.
+- **Desktop notification** titles carry the model's name ("Mazda CX-5: 2 new alerts").
+- **Differences from the plan:** (1) there is no shared `config/defaults/`: a missing `alerts.yaml` or `settings.yaml` already falls back to the built-in defaults (`AlertsConfig()`, UTC and 6 h), which is the same thing without a second copy that could drift; the CLIs print a note when a file is missing. (2) The report compares signals and export kinds, not ECU and warning kinds (those are data, not something the views require). (3) `make ingest` still runs one model per call and the Makefile loops over all of them; a single `--model all` option was not needed.
+- **Checked:** backend 198 tests (8 new), lint, `make demo-ingest`, and `make compat` on the real database.
 
 ### M23 — API: choose the model
 - **Backend:** a `model` dependency (like `date_range`, in `api/models.py`) resolves the query parameter to a `Model` (default when omitted and only one exists or one is marked default; 404 with the list of valid ids otherwise) and `api/db.py` opens that model's file read-only; the alert write endpoints use the same resolution with the short read-write connection (503 while `make ingest` holds that model's lock). `GET /api/models` returns id, name, platform, hidden pages, whether the database exists and its data span, so the UI can show "no data yet" for a model whose folder is empty.

@@ -143,7 +143,8 @@ def test_evaluate_opens_its_own_connection(data_dir, tmp_path):
 def test_notification_summary_and_filtering(monkeypatch):
     low = Candidate("r", "k1", "info", "Minor thing", "", None)
     high = Candidate("r", "k2", "critical", "Alarm!", "", None)
-    assert summary([low, high]) == ("CX-5: 2 new alerts", "Alarm! (+1 more)")
+    assert summary([low, high]) == ("Mazda: 2 new alerts", "Alarm! (+1 more)")
+    assert summary([low, high], "Mazda CX-60")[0] == "Mazda CX-60: 2 new alerts"
     calls = []
     monkeypatch.setattr("platform.system", lambda: "Darwin")
     monkeypatch.setattr(

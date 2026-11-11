@@ -13,7 +13,10 @@ from .store import Candidate
 
 
 def evaluate(
-    db: Path, config: Path | None, notify: bool = False
+    db: Path,
+    config: Path | None,
+    notify: bool = False,
+    label: str = "Mazda",
 ) -> tuple[list[Candidate], int]:
     """Run the rules against ``db``; returns (alerts created now, unacknowledged total)."""
     cfg = load_config(config)
@@ -26,7 +29,7 @@ def evaluate(
     finally:
         con.close()
     if created and (notify or cfg.notifications.desktop):
-        notify_desktop(created, cfg)
+        notify_desktop(created, cfg, label)
     return created, open_count
 
 
@@ -48,6 +51,9 @@ def main() -> None:
     model = resolve(args.model, args.root)
     report(
         *evaluate(
-            args.db or model.db_path, args.config or model.alerts_path, args.notify
+            args.db or model.db_path,
+            args.config or model.alerts_path,
+            args.notify,
+            model.name,
         )
     )

@@ -211,7 +211,7 @@ yet, then add what you learn to `config/models/cx5/codes/*.yaml` and run `make m
 The dashboard is organised by car model. `config/models.yaml` lists the models (today `cx5`); each one has
 its own raw exports in `data/<id>/`, its own database `db/<id>.duckdb` and its own configuration in
 `config/models/<id>/` (`model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`). Nothing is shared
-between models, least of all the descriptions of codes. `make models` shows where everything is.
+between models, least of all the descriptions of codes. `make models` shows where everything is; `make compat` tells what a new model's data lacks. A model without `alerts.yaml` or `settings.yaml` (or code descriptions) uses the built-in defaults (all alert rules on, time zone UTC), never another model's files. `make ingest` warns when a model's data holds more than one VIN or its folder is empty.
 `MODEL=<id>` limits a command to one model (`MODEL=cx60 make ingest`); without it, `make ingest`, `model`,
 `alerts`, `timezone`, `unmapped` and `mobile-pack` run for every model, and `make reset-db` asks you to name one.
 
@@ -372,6 +372,7 @@ Run them from the project folder. The first group is what you need to use the da
 | Command | What it does |
 |---|---|
 | `make setup` | install backend and frontend dependencies |
+| `make compat` | per model: which signals the dashboard reads are missing from your data, and which of your signals nothing reads yet |
 | `make models`, `make migrate-models` | show the car models and where their files are; move a single-car install into the model folders |
 | `make ingest` | load `data/` into `db/<id>.duckdb`, rebuild the views, evaluate alerts |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |

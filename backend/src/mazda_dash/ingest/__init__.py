@@ -7,6 +7,7 @@ from pathlib import Path
 import duckdb
 
 from ..alerts import evaluate, report
+from ..audit import mask
 from ..model import build_model
 from ..models import add_model_option, resolve
 from .csv_loaders import LOADERS, ORDER
@@ -52,6 +53,22 @@ def find_files(data_dir: Path) -> list[tuple[str, Path]]:
         found += [(kind, p) for p in sorted(data_dir.glob(f"*_{kind}-*.csv"))]
     found += [("diag", p) for p in sorted(data_dir.glob("*diag-tool*.txt"))]
     return found
+
+
+VIN_TABLES = ("warning_events", "dtc_headers", "signal_readings", "diag_reports")
+
+
+def distinct_vins(db_path: Path) -> list[str]:
+    """Every VIN stored in the database. A model's database is meant to hold one car."""
+    con = duckdb.connect(str(db_path), read_only=True)
+    try:
+        sql = " UNION ".join(
+            f"SELECT vin FROM {t} WHERE vin IS NOT NULL AND vin <> ''"
+            for t in VIN_TABLES
+        )
+        return sorted(r[0] for r in con.execute(sql).fetchall())
+    finally:
+        con.close()
 
 
 def ingest(
@@ -103,8 +120,24 @@ def main() -> None:
             "`make migrate-models` moves it"
         )
     data, db = args.data or model.data_dir, args.db or model.db_path
-    for kind, name, read, new in ingest(data, db, args.config or model.codes_dir):
+    codes = args.config or model.codes_dir
+    alerts = args.alerts_config or model.alerts_path
+    if not find_files(data):
+        print(f"warning: no export files for {model.name} in {data}")
+        if not db.exists():
+            print("nothing to load (no database is created for an empty folder)")
+            return
+    for note, path in (("code descriptions", codes), ("alert rules", alerts)):
+        if not path.exists():
+            print(f"note: {path} not found, {note} use the built-in defaults")
+    for kind, name, read, new in ingest(data, db, codes):
         print(f"{kind:8} read={read:6} new={new:6}  {name}")
     print("database:", db)
+    vins = distinct_vins(db)
+    if len(vins) > 1:
+        print(
+            f"warning: {model.name} holds {len(vins)} different VINs ({', '.join(mask(v) for v in vins)}); "
+            "a model folder is meant to hold one car, so its figures mix cars"
+        )
     if not args.no_alerts:
-        report(*evaluate(db, args.alerts_config or model.alerts_path, args.notify))
+        report(*evaluate(db, alerts, args.notify, model.name))
