@@ -23,6 +23,12 @@ import {
   sanitizeRange,
   signalLabel,
   signalValue,
+  PAGE_PATHS,
+  isPageHidden,
+  pickModel,
+  rangeForModel,
+  restoreModel,
+  shortModelName,
 } from './lib'
 
 describe('fmtNum', () => {
@@ -349,5 +355,67 @@ describe('warning lamp helpers', () => {
   it('words the contrast of a hint', () => {
     expect(fmtShares(0.691, 0.583)).toBe('near in 69% of the readings with the flag on, 58% with it off')
     expect(fmtShares(1, null)).toBe('near in 100% of the readings with the flag on, 0% with it off')
+  })
+})
+
+describe('car models', () => {
+  const cx5 = { id: 'cx5', default: true, first_day: '2026-03-01', last_day: '2026-06-30' }
+  const cx60 = { id: 'cx60', default: false, first_day: '2026-09-01', last_day: '2026-10-31' }
+  const models = [cx5, cx60]
+
+  it('shortens the brand name', () => {
+    expect(shortModelName('Mazda CX-5')).toBe('CX-5')
+    expect(shortModelName('mazda MX-30')).toBe('MX-30')
+    expect(shortModelName('Mazda')).toBe('Mazda')
+    expect(shortModelName('Roadster')).toBe('Roadster')
+  })
+
+  it('picks the model the address asks for, the default when it asks for none', () => {
+    expect(pickModel(models, undefined).model).toBe(cx5)
+    expect(pickModel(models, 'cx60')).toEqual({ model: cx60, notFound: false })
+    expect(pickModel(models, 'cx70')).toEqual({ model: undefined, notFound: true })
+    expect(pickModel(undefined, 'cx60')).toEqual({ model: undefined, notFound: false }) // list not here (phone)
+    expect(pickModel([], null).notFound).toBe(false)
+    expect(pickModel([{ id: 'a', default: false }], null).model?.id).toBe('a') // none marked: the first
+  })
+
+  it('restores the saved model only when the address names none and it is not the default', () => {
+    expect(restoreModel('cx60', models, null)).toBe('cx60')
+    expect(restoreModel('cx60', models, 'cx5')).toBeUndefined() // the address wins
+    expect(restoreModel('cx5', models, null)).toBeUndefined() // the default needs no address
+    expect(restoreModel('gone', models, null)).toBeUndefined() // a model that no longer exists
+    expect(restoreModel(null, models, null)).toBeUndefined()
+    expect(restoreModel('cx60', undefined, null)).toBeUndefined()
+  })
+
+  it('knows which pages a model hides', () => {
+    expect(PAGE_PATHS.trends).toBe('/trends')
+    expect(isPageHidden('/trends', ['trends'])).toBe(true)
+    expect(isPageHidden('/status', ['trends'])).toBe(false)
+    expect(isPageHidden('/', undefined)).toBe(false)
+    expect(isPageHidden('/nowhere', ['nowhere'])).toBe(false) // an unknown id hides nothing
+  })
+
+  describe('the period after switching', () => {
+    const a = { first: cx5.first_day, last: cx5.last_day }
+    const b = { first: cx60.first_day, last: cx60.last_day }
+
+    it('keeps "all time" as it is', () => {
+      expect(rangeForModel({}, a, b)).toEqual({})
+    })
+    it('re-counts a preset from the newest day of the new model', () => {
+      const last30 = resolvePreset('30d', a.first, a.last) // 1-30 June in the old model
+      expect(rangeForModel(last30, a, b)).toEqual({ from: '2026-10-02', to: '2026-10-31' })
+    })
+    it('clamps typed dates to the data the new model has', () => {
+      expect(rangeForModel({ from: '2026-06-15', to: '2026-09-15' }, a, b)).toEqual({ from: '2026-09-01', to: '2026-09-15' })
+      expect(rangeForModel({ from: '2026-10-10' }, a, b)).toEqual({ from: '2026-10-10', to: '2026-10-31' })
+    })
+    it('falls back to all time when nothing of the period exists in the new model', () => {
+      expect(rangeForModel({ from: '2026-03-05', to: '2026-04-05' }, a, b)).toEqual({})
+    })
+    it('shows all time when the new model has no data', () => {
+      expect(rangeForModel({ from: '2026-03-05', to: '2026-04-05' }, a, {})).toEqual({})
+    })
   })
 })

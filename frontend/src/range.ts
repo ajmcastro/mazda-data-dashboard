@@ -29,10 +29,18 @@ export function useDateRange() {
   return { ...range, isFiltered: Boolean(range.from || range.to), setRange, clear: () => setRange({}) }
 }
 
-/** `?from=…&to=…` for the current period, to carry it over when linking to another page. */
+/** The car model in the address (`?model=cx60`); undefined = the default model. */
+export function useModelParam(): string | undefined {
+  const [params] = useSearchParams()
+  return params.get('model') || undefined
+}
+
+/** `?model=…&from=…&to=…` for the current model and period, to carry them over when linking to another page. */
 export function useRangeSearch(): string {
   const { from, to } = useDateRange()
+  const model = useModelParam()
   const p = new URLSearchParams()
+  if (model) p.set('model', model)
   if (from) p.set('from', from)
   if (to) p.set('to', to)
   const s = p.toString()
@@ -63,16 +71,17 @@ function loadRangeChoice(): string | null {
  * (counted from the newest data, so "Last 30 days" still means the newest 30 days after a new
  * export). Runs once, so choosing "All time" afterwards is not undone.
  */
-export function useRestoreSavedRange() {
+export function useRestoreSavedRange(ready = true) {
   const { isFiltered, setRange } = useDateRange()
   const span = useSpan().data
   const done = useRef(false)
 
   useEffect(() => {
-    if (done.current || !span) return
+    // `ready`: the model is settled first, so the preset is counted from the right model's newest day
+    if (done.current || !span || !ready) return
     done.current = true
     if (isFiltered) return // a shared or bookmarked address wins over the saved choice
     const restored = restoreRange(loadRangeChoice(), span.first_day, span.last_day)
     if (restored) setRange(restored)
-  }, [span, isFiltered, setRange])
+  }, [span, ready, isFiltered, setRange])
 }

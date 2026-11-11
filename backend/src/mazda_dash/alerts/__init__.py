@@ -1,4 +1,4 @@
-"""Alerts engine: rules in config/models/cx5/alerts.yaml -> alerts table. Use ``python -m mazda_dash.alerts``."""
+"""Alerts engine: rules in config/models/<id>/alerts.yaml -> alerts table. Use ``python -m mazda_dash.alerts``."""
 
 import argparse
 from pathlib import Path

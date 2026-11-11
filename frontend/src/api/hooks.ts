@@ -1,11 +1,13 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useDateRange } from '../range'
+import { useDateRange, useModelParam } from '../range'
 import { client } from './client'
 
-/** from/to query parameters of the selected period (undefined = no limit). */
+/** from/to of the selected period (undefined = no limit) and the car model (undefined = the default one).
+ * Spread into the request and used in the query key, so another model never shows cached figures. */
 function useRangeQuery() {
   const { from, to } = useDateRange()
-  return { from, to }
+  const model = useModelParam()
+  return { from, to, model }
 }
 
 type Result<T> = { data?: T; error?: unknown; response: Response }
@@ -27,8 +29,22 @@ export const useOverview = () => {
   })
 }
 
-export const useSpan = () =>
-  useQuery({ queryKey: ['span'], queryFn: () => unwrap(client.GET('/api/span')) })
+/** The car models, with what data each has. The phone app has no such route (one pack, one model). */
+export const useModels = () =>
+  useQuery({
+    queryKey: ['models'],
+    queryFn: () => unwrap(client.GET('/api/models')),
+    retry: false,
+    staleTime: 60_000,
+  })
+
+export const useSpan = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['span', model],
+    queryFn: () => unwrap(client.GET('/api/span', { params: { query: { model } } })),
+  })
+}
 
 export const useMonthly = () => {
   const range = useRangeQuery()
@@ -141,26 +157,45 @@ export const useReadouts = () => {
   })
 }
 
-export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefined) =>
-  useQuery({
-    queryKey: ['snapshots', ecu, dtc_code],
+export const useSnapshots = (ecu: string | undefined, dtc_code: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['snapshots', model, ecu, dtc_code],
     enabled: Boolean(ecu && dtc_code),
     queryFn: () =>
       unwrap(
-        client.GET('/api/dtcs/snapshots', { params: { query: { ecu: ecu!, dtc_code: dtc_code! } } }),
+        client.GET('/api/dtcs/snapshots', {
+          params: { query: { ecu: ecu!, dtc_code: dtc_code!, model } },
+        }),
       ),
   })
+}
 
-export const useDiagReports = () =>
-  useQuery({ queryKey: ['diag-reports'], queryFn: () => unwrap(client.GET('/api/diag/reports')) })
+export const useDiagReports = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['diag-reports', model],
+    queryFn: () => unwrap(client.GET('/api/diag/reports', { params: { query: { model } } })),
+  })
+}
 
 /** The car's own oil-change countdown: a state, so it ignores the selected period. */
-export const useOilService = () =>
-  useQuery({ queryKey: ['oil'], queryFn: () => unwrap(client.GET('/api/maintenance/oil')) })
+export const useOilService = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['oil', model],
+    queryFn: () => unwrap(client.GET('/api/maintenance/oil', { params: { query: { model } } })),
+  })
+}
 
 /** The car's own warning flags: a state, so it ignores the selected period. */
-export const useCarWarnings = () =>
-  useQuery({ queryKey: ['car-warnings'], queryFn: () => unwrap(client.GET('/api/status/car-warnings')) })
+export const useCarWarnings = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['car-warnings', model],
+    queryFn: () => unwrap(client.GET('/api/status/car-warnings', { params: { query: { model } } })),
+  })
+}
 
 /** Tire pressures by the time the car measured them, for the selected period. */
 export const useTires = () => {
@@ -172,76 +207,125 @@ export const useTires = () => {
 }
 
 /** The car's warning-lamp bit flags that ever change: a state, so it ignores the selected period. */
-export const useWarningFlags = () =>
-  useQuery({ queryKey: ['warning-flags'], queryFn: () => unwrap(client.GET('/api/status/warning-flags')) })
+export const useWarningFlags = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['warning-flags', model],
+    queryFn: () => unwrap(client.GET('/api/status/warning-flags', { params: { query: { model } } })),
+  })
+}
 
 /** What happens around the times a flag is on (loaded when a flag is opened). */
-export const useFlagHints = (flag: string | undefined, windowHours: number) =>
-  useQuery({
-    queryKey: ['flag-hints', flag, windowHours],
+export const useFlagHints = (flag: string | undefined, windowHours: number) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['flag-hints', model, flag, windowHours],
     enabled: Boolean(flag),
     queryFn: () =>
-      unwrap(client.GET('/api/status/warning-flags/hints', { params: { query: { flag: flag!, window_hours: windowHours } } })),
+      unwrap(
+        client.GET('/api/status/warning-flags/hints', {
+          params: { query: { flag: flag!, window_hours: windowHours, model } },
+        }),
+      ),
   })
+}
 
-export const useDiagHistory = () =>
-  useQuery({ queryKey: ['diag-history'], queryFn: () => unwrap(client.GET('/api/diag/history')) })
-
-export const useDiagReport = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['diag-report', id],
-    enabled: Boolean(id),
-    queryFn: () =>
-      unwrap(client.GET('/api/diag/reports/{report_id}', { params: { path: { report_id: id! } } })),
+export const useDiagHistory = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['diag-history', model],
+    queryFn: () => unwrap(client.GET('/api/diag/history', { params: { query: { model } } })),
   })
+}
 
-export const useDiagFrames = (id: string | undefined) =>
-  useQuery({
-    queryKey: ['diag-frames', id],
+export const useDiagReport = (id: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['diag-report', model, id],
     enabled: Boolean(id),
     queryFn: () =>
       unwrap(
-        client.GET('/api/diag/reports/{report_id}/frames', { params: { path: { report_id: id! } } }),
+        client.GET('/api/diag/reports/{report_id}', {
+          params: { path: { report_id: id! }, query: { model } },
+        }),
       ),
   })
+}
 
-export const useDiagCompare = (a: string | undefined, b: string | undefined) =>
-  useQuery({
-    queryKey: ['diag-compare', a, b],
-    enabled: Boolean(a && b && a !== b),
-    queryFn: () => unwrap(client.GET('/api/diag/compare', { params: { query: { a: a!, b: b! } } })),
+export const useDiagFrames = (id: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['diag-frames', model, id],
+    enabled: Boolean(id),
+    queryFn: () =>
+      unwrap(
+        client.GET('/api/diag/reports/{report_id}/frames', {
+          params: { path: { report_id: id! }, query: { model } },
+        }),
+      ),
   })
+}
 
-export const useFreezeFrames = (ecu: string | undefined, dtc_code: string | undefined) =>
-  useQuery({
-    queryKey: ['frames', ecu, dtc_code],
+export const useDiagCompare = (a: string | undefined, b: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['diag-compare', model, a, b],
+    enabled: Boolean(a && b && a !== b),
+    queryFn: () =>
+      unwrap(client.GET('/api/diag/compare', { params: { query: { a: a!, b: b!, model } } })),
+  })
+}
+
+export const useFreezeFrames = (ecu: string | undefined, dtc_code: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['frames', model, ecu, dtc_code],
     enabled: Boolean(ecu && dtc_code),
     queryFn: () =>
-      unwrap(client.GET('/api/dtcs/frames', { params: { query: { ecu: ecu!, dtc_code: dtc_code! } } })),
+      unwrap(
+        client.GET('/api/dtcs/frames', {
+          params: { query: { ecu: ecu!, dtc_code: dtc_code!, model } },
+        }),
+      ),
   })
+}
 
-export const useFaultContext = (transaction_id: string | undefined) =>
-  useQuery({
-    queryKey: ['fault-context', transaction_id],
+export const useFaultContext = (transaction_id: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['fault-context', model, transaction_id],
     enabled: Boolean(transaction_id),
     queryFn: () =>
-      unwrap(client.GET('/api/dtcs/context', { params: { query: { transaction_id: transaction_id! } } })),
+      unwrap(
+        client.GET('/api/dtcs/context', {
+          params: { query: { transaction_id: transaction_id!, model } },
+        }),
+      ),
   })
+}
 
-export const useUnmapped = () =>
-  useQuery({ queryKey: ['unmapped'], queryFn: () => unwrap(client.GET('/api/codes/unmapped')) })
-
-export const useAlerts = (status: 'new' | 'acknowledged') =>
-  useQuery({
-    queryKey: ['alerts', status],
-    queryFn: () => unwrap(client.GET('/api/alerts', { params: { query: { status } } })),
+export const useUnmapped = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['unmapped', model],
+    queryFn: () => unwrap(client.GET('/api/codes/unmapped', { params: { query: { model } } })),
   })
+}
 
-/** Acknowledging changes alert lists and the overview/nav counters. */
-function useAlertMutation<T = void>(run: (arg: T) => Promise<unknown>) {
+export const useAlerts = (status: 'new' | 'acknowledged') => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['alerts', model, status],
+    queryFn: () => unwrap(client.GET('/api/alerts', { params: { query: { status, model } } })),
+  })
+}
+
+/** Acknowledging changes alert lists and the overview/nav counters (of the model shown). */
+function useAlertMutation<T = void>(run: (arg: T, model: string | undefined) => Promise<unknown>) {
   const queryClient = useQueryClient()
+  const { model } = useRangeQuery()
   return useMutation({
-    mutationFn: run,
+    mutationFn: (arg: T) => run(arg, model),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['alerts'] })
       void queryClient.invalidateQueries({ queryKey: ['overview'] })
@@ -250,9 +334,15 @@ function useAlertMutation<T = void>(run: (arg: T) => Promise<unknown>) {
 }
 
 export const useAcknowledge = () =>
-  useAlertMutation((alert_id: number) =>
-    unwrap(client.POST('/api/alerts/{alert_id}/acknowledge', { params: { path: { alert_id } } })),
+  useAlertMutation((alert_id: number, model) =>
+    unwrap(
+      client.POST('/api/alerts/{alert_id}/acknowledge', {
+        params: { path: { alert_id }, query: { model } },
+      }),
+    ),
   )
 
 export const useAcknowledgeAll = () =>
-  useAlertMutation(() => unwrap(client.POST('/api/alerts/acknowledge-all')))
+  useAlertMutation((_: void, model) =>
+    unwrap(client.POST('/api/alerts/acknowledge-all', { params: { query: { model } } })),
+  )

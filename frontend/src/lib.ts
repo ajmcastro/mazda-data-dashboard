@@ -282,7 +282,7 @@ export function tireReadingsNote(readings: readonly TireReading[] | undefined): 
   const parts = [
     `${readings.length} measurement${readings.length === 1 ? '' : 's'}, each at the time the car took it`,
   ]
-  if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in config/models/cx5/settings.yaml)`)
+  if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in the model's settings.yaml)`)
   if (unknown) parts.push(`${unknown} without a valid measurement time (placed at the snapshot time)`)
   return parts.join('; ')
 }
@@ -314,4 +314,71 @@ export function lampBars(
 export function fmtShares(on: number | null | undefined, off: number | null | undefined): string {
   const pct = (v: number | null | undefined) => `${Math.round((v ?? 0) * 100)}%`
   return `near in ${pct(on)} of the readings with the flag on, ${pct(off)} with it off`
+}
+
+// ---- car models ----
+
+/** The pages of the dashboard, by the ids a model's `pages` list can hide. */
+export const PAGE_PATHS: Record<string, string> = {
+  overview: '/',
+  trends: '/trends',
+  alerts: '/alerts',
+  warnings: '/warnings',
+  faults: '/faults',
+  status: '/status',
+  diagnostics: '/diagnostics',
+}
+
+/** Is this address one of the pages the model hides? */
+export function isPageHidden(path: string, hidden: readonly string[] | undefined): boolean {
+  return (hidden ?? []).some((id) => PAGE_PATHS[id] === path)
+}
+
+/** "Mazda CX-5" -> "CX-5": the brand is shown short next to the logo. */
+export function shortModelName(name: string): string {
+  return name.replace(/^Mazda\s+/i, '').trim() || name
+}
+
+type ModelLike = { id: string }
+
+/** The model the address asks for (none = the default one, the server's choice); `notFound` when it names an unknown one. */
+export function pickModel<T extends ModelLike & { default: boolean }>(
+  models: readonly T[] | undefined,
+  requested: string | null | undefined,
+): { model: T | undefined; notFound: boolean } {
+  if (!models?.length) return { model: undefined, notFound: false }
+  if (!requested) return { model: models.find((m) => m.default) ?? models[0], notFound: false }
+  const found = models.find((m) => m.id === requested)
+  return { model: found, notFound: !found }
+}
+
+/**
+ * The model to bring back from the saved choice: only when the address names none, the saved one
+ * still exists and it is not simply the default (which the address already stands for).
+ */
+export function restoreModel<T extends ModelLike & { default: boolean }>(
+  saved: string | null,
+  models: readonly T[] | undefined,
+  requested: string | null | undefined,
+): string | undefined {
+  if (requested || !saved) return undefined
+  const found = models?.find((m) => m.id === saved)
+  return found && !found.default ? found.id : undefined
+}
+
+type Span = { first?: string | null; last?: string | null }
+
+/**
+ * The period to show after switching models. A preset ("Last 30 days") means the same thing in the
+ * new model, counted from its newest day; typed dates are kept as far as the new model has data, and
+ * a range wholly outside it falls back to all time (an empty page would be a puzzle).
+ */
+export function rangeForModel(range: DayRange, from: Span, to: Span): DayRange {
+  if (!range.from && !range.to) return {}
+  if (!to.first || !to.last) return {}
+  const preset = matchPreset(range, from.first ?? undefined, from.last ?? undefined)
+  if (preset && preset !== 'all') return resolvePreset(preset, to.first, to.last)
+  const start = range.from && range.from > to.first ? range.from : to.first
+  const end = range.to && range.to < to.last ? range.to : to.last
+  return start > end ? {} : { from: start, to: end }
 }

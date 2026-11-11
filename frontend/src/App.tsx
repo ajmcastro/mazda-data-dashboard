@@ -1,9 +1,13 @@
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect, type ReactNode } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
 import { ThemeToggle } from './components/ThemeToggle'
 import { RangeNavLink as NavLink } from './components/RangeLink'
-import { useRestoreSavedRange } from './range'
+import { ModelSwitcher } from './components/ModelSwitcher'
+import { isPageHidden, shortModelName } from './lib'
+import { useCurrentModel, useRestoreSavedModel, useSwitchModel } from './model'
+import { useRangeSearch, useRestoreSavedRange } from './range'
 import Alerts from './pages/Alerts'
 import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
@@ -26,33 +30,74 @@ function Logo() {
 // tied to a period.
 const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
 
+/** What stands in for the pages when the model in the address is unknown or has no data yet. */
+function ModelGate({ children }: { children: ReactNode }) {
+  const { models, model, notFound, requested } = useCurrentModel()
+  const switchTo = useSwitchModel()
+  if (notFound) {
+    return (
+      <div className="state error">
+        <p>Unknown model <code>{requested}</code>. Choose one:</p>
+        <p>
+          {models.map((m) => (
+            <button key={m.id} className="chip" onClick={() => switchTo(m.id)}>{m.name}</button>
+          ))}
+        </p>
+      </div>
+    )
+  }
+  if (model && !model.has_data) {
+    return (
+      <div className="state">
+        No data for {model.name} yet: put its exports in <code>data/{model.id}/</code> and run{' '}
+        <code>make ingest MODEL={model.id}</code>.
+      </div>
+    )
+  }
+  return <>{children}</>
+}
+
 export default function App() {
   const overview = useOverview()
   const { pathname } = useLocation()
-  useRestoreSavedRange()
+  const search = useRangeSearch()
+  const { id, name, model } = useCurrentModel()
+  useRestoreSavedRange(useRestoreSavedModel())
+  useEffect(() => {
+    document.title = `${name} Telemetry`
+  }, [name])
   const o = overview.data
+  const hidden = model?.hidden_pages
+  const nav = (to: string, label: ReactNode) =>
+    isPageHidden(to, hidden) ? null : (
+      <NavLink to={to} end={to === '/'}>{label}</NavLink>
+    )
+  // a page the model hides sends you to the overview instead of showing nothing
+  const page = (path: string, element: ReactNode) => (
+    <Route
+      path={path}
+      element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element}
+    />
+  )
   return (
     <div className="shell">
       <aside className="rail">
         <div className="brand">
           <Logo />
           <div>
-            CX-5
+            {shortModelName(name)}
             <small>TELEMETRY</small>
           </div>
         </div>
+        <ModelSwitcher />
         <nav className="nav" aria-label="Main">
-          <NavLink to="/" end>Overview</NavLink>
-          <NavLink to="/trends">Trends</NavLink>
-          <NavLink to="/alerts">
-            Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}
-          </NavLink>
-          <NavLink to="/warnings">Warnings</NavLink>
-          <NavLink to="/faults">
-            Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}
-          </NavLink>
-          <NavLink to="/status">Status</NavLink>
-          <NavLink to="/diagnostics">Diagnostics</NavLink>
+          {nav('/', 'Overview')}
+          {nav('/trends', 'Trends')}
+          {nav('/alerts', <>Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
+          {nav('/warnings', 'Warnings')}
+          {nav('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
+          {nav('/status', 'Status')}
+          {nav('/diagnostics', 'Diagnostics')}
         </nav>
         <div className="rail-foot">
           <ThemeToggle />
@@ -61,16 +106,19 @@ export default function App() {
       </aside>
       <main className="main">
         {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
-        <Routes>
-          <Route path="/" element={<OverviewPage />} />
-          <Route path="/trends" element={<Trends />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/warnings" element={<Warnings />} />
-          <Route path="/faults" element={<Faults />} />
-          <Route path="/status" element={<Status />} />
-          <Route path="/diagnostics" element={<Diagnostics />} />
-          <Route path="*" element={<div className="state">Page not found</div>} />
-        </Routes>
+        <ModelGate>
+          {/* keyed by the model: everything a page remembers (a chosen fault, a flag) belongs to one model */}
+          <Routes key={id}>
+            {page('/', <OverviewPage />)}
+            {page('/trends', <Trends />)}
+            {page('/alerts', <Alerts />)}
+            {page('/warnings', <Warnings />)}
+            {page('/faults', <Faults />)}
+            {page('/status', <Status />)}
+            {page('/diagnostics', <Diagnostics />)}
+            <Route path="*" element={<div className="state">Page not found</div>} />
+          </Routes>
+        </ModelGate>
       </main>
     </div>
   )

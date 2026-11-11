@@ -5,12 +5,14 @@ import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOve
 import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
+import { useCurrentModel } from '../model'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
 import { ANIMATE, carWarningHeadline, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, tireMeasuredNote, ts } from '../lib'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
 export default function OverviewPage() {
+  const { id } = useCurrentModel()
   const overview = useOverview()
   const odometer = useOdometerDaily()
   const fuel = useFuelMonthly()
@@ -66,7 +68,7 @@ export default function OverviewPage() {
               {o.unmapped_codes > 0 && (
                 <div className="alert-row">
                   <b>{o.unmapped_codes} codes have no description yet</b>
-                  <span className="muted">Edit <span className="mono">config/models/cx5/codes/*.yaml</span> and run <span className="mono">make model</span></span>
+                  <span className="muted">Edit <span className="mono">config/models/{id}/codes/*.yaml</span> and run <span className="mono">make model</span></span>
                 </div>
               )}
             </div>

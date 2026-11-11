@@ -208,6 +208,8 @@ yet, then add what you learn to `config/models/cx5/codes/*.yaml` and run `make m
 
 ### Car models
 
+With more than one model the dashboard shows a **model selector** at the top of the sidebar. The choice is in the address (`?model=cx60`, so a link opens the same car), is remembered for next time, and keeps your period when it makes sense (a quick range such as *Last 30 days* is counted again from the other model's newest day). A model without data yet says where to put its files.
+
 The dashboard is organised by car model. `config/models.yaml` lists the models (today `cx5`); each one has
 its own raw exports in `data/<id>/`, its own database `db/<id>.duckdb` and its own configuration in
 `config/models/<id>/` (`model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`). Nothing is shared

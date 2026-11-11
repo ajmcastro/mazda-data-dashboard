@@ -364,3 +364,9 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
   .kv dt, .kv dd { overflow-wrap: anywhere; min-width: 0; }
   .sections .kv { margin-left: 0; max-width: none; }
 }
+
+/* ---- car model switcher ---- */
+.model-switch select {
+  width: 100%; font: inherit; font-size: 13px; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; color-scheme: inherit;
+}

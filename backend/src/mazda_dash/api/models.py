@@ -447,7 +447,7 @@ class WarningFlag(BaseModel):
     area: str  # powertrain | body
     bit: int
     title: str | None = (
-        None  # your description, from config/models/cx5/codes/warning_flags.yaml
+        None  # your description, from config/models/<id>/codes/warning_flags.yaml
     )
     severity: str
     notes: str | None = None

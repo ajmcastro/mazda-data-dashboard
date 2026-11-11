@@ -5,12 +5,14 @@ import type { WarningEvent, WarningFrequency } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
 import { useDateRange } from '../range'
+import { useCurrentModel } from '../model'
 
 const PALETTE = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--steel)', '#b58bd6', '#d6b48b', '#8bd6c4']
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const PAGE = 25
 
 export default function Warnings() {
+  const { id } = useCurrentModel()
   const freq = useWarningFrequency()
   const daily = useWarningDaily()
   const { from, to } = useDateRange()
@@ -65,7 +67,7 @@ export default function Warnings() {
       <div className="page-head">
         <div>
           <h1>Warnings</h1>
-          <p>Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in <span className="mono">config/models/cx5/codes/warnings.yaml</span>.</p>
+          <p>Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in <span className="mono">config/models/{id}/codes/warnings.yaml</span>.</p>
         </div>
       </div>
 

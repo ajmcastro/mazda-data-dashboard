@@ -53,7 +53,7 @@ def new_dtc(ctx: Context) -> list[Candidate]:
         hint = (
             ""
             if known
-            else " No description yet: add one in config/models/cx5/codes/dtcs.yaml."
+            else " No description yet: add one in the model's codes/dtcs.yaml (config/models/<id>/)."
         )
         out.append(
             Candidate(
@@ -331,7 +331,7 @@ def car_warning_flag(ctx: Context) -> list[Candidate]:
 def new_warning_flag(ctx: Context) -> list[Candidate]:
     """A warning-lamp bit flag (one of 128, almost all always off) set for the first time within the
     lookback window, like a new warning code. The meaning is unknown unless you described it in
-    config/models/cx5/codes/warning_flags.yaml (its severity is used then)."""
+    config/models/<id>/codes/warning_flags.yaml (its severity is used then)."""
     rule = ctx.cfg.rules.new_warning_flag
     rows = ctx.con.execute(
         """SELECT flag, area, bit, title, severity, first_on_at, readings_on, readings, first_on_report_day
@@ -352,7 +352,7 @@ def new_warning_flag(ctx: Context) -> list[Candidate]:
         if not title:
             detail += (
                 " Mazda does not publish what it means: Status > Warning lamps shows what happens "
-                "around it, and config/models/cx5/codes/warning_flags.yaml is where to describe it."
+                "around it, and the model's codes/warning_flags.yaml (config/models/<id>/) is where to describe it."
             )
         out.append(
             Candidate(

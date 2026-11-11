@@ -4,6 +4,7 @@ import type { Alert } from '../api/types'
 import { RangeLink } from '../components/RangeLink'
 import { Badge, Panel, QueryState } from '../components/ui'
 import { fmtDateTime } from '../lib'
+import { useCurrentModel } from '../model'
 
 const KIND: Record<string, string> = { critical: 'critical', warning: 'warning', info: 'info' }
 
@@ -34,6 +35,7 @@ function AlertCard({ alert, onAck, busy }: { alert: Alert; onAck?: () => void; b
 }
 
 export default function Alerts() {
+  const { id } = useCurrentModel()
   const [tab, setTab] = useState<'new' | 'acknowledged'>('new')
   const alerts = useAlerts(tab)
   const ack = useAcknowledge()
@@ -46,7 +48,7 @@ export default function Alerts() {
         <div>
           <h1>Alerts</h1>
           <p>
-            Raised by the rules in <span className="mono">config/models/cx5/alerts.yaml</span> each time you run{' '}
+            Raised by the rules in <span className="mono">config/models/{id}/alerts.yaml</span> each time you run{' '}
             <span className="mono">make ingest</span>. Acknowledged alerts are not raised again.
           </p>
         </div>

@@ -3,6 +3,7 @@ import { useFlagHints, useWarningFlags } from '../api/hooks'
 import type { WarningFlag, WarningFlags } from '../api/types'
 import { fmtDate, fmtNum, fmtShares, lampBars, lampLabel } from '../lib'
 import { Badge, Panel } from './ui'
+import { useCurrentModel } from '../model'
 
 const WINDOWS = [0.5, 2, 6, 24]
 
@@ -67,6 +68,7 @@ function Hints({ flag }: { flag: string }) {
 }
 
 function Row({ f, data }: { f: WarningFlag; data: WarningFlags }) {
+  const { id } = useCurrentModel()
   const [open, setOpen] = useState(false)
   const bars = lampBars(
     data.episodes.filter((e) => e.flag === f.flag),
@@ -106,7 +108,7 @@ function Row({ f, data }: { f: WarningFlag; data: WarningFlags }) {
           </p>
           {!f.title && (
             <p className="muted" style={{ fontSize: 12, margin: '0 0 8px' }}>
-              Once you know what it is, describe it in <span className="mono">config/models/cx5/codes/warning_flags.yaml</span> and run{' '}
+              Once you know what it is, describe it in <span className="mono">config/models/{id}/codes/warning_flags.yaml</span> and run{' '}
               <span className="mono">make model</span>.
             </p>
           )}
