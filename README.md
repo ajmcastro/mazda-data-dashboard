@@ -112,6 +112,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`â
 |---|---|
 | **Overview** | odometer, distance, fuel economy, fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises |
 | **Trends** | every month compared with the one before (see below) |
+| **Compare** | two car models side by side (appears when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse" |
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |

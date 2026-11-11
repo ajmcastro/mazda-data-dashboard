@@ -370,3 +370,17 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
   width: 100%; font: inherit; font-size: 13px; color: var(--text); background: var(--panel-2);
   border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; color-scheme: inherit;
 }
+
+/* ---- compare two cars ---- */
+.cmp-figures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+.cmp-figure { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }
+.cmp-figure .metric-value { font-size: 30px; }
+.cmp-name { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
+.cmp-key { flex: none; width: 10px; height: 10px; margin-top: 6px; background: var(--steel); border-radius: 50%; }
+.cmp-key.b { background: var(--amber); border-radius: 1px; }
+.cmp-why { font-size: 12px; margin: 4px 0 0; }
+.level { align-self: flex-start; font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 99px; border: 1px solid var(--line); color: var(--muted); }
+.level.comparable { color: var(--teal); border-color: var(--teal); }
+.level.caution { color: var(--amber); border-color: var(--amber); }
+.level.no { color: var(--muted); border-style: dashed; }
+.car-select { min-width: 150px; }

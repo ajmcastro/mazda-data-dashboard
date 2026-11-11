@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my CX-5, with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: complete. All planned milestones (M1–M27) are done** (M21–M27: several car models; M28, adapting to a real CX-60 export, is conditional and not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone) and four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags). What is left is under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
+**Status: complete. All planned milestones (M1–M27) are done** (M21–M27: several car models; M28, adapting to a real CX-60 export, is conditional and not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone) and four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags). What is left is under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them. **Planned next, not started: comparing models and periods and the estimated fuel cost (M29–M33), see "Comparing models and periods".**
 
 ## Decisions
 
@@ -84,6 +84,8 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M19 | Tire reading time ✅ | when each tire pressure was really measured, and how fresh it is |
 | M20 | Warning-lamp flags ✅ | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert |
 | M21–M27 | Several car models ✅ | model registry, per-model data/config/database, API and dashboard model selector, synthetic second model, phone app with several packs, docs/CI/audit. M28 (a real CX-60 export) is conditional and not started. Details under "Several car models" |
+| M29 | Compare two models (Mac) ✅ | `/compare`: two cars, months in common, per day, comparability labels |
+| M30–M33 | Comparing and cost (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -597,14 +599,140 @@ Only when a real export exists; the design of this milestone depends on what it 
 3. **One car per model folder.** Two cars of the same model (two VINs in one folder) are not supported: ingest warns when it finds two VINs. A *vehicle* level under the model would be a separate, later milestone. Confirmed.
 4. **Existing names stay:** the `cx5.*` keys in `localStorage`, the `.cx5pack` extension and the README title are kept (renaming would break saved settings and existing packs); only visible titles become model-aware. Confirmed.
 
+## Comparing models and periods, and fuel cost (M29–M33, planned)
+
+**Idea.** Pick two car models (say the CX-5 and the CX-60) and see the Trends metrics side by side. The numbers
+already exist: `GET /api/trends/monthly?model=` answers per model since M23, so the first version needs **no new
+API route** (two requests, one per model) and therefore nothing to mirror in the phone's TypeScript engine.
+M28 (a real CX-60 export) is not a prerequisite: the synthetic CX-60 differs from the CX-5 on purpose, so the
+feature can be built and tested now; M28 only decides later which metrics are fair to compare on real data.
+
+### Is it useful, and what must it not claim?
+Yes, for the metrics that describe **how the car is used or how it drinks fuel per distance**, and no for those that describe **how the car reports**:
+
+| Metric | Across two models | Why |
+|---|---|---|
+| Distance, days driven, drives, time driving, average speed (per day) | comparable | they describe the usage; per day, so months of unequal length and different periods can be set side by side |
+| Fuel consumption (l/100 km) | comparable **with a caution** | only like for like: a plug-in hybrid's l/100 km hides the electric part, and different fuels differ |
+| Tire pressure (average, lowest) | caution | the recommended pressure differs per car |
+| Warning events, read-outs with faults, new/distinct faults | caution | codes, how often the car logs them and what counts as a fault differ by platform |
+| Different warnings (distinct codes) | not comparable | the code sets are different vocabularies |
+
+So the page labels every metric *comparable* / *caution* / *not comparable* with the reason, never colours a difference
+green or red (a different car is not an improvement or a regression), and never shows a guess as a fact (the
+project's rule). Without those labels the page would invite wrong conclusions ("the CX-60 has far more warnings").
+
+### Decisions (confirmed)
+| Topic | Choice | Why |
+|---|---|---|
+| Where | a separate page `/compare`, not a mode of Trends | Trends is one car against its own previous month; comparing cars is another question, with its own caveats |
+| Period | each car's own data, aligned by **calendar month**, by default only the months **both cars have complete** (a switch shows all data, and one for partial months) | different periods and partial months are the main way to compare unfairly |
+| Basis | **per day** by default (the Trends "per day" maths, reused), and distance-weighted for l/100 km | totals depend on how long each car was observed |
+| Wording | neutral and exact: "CX-60: 7.9 l/100 km, CX-5: 7.0, over 2 complete months (May–Jun)", with the difference as a plain percentage | no good/bad tones, always the number of months behind it |
+| Backend | none in M29: two calls of the existing monthly route | no API change, nothing to mirror, no `make types` |
+| Phone | M30, from small per-model summaries cached on the device | the phone's engine holds one pack at a time, so the other car's figures must come from somewhere else |
+| Visible when | two models have data | like the model selector |
+
+### Milestones
+| | Milestone | Outcome |
+|---|---|---|
+| M29 | Compare two models (Mac) | `/compare` with two model pickers, a card per metric with both cars, comparability labels, an overlap or all-data switch |
+| M30 | Compare on the phone | the same page offline, from per-model summaries cached in IndexedDB |
+| M31 | Compare two periods of one car | the same page with "this period against that one" (this May against last May, before and after a change) |
+| M32 | All cars at a glance | one card per model with its headline numbers (last reading, odometer, alerts, faults, next oil change), on the Mac and the phone |
+| M33 | Estimated fuel cost | a fuel price per car in its settings, and "cost per 100 km" and "fuel cost (estimated)" next to the consumption everywhere it appears (Trends, Overview, Compare); recommended right after M29 |
+
+Each milestone is implemented only on request, like the earlier ones. Order: M29 first (it holds all the design); then **M33**, because it changes the monthly answer (Python, TypeScript engine, goldens) and the phone's cached summaries of M30 should hold the cost figures from the start; then M30 and M32, which share the phone mechanism (cached per-model summaries); M31 reuses M29's logic and can come at any point after M29.
+
+### M29 — Compare two models (Mac) ✅ done
+- **Page and address:** `/compare?a=cx5&b=cx60` (`a` defaults to the model shown, `b` to the next model with data), `&basis=overlap|all`, `&perday=0|1`, `&partial=1`. A navigation entry "Compare" appears when two models have data; a model that hides the Trends page cannot be picked. One model or none with data: the page says so instead of showing nothing.
+- **Data:** `GET /api/trends/monthly?model=<id>` twice, with no `from` / `to` (the global period does not apply to this page: each car's whole history, aligned by month). New hooks in `api/hooks.ts` take the model explicitly (the page needs two at once), with the model in the query key as everywhere.
+- **Logic (`frontend/src/compare.ts`, pure and unit tested):**
+  - `alignMonths(a, b, basis, includePartial)`: the months to compare (the overlap of complete months by default; all months with gaps, never zeros, for "all data");
+  - `summarise(def, rows, perDay)`: the value of a car over those months (the mean of the monthly values, distance-weighted for `l_per_100km`, and "n months" next to it);
+  - `compareModels(def, a, b)`: both values, the plain difference (absolute and percent; no percent when one value is 0) and the wording;
+  - a `COMPARABILITY` table (comparable / caution / not comparable, with the reason) next to the existing `METRICS`, with a test that every metric has an entry.
+  The logic works on a generic `Series = {label, rows: MonthMetrics[]}`, not on models, so that M31 can reuse it.
+- **UI:** a card per metric (two lines or grouped bars, one colour per car from CSS variables that work in both themes, plus a different marker shape so colour is not the only cue), both values and the difference in the header, the comparability badge with its reason on hover and in the table, and a table view like Trends'. The two cars are named by `model.name` (and the VIN tail in the footer is not shown here). Reduced motion respected (`ANIMATE`). Works at phone width (it is a shared page).
+- **Edge cases:** no overlapping complete month (the demo's CX-5 is March–June and the CX-60 April–July, so two complete months overlap: May and June; a test pins that), a metric one car does not have, the same model picked twice (the pickers do not allow it), a model whose database disappears.
+- **Done when:** the demo shows the page with the two synthetic cars and two overlapping complete months, every wording is exact and carries its month count, no tone colours appear, `make lint` and the tests pass, and no Python or phone code changed.
+
+**M29 as built.**
+- **Page:** `/compare?a=&b=&basis=all&perday=0&partial=1` (`a` defaults to the model on screen, `b` to the first other one that has data; an unknown or repeated id falls back). The nav entry appears when two models have data and show the Trends page. It reads `GET /api/trends/monthly?model=` twice (new hook `useMonthlyOf`), **no Python, API, phone or generated-file change**.
+- **Logic (`frontend/src/compare.ts`, 25 unit tests):** `alignMonths`, `summarise` (weighted by days, distance or driving time), `compareMetric`, `describeDifference`, `describeBasis`, `pickPair` and the `COMPARABILITY` table (14 metrics: usage figures *comparable*; fuel, tires, warnings and faults *compare with care*; the number of different warning codes *not comparable*), each with its reason. A test requires an entry for every metric and forbids verdict words ("better", "worse", ...) in the wording.
+- **UI:** a card per metric (both figures with the names, the neutral difference line with the number of months behind it, the comparability badge with its reason, a line chart where the two cars differ by colour, marker shape and dash), a table view, switches for *Months in common* / *All data*, *per day* and *incomplete months*, and messages for no overlap and for fewer than two cars. No good/bad colours.
+- **On the demo cars:** the CX-5 (March–June) and the CX-60 (April–July, with a partial April) share **May and June** as complete months; including the partial April gives three; all data gives five months in all. Both themes and a 375 px width were checked (no horizontal scroll).
+- **Details found while building it:** the real demo CX-5 has four *complete* months (March starts on the 1st), so the unit tests use hand-made series rather than the demo shape; the names in the wording are the short ones ("CX-5") while the selects keep the full names.
+- **Not in this milestone:** the phone (M30), the cost figures (M33), comparing periods (M31).
+- **Checked:** frontend 94 tests (25 new), lint, backend 242, `make mobile-test` 802 (unchanged), and in the browser with both demo cars.
+
+### M30 — Compare on the phone
+- **Why it is not free:** the phone's engine loads one pack at a time, so `GET /api/trends/monthly?model=<other>` cannot be answered from the database that is open.
+- **Mechanism:** for each stored pack the phone keeps a **summary**: the answer of `/api/trends/monthly` without a period (a few KiB of JSON), computed once by the engine when the pack is loaded and stored in IndexedDB (a new `summaries` store, keyed by model and by the pack's `savedAt`, so replacing or deleting a pack discards it). When the Compare page opens and a stored model has no fresh summary, the app loads that pack, computes the summary, stores it and goes back to the model that was on screen, with a visible "Preparing the comparison" message; the second visit is instant.
+- **Engine:** `Api` answers `/api/trends/monthly?model=<other>` from the summary when no `from` / `to` is given (the Compare page never sends one); with a period it still refuses another model as today. The golden tests of each model already contain the all-time monthly answer, so a test asserts that the summary of each sample pack equals it exactly.
+- **UI:** a "Compare" entry in More; offline like the rest; nothing leaves the device.
+- **Done when:** the two demo packs compare on the phone in airplane mode, a replaced pack invalidates its summary, and `make mobile-test` passes.
+
+### M31 — Compare two periods of one car
+- **What:** the same page with a mode switch, *Two cars* | *Two periods*: A and B are each a (car, from, to), with quick choices ("this month and the same month a year ago", "the last 30 days and the 30 before", "before and after a date you pick", useful after changing tires or after a service).
+- **How:** the Trends route already honours `from` / `to` before aggregating, so each period is fetched like a car in M29 and the same `compare.ts` works on a `Series`. Metrics that cannot be added up from monthly rows (the number of *different* warnings or faults in a period) are shown as "not available for a period". No new route unless that turns out to be too coarse; if it does, a `GET /api/trends/period` (one aggregated row) is added **in Python, the TypeScript engine and the goldens in the same change**, as the project's rule requires.
+- **Wording:** a period compared with another is a change of the same car, so the Trends tone colours (good / bad) *do* apply here, and only here.
+- **Done when:** a period of the CX-5 compares with another period of the CX-5 on the demo data, on the Mac and the phone, and the metrics that cannot be compared say so.
+
+### M32 — All cars at a glance
+- **What:** a page "All cars" (Mac and phone) with one card per model that has data: name, last reading ("26 h ago"), odometer, distance in the last 30 days, next oil change, new alerts, faults still listed, car warnings that are on, and a stale-data note. A click opens that model's Overview. The selector's entries can show the new-alert count of each car.
+- **Data:** `GET /api/overview?model=<id>` per model (no backend change on the Mac). On the phone the other cars' overviews come from the same cached summaries as M30 (the summary store gains the overview answer).
+- **Done when:** the demo shows both cars' cards, a car with no data is not listed, and the phone page works offline from the summaries.
+
+### M33 — Estimated fuel cost (cost per 100 km)
+**What it is, honestly:** an *estimate*, litres the car reports (the same estimate as "Fuel used (estimated)") times the fuel price **you** enter. It is not what you paid, and the dashboard says so wherever it shows the figure.
+- **Configuration (per model, `config/models/<id>/settings.yaml`):** the price history, because fuel prices change and one fixed price would make old months wrong:
+
+  ```yaml
+  fuel_currency: EUR            # an ISO code; shown with Intl.NumberFormat
+  fuel_prices:                  # price per litre from a date on; the last entry before a trip applies
+    - {from: 2026-03-01, per_l: 1.72}
+    - {from: 2026-05-15, per_l: 1.81}
+  ```
+  `fuel_price_per_l: 1.75` alone is accepted as one price from the start of the data. Without any price the cost metrics are empty and the cards say how to set one (never a made-up price). Validation like the existing settings: unknown keys, negative or non-numeric prices, an unknown currency, dates out of order are errors with the file name.
+- **Data:** a new table `ref_fuel_prices(valid_from, per_l)` and the currency in `ref_settings` (loaded by `build_model`, like the time zone), carried by the **pack** (`TABLES` gains the table, so an older pack is refused with the existing "made by an older version" message and the phone has no copy of the values).
+- **Maths (in SQL where possible, identical in Python and TypeScript):** the price of a month is the **average of the price in force on each trip, weighted by the litres of that trip** (the trip segments already carry litres); `cost_per_100km = l_per_100km × price` and `fuel_cost_est = fuel_l_est × price`, rounded like the other metrics, `None` for a month with no price or no consumption (a gap, not 0).
+- **API:** two new fields on `MonthMetrics` (`cost_per_100km`, `fuel_cost_est`) and the currency (`currency` on the month rows). **Python API, TypeScript engine (`trends.ts`, `shapes.ts`), goldens and `make types` in the same change**, as the project's rule requires; the sample data of each model gets a price history (CX-5 in EUR with a mid-period price change, CX-60 with another price) so the goldens exercise it, including a month where the price changes.
+- **UI:** two metrics in `trends.ts` (`cost_per_100km`: lower is better, `fuel_cost_est`: additive, per day) so they appear in Trends automatically, formatted with the currency; an Overview stat "about 7.2 EUR per 100 km" with the "estimate" note; in M29's `COMPARABILITY` table `cost_per_100km` is *comparable with a caution* (each car's own price and fuel).
+- **Not in this milestone:** electricity (a plug-in hybrid's cost needs charging data no view reads yet: that is M28 material), taxes or insurance, and any price lookup over the network (the apps make no outside request).
+- **Done when:** the cost figures appear on Trends and the Overview for both demo cars with the price change visible in the months, a model without a price shows the hint instead, Python and TypeScript agree on every golden, and the phone refuses an older pack with the message.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| The page invites wrong conclusions (warnings, tires, fuel of a hybrid) | the comparability table with reasons, no tone colours, exact wording with the month count, and a test that every metric has an entry |
+| Different periods make totals unfair | per day by default, calendar-month alignment, only complete overlapping months by default, partial months opt-in |
+| The phone cannot hold two packs | cached per-model summaries, recomputed when a pack changes (M30); a full second engine instance was rejected (memory, complexity) |
+| A summary goes stale after a new pack | keyed by the pack's `savedAt`; replacing or deleting a pack discards it; a test covers it |
+| Numbers differ between the page and the Trends page | both use the same `MonthMetrics` and the per-day maths of `trends.ts`; one test compares the page's figure for one car with the Trends card's |
+
+### Points confirmed
+1. **A separate `/compare` page** rather than a mode inside Trends. Confirmed.
+2. **Only complete overlapping months, per day, by default**, with switches for the rest. Confirmed.
+3. **Neutral wording, no green/red** for car against car (tones only for one car against itself, M31). Confirmed.
+4. **Phone via cached summaries** (M30), not a second engine. Confirmed.
+5. **Order:** M29, then M33 (fuel cost, added afterwards, see below), then M30, M32, M31. The cost milestone goes before the phone one on purpose (see M33).
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.
 - **Time zone of `COPIED_DT_TM` / `fileid_datetime`.** Assumed UTC (the diagnostic tool dump states its own offset, which is applied). The tire measurement clock is the car's *local* time and has its own setting (`car_timezone`, M19).
 - **Several vehicles.** Different models are supported (one database, folder and configuration each); two cars of the *same* model are not separated (one car per model folder, `make ingest` warns about a second VIN).
 - **Other models, markets and firmware.** Only one real export (a CX-5, Europe, 2026) was available; others may differ. Multi-model support is built (M21–M27); what a real CX-60 export needs is M28, not started.
+- **What is fair to compare across models?** Proposed in "Comparing models and periods" (usage per day, fuel per distance with a caution); the real answer needs a real CX-60 export (M28), in particular for a plug-in hybrid's consumption.
 - Resolved: the warnings table is mostly repeats of the same few codes, so alerts are based on new codes and unusual days, not on every row.
 
 ## Ideas not built
 
 Email or push notifications; several cars of the same model (a vehicle level under the model, see "Several car models"); parsing Mazda's zip and CSV files on the phone (so the Mac is not needed at all); Android testing on a real device; Windows support without WSL; a published Docker image; the maintenance-reminder signals (`mntsetdist`, `remregdist`), which are not set up in the author's car.
+
+Ideas around comparing that are not milestones yet (smaller, or they need a decision first):
+- **Code vocabulary across models:** which warning and fault codes appear in both cars and which in one only, as a *hint* for filling in a model's code descriptions ("this code is described for the CX-5; it may or may not mean the same here"). It must stay a suggestion the user copies by hand: descriptions are never shared or borrowed automatically.
+- **Notes on the charts:** dated notes ("new tires", "software update", "service") kept per model in a small file and shown on the Trends and Status charts, to explain a change.
+- **Export:** a CSV of a comparison table, or a printable summary.
+- **A combined alerts view** across cars, read-only (the Garage cards of M32 only show the counts).

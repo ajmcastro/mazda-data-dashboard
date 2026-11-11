@@ -10,6 +10,7 @@ import { isPageHidden, shortModelName } from './lib'
 import { useCurrentModel, useRestoreSavedModel } from './model'
 import { useRangeSearch, useRestoreSavedRange } from './range'
 import Alerts from './pages/Alerts'
+import Compare from './pages/Compare'
 import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
 import OverviewPage from './pages/Overview'
@@ -35,13 +36,15 @@ export default function App() {
   const overview = useOverview()
   const { pathname } = useLocation()
   const search = useRangeSearch()
-  const { id, name, model } = useCurrentModel()
+  const { id, name, model, models } = useCurrentModel()
   useRestoreSavedRange(useRestoreSavedModel())
   useEffect(() => {
     document.title = `${name} Telemetry`
   }, [name])
   const o = overview.data
   const hidden = model?.hidden_pages
+  // Compare needs two cars that have data and show the Trends page
+  const comparable = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length
   const nav = (to: string, label: ReactNode) =>
     isPageHidden(to, hidden) ? null : (
       <NavLink to={to} end={to === '/'}>{label}</NavLink>
@@ -67,6 +70,7 @@ export default function App() {
         <nav className="nav" aria-label="Main">
           {nav('/', 'Overview')}
           {nav('/trends', 'Trends')}
+          {comparable >= 2 && nav('/compare', 'Compare')}
           {nav('/alerts', <>Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
           {nav('/warnings', 'Warnings')}
           {nav('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
@@ -85,6 +89,7 @@ export default function App() {
           <Routes key={id}>
             {page('/', <OverviewPage />)}
             {page('/trends', <Trends />)}
+            {page('/compare', <Compare />)}
             {page('/alerts', <Alerts />)}
             {page('/warnings', <Warnings />)}
             {page('/faults', <Faults />)}

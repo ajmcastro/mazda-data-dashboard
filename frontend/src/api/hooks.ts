@@ -54,6 +54,14 @@ export const useMonthly = () => {
   })
 }
 
+/** One model's monthly figures over all its data (the Compare page needs two models at once, and no period). */
+export const useMonthlyOf = (model: string | undefined) =>
+  useQuery({
+    queryKey: ['monthly-of', model],
+    enabled: Boolean(model),
+    queryFn: () => unwrap(client.GET('/api/trends/monthly', { params: { query: { model } } })),
+  })
+
 export const useOdometerDaily = () => {
   const range = useRangeQuery()
   return useQuery({
