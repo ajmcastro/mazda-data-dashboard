@@ -11,6 +11,17 @@ class Health(BaseModel):
     has_data: bool
 
 
+class ModelInfo(BaseModel):
+    id: str
+    name: str
+    platform: str | None = None
+    default: bool
+    hidden_pages: list[str] = []
+    has_data: bool
+    first_day: date | None = None
+    last_day: date | None = None
+
+
 class LatestStatus(BaseModel):
     at: datetime | None = None
     fuel_level_pct: float | None = None

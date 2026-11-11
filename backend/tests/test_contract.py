@@ -25,8 +25,12 @@ def test_every_api_route_has_a_successful_golden_case(golden):
     assert len(routes) >= 27
     for route in routes:
         if (
-            route.path == "/api/health"
-        ):  # reports the server's database path; the phone has its own answer
+            route.path
+            in (
+                "/api/health",  # reports the server's database path; the phone has its own answer
+                "/api/models",  # the server's models; the phone lists its stored packs (M26)
+            )
+        ):
             continue
         pattern = re.compile(
             "^" + re.sub(r"\{\w+\}", "[^/?]+", route.path) + r"(\?.*)?$"

@@ -1,26 +1,31 @@
-import os
 from collections.abc import Iterator
 from datetime import UTC, date, datetime
 from pathlib import Path
 
 import duckdb
-from fastapi import HTTPException
+from fastapi import Depends, HTTPException
 
-from ..models import load_registry
+from ..models import Model
+from .selection import database_of, get_model, registry
 
-
-def db_path() -> Path:
-    """``MAZDA_DB`` when set (tests, the demo), else the default model's database."""
-    if "MAZDA_DB" in os.environ:
-        return Path(os.environ["MAZDA_DB"])
-    return load_registry().default.db_path
+Selected = Depends(get_model)
 
 
-def get_con() -> Iterator[duckdb.DuckDBPyConnection]:
+def db_path(model: Model | None = None) -> Path:
+    """The database of ``model`` (default: the default model); see ``selection.database_of``."""
+    return database_of(model or registry().default)
+
+
+def get_con(
+    model: Model = Selected,
+) -> Iterator[duckdb.DuckDBPyConnection]:
     """One short-lived read-only connection per request, so `make ingest` can write between calls."""
-    path = db_path()
+    path = db_path(model)
     if not path.exists():
-        raise HTTPException(503, f"Database {path} not found - run `make ingest` first")
+        raise HTTPException(
+            503,
+            f"Database {path} not found - run `make ingest MODEL={model.id}` first",
+        )
     con = duckdb.connect(str(path), read_only=True)
     try:
         yield con
@@ -28,11 +33,16 @@ def get_con() -> Iterator[duckdb.DuckDBPyConnection]:
         con.close()
 
 
-def get_rw_con() -> Iterator[duckdb.DuckDBPyConnection]:
+def get_rw_con(
+    model: Model = Selected,
+) -> Iterator[duckdb.DuckDBPyConnection]:
     """Read-write connection for the few endpoints that change state (acknowledging alerts)."""
-    path = db_path()
+    path = db_path(model)
     if not path.exists():
-        raise HTTPException(503, f"Database {path} not found - run `make ingest` first")
+        raise HTTPException(
+            503,
+            f"Database {path} not found - run `make ingest MODEL={model.id}` first",
+        )
     try:
         con = duckdb.connect(str(path))
     except (

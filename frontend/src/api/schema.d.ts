@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Models
+         * @description The car models, in display order, with what data each has. Not tied to one model.
+         */
+        get: operations["list_models_api_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/span": {
         parameters: {
             query?: never;
@@ -1139,6 +1159,28 @@ export interface components {
             /** Tire Stale */
             tire_stale?: boolean | null;
         };
+        /** ModelInfo */
+        ModelInfo: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Platform */
+            platform?: string | null;
+            /** Default */
+            default: boolean;
+            /**
+             * Hidden Pages
+             * @default []
+             */
+            hidden_pages: string[];
+            /** Has Data */
+            has_data: boolean;
+            /** First Day */
+            first_day?: string | null;
+            /** Last Day */
+            last_day?: string | null;
+        };
         /**
          * MonthMetrics
          * @description One calendar month. Metrics are None when the month has no data for them (a gap, not 0).
@@ -1616,7 +1658,10 @@ export type $defs = Record<string, never>;
 export interface operations {
     health_api_health_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1632,11 +1677,43 @@ export interface operations {
                     "application/json": components["schemas"]["Health"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_models_api_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelInfo"][];
+                };
+            };
         };
     };
     data_span_api_span_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1652,6 +1729,15 @@ export interface operations {
                     "application/json": components["schemas"]["DataSpan"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     overview_api_overview_get: {
@@ -1661,6 +1747,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1695,6 +1783,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1729,6 +1819,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1763,6 +1855,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1798,6 +1892,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1832,6 +1928,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1866,6 +1964,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1901,6 +2001,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1935,6 +2037,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -1969,6 +2073,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2003,6 +2109,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2040,6 +2148,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2074,6 +2184,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2111,6 +2223,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2145,6 +2259,8 @@ export interface operations {
                 from?: string | null;
                 /** @description last day, inclusive (UTC) */
                 to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2177,6 +2293,8 @@ export interface operations {
             query: {
                 ecu: string;
                 dtc_code: string;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2206,7 +2324,10 @@ export interface operations {
     };
     unmapped_api_codes_unmapped_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2222,12 +2343,23 @@ export interface operations {
                     "application/json": components["schemas"]["UnmappedCode"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     list_alerts_api_alerts_get: {
         parameters: {
             query?: {
                 status?: "new" | "acknowledged" | "all";
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2257,7 +2389,10 @@ export interface operations {
     };
     acknowledge_all_api_alerts_acknowledge_all_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2273,11 +2408,23 @@ export interface operations {
                     "application/json": components["schemas"]["Acknowledged"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     acknowledge_api_alerts__alert_id__acknowledge_post: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path: {
                 alert_id: number;
@@ -2308,7 +2455,10 @@ export interface operations {
     };
     maintenance_oil_api_maintenance_oil_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2324,11 +2474,23 @@ export interface operations {
                     "application/json": components["schemas"]["OilService"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     car_warnings_api_status_car_warnings_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2344,11 +2506,23 @@ export interface operations {
                     "application/json": components["schemas"]["CarWarnings"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     warning_flags_api_status_warning_flags_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2364,6 +2538,15 @@ export interface operations {
                     "application/json": components["schemas"]["WarningFlags"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     warning_flag_hints_api_status_warning_flags_hints_get: {
@@ -2371,6 +2554,8 @@ export interface operations {
             query: {
                 flag: string;
                 window_hours?: number;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2400,7 +2585,10 @@ export interface operations {
     };
     diag_reports_api_diag_reports_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2416,11 +2604,23 @@ export interface operations {
                     "application/json": components["schemas"]["DiagReportInfo"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     diag_history_api_diag_history_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2436,11 +2636,23 @@ export interface operations {
                     "application/json": components["schemas"]["DiagHistoryPoint"][];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
     diag_report_api_diag_reports__report_id__get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path: {
                 report_id: string;
@@ -2471,7 +2683,10 @@ export interface operations {
     };
     diag_report_frames_api_diag_reports__report_id__frames_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
             header?: never;
             path: {
                 report_id: string;
@@ -2505,6 +2720,8 @@ export interface operations {
             query: {
                 a: string;
                 b: string;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2537,6 +2754,8 @@ export interface operations {
             query: {
                 ecu: string;
                 dtc_code: string;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;
@@ -2569,6 +2788,8 @@ export interface operations {
             query: {
                 transaction_id: string;
                 window_hours?: number;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
             };
             header?: never;
             path?: never;

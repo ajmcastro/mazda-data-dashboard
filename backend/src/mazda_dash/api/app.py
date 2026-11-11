@@ -5,14 +5,17 @@ Endpoints that describe a *state* (active faults, alerts, the diagnostic-tool re
 description lookups) deliberately ignore them."""
 
 from datetime import timedelta
+from pathlib import Path
 from typing import Literal
 
 import duckdb
 from fastapi import Depends, FastAPI, HTTPException, Query
 
+from ..models import Model
 from . import models as m
 from .dates import DateRange, date_range
-from .db import db_path, get_con, get_rw_con, has_table, one, rows
+from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
+from .selection import registry
 from .trends import monthly_metrics
 
 app = FastAPI(title="Mazda CX-5 dashboard API", version="0.2.0")
@@ -22,9 +25,50 @@ Range = Depends(date_range)
 
 
 @app.get("/api/health", response_model=m.Health)
-def health():
-    path = db_path()
+def health(model: Model = Selected):
+    path = db_path(model)
     return m.Health(status="ok", database=str(path), has_data=path.exists())
+
+
+def _span(path: Path) -> dict:
+    """First and last day of a model's data; empty when it has none (or is being written)."""
+    if not path.exists():
+        return {}
+    try:
+        con = duckdb.connect(str(path), read_only=True)
+    except duckdb.Error:
+        return {}
+    try:
+        return one(
+            con,
+            "SELECT CAST(min(read_at) AS DATE) AS first_day, CAST(max(read_at) AS DATE) AS last_day "
+            "FROM v_odometer_readings",
+        )
+    except duckdb.Error:
+        return {}
+    finally:
+        con.close()
+
+
+@app.get("/api/models", response_model=list[m.ModelInfo])
+def list_models():
+    """The car models, in display order, with what data each has. Not tied to one model."""
+    reg = registry()
+    out = []
+    for model in reg.models:
+        path = db_path(model)
+        out.append(
+            m.ModelInfo(
+                id=model.id,
+                name=model.name,
+                platform=model.platform,
+                default=model is reg.default,
+                hidden_pages=list(model.hidden_pages),
+                has_data=path.exists(),
+                **_span(path),
+            )
+        )
+    return out
 
 
 @app.get("/api/span", response_model=m.DataSpan)

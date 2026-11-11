@@ -456,7 +456,7 @@ Added after looking at the 176 signals the views do not read yet (24 of 200 are 
 |---|---|---|
 | M21 | Model registry and folder layout ✅ | `config/models/<id>/model.yaml`, `data/<id>/`, `db/<id>.duckdb`, a loader that validates them, migration of the existing CX-5 files, `MODEL=` in the Makefile |
 | M22 | Per-model ingest, configuration and alerts ✅ | `make ingest` for one or all models, per-model codes/alerts/settings, a signal-compatibility report for a new model |
-| M23 | API: choose the model | `/api/models`, `model` on every route, per-model alert writes, regenerated types |
+| M23 | API: choose the model ✅ | `/api/models`, `model` on every route, per-model alert writes, regenerated types |
 | M24 | Dashboard: model switcher | selector in the rail, model in URL and query keys, model-aware titles, tests |
 | M25 | Synthetic second model | `sample_data/cx60/` (different platform code, signals and time zone), `make demo` serves both, tests and screenshots |
 | M26 | Phone app: several models | one pack per model, several packs on the device, switcher, per-model goldens |
@@ -497,12 +497,20 @@ Each milestone is implemented only on request, like the earlier ones, and ends w
 - **Differences from the plan:** (1) there is no shared `config/defaults/`: a missing `alerts.yaml` or `settings.yaml` already falls back to the built-in defaults (`AlertsConfig()`, UTC and 6 h), which is the same thing without a second copy that could drift; the CLIs print a note when a file is missing. (2) The report compares signals and export kinds, not ECU and warning kinds (those are data, not something the views require). (3) `make ingest` still runs one model per call and the Makefile loops over all of them; a single `--model all` option was not needed.
 - **Checked:** backend 198 tests (8 new), lint, `make demo-ingest`, and `make compat` on the real database.
 
-### M23 — API: choose the model
+### M23 — API: choose the model ✅ done
 - **Backend:** a `model` dependency (like `date_range`, in `api/models.py`) resolves the query parameter to a `Model` (default when omitted and only one exists or one is marked default; 404 with the list of valid ids otherwise) and `api/db.py` opens that model's file read-only; the alert write endpoints use the same resolution with the short read-write connection (503 while `make ingest` holds that model's lock). `GET /api/models` returns id, name, platform, hidden pages, whether the database exists and its data span, so the UI can show "no data yet" for a model whose folder is empty.
 - **Every existing route gets the parameter**, including the alerts, diagnostics and state endpoints (they are state, not period, but they still belong to a model). A new test, next to `PERIOD_ENDPOINTS`, lists the routes and asserts that each one accepts `model`, answers differently for two different models and answers the default when omitted; a route that forgets the dependency fails it (same idea as the golden-case test).
 - **Types:** `make types` regenerates `schema.d.ts` and `openapi.json`.
 - **Phone twin:** none yet; the TypeScript engine is single-database by design (a pack = one model) and keeps its routes as they are. The `model` parameter is ignored by the engine in M23 and handled in M26.
 - **Done when:** the old API tests pass with the default model, the new matrix passes with two models, and `make mobile-test` still passes.
+
+**M23 as built.**
+- **One dependency does it:** `api/selection.py` (`get_model`: the optional `model` query parameter, omitted = the default model, unknown = 404 listing the valid ids, unreadable model config = 503 with the reason) and `get_con` / `get_rw_con` depend on it, so every route that reads or writes a database gets the parameter, and the alert writes use the chosen model's file (503 while that model's `make ingest` holds its lock, with a message naming `MODEL=<id>`). `/api/health` takes it too.
+- **`GET /api/models`:** id, name, platform, default, hidden pages, `has_data` and the first and last day of each model's data (empty, not an error, for a model with no database or one being written).
+- **Overrides:** `MAZDA_DB` now replaces only the default model's database, so a request for another model can never be answered from the test or demo database; `MAZDA_ROOT` points the API at another repository root (the new tests use it).
+- **Tests** (`tests/test_api_models.py`, 22 cases): every route in the OpenAPI schema declares `model` (a new route that forgets fails); 14 state and period routes answer the default when `model` is omitted and answer differently for another model; the model list; a model with no database; unknown model; broken config; acknowledging all alerts in one model leaves the other; the `MAZDA_DB` rule. `/api/models` is exempt from the golden-case test, like `/api/health`.
+- **Types:** `make types` regenerated `openapi.json` and `schema.d.ts` (the new parameter on every route, `ModelInfo`); the frontend type-checks unchanged. The dashboard sends no `model` yet (M24), so it keeps showing the default model. **The TypeScript engine ignores `model`** and no route was added there; `make mobile-test` (408) passes.
+- **Checked:** backend 220 tests, lint, frontend 60, mobile 408, and `TZ=UTC make types sample-data` leaves no diff.
 
 ### M24 — Dashboard: model switcher
 - **UI:** a model selector at the top of the rail (and in the phone-width top bar), hidden when there is only one model (the single title says "Mazda CX-5" taken from `model.yaml`, no longer hard-coded). Titles, the page `<title>`, empty states and README-style wording stop saying "CX-5" literally.
