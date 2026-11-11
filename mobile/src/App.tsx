@@ -35,7 +35,7 @@ function More({ hidden, canCompare, severalCars }: { hidden: readonly string[] |
         {link('/warnings', 'Warnings')}
         {link('/status', 'Status')}
         {severalCars && <RangeNavLink to="/garage">All cars</RangeNavLink>}
-        {canCompare && <RangeNavLink to="/compare">Compare cars</RangeNavLink>}
+        {canCompare && <RangeNavLink to="/compare">Compare</RangeNavLink>}
         {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">Diagnostics</RangeNavLink>}
         <NavLink to="/data">Data on this phone</NavLink>
       </nav>
@@ -49,8 +49,8 @@ function Ready() {
   const search = useRangeSearch()
   const { model, models } = useCurrentModel()
   useRestoreSavedRange()
-  // two cars that have data and show the Trends page can be compared
-  const canCompare = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length >= 2
+  // Compare works with two cars, or (one car is enough) with two periods of one car; both need the Trends data
+  const canCompare = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length >= 1
   const o = overview.data
   const hidden = model?.hidden_pages
   const tab = (to: string, label: ReactNode) =>

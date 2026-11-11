@@ -44,7 +44,7 @@ export default function App() {
   }, [name])
   const o = overview.data
   const hidden = model?.hidden_pages
-  // Compare needs two cars that have data and show the Trends page
+  // Compare: two cars that have data, or (one car is enough) two periods of one car; both need the Trends data
   const comparable = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length
   const withData = models.filter((m) => m.has_data).length
   const nav = (to: string, label: ReactNode) =>
@@ -72,7 +72,7 @@ export default function App() {
         <nav className="nav" aria-label="Main">
           {nav('/', 'Overview')}
           {nav('/trends', 'Trends')}
-          {comparable >= 2 && nav('/compare', 'Compare')}
+          {comparable >= 1 && nav('/compare', 'Compare')}
           {nav('/alerts', <>Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
           {nav('/warnings', 'Warnings')}
           {nav('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}

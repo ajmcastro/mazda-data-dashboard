@@ -72,6 +72,14 @@ export const garageQuery = (model: string | undefined) => ({
 
 export const useGarageOf = (model: string | undefined) => useQuery(garageQuery(model))
 
+/** A model's months inside a period (a month cut by the period only counts its days inside it): the Compare page's periods. */
+export const useMonthlyRange = (model: string | undefined, from: string | undefined, to: string | undefined) =>
+  useQuery({
+    queryKey: ['monthly-range', model, from, to],
+    enabled: Boolean(from && to),
+    queryFn: () => unwrap(client.GET('/api/trends/monthly', { params: { query: { model, from, to } } })),
+  })
+
 export const useOdometerDaily = () => {
   const range = useRangeQuery()
   return useQuery({

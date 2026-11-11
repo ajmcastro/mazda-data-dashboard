@@ -4,8 +4,8 @@
 // comparing two periods of one car can reuse it later.
 
 import type { MonthMetrics } from './api/types'
-import { fmtNum } from './lib'
-import { digitsFor, metricValue, monthLabel, unitFor, type MetricDef, type MetricKey } from './trends'
+import { addDays, fmtDate, fmtNum } from './lib'
+import { digitsFor, metricValue, monthLabel, toneFor, unitFor, type MetricDef, type MetricKey, type Tone } from './trends'
 
 export type Series = { label: string; rows: MonthMetrics[] }
 
@@ -94,7 +94,9 @@ export function alignMonths(a: Series, b: Series, basis: Basis, includePartial: 
 /** Metrics that are averaged by something other than the number of months (a rate by what it is a rate of). */
 const WEIGHT: Partial<Record<MetricKey, keyof MonthMetrics>> = {
   l_per_100km: 'distance_km',
+  cost_per_100km: 'distance_km',
   avg_speed_kmh: 'driving_hours',
+  tire_avg_kpa: 'days_covered',
 }
 
 export type Summary = { value: number | null; months: number }
@@ -170,10 +172,15 @@ export function compareMetric(
         : `the cost is in ${currencies.a} for one car and ${currencies.b} for the other`
     return { kind: 'not-comparable', reason, a, b, ...empty, months }
   }
-  const delta = b.value - a.value
-  const pct = a.value === 0 ? null : (delta / Math.abs(a.value)) * 100
+  return { kind: 'ok', a, b, ...difference(a.value, b.value), months }
+}
+
+/** b − a, in percent of a (none when a is 0), and which way it went (within half a percent: flat). */
+function difference(a: number, b: number): { delta: number; pct: number | null; direction: 'up' | 'down' | 'flat' } {
+  const delta = b - a
+  const pct = a === 0 ? null : (delta / Math.abs(a)) * 100
   const direction = pct === null ? (delta === 0 ? 'flat' : delta > 0 ? 'up' : 'down') : Math.abs(pct) < FLAT_BELOW_PCT ? 'flat' : delta > 0 ? 'up' : 'down'
-  return { kind: 'ok', a, b, delta, pct, direction, months }
+  return { delta, pct, direction }
 }
 
 const figure = (def: MetricDef, v: number | null, perDay: boolean, currency: string | null) =>
@@ -235,4 +242,104 @@ export function pickPair<T extends Choice>(
   const a = find(asked.a) ?? find(current) ?? choices[0]
   const b = [find(asked.b), ...choices].find((c) => c !== undefined && c.id !== a?.id)
   return { a, b }
+}
+
+// ---- two periods of one car ---------------------------------------------------------------------------
+
+/** What a period (any window of days) can and cannot be built from: the monthly rows inside it. */
+export const PERIOD_UNAVAILABLE: Partial<Record<MetricKey, string>> = {
+  warning_codes: 'the number of different warning codes in a period cannot be added up from months',
+  distinct_faults: 'the number of different faults in a period cannot be added up from months',
+}
+
+/**
+ * A car's figure over a period, from the monthly rows inside it (a month cut by the period only counts its days
+ * inside it). Totals add up, rates are weighted by what they are a rate of, the lowest tire reading is the lowest
+ * of the months; with `perDay` off a total stays a total.
+ */
+export function summarisePeriod(def: MetricDef, rows: MonthMetrics[], perDay: boolean): Summary {
+  if (def.additive && !perDay) {
+    const values = rows.map((r) => metricValue(r, def, false)).filter((v): v is number => v !== null)
+    return values.length ? { value: values.reduce((x, y) => x + y, 0), months: values.length } : { value: null, months: 0 }
+  }
+  if (def.key === 'tire_min_kpa') {
+    const values = rows.map((r) => metricValue(r, def, false)).filter((v): v is number => v !== null)
+    return values.length ? { value: Math.min(...values), months: values.length } : { value: null, months: 0 }
+  }
+  return summarise(def, rows, perDay)
+}
+
+export type PeriodComparison = MetricComparison & {
+  /** good / bad for the same car over time (neutral for a metric with no direction, or when not compared) */
+  tone: Tone
+}
+
+/** Compares one metric of the same car over a period A and a later (or other) period B. */
+export function comparePeriods(def: MetricDef, rowsA: MonthMetrics[], rowsB: MonthMetrics[], perDay: boolean): PeriodComparison {
+  const none: Summary = { value: null, months: 0 }
+  const unavailable = PERIOD_UNAVAILABLE[def.key]
+  const empty = { delta: null, pct: null, direction: null, months: [] as string[] }
+  if (unavailable) return { kind: 'not-comparable', reason: unavailable, a: none, b: none, ...empty, tone: 'neutral' }
+  const a = summarisePeriod(def, rowsA, perDay)
+  const b = summarisePeriod(def, rowsB, perDay)
+  if (a.value === null && b.value === null) return { kind: 'none', a, b, ...empty, tone: 'neutral' }
+  if (a.value === null || b.value === null) return { kind: 'one-sided', a, b, ...empty, tone: 'neutral' }
+  const d = difference(a.value, b.value)
+  return { kind: 'ok', a, b, ...d, months: [], tone: toneFor(def.polarity, d.direction) }
+}
+
+export type Period = { from: string; to: string }
+
+const monthStart = (day: string) => `${day.slice(0, 7)}-01`
+const daysIn = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate()
+const monthEnd = (day: string) => addDays(addDays(monthStart(day), 32).slice(0, 7) + '-01', -1)
+const previousMonthEnd = (day: string) => addDays(monthStart(day), -1)
+
+/** The same calendar day a year earlier (29 February becomes 28 February). */
+export function yearAgo(day: string): string {
+  const [y, m, d] = day.split('-').map(Number)
+  const dd = Math.min(d, daysIn(y - 1, m))
+  return `${String(y - 1).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(dd).padStart(2, '0')}`
+}
+
+/** "May 2026" for a whole calendar month, else "05 May – 04 Jun 2026". */
+export function periodLabel(p: Period): string {
+  if (p.from === monthStart(p.from) && p.to === monthEnd(p.from)) return monthLabel(p.from.slice(0, 7))
+  return p.from === p.to ? fmtDate(p.from) : `${fmtDate(p.from)} – ${fmtDate(p.to)}`
+}
+
+export type PeriodPreset = { id: string; label: string; a: Period; b: Period; available: boolean }
+
+const overlaps = (p: Period, first: string, last: string) => p.to >= first && p.from <= last
+
+/**
+ * Ready-made pairs of periods, counted back from the newest day with data (like the date presets: an export is
+ * a snapshot). `around` is the date of "before and after a date" (the 30 days before it, and it and the 29 after).
+ * A pair is not available when its earlier period has no data at all.
+ */
+export function periodPresets(first: string, last: string, around?: string): PeriodPreset[] {
+  const make = (id: string, label: string, a: Period, b: Period): PeriodPreset => ({ id, label, a, b, available: overlaps(a, first, last) && overlaps(b, first, last) })
+  const thisMonth: Period = { from: monthStart(last), to: last }
+  const previousEnd = previousMonthEnd(last)
+  const list = [
+    make('last30', 'Last 30 days against the 30 before', { from: addDays(last, -59), to: addDays(last, -30) }, { from: addDays(last, -29), to: last }),
+    make('month', 'This month against the month before', { from: monthStart(previousEnd), to: previousEnd }, thisMonth),
+    make('year', 'This month against a year ago', { from: yearAgo(thisMonth.from), to: yearAgo(thisMonth.to) }, thisMonth),
+  ]
+  if (around) {
+    const after = addDays(around, 29)
+    list.push(make('around', 'Before and after a date', { from: addDays(around, -30), to: addDays(around, -1) }, { from: around, to: after > last ? last : after }))
+  }
+  return list
+}
+
+/** What is wrong with two periods (nothing: an empty list). */
+export function validatePeriods(a: Period, b: Period, first: string, last: string): string[] {
+  const problems: string[] = []
+  for (const [name, p] of [['The first period', a], ['The second period', b]] as const) {
+    if (p.from > p.to) problems.push(`${name} ends before it starts.`)
+    else if (!overlaps(p, first, last)) problems.push(`${name} has no data (the data runs from ${fmtDate(first)} to ${fmtDate(last)}).`)
+  }
+  if (a.from <= b.to && b.from <= a.to && a.from <= a.to && b.from <= b.to) problems.push('The two periods overlap.')
+  return problems
 }

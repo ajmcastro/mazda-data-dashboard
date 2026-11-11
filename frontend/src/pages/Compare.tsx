@@ -18,6 +18,7 @@ import {
 import { Panel } from '../components/ui'
 import { ANIMATE, fmtNum, isPageHidden, shortModelName } from '../lib'
 import { useCurrentModel } from '../model'
+import ComparePeriods from './ComparePeriods'
 import { METRICS, currencyOf, digitsFor, metricValue, monthLabel, monthShort, unitFor, unitLabel, type MetricDef } from '../trends'
 
 // Two cars, told apart by colour AND by marker shape and dash, so colour is not the only cue.
@@ -156,7 +157,7 @@ function CompareTable({ aligned, names, perDay, basis, currencies, metrics }: { 
   )
 }
 
-export default function Compare() {
+function CarsCompare() {
   const { models, id: current } = useCurrentModel()
   const [params, setParams] = useSearchParams()
   const [view, setView] = useState<'cards' | 'table'>('cards')
@@ -190,15 +191,11 @@ export default function Compare() {
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <h1>Compare cars</h1>
-          <p>
-            Two cars side by side, month by month. A different car is not a better or a worse one, so the page only
-            says higher and lower, and marks every figure that is not fair to compare.
-          </p>
-        </div>
-        {choices.length >= 2 && a && b && (
+      <p className="muted cmp-intro">
+        Two cars side by side, month by month. A different car is not a better or a worse one, so this only says higher
+        and lower, and marks every figure that is not fair to compare.
+      </p>
+      {choices.length >= 2 && a && b && (
           <div className="controls">
             {(['a', 'b'] as const).map((side) => (
               <label key={side}>
@@ -243,8 +240,7 @@ export default function Compare() {
               incomplete months
             </label>
           </div>
-        )}
-      </div>
+      )}
 
       {choices.length < 2 || !a || !b ? (
         <Panel>
@@ -284,6 +280,43 @@ export default function Compare() {
           )}
         </>
       )}
+    </>
+  )
+}
+
+/** Compare: two cars, or two periods of the car on screen. */
+export default function Compare() {
+  const { models } = useCurrentModel()
+  const [params, setParams] = useSearchParams()
+  const cars = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length
+  // with one car there is nothing to set against another car: start with its periods
+  const mode: 'cars' | 'periods' = params.get('mode') === 'periods' || (params.get('mode') !== 'cars' && cars < 2) ? 'periods' : 'cars'
+  const setMode = (m: 'cars' | 'periods') =>
+    setParams(
+      (prev) => {
+        const p = new URLSearchParams(prev)
+        p.set('mode', m)
+        return p
+      },
+      { replace: true },
+    )
+
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Compare</h1>
+        </div>
+        <div className="chips" role="radiogroup" aria-label="What to compare">
+          {(['cars', 'periods'] as const).map((m) => (
+            <label key={m} className="preset">
+              <input type="radio" name="cmp-mode" checked={mode === m} onChange={() => setMode(m)} />
+              <span>{m === 'cars' ? 'Two cars' : 'Two periods'}</span>
+            </label>
+          ))}
+        </div>
+      </div>
+      {mode === 'cars' ? <CarsCompare /> : <ComparePeriods />}
     </>
   )
 }

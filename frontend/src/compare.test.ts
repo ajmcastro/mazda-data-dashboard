@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest'
 import type { MonthMetrics } from './api/types'
 import {
   COMPARABILITY,
+  PERIOD_UNAVAILABLE,
   alignMonths,
+  comparePeriods,
   compareMetric,
   describeBasis,
   describeDifference,
+  periodLabel,
+  periodPresets,
   pickPair,
   summarise,
+  summarisePeriod,
+  validatePeriods,
+  yearAgo,
   type Series,
 } from './compare'
 import { METRICS } from './trends'
@@ -242,3 +249,98 @@ describe('cost across two cars', () => {
     expect(COMPARABILITY.fuel_cost_est.level).toBe('caution')
   })
 })
+
+describe('two periods of one car', () => {
+  // two months of a car, cut like the Trends route cuts them for a period
+  const june = [row('2026-06', { distance_km: 600, drives: 30, days_driven: 20, l_per_100km: 7, cost_per_100km: 13, fuel_cost_est: 78, warning_events: 40, tire_min_kpa: 220, tire_avg_kpa: 230 })]
+  const may = [row('2026-05', { days_in_month: 31, days_covered: 31, distance_km: 620, drives: 25, days_driven: 21, l_per_100km: 8, cost_per_100km: 12, fuel_cost_est: 74, warning_events: 20, tire_min_kpa: 225, tire_avg_kpa: 232 })]
+
+  it('adds totals up over the months of a period and averages rates by what they are a rate of', () => {
+    const rows = [
+      row('2026-05', { distance_km: 100, drives: 10, l_per_100km: 10, days_covered: 10 }),
+      row('2026-06', { distance_km: 300, drives: 20, l_per_100km: 6, days_covered: 20 }),
+    ]
+    expect(summarisePeriod(def('distance_km'), rows, false)).toEqual({ value: 400, months: 2 }) // a total stays a total
+    expect(summarisePeriod(def('distance_km'), rows, true).value).toBeCloseTo(400 / 30) // or per day: total over total days
+    expect(summarisePeriod(def('drives'), rows, false).value).toBe(30)
+    expect(summarisePeriod(def('l_per_100km'), rows, false).value).toBe(7) // weighted by distance
+    const tires = [row('2026-05', { tire_min_kpa: 225 }), row('2026-06', { tire_min_kpa: 215 })]
+    expect(summarisePeriod(def('tire_min_kpa'), tires, false).value).toBe(215) // the lowest, not an average
+    expect(summarisePeriod(def('distance_km'), [], false)).toEqual({ value: null, months: 0 })
+  })
+
+  it('weights the cost per 100 km by distance and the average tire pressure by days', () => {
+    const rows = [row('2026-05', { distance_km: 100, cost_per_100km: 10, tire_avg_kpa: 200, days_covered: 10 }), row('2026-06', { distance_km: 300, cost_per_100km: 14, tire_avg_kpa: 240, days_covered: 30 })]
+    expect(summarise(def('cost_per_100km'), rows, false).value).toBeCloseTo(13)
+    expect(summarise(def('tire_avg_kpa'), rows, false).value).toBeCloseTo(230)
+  })
+
+  it('compares June with May and tells good from bad for the same car', () => {
+    const fuel = comparePeriods(def('l_per_100km'), may, june, false)
+    expect(fuel).toMatchObject({ kind: 'ok', direction: 'down', tone: 'good' }) // less fuel: good
+    expect(fuel.pct).toBeCloseTo(-12.5)
+    const warnings = comparePeriods(def('warning_events'), may, june, false)
+    expect(warnings).toMatchObject({ direction: 'up', tone: 'bad' }) // more warnings: bad
+    expect(comparePeriods(def('distance_km'), may, june, false).tone).toBe('neutral') // no direction
+    expect(comparePeriods(def('tire_min_kpa'), may, june, false)).toMatchObject({ direction: 'down', tone: 'bad' }) // a lower lowest tire reading
+  })
+
+  it('names the periods in the neutral wording, with the figures', () => {
+    const c = comparePeriods(def('l_per_100km'), may, june, false)
+    expect(describeDifference(def('l_per_100km'), { a: 'May 2026', b: 'June 2026' }, c, false)).toBe('June 2026 is 12.5% lower than May 2026 (7.00 l/100 km against 8.00 l/100 km)')
+  })
+
+  it('does not pretend to add up the distinct codes of a period', () => {
+    const c = comparePeriods(def('warning_codes'), [row('2026-05', { warning_codes: 4 })], [row('2026-06', { warning_codes: 6 })], false)
+    expect(c).toMatchObject({ kind: 'not-comparable', tone: 'neutral', delta: null })
+    expect(describeDifference(def('warning_codes'), { a: 'A', b: 'B' }, c, false)).toBe(`not compared: ${PERIOD_UNAVAILABLE.warning_codes}`)
+    expect(Object.keys(PERIOD_UNAVAILABLE).sort()).toEqual(['distinct_faults', 'warning_codes'])
+  })
+
+  it('reports a period without data for a metric', () => {
+    expect(comparePeriods(def('distance_km'), [], june, false).kind).toBe('one-sided')
+    expect(comparePeriods(def('distance_km'), [], [], false).kind).toBe('none')
+  })
+
+  describe('the ready-made pairs', () => {
+    const first = '2026-03-01'
+    const last = '2026-06-30'
+    const preset = (id: string, around?: string) => periodPresets(first, last, around).find((p) => p.id === id)!
+
+    it('counts back from the newest day with data', () => {
+      expect(preset('last30')).toMatchObject({ a: { from: '2026-05-02', to: '2026-05-31' }, b: { from: '2026-06-01', to: '2026-06-30' }, available: true })
+      expect(preset('month')).toMatchObject({ a: { from: '2026-05-01', to: '2026-05-31' }, b: { from: '2026-06-01', to: '2026-06-30' } })
+    })
+    it('does not offer a year ago when the data is younger than that', () => {
+      expect(preset('year')).toMatchObject({ a: { from: '2025-06-01', to: '2025-06-30' }, available: false })
+      const old = periodPresets('2025-01-01', '2026-06-30').find((p) => p.id === 'year')!
+      expect(old.available).toBe(true)
+    })
+    it('offers before and after a date only when a date is given, and cuts the later period at the newest day', () => {
+      expect(periodPresets(first, last).some((p) => p.id === 'around')).toBe(false)
+      expect(preset('around', '2026-05-15')).toMatchObject({ a: { from: '2026-04-15', to: '2026-05-14' }, b: { from: '2026-05-15', to: '2026-06-13' } })
+      expect(preset('around', '2026-06-20').b).toEqual({ from: '2026-06-20', to: '2026-06-30' })
+    })
+    it('handles the start of the year and a leap day', () => {
+      expect(periodPresets('2025-01-01', '2026-01-10').find((p) => p.id === 'month')!.a).toEqual({ from: '2025-12-01', to: '2025-12-31' })
+      expect(yearAgo('2028-02-29')).toBe('2027-02-28')
+      expect(yearAgo('2026-06-30')).toBe('2025-06-30')
+    })
+  })
+
+  it('labels whole months by name and other periods by their dates', () => {
+    expect(periodLabel({ from: '2026-05-01', to: '2026-05-31' })).toBe('May 2026')
+    expect(periodLabel({ from: '2026-02-01', to: '2026-02-28' })).toBe('Feb 2026')
+    expect(periodLabel({ from: '2026-05-02', to: '2026-05-31' })).toBe('02 May 2026 – 31 May 2026')
+    expect(periodLabel({ from: '2026-05-02', to: '2026-05-02' })).toBe('02 May 2026')
+  })
+
+  it('finds what is wrong with two periods', () => {
+    const ok = validatePeriods({ from: '2026-05-01', to: '2026-05-31' }, { from: '2026-06-01', to: '2026-06-30' }, '2026-03-01', '2026-06-30')
+    expect(ok).toEqual([])
+    expect(validatePeriods({ from: '2026-05-31', to: '2026-05-01' }, { from: '2026-06-01', to: '2026-06-30' }, '2026-03-01', '2026-06-30')[0]).toMatch(/first period ends before it starts/)
+    expect(validatePeriods({ from: '2024-01-01', to: '2024-01-31' }, { from: '2026-06-01', to: '2026-06-30' }, '2026-03-01', '2026-06-30')[0]).toMatch(/first period has no data/)
+    expect(validatePeriods({ from: '2026-05-01', to: '2026-06-10' }, { from: '2026-06-01', to: '2026-06-30' }, '2026-03-01', '2026-06-30')).toContain('The two periods overlap.')
+  })
+})
+
