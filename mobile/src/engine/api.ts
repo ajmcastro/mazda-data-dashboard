@@ -7,6 +7,7 @@ import { alertHandlers, MemoryAckStore, type AckStore } from './alerts'
 import { diagCompare, diagHistory, diagReport, diagReportFrames, diagReports } from './diag'
 import { dtcEvents, dtcFrequency, dtcReadouts, dtcSnapshots, faultContext, freezeFrames } from './faults'
 import { carWarnings } from './carwarnings'
+import { garage } from './garage'
 import { maintenanceOil } from './maintenance'
 import { warningFlagHints, warningFlags } from './warningflags'
 import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, statusTimeline, tireReadings, tripSegments } from './series'
@@ -30,6 +31,12 @@ export interface ModelInfo {
   last_day: string | null
 }
 
+/** What the phone keeps of a car that is not loaded: its all-time monthly figures and its "All cars" card. */
+export interface Summary {
+  monthly?: unknown[]
+  garage?: unknown
+}
+
 export interface ApiOptions {
   /** Where acknowledgements made on this phone are kept. */
   acks?: AckStore
@@ -50,7 +57,7 @@ export class Api {
   private con: Con | null = null
   private loadedModel: string | null = null
   private models: ModelInfo[] = []
-  private summaries = new Map<string, unknown[]>()
+  private summaries = new Map<string, Summary>()
   private readonly routes: Route[] = []
   private readonly database: string
 
@@ -65,6 +72,7 @@ export class Api {
     add('GET', '/api/health', async () => ({ status: 'ok', database: this.database, has_data: this.con !== null }), false)
     add('GET', '/api/models', async () => this.models, false)
     add('GET', '/api/span', span)
+    add('GET', '/api/garage', garage)
     add('GET', '/api/overview', overview)
     add('GET', '/api/trends/monthly', trendsMonthly)
     add('GET', '/api/odometer/daily', odometerDaily)
@@ -106,10 +114,11 @@ export class Api {
   }
 
   /**
-   * The monthly figures of cars that are not loaded, for the Compare page: `/api/trends/monthly?model=<id>`
-   * without a period is answered from here. Anything else about another model is still refused.
+   * What the Compare and "All cars" pages need of cars that are not loaded: `/api/trends/monthly?model=<id>`
+   * (without a period) and `/api/garage?model=<id>` are answered from here. Anything else about another model
+   * is still refused.
    */
-  setSummaries(summaries: Map<string, unknown[]>): void {
+  setSummaries(summaries: Map<string, Summary>): void {
     this.summaries = summaries
   }
 
@@ -129,11 +138,15 @@ export class Api {
       if (route.method !== method.toUpperCase()) continue
       try {
         const asked = u.searchParams.get('model')
-        const summary =
-          asked && path === '/api/trends/monthly' && method.toUpperCase() === 'GET' && !u.searchParams.has('from') && !u.searchParams.has('to')
-            ? this.summaries.get(asked)
+        const cached =
+          asked && method.toUpperCase() === 'GET'
+            ? path === '/api/trends/monthly' && !u.searchParams.has('from') && !u.searchParams.has('to')
+              ? this.summaries.get(asked)?.monthly
+              : path === '/api/garage'
+                ? this.summaries.get(asked)?.garage
+                : undefined
             : undefined
-        if (asked && summary && this.loadedModel !== null && asked !== this.loadedModel) return { status: 200, body: summary }
+        if (asked && cached !== undefined && this.loadedModel !== null && asked !== this.loadedModel) return { status: 200, body: cached }
         if (asked && path !== '/api/models' && this.loadedModel !== null && asked !== this.loadedModel) {
           // same answer as the Python API for a model it does not know
           const ids = this.models.map((x) => x.id).join(', ')

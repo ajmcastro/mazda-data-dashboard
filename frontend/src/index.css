@@ -384,3 +384,13 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .level.caution { color: var(--amber); border-color: var(--amber); }
 .level.no { color: var(--muted); border-style: dashed; }
 .car-select { min-width: 150px; }
+
+/* ---- all cars ---- */
+.garage-card { display: flex; flex-direction: column; gap: 10px; }
+.garage-card.shown { border-color: var(--steel); }
+.garage-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.garage-stale { font-size: 13px; }
+.garage-figures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.garage-value { font-family: var(--display); font-weight: 700; font-size: 24px; line-height: 1.1; }
+.garage-sub { font-size: 11px; }
+.garage-card button { align-self: flex-start; }

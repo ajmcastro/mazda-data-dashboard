@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useModels } from './api/hooks'
 import { pickModel, rangeForModel, restoreModel } from './lib'
 import { useDateRange, useModelParam } from './range'
@@ -80,10 +80,12 @@ export function useRestoreSavedModel(): boolean {
  */
 export function useSwitchModel() {
   const { models, model } = useCurrentModel()
-  const [, setParams] = useSearchParams()
+  const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const { from, to } = useDateRange()
 
-  return (id: string) => {
+  /** `page`: go to that page (e.g. '/') in the same step, instead of staying where you are. */
+  return (id: string, page?: string) => {
     const next = models.find((m) => m.id === id)
     if (!next) return
     saveModelChoice(id)
@@ -92,19 +94,19 @@ export function useSwitchModel() {
       { first: model?.first_day, last: model?.last_day },
       { first: next.first_day, last: next.last_day },
     )
-    setParams(
-      (prev) => {
-        const p = new URLSearchParams(prev)
-        if (next.default) p.delete('model')
-        else p.set('model', next.id)
-        for (const key of ['report', 'compare']) p.delete(key)
-        for (const key of ['from', 'to'] as const) {
-          if (range[key]) p.set(key, range[key])
-          else p.delete(key)
-        }
-        return p
-      },
-      { replace: true },
-    )
+    const change = (prev: URLSearchParams) => {
+      const p = new URLSearchParams(prev)
+      if (next.default) p.delete('model')
+      else p.set('model', next.id)
+      for (const key of ['report', 'compare']) p.delete(key)
+      for (const key of ['from', 'to'] as const) {
+        if (range[key]) p.set(key, range[key])
+        else p.delete(key)
+      }
+      return p
+    }
+    // two separate navigations would race (the second one drops the first one's parameters)
+    if (page) navigate({ pathname: page, search: change(params).toString() }, { replace: true })
+    else setParams(change, { replace: true })
   }
 }

@@ -2,6 +2,7 @@ import type { components } from './schema'
 
 type S = components['schemas']
 export type Overview = S['Overview']
+export type Garage = S['Garage']
 export type OilService = S['OilService']
 export type OilStep = S['OilStep']
 export type WarningFlags = S['WarningFlags']

@@ -62,6 +62,16 @@ export const useMonthlyOf = (model: string | undefined) =>
     queryFn: () => unwrap(client.GET('/api/trends/monthly', { params: { query: { model } } })),
   })
 
+/** The "All cars" card of one model (the same options are used for every car and by the model selector). */
+export const garageQuery = (model: string | undefined) => ({
+  queryKey: ['garage', model],
+  enabled: Boolean(model),
+  retry: false,
+  queryFn: () => unwrap(client.GET('/api/garage', { params: { query: { model } } })),
+})
+
+export const useGarageOf = (model: string | undefined) => useQuery(garageQuery(model))
+
 export const useOdometerDaily = () => {
   const range = useRangeQuery()
   return useQuery({
@@ -337,6 +347,7 @@ function useAlertMutation<T = void>(run: (arg: T, model: string | undefined) => 
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['alerts'] })
       void queryClient.invalidateQueries({ queryKey: ['overview'] })
+      void queryClient.invalidateQueries({ queryKey: ['garage'] })
     },
   })
 }

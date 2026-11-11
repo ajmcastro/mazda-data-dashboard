@@ -6,7 +6,7 @@
  * loaded when asked for. An import of another model's pack stores it without switching to it, so the
  * address and the data on screen never disagree.
  */
-import { Api, type ModelInfo } from './engine/api'
+import { Api, type ModelInfo, type Summary } from './engine/api'
 import { replayAcks } from './engine/alerts'
 import { Con, type RawDb } from './engine/db'
 import { clearDatabase, loadPack, readPack, type Manifest } from './engine/pack'
@@ -32,10 +32,10 @@ export interface ModelPack {
 }
 
 /**
- * The version of the engine's monthly answer the cached summaries were made from. Raise it whenever
- * `/api/trends/monthly` (its fields or its maths) changes, so no summary of the old answer is ever shown.
+ * The version of the engine's answers the cached summaries were made from. Raise it whenever
+ * `/api/trends/monthly` or `/api/garage` (their fields or their maths) change, so no summary of the old answer is ever shown.
  */
-export const SUMMARY_VERSION = 1
+export const SUMMARY_VERSION = 2 // 2: the "All cars" card (/api/garage) joined the monthly figures
 
 export interface DataState {
   status: Status
@@ -47,7 +47,7 @@ export interface DataState {
   current: string | null
   /** every pack stored on the device */
   packs: ModelPack[]
-  /** the models whose monthly figures are cached for the Compare page (a car not loaded can only be compared from these) */
+  /** the models whose figures are cached for the Compare and "All cars" pages (a car not loaded can only be shown from these) */
   summaries: string[]
   /** the comparison is being prepared: other cars are loaded one after the other, then the one shown again */
   preparing: boolean
@@ -133,7 +133,7 @@ export class DataController {
   private readonly acks = new ModelAckStore()
   private readonly memory: Memory
   private stored = new Map<string, StoredPack>()
-  private summaryCache = new Map<string, unknown[]>()
+  private summaryCache = new Map<string, Summary>()
 
   constructor(private readonly deps: ControllerDeps) {
     this.api = deps.api ?? new Api({ acks: this.acks })
@@ -196,18 +196,35 @@ export class DataController {
     this.summaryCache = new Map(
       Object.entries(saved)
         .filter(([id, s]) => this.stored.has(id) && s.key === this.summaryKey(this.stored.get(id)!))
-        .map(([id, s]) => [id, s.monthly]),
+        .map(([id, s]) => [id, { monthly: s.monthly, garage: s.garage }]),
     )
   }
 
-  /** The monthly figures of the model loaded now, over all its data, kept for the Compare page (once per pack). */
+  /** The figures of the model loaded now, kept for the Compare and "All cars" pages (once per pack). */
   private async summariseLoaded(stored: StoredPack): Promise<void> {
     const id = stored.manifest.model.id
     if (this.summaryCache.has(id)) return
-    const answer = await this.api.handle('GET', '/api/trends/monthly')
-    if (answer.status !== 200 || !Array.isArray(answer.body)) return // the comparison just will not offer this car
-    this.summaryCache.set(id, answer.body)
-    await writeStoredSummary(id, { key: this.summaryKey(stored), monthly: answer.body })
+    const monthly = await this.api.handle('GET', '/api/trends/monthly')
+    const garage = await this.api.handle('GET', '/api/garage')
+    if (monthly.status !== 200 || !Array.isArray(monthly.body) || garage.status !== 200) return // just not offered for this car
+    this.summaryCache.set(id, { monthly: monthly.body, garage: garage.body })
+    await writeStoredSummary(id, { key: this.summaryKey(stored), monthly: monthly.body, garage: garage.body })
+  }
+
+  /**
+   * The "All cars" card of the model loaded now, made again before another car replaces it: alerts may have
+   * been acknowledged since the summary was made, and the card must not show a count that is out of date.
+   */
+  private async refreshGarage(): Promise<void> {
+    const id = this.state.current
+    const stored = id ? this.stored.get(id) : undefined
+    const cached = id ? this.summaryCache.get(id) : undefined
+    if (!id || !stored || !cached) return
+    const garage = await this.api.handle('GET', '/api/garage')
+    if (garage.status !== 200) return
+    this.summaryCache.set(id, { ...cached, garage: garage.body })
+    await writeStoredSummary(id, { key: this.summaryKey(stored), monthly: cached.monthly as unknown[], garage: garage.body })
+    this.publishSummaries()
   }
 
   /** On launch: start the engine and load the model last shown (or the one the address asks for). */
@@ -257,6 +274,7 @@ export class DataController {
     const previous = this.state.current
     if (!stored || id === previous) return Boolean(stored)
     try {
+      await this.refreshGarage()
       this.api.use(null)
       await this.activate(await this.engineReady(), stored)
       return true
@@ -288,6 +306,7 @@ export class DataController {
       this.summaryCache.delete(id) // a new pack: its cached figures are of the old one
       const show = options.show ?? (previous === null || previous === id)
       if (show) {
+        if (previous !== id) await this.refreshGarage()
         this.api.use(null)
         await this.activate(raw, stored)
         await writeStoredPack(stored)
@@ -379,6 +398,7 @@ export class DataController {
     if (!original || this.state.preparing || !missing.length) return true
     this.set({ preparing: true, status: 'loading', message: 'Preparing the comparison…' })
     try {
+      await this.refreshGarage()
       const raw = await this.engineReady()
       for (const id of missing) {
         const stored = this.stored.get(id)!

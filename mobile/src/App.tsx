@@ -8,7 +8,9 @@ import { RangeNavLink } from '@frontend/components/RangeLink'
 import { ThemeCycleButton } from '@frontend/components/ThemeToggle'
 import Alerts from '@frontend/pages/Alerts'
 import Diagnostics from '@frontend/pages/Diagnostics'
+import Compare from '@frontend/pages/Compare'
 import Faults from '@frontend/pages/Faults'
+import Garage from '@frontend/pages/Garage'
 import OverviewPage from '@frontend/pages/Overview'
 import Status from '@frontend/pages/Status'
 import Trends from '@frontend/pages/Trends'
@@ -16,15 +18,15 @@ import Warnings from '@frontend/pages/Warnings'
 import { isPageHidden } from '@frontend/lib'
 import { useCurrentModel } from '@frontend/model'
 import { useRangeSearch, useRestoreSavedRange } from '@frontend/range'
-import CompareGate from './CompareGate'
 import DataScreen from './DataScreen'
+import SummaryGate from './SummaryGate'
 import { useController, useData } from './data'
 import { applyUpdate, usePwa } from './pwa'
 
 // Pages about a period get the date-range bar (same list as the Mac app)
 const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
 
-function More({ hidden, canCompare }: { hidden: readonly string[] | undefined; canCompare: boolean }) {
+function More({ hidden, canCompare, severalCars }: { hidden: readonly string[] | undefined; canCompare: boolean; severalCars: boolean }) {
   const link = (to: string, label: string) => (isPageHidden(to, hidden) ? null : <RangeNavLink to={to}>{label}</RangeNavLink>)
   return (
     <>
@@ -32,6 +34,7 @@ function More({ hidden, canCompare }: { hidden: readonly string[] | undefined; c
       <nav className="more-list" aria-label="More pages">
         {link('/warnings', 'Warnings')}
         {link('/status', 'Status')}
+        {severalCars && <RangeNavLink to="/garage">All cars</RangeNavLink>}
         {canCompare && <RangeNavLink to="/compare">Compare cars</RangeNavLink>}
         {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">Diagnostics</RangeNavLink>}
         <NavLink to="/data">Data on this phone</NavLink>
@@ -56,7 +59,7 @@ function Ready() {
   const page = (path: string, element: ReactNode) => (
     <Route path={path} element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element} />
   )
-  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/data'].includes(pathname)
+  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/data'].includes(pathname)
   return (
     <div className="m-shell">
       <main className="main">
@@ -71,9 +74,10 @@ function Ready() {
             {page('/warnings', <Warnings />)}
             {page('/status', <Status />)}
             {page('/diagnostics', <Diagnostics />)}
-            <Route path="/compare" element={<CompareGate />} />
+            <Route path="/compare" element={<SummaryGate><Compare /></SummaryGate>} />
+            <Route path="/garage" element={<SummaryGate><Garage /></SummaryGate>} />
             <Route path="/data" element={<DataScreen />} />
-            <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} />} />
+            <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} severalCars={models.filter((m) => m.has_data).length >= 2} />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>

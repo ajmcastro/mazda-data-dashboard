@@ -112,6 +112,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`â
 |---|---|
 | **Overview** | odometer, distance, fuel economy, fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises |
 | **Trends** | every month compared with the one before (see below) |
+| **All cars** (also on the phone, under *More*) | one card per car model with data: the odometer, the last 30 days, fuel level, the car's own next-oil-change countdown, new alerts, faults still listed, the car's own warnings that are on, and a note when its newest reading is more than a week old. The model selector also shows each car's new alerts |
 | **Compare** (also on the phone, under *More*) | two car models side by side (appears when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse" |
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |

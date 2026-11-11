@@ -61,6 +61,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/garage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Garage
+         * @description One car's headline figures for the "All cars" page, built from the overview, the oil countdown and
+         *     the car's own warnings. The distance is for the 30 days up to the newest day with data.
+         */
+        get: operations["garage_api_garage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/overview": {
         parameters: {
             query?: never;
@@ -1122,6 +1143,52 @@ export interface components {
             /** Avg Speed Kmh */
             avg_speed_kmh?: number | null;
         };
+        /**
+         * Garage
+         * @description One car's headline figures for the "All cars" page. State figures (alerts, faults, oil, car warnings)
+         *     are the latest; the distance is for the 30 days up to the newest day with data.
+         */
+        Garage: {
+            /** Has Data */
+            has_data: boolean;
+            /** Vin */
+            vin?: string | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Odometer At */
+            odometer_at?: string | null;
+            /** Last Reading At */
+            last_reading_at?: string | null;
+            /** From Day */
+            from_day?: string | null;
+            /** To Day */
+            to_day?: string | null;
+            /** Km Last 30 Days */
+            km_last_30_days?: number | null;
+            /** Fuel Level Pct */
+            fuel_level_pct?: number | null;
+            /** Range Km */
+            range_km?: number | null;
+            /** Oil Remaining Km */
+            oil_remaining_km?: number | null;
+            /** Oil Read At */
+            oil_read_at?: string | null;
+            /**
+             * Alerts New
+             * @default 0
+             */
+            alerts_new: number;
+            /**
+             * Active Faults
+             * @default 0
+             */
+            active_faults: number;
+            /**
+             * Car Warnings On
+             * @default []
+             */
+            car_warnings_on: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1737,6 +1804,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DataSpan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    garage_api_garage_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Garage"];
                 };
             };
             /** @description Validation Error */

@@ -61,13 +61,14 @@ export async function writeStoredPack(pack: StoredPack): Promise<void> {
 }
 
 /**
- * What the Compare page needs of a car that is not loaded in the engine: its monthly figures over all its
- * data (the answer of `/api/trends/monthly` without a period). Kept with a key that says which pack and
+ * What the Compare and "All cars" pages need of a car that is not loaded in the engine: its monthly figures
+ * over all its data (the answer of `/api/trends/monthly` without a period) and its `/api/garage` card. Kept with a key that says which pack and
  * which version of the engine's answer it was made from, so a replaced pack or a changed answer discards it.
  */
 export interface StoredSummary {
   key: string
   monthly: unknown[]
+  garage: unknown
 }
 
 export async function readStoredSummaries(): Promise<Record<string, StoredSummary>> {

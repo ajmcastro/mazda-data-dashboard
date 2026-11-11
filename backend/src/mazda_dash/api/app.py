@@ -82,6 +82,36 @@ def data_span(con: duckdb.DuckDBPyConnection = Con):
     return m.DataSpan(**span)
 
 
+@app.get("/api/garage", response_model=m.Garage)
+def garage(con: duckdb.DuckDBPyConnection = Con):
+    """One car's headline figures for the "All cars" page, built from the overview, the oil countdown and
+    the car's own warnings. The distance is for the 30 days up to the newest day with data."""
+    span = data_span(con)
+    if span.last_day is None:
+        return m.Garage(has_data=False)
+    first = max(span.first_day, span.last_day - timedelta(days=29))
+    ov = overview(DateRange(first, span.last_day), con)
+    oil = maintenance_oil(con)
+    flags = car_warnings(con)
+    return m.Garage(
+        has_data=True,
+        vin=ov.vin,
+        odometer_km=ov.odometer_km,
+        odometer_at=ov.odometer_at,
+        last_reading_at=ov.data_to,
+        from_day=first,
+        to_day=span.last_day,
+        km_last_30_days=ov.km_in_range,
+        fuel_level_pct=ov.status.fuel_level_pct,
+        range_km=ov.status.range_km,
+        oil_remaining_km=oil.remaining_km,
+        oil_read_at=oil.read_at,
+        alerts_new=ov.alerts_new,
+        active_faults=ov.active_faults,
+        car_warnings_on=[f.label for f in flags.flags if f.is_on],
+    )
+
+
 @app.get("/api/overview", response_model=m.Overview)
 def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     odo_where, odo_params = rng.clause("read_at")

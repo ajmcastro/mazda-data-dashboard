@@ -22,6 +22,29 @@ class ModelInfo(BaseModel):
     last_day: date | None = None
 
 
+class Garage(BaseModel):
+    """One car's headline figures for the "All cars" page. State figures (alerts, faults, oil, car warnings)
+    are the latest; the distance is for the 30 days up to the newest day with data."""
+
+    has_data: bool
+    vin: str | None = None
+    odometer_km: float | None = None
+    odometer_at: datetime | None = None
+    last_reading_at: datetime | None = None  # the newest data point of any kind
+    from_day: date | None = None  # the 30 days the distance is for
+    to_day: date | None = None
+    km_last_30_days: float | None = None
+    fuel_level_pct: float | None = None
+    range_km: float | None = None
+    oil_remaining_km: float | None = None
+    oil_read_at: datetime | None = None
+    alerts_new: int = 0
+    active_faults: int = 0
+    car_warnings_on: list[
+        str
+    ] = []  # labels of the car's own warning flags that are on now
+
+
 class LatestStatus(BaseModel):
     at: datetime | None = None
     fuel_level_pct: float | None = None

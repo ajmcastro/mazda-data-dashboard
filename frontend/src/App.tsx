@@ -13,6 +13,7 @@ import Alerts from './pages/Alerts'
 import Compare from './pages/Compare'
 import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
+import Garage from './pages/Garage'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
 import Trends from './pages/Trends'
@@ -45,6 +46,7 @@ export default function App() {
   const hidden = model?.hidden_pages
   // Compare needs two cars that have data and show the Trends page
   const comparable = models.filter((m) => m.has_data && !isPageHidden('/trends', m.hidden_pages)).length
+  const withData = models.filter((m) => m.has_data).length
   const nav = (to: string, label: ReactNode) =>
     isPageHidden(to, hidden) ? null : (
       <NavLink to={to} end={to === '/'}>{label}</NavLink>
@@ -76,6 +78,7 @@ export default function App() {
           {nav('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
           {nav('/status', 'Status')}
           {nav('/diagnostics', 'Diagnostics')}
+          {withData >= 2 && nav('/garage', 'All cars')}
         </nav>
         <div className="rail-foot">
           <ThemeToggle />
@@ -95,6 +98,7 @@ export default function App() {
             {page('/faults', <Faults />)}
             {page('/status', <Status />)}
             {page('/diagnostics', <Diagnostics />)}
+            <Route path="/garage" element={<Garage />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>

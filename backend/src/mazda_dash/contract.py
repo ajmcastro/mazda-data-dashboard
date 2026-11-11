@@ -229,6 +229,7 @@ def record(client: TestClient) -> list[dict]:
     rec.get("/api/codes/unmapped")
     rec.get("/api/maintenance/oil")
     rec.get("/api/status/car-warnings")
+    rec.get("/api/garage")
     rec.get("/api/status/warning-flags")
     names = [f["flag"] for f in rec.get("/api/status/warning-flags")["flags"]]
     for name in names:

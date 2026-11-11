@@ -1,3 +1,6 @@
+import { useQueries } from '@tanstack/react-query'
+import { garageQuery } from '../api/hooks'
+import { optionLabel } from '../garage'
 import { useCurrentModel, useSwitchModel } from '../model'
 
 /**
@@ -9,15 +12,16 @@ export function ModelSwitcher() {
   const { models, model } = useCurrentModel()
   const switchTo = useSwitchModel()
   const listed = models.filter((m) => m.has_data || m.id === model?.id)
+  // the new alerts of every car, so another car's alerts are seen before switching (a car without an answer shows none)
+  const alerts = useQueries({ queries: listed.map((m) => garageQuery(m.has_data ? m.id : undefined)) }).map((q) => (q.data?.has_data ? q.data.alerts_new : undefined))
   if (listed.length < 2) return null
   return (
     <label className="model-switch">
       <span className="sr-only">Car model</span>
       <select value={model?.id ?? listed[0]!.id} onChange={(e) => switchTo(e.target.value)}>
-        {listed.map((m) => (
+        {listed.map((m, i) => (
           <option key={m.id} value={m.id}>
-            {m.name}
-            {m.has_data ? '' : ' (no data yet)'}
+            {optionLabel(m.name, alerts[i], m.has_data)}
           </option>
         ))}
       </select>

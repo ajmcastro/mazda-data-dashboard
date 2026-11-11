@@ -62,6 +62,10 @@ export const MONTH_METRICS = [
   'days_driven', 'driving_hours', 'avg_speed_kmh', 'warning_events', 'warning_codes', 'fault_readouts',
   'distinct_faults', 'new_faults', 'tire_avg_kpa', 'tire_min_kpa',
 ]
+export const GARAGE = [
+  'has_data', 'vin', 'odometer_km', 'odometer_at', 'last_reading_at', 'from_day', 'to_day', 'km_last_30_days',
+  'fuel_level_pct', 'range_km', 'oil_remaining_km', 'oil_read_at', 'alerts_new', 'active_faults', 'car_warnings_on',
+]
 export const OIL_STEP = ['read_at', 'odometer_km', 'remaining_km', 'serviced']
 export const CAR_WARNING_FLAG = ['flag', 'label', 'is_on', 'value', 'last_read_at', 'readings', 'episodes', 'since']
 export const CAR_WARNING_EPISODE = ['flag', 'label', 'started_at', 'last_on_at', 'readings', 'max_value', 'ongoing']

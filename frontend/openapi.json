@@ -125,6 +125,55 @@
         }
       }
     },
+    "/api/garage": {
+      "get": {
+        "summary": "Garage",
+        "description": "One car's headline figures for the \"All cars\" page, built from the overview, the oil countdown and\nthe car's own warnings. The distance is for the 30 days up to the newest day with data.",
+        "operationId": "garage_api_garage_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Garage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/overview": {
       "get": {
         "summary": "Overview",
@@ -4267,6 +4316,164 @@
           "segments"
         ],
         "title": "FuelMonth"
+      },
+      "Garage": {
+        "properties": {
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "vin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vin"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "odometer_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer At"
+          },
+          "last_reading_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Reading At"
+          },
+          "from_day": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "From Day"
+          },
+          "to_day": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Day"
+          },
+          "km_last_30_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Last 30 Days"
+          },
+          "fuel_level_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel Level Pct"
+          },
+          "range_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range Km"
+          },
+          "oil_remaining_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oil Remaining Km"
+          },
+          "oil_read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oil Read At"
+          },
+          "alerts_new": {
+            "type": "integer",
+            "title": "Alerts New",
+            "default": 0
+          },
+          "active_faults": {
+            "type": "integer",
+            "title": "Active Faults",
+            "default": 0
+          },
+          "car_warnings_on": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Car Warnings On",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_data"
+        ],
+        "title": "Garage",
+        "description": "One car's headline figures for the \"All cars\" page. State figures (alerts, faults, oil, car warnings)\nare the latest; the distance is for the 30 days up to the newest day with data."
       },
       "HTTPValidationError": {
         "properties": {

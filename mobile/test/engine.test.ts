@@ -197,18 +197,18 @@ describe('summaries of cars that are not loaded', () => {
   let api: Api
   beforeAll(async () => {
     ;({ api } = await fresh())
-    api.setSummaries(new Map([['cx60', [{ month: '2026-05' }]]]))
+    api.setSummaries(new Map([['cx60', { monthly: [{ month: '2026-05' }], garage: { has_data: true, alerts_new: 3 } }]]))
   }, 120_000)
 
   it('answers the all-time monthly figures of that car from its summary', async () => {
     expect(await api.handle('GET', '/api/trends/monthly?model=cx60')).toEqual({ status: 200, body: [{ month: '2026-05' }] })
   })
   it('the loaded car is answered by the engine, not by a summary', async () => {
-    api.setSummaries(new Map([['cx5', [{ month: 'from-summary' }]]]))
+    api.setSummaries(new Map([['cx5', { monthly: [{ month: 'from-summary' }], garage: { alerts_new: -1 } }]]))
     const res = await api.handle('GET', '/api/trends/monthly?model=cx5')
     expect(res.status).toBe(200)
     expect(JSON.stringify(res.body)).not.toContain('from-summary')
-    api.setSummaries(new Map([['cx60', [{ month: '2026-05' }]]]))
+    api.setSummaries(new Map([['cx60', { monthly: [{ month: '2026-05' }], garage: { has_data: true, alerts_new: 3 } }]]))
   })
   it('refuses a period, other routes, other methods and cars without a summary', async () => {
     api.setModels([])
@@ -217,4 +217,14 @@ describe('summaries of cars that are not loaded', () => {
     }
     expect((await api.handle('POST', '/api/trends/monthly?model=cx60')).status).toBe(405)
   })
+
+  it('answers the "All cars" card of that car from its summary, and refuses it with a period it does not have', async () => {
+    expect(await api.handle('GET', '/api/garage?model=cx60')).toEqual({ status: 200, body: { has_data: true, alerts_new: 3 } })
+    const own = await api.handle('GET', '/api/garage?model=cx5') // the loaded car: live, never the summary
+    expect(own.status).toBe(200)
+    expect(JSON.stringify(own.body)).not.toContain('-1')
+    expect((await api.handle('GET', '/api/garage?model=mx30')).status).toBe(404)
+    expect((await api.handle('GET', '/api/garage')).status).toBe(200) // no model named: the loaded car
+  })
 })
+

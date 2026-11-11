@@ -87,7 +87,8 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M29 | Compare two models (Mac) ✅ | `/compare`: two cars, months in common, per day, comparability labels |
 | M33 | Estimated fuel cost ✅ | a fuel price per car in its settings: cost per 100 km and fuel cost on Trends, Overview and Compare |
 | M30 | Compare on the phone ✅ | the Compare page offline, from per-car summaries cached in IndexedDB |
-| M31–M32 | Comparing (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
+| M32 | All cars at a glance ✅ | a card per car (odometer, last 30 days, fuel, oil, alerts, faults, car warnings, stale-data note), Mac and phone, alert counts in the model selector |
+| M31 | Compare two periods of one car (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -690,10 +691,18 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 - **Wording:** a period compared with another is a change of the same car, so the Trends tone colours (good / bad) *do* apply here, and only here.
 - **Done when:** a period of the CX-5 compares with another period of the CX-5 on the demo data, on the Mac and the phone, and the metrics that cannot be compared say so.
 
-### M32 — All cars at a glance
+### M32 — All cars at a glance ✅ done
 - **What:** a page "All cars" (Mac and phone) with one card per model that has data: name, last reading ("26 h ago"), odometer, distance in the last 30 days, next oil change, new alerts, faults still listed, car warnings that are on, and a stale-data note. A click opens that model's Overview. The selector's entries can show the new-alert count of each car.
 - **Data:** `GET /api/overview?model=<id>` per model (no backend change on the Mac). On the phone the other cars' overviews come from the same cached summaries as M30 (the summary store gains the overview answer).
 - **Done when:** the demo shows both cars' cards, a car with no data is not listed, and the phone page works offline from the summaries.
+
+**M32 as built.**
+- **One new route instead of three:** the plan said the Mac would reuse `GET /api/overview?model=` per car and the phone cache "the overview". The card also needs the oil countdown and the car's own warnings, and the phone can only answer a car that is not loaded from a cached answer *without* parameters, so a single **`GET /api/garage`** (a card: `has_data`, `vin`, odometer and when, `last_reading_at`, the 30-day window and its distance, fuel level and range, oil remaining and when, `alerts_new`, `active_faults`, `car_warnings_on` as labels) was added in Python, in the TypeScript engine (`garage.ts`), in the golden matrix (both sample cars agree exactly, 815 phone tests then) and in the generated types. It is built by calling the existing overview, oil and car-warnings code, so the card cannot disagree with them.
+- **Page:** "All cars" (Mac nav and the phone's More list, with two cars that have data): a card per car with badges (new alerts, faults listed, each of the car's own warnings that is on), the figures above, and **a note in amber when the newest reading is more than a week old** (the demo data is old, so both cars show it). "Show <car>" / "Open the overview" switches the model and goes to the overview in one navigation (the first version used two and lost the model; found in the browser).
+- **Selector:** each entry shows the car's new alerts ("Mazda CX-5 · 15 new alerts"), through the same query as the cards, refreshed when alerts are acknowledged. On the phone a car shows its count once its figures are cached.
+- **Phone:** the summaries now hold `{monthly, garage}` (`SUMMARY_VERSION` 2: every older summary is ignored and made again), `SummaryGate` prepares them for both pages, and **leaving a car refreshes its cached card** so an alert acknowledged on that car is not shown as open from the other one (test).
+- **Not in this milestone:** the cost per 100 km on the card (Compare covers it), a combined alerts view, and per-car ordering (cards follow `config/models.yaml`).
+- **Checked:** backend 273 tests (5 new for the route), frontend 108 (5 new for the wording), phone 818 (the engine, the cached cards, the refresh on leaving), lint, `TZ=UTC make types sample-data`; in the browser: the Mac page and selector counts with both demo cars, switching in both directions, and the phone (viewport 375 px, after *Load demo data*: the page prepares, shows both cards, counts appear in the selector, no sideways scroll). Not checked: a real iPhone, airplane mode.
 
 ### M33 — Estimated fuel cost (cost per 100 km) ✅ done
 **What it is, honestly:** an *estimate*, litres the car reports (the same estimate as "Fuel used (estimated)") times the fuel price **you** enter. It is not what you paid, and the dashboard says so wherever it shows the figure.

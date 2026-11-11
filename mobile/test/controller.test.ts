@@ -371,7 +371,7 @@ describe('comparing cars on the device', () => {
     await c.importPack(packOf('cx5'), 'a.cx5pack')
     // a leftover from an older version of the app's maths
     const { writeStoredSummary } = await import('../src/storage')
-    await writeStoredSummary('cx5', { key: `0:${c.getState().info!.savedAt}`, monthly: [{ month: 'stale' }] })
+    await writeStoredSummary('cx5', { key: `0:${c.getState().info!.savedAt}`, monthly: [{ month: 'stale' }], garage: {} })
     lastShown = 'cx5'
     const next = launch()
     await next.init()
@@ -386,5 +386,36 @@ describe('comparing cars on the device', () => {
     expect(await c.prepareComparison()).toBe(true)
     expect(c.getState()).toMatchObject({ status: 'ready', preparing: false })
   }, 180_000)
+
+  it('caches the "All cars" card with the figures, and answers it for a car that is not loaded', async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack')
+    await c.prepareComparison()
+    const saved = await readStoredSummaries()
+    expect(saved.cx60.garage).toMatchObject({ has_data: true, vin: 'SAMPLEVIN00000002', to_day: '2026-07-31' })
+
+    const card = (await c.api.handle('GET', '/api/garage?model=cx60')).body
+    expect(card).toEqual(saved.cx60.garage)
+    await c.switchTo('cx60')
+    expect((await c.api.handle('GET', '/api/garage')).body).toEqual(card) // loaded: the engine gives the same answer
+  }, 300_000)
+
+  it("refreshes a car's card when another car replaces it, so its alert count is not out of date", async () => {
+    const c = launch()
+    await c.init()
+    await c.importPack(packOf('cx5'), 'a.cx5pack')
+    await c.importPack(packOf('cx60'), 'b.cx5pack')
+    await c.prepareComparison()
+    const alerts = async (model: string) => ((await c.api.handle('GET', `/api/garage?model=${model}`)).body as { alerts_new: number }).alerts_new
+    expect(await alerts('cx5')).toBeGreaterThan(0)
+
+    await c.api.handle('POST', '/api/alerts/acknowledge-all') // in cx5, the car on screen
+    expect((await c.api.handle('GET', '/api/garage')).body).toMatchObject({ alerts_new: 0 }) // live
+    await c.switchTo('cx60')
+    expect(await alerts('cx5')).toBe(0) // the cached card was made again on leaving cx5
+    expect(((await readStoredSummaries()).cx5.garage as { alerts_new: number }).alerts_new).toBe(0)
+  }, 300_000)
 })
 
