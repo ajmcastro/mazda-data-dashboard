@@ -101,9 +101,10 @@ make demo    # loads the synthetic sample data, then serves it
 
 Open <http://localhost:5173> in your browser. Stop the demo with Ctrl+C in the terminal.
 
-The demo has its own database (`db/demo.duckdb`) and never touches your real one
-(`db/<id>.duckdb`). You can tell you are looking at the demo by the sidebar footer, which shows
-the made-up VIN `…000001`, and by data that ends on 30 June 2026.
+The demo has its own databases (`db/demo-cx5.duckdb` and `db/demo-cx60.duckdb`, one per demo car) and never
+touches your real ones (`db/<id>.duckdb`). The sidebar has a model selector with the two demo cars. You can tell
+you are looking at the demo by the sidebar footer, which shows a made-up VIN (`…000001` for the CX-5,
+`…000002` for the CX-60), and by data that ends on 30 June 2026 (CX-5) or 31 July 2026 (CX-60).
 
 ## What is in the dashboard
 
