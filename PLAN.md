@@ -88,7 +88,8 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M33 | Estimated fuel cost ✅ | a fuel price per car in its settings: cost per 100 km and fuel cost on Trends, Overview and Compare |
 | M30 | Compare on the phone ✅ | the Compare page offline, from per-car summaries cached in IndexedDB |
 | M32 | All cars at a glance ✅ | a card per car (odometer, last 30 days, fuel, oil, alerts, faults, car warnings, stale-data note), Mac and phone, alert counts in the model selector |
-| M31 | Compare two periods of one car ✅ | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
+| M31 | Compare two periods of one car ✅ | the Compare page with "this period against that one" (last 30 days against the 30 before, this month against a year ago, before and after a date, or two periods you pick), tones only for the same car |
+| M34 | Fuel and cost on All cars (planned) | litres and average l/100 km, total and average cost on each All cars card, for the same 30 days as the distance; estimates, cost only with a fuel price |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -740,6 +741,21 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 - **Not in this milestone, as planned:** electricity (M28 material), taxes and insurance, any price lookup over the network.
 - **After pulling:** run `make model` once so an existing database gets the new table and view (the README's usual step), and `make mobile-pack` for the phone.
 - **Checked:** backend 267 tests (25 new), frontend 103 (9 new), `make mobile-test` 802, lint, `TZ=UTC make types sample-data` (only the new `settings.yaml` files and the regenerated types differ), and in the browser: the cost cards on Trends and Compare and the Overview line with the demo cars, and the "no fuel price" hint with a copy of your real CX-5 database (rebuilt in the copy only; your own database was not touched).
+
+### M34 — Fuel and cost on the All cars page (planned, not started)
+**Why:** All cars is where you look to see how each car stands, and fuel and money are what you want next to the distance. The figures already exist (the Overview computes the average consumption and the cost per 100 km for a period), so this mostly puts them on the card.
+- **On each card, for the same 30 days as the distance** ("Last 30 days", `from_day` – `to_day`): **fuel used** (litres) and the **average l/100 km**; **fuel cost** (total) and the **average cost per 100 km**, in the car's currency. A small "all data" line under a figure is optional and only if the card does not get crowded.
+- **Decisions (proposed, to confirm when it starts):**
+  - *Estimates, and said so.* The litres are the distance of the window times its average consumption, the same estimate as Trends' "Fuel used (estimated)": the trip counters cover only about 70% of the odometer distance, so summing them would undercount. The total cost is those litres times the prices in force on the days of the trips (the cost per km of M33 times the distance), so it is an estimate too; the card labels both ("estimated").
+  - *Cost only with a fuel price.* A car with no price set shows the litres and the averages but no cost figures (never an invented price), exactly as Trends and the Overview do.
+  - *No sums across cars, and each car in its own currency.* The cards sit side by side; nothing adds them up, so two currencies never mix.
+  - *A one-line caution on the page* that averages between two cars need care (a plug-in hybrid's l/100 km hides the electric part), in the neutral wording of Compare.
+- **Backend:** `GET /api/garage` gets four fields (`fuel_l_30d`, `l_per_100km_30d`, `fuel_cost_30d`, `cost_per_100km_30d`) and `currency`, taken from the overview call it already makes (`l_per_100km_in_range`, `cost_per_100km_in_range`, `km_in_range`); null when there is no consumption or no price. **Python API, the TypeScript engine (`garage.ts`, `shapes.ts`), the goldens and `make types` change in the same change**; the sample data already has prices for both demo cars, so the goldens exercise it.
+- **Phone:** the cached All cars card of a car that is not loaded gains the same fields, so **`SUMMARY_VERSION` goes from 2 to 3** (every older cached card is made again).
+- **Page:** two more figure blocks on `Garage.tsx` ("Fuel, last 30 days": litres and l/100 km; "Cost, last 30 days": total and per 100 km), the wording in `garage.ts` with tests (units, no price, estimate wording).
+- **Tests:** a Python test that the new fields equal what the Overview and Trends give for the same window (as `test_garage.py` does for the existing ones), a no-price case, the engine against Python on both sample cars, the cached card carrying the fields, and the wording helpers.
+- **Not in this milestone:** electricity for a plug-in hybrid (M28 material), a longer window than 30 days, and any combined total across cars.
+- **Done when:** both demo cards show litres, l/100 km, total cost and cost per 100 km with the "estimated" wording, a car without a price shows no cost, Python and TypeScript agree on every golden, and the phone shows the same figures for a car that is not loaded.
 
 ### Risks
 | Risk | Plan |
