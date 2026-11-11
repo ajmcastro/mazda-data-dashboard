@@ -386,6 +386,14 @@ SELECT prev_at AS start_at, created_at AS end_at,
 FROM y
 WHERE trip_km - CASE WHEN after_reset THEN 0 ELSE prev_km END > 0;
 
+-- The fuel price in force from a date to the next one (config/models/<id>/settings.yaml). The earliest price
+-- also applies before its own date, so every trip has a price once any price is set.
+CREATE OR REPLACE VIEW v_fuel_prices AS
+SELECT CASE WHEN row_number() OVER w = 1 THEN DATE '0001-01-01' ELSE valid_from END AS valid_from,
+       lead(valid_from) OVER w AS valid_to,
+       per_l
+FROM ref_fuel_prices WINDOW w AS (ORDER BY valid_from);
+
 CREATE OR REPLACE VIEW v_fuel_monthly AS
 SELECT strftime(date_trunc('month', end_at), '%Y-%m') AS month,
        count(*) AS segments,

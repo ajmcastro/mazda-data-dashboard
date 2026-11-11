@@ -85,7 +85,8 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M20 | Warning-lamp flags ✅ | the 128 warning bit flags: timeline, user labels, hints from the `$` codes, new-flag alert |
 | M21–M27 | Several car models ✅ | model registry, per-model data/config/database, API and dashboard model selector, synthetic second model, phone app with several packs, docs/CI/audit. M28 (a real CX-60 export) is conditional and not started. Details under "Several car models" |
 | M29 | Compare two models (Mac) ✅ | `/compare`: two cars, months in common, per day, comparability labels |
-| M30–M33 | Comparing and cost (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
+| M33 | Estimated fuel cost ✅ | a fuel price per car in its settings: cost per 100 km and fuel cost on Trends, Overview and Compare |
+| M30–M32 | Comparing (planned) | compare two car models (Mac), the same on the phone, compare two periods of one car, an "all cars" overview, and an estimated fuel cost (cost per 100 km). Details under "Comparing models and periods"; recommended order M29, M33, M30, M32, M31 |
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -684,7 +685,7 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 - **Data:** `GET /api/overview?model=<id>` per model (no backend change on the Mac). On the phone the other cars' overviews come from the same cached summaries as M30 (the summary store gains the overview answer).
 - **Done when:** the demo shows both cars' cards, a car with no data is not listed, and the phone page works offline from the summaries.
 
-### M33 — Estimated fuel cost (cost per 100 km)
+### M33 — Estimated fuel cost (cost per 100 km) ✅ done
 **What it is, honestly:** an *estimate*, litres the car reports (the same estimate as "Fuel used (estimated)") times the fuel price **you** enter. It is not what you paid, and the dashboard says so wherever it shows the figure.
 - **Configuration (per model, `config/models/<id>/settings.yaml`):** the price history, because fuel prices change and one fixed price would make old months wrong:
 
@@ -701,6 +702,16 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 - **UI:** two metrics in `trends.ts` (`cost_per_100km`: lower is better, `fuel_cost_est`: additive, per day) so they appear in Trends automatically, formatted with the currency; an Overview stat "about 7.2 EUR per 100 km" with the "estimate" note; in M29's `COMPARABILITY` table `cost_per_100km` is *comparable with a caution* (each car's own price and fuel).
 - **Not in this milestone:** electricity (a plug-in hybrid's cost needs charging data no view reads yet: that is M28 material), taxes or insurance, and any price lookup over the network (the apps make no outside request).
 - **Done when:** the cost figures appear on Trends and the Overview for both demo cars with the price change visible in the months, a model without a price shows the hint instead, Python and TypeScript agree on every golden, and the phone refuses an older pack with the message.
+
+**M33 as built.**
+- **Settings** (`config/models/<id>/settings.yaml`): `fuel_currency` (ISO code, required with a price) and either `fuel_prices` (a list of `{from, per_l}`, dates strictly increasing) or `fuel_price_per_l`; every mistake (no currency, a currency without a price, both forms, a zero or negative or non-numeric price, a bad date, dates out of order, an unknown key) is a `ValueError` that names the file (`tests/test_fuel_cost.py`, 15 cases). Without a price nothing is stored and nothing is shown. The real `cx5` and `cx60` settings files set no price.
+- **Data:** table `ref_fuel_prices`, the currency in `ref_settings`, a view `v_fuel_prices` (each price's span; **the earliest price also applies before its own date**, so every trip has a price once any price is set, a decision the plan left open). The pack carries the table (`TABLES`, and the phone refuses a pack without it with the existing "older version" message, so existing phone packs must be made again).
+- **Maths:** each trip is priced with the price in force on its day (`LEFT JOIN v_fuel_prices`, the same `PRICED` fragment in Python and TypeScript); `cost_per_100km` = 100 × Σ(litres × price) / Σ km and `fuel_cost_est` = odometer distance × that cost per km, rounded to 2 decimals; both `None` for a month with no price (a gap). New fields: `cost_per_100km`, `fuel_cost_est`, `currency` on `MonthMetrics`, and `cost_per_100km_in_range`, `currency` on the Overview. **Python, the TypeScript engine, the goldens and `make types` changed together**; the goldens of both sample cars contain the cost figures and the 802 phone tests (Python against TypeScript) agree on every one, including the CX-5's month with a price change.
+- **Demo data:** the sample generator now also writes `settings.yaml` next to each car's exports (time zone and price from its profile: the CX-5 in EUR with 1.72 changing to 1.81 on 15 May, the CX-60 in EUR with the single-price form 1.79); `make demo`, the goldens and the sample tests ingest with it (`ingest --settings`), so the demo never reads or changes your real settings. The CX-5 and CX-60 data files are byte for byte unchanged.
+- **UI:** two metrics in `trends.ts` (`money: true`, `¤` in the unit replaced by the currency: "EUR/100 km", "EUR/day"), so Trends shows them; the Overview says "about 12.29 EUR per 100 km (estimate)"; every help text says estimate and "not what you paid"; without a price the Trends page leaves the cards out and says which settings to add. On the compare page the two metrics are *compare with care*, and **amounts in two currencies, or a price set for only one car, are shown but not compared**, with the reason (tests).
+- **Not in this milestone, as planned:** electricity (M28 material), taxes and insurance, any price lookup over the network.
+- **After pulling:** run `make model` once so an existing database gets the new table and view (the README's usual step), and `make mobile-pack` for the phone.
+- **Checked:** backend 267 tests (25 new), frontend 103 (9 new), `make mobile-test` 802, lint, `TZ=UTC make types sample-data` (only the new `settings.yaml` files and the regenerated types differ), and in the browser: the cost cards on Trends and Compare and the Overview line with the demo cars, and the "no fuel price" hint with a copy of your real CX-5 database (rebuilt in the copy only; your own database was not touched).
 
 ### Risks
 | Risk | Plan |

@@ -292,7 +292,8 @@ def generate(out: Path, source_db: Path | None = None, model_id: str = "cx5") ->
         if source_db:
             shutil.copyfile(source_db, db)
         else:
-            ingest(REPO / "sample_data" / model.id, db, model.codes_dir)
+            sample = REPO / "sample_data" / model.id
+            ingest(sample, db, model.codes_dir, sample / "settings.yaml")
             evaluate(db, model.alerts_path)
         edge = duckdb.connect(str(db))
         add_tire_clock_snapshots(

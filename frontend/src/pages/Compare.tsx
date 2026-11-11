@@ -12,12 +12,13 @@ import {
   pickPair,
   type AlignedMonth,
   type Basis,
+  type Currencies,
   type MetricComparison,
 } from '../compare'
 import { Panel } from '../components/ui'
 import { ANIMATE, fmtNum, isPageHidden, shortModelName } from '../lib'
 import { useCurrentModel } from '../model'
-import { METRICS, digitsFor, metricValue, monthLabel, monthShort, unitFor, unitLabel, type MetricDef } from '../trends'
+import { METRICS, currencyOf, digitsFor, metricValue, monthLabel, monthShort, unitFor, unitLabel, type MetricDef } from '../trends'
 
 // Two cars, told apart by colour AND by marker shape and dash, so colour is not the only cue.
 const COLOR = { a: 'var(--steel)', b: 'var(--amber)' } as const
@@ -34,7 +35,7 @@ const dot = (side: Side) =>
     )
   }
 
-function Figure({ value, def, perDay, side, name }: { value: number | null; def: MetricDef; perDay: boolean; side: Side; name: string }) {
+function Figure({ value, def, perDay, side, name, currency }: { value: number | null; def: MetricDef; perDay: boolean; side: Side; name: string; currency: string | null }) {
   return (
     <div className="cmp-figure">
       <span className={`cmp-key ${side}`} aria-hidden="true" />
@@ -42,17 +43,17 @@ function Figure({ value, def, perDay, side, name }: { value: number | null; def:
         <div className="muted cmp-name">{name}</div>
         <div className="metric-value">
           {value === null ? <span className="muted">no data</span> : fmtNum(value, digitsFor(def, perDay))}
-          {value !== null && <small>{unitLabel(def, perDay, value)}</small>}
+          {value !== null && <small>{unitLabel(def, perDay, value, currency)}</small>}
         </div>
       </div>
     </div>
   )
 }
 
-function MetricCard({ def, aligned, c, names, perDay }: { def: MetricDef; aligned: AlignedMonth[]; c: MetricComparison; names: { a: string; b: string }; perDay: boolean }) {
+function MetricCard({ def, aligned, c, names, perDay, currencies }: { def: MetricDef; aligned: AlignedMonth[]; c: MetricComparison; names: { a: string; b: string }; perDay: boolean; currencies: Currencies }) {
   const level = COMPARABILITY[def.key]
   const digits = digitsFor(def, perDay)
-  const unit = unitFor(def, perDay)
+  const unit = unitFor(def, perDay, currencies.a ?? currencies.b)
   const data = aligned.map((m) => ({
     month: m.month,
     label: monthShort(m.month),
@@ -69,12 +70,12 @@ function MetricCard({ def, aligned, c, names, perDay }: { def: MetricDef; aligne
         {LEVEL_LABEL[level.level]}
       </span>
       <div className="cmp-figures">
-        <Figure value={c.a.value} def={def} perDay={perDay} side="a" name={names.a} />
-        <Figure value={c.b.value} def={def} perDay={perDay} side="b" name={names.b} />
+        <Figure value={c.a.value} def={def} perDay={perDay} side="a" name={names.a} currency={currencies.a} />
+        <Figure value={c.b.value} def={def} perDay={perDay} side="b" name={names.b} currency={currencies.b} />
       </div>
       <div className="change tone-neutral">
         {c.kind === 'ok' && c.direction !== 'flat' && <span aria-hidden="true">{c.direction === 'up' ? '▲' : '▼'} </span>}
-        {describeDifference(def, names, c, perDay)}
+        {describeDifference(def, names, c, perDay, currencies.a)}
         {c.kind !== 'none' && (
           <span className="muted">
             {' '}
@@ -115,7 +116,7 @@ function MetricCard({ def, aligned, c, names, perDay }: { def: MetricDef; aligne
   )
 }
 
-function CompareTable({ aligned, names, perDay, basis }: { aligned: AlignedMonth[]; names: { a: string; b: string }; perDay: boolean; basis: Basis }) {
+function CompareTable({ aligned, names, perDay, basis, currencies, metrics }: { aligned: AlignedMonth[]; names: { a: string; b: string }; perDay: boolean; basis: Basis; currencies: Currencies; metrics: MetricDef[] }) {
   return (
     <div className="table-wrap">
       <table className="trend-table">
@@ -129,18 +130,18 @@ function CompareTable({ aligned, names, perDay, basis }: { aligned: AlignedMonth
           </tr>
         </thead>
         <tbody>
-          {METRICS.map((def) => {
-            const c = compareMetric(def, aligned, perDay, basis)
+          {metrics.map((def) => {
+            const c = compareMetric(def, aligned, perDay, basis, currencies)
             const level = COMPARABILITY[def.key]
             const cell = (v: number | null) => (v === null ? <span className="muted">–</span> : fmtNum(v, digitsFor(def, perDay)))
             return (
               <tr key={def.key}>
                 <th scope="row" title={def.help}>
-                  {def.label} <span className="muted mono">{unitFor(def, perDay)}</span>
+                  {def.label} <span className="muted mono">{unitFor(def, perDay, currencies.a ?? currencies.b)}</span>
                 </th>
                 <td className="num mono">{cell(c.a.value)}</td>
                 <td className="num mono">{cell(c.b.value)}</td>
-                <td className="muted">{describeDifference(def, names, c, perDay)}</td>
+                <td className="muted">{describeDifference(def, names, c, perDay, currencies.a)}</td>
                 <td>
                   <span className={`level ${level.level}`} title={level.why}>
                     {LEVEL_LABEL[level.level]}
@@ -182,6 +183,9 @@ export default function Compare() {
   const names = { a: shortModelName(a?.name ?? ''), b: shortModelName(b?.name ?? '') }
   const aligned = alignMonths({ label: names.a, rows: first.data ?? [] }, { label: names.b, rows: second.data ?? [] }, basis, includePartial)
   const pending = first.isPending || second.isPending
+  const currencies = { a: currencyOf(first.data ?? []), b: currencyOf(second.data ?? []) }
+  // the cost figures exist only for cars that have a fuel price
+  const metrics = METRICS.filter((d) => !d.money || currencies.a !== null || currencies.b !== null)
   const error = first.error ?? second.error
 
   return (
@@ -269,13 +273,13 @@ export default function Compare() {
             </Panel>
           ) : view === 'cards' ? (
             <div className="cards">
-              {METRICS.map((def) => (
-                <MetricCard key={def.key} def={def} aligned={aligned} c={compareMetric(def, aligned, perDay, basis)} names={names} perDay={perDay} />
+              {metrics.map((def) => (
+                <MetricCard key={def.key} def={def} aligned={aligned} c={compareMetric(def, aligned, perDay, basis, currencies)} names={names} perDay={perDay} currencies={currencies} />
               ))}
             </div>
           ) : (
             <Panel>
-              <CompareTable aligned={aligned} names={names} perDay={perDay} basis={basis} />
+              <CompareTable aligned={aligned} names={names} perDay={perDay} basis={basis} currencies={currencies} metrics={metrics} />
             </Panel>
           )}
         </>

@@ -67,6 +67,9 @@ class Profile:
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
+    fuel_currency: str = "EUR"
+    # fuel price per litre from a date on (the generator writes them into settings.yaml for the demo)
+    fuel_prices: tuple[tuple[date, float], ...] = ()
     seed: int = 7
 
 
@@ -115,6 +118,10 @@ CX5 = Profile(
     transient_fault=("DCM", "U3000:00"),
     new_fault=("ADU", "C1B22:87"),
     visits=DIAG_VISITS,
+    fuel_prices=(
+        (date(2026, 3, 1), 1.72),
+        (date(2026, 5, 15), 1.81),
+    ),  # a price change inside the data
 )
 
 # Another car on purpose: other platform code, VIN, period, time zone (and diagnostic tool clock), consumption,
@@ -164,6 +171,9 @@ CX60 = Profile(
     diag_offset_hours=2,
     oil=False,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
+    fuel_prices=(
+        (date(2026, 4, 10), 1.79),
+    ),  # one price, written in the single-price form
     seed=11,
 )
 PROFILES = {p.id: p for p in (CX5, CX60)}
@@ -765,8 +775,29 @@ def write_diag(out: Path, car: Car, p: Profile) -> None:
         (out / name).write_text(diag_text(when, odo, **extra, p=p))
 
 
+def settings_text(p: Profile) -> str:
+    """The demo car's settings file, kept next to its exports: the demo must not depend on (or change) the
+    settings in config/models/<id>/, which belong to the real car."""
+    lines = [
+        f"# Settings of the synthetic {p.id} car (the demo ingests the sample data with this file).",
+        f"car_timezone: {p.timezone}",
+        "tire_stale_hours: 6",
+        f"fuel_currency: {p.fuel_currency}",
+    ]
+    if len(p.fuel_prices) == 1:
+        lines.append(f"fuel_price_per_l: {p.fuel_prices[0][1]}")
+    else:
+        lines.append("fuel_prices:")
+        lines += [
+            f"  - {{from: {day.isoformat()}, per_l: {price}}}"
+            for day, price in p.fuel_prices
+        ]
+    return "\n".join(lines) + "\n"
+
+
 def generate(out: Path, seed: int | None = None, profile: Profile = CX5) -> None:
     out.mkdir(parents=True, exist_ok=True)
+    (out / "settings.yaml").write_text(settings_text(profile))
     rng = random.Random(profile.seed if seed is None else seed)
     car, status = build_drives(rng, profile)
     write_status(out, status, profile)

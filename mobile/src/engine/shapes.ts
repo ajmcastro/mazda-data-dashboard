@@ -57,7 +57,8 @@ export const DIAG_DELTA = ['ecu', 'section', 'key', 'unit', 'a', 'b', 'delta']
 export const CONTEXT_WARNING = ['triggered_at', 'code', 'title', 'severity']
 export const CONTEXT_FAULT = ['ecu', 'dtc_code', 'failure_type', 'title']
 export const MONTH_METRICS = [
-  'month', 'days_in_month', 'days_covered', 'partial', 'distance_km', 'l_per_100km', 'fuel_l_est', 'drives',
+  'month', 'days_in_month', 'days_covered', 'partial', 'distance_km', 'l_per_100km', 'fuel_l_est', 'currency',
+  'cost_per_100km', 'fuel_cost_est', 'drives',
   'days_driven', 'driving_hours', 'avg_speed_kmh', 'warning_events', 'warning_codes', 'fault_readouts',
   'distinct_faults', 'new_faults', 'tire_avg_kpa', 'tire_min_kpa',
 ]

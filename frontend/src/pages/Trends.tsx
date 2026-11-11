@@ -4,11 +4,13 @@ import { useMonthly } from '../api/hooks'
 import type { MonthMetrics } from '../api/types'
 import { Panel, QueryState } from '../components/ui'
 import { ANIMATE, fmtNum } from '../lib'
+import { useCurrentModel } from '../model'
 import {
   ARROW,
   METRICS,
   compare,
   describeChange,
+  currencyOf,
   digitsFor,
   latestIndex,
   metricValue,
@@ -41,11 +43,12 @@ function ChangeLine({ c, previousMonth }: { c: Comparison; previousMonth?: strin
 }
 
 function MetricCard({ def, rows, perDay }: { def: MetricDef; rows: MonthMetrics[]; perDay: boolean }) {
+  const currency = currencyOf(rows)
   const values = rows.map((r) => metricValue(r, def, perDay))
   const partial = rows.map((r) => r.partial)
   const last = latestIndex(values)
   const digits = digitsFor(def, perDay)
-  const unit = unitFor(def, perDay)
+  const unit = unitFor(def, perDay, currency)
   const comparison = last >= 0 ? compare(def, values, partial, last, perDay) : ({ kind: 'no-value' } as const)
   const data = rows.map((r, i) => ({ month: r.month, label: monthShort(r.month), value: values[i], partial: r.partial, i }))
 
@@ -62,7 +65,7 @@ function MetricCard({ def, rows, perDay }: { def: MetricDef; rows: MonthMetrics[
           <div className="metric-value">
             {fmtNum(values[last], digits)}
             <small>
-              {unitLabel(def, perDay, values[last])} · {monthLabel(rows[last].month)}
+              {unitLabel(def, perDay, values[last], currency)} · {monthLabel(rows[last].month)}
             </small>
           </div>
           <ChangeLine c={comparison} previousMonth={rows[last - 1]?.month} />
@@ -116,7 +119,8 @@ function MetricCard({ def, rows, perDay }: { def: MetricDef; rows: MonthMetrics[
   )
 }
 
-function TrendTable({ rows, perDay }: { rows: MonthMetrics[]; perDay: boolean }) {
+function TrendTable({ rows, perDay, metrics }: { rows: MonthMetrics[]; perDay: boolean; metrics: MetricDef[] }) {
+  const currency = currencyOf(rows)
   return (
     <div className="table-wrap">
       <table className="trend-table">
@@ -132,14 +136,14 @@ function TrendTable({ rows, perDay }: { rows: MonthMetrics[]; perDay: boolean })
           </tr>
         </thead>
         <tbody>
-          {METRICS.map((def) => {
+          {metrics.map((def) => {
             const values = rows.map((r) => metricValue(r, def, perDay))
             const partial = rows.map((r) => r.partial)
             const digits = digitsFor(def, perDay)
             return (
               <tr key={def.key}>
                 <th scope="row" title={def.help}>
-                  {def.label} <span className="muted mono">{unitFor(def, perDay)}</span>
+                  {def.label} <span className="muted mono">{unitFor(def, perDay, currency)}</span>
                 </th>
                 {values.map((v, i) => {
                   const c = compare(def, values, partial, i, perDay)
@@ -170,6 +174,10 @@ export default function Trends() {
   const [perDay, setPerDay] = useState(false)
   const rows = useMemo(() => monthly.data ?? [], [monthly.data])
   const partialMonths = rows.filter((r) => r.partial)
+  const { id: modelId } = useCurrentModel()
+  // the cost figures exist only once a fuel price is set; without one they are left out (and explained below)
+  const metrics = METRICS.filter((d) => !d.money || currencyOf(rows) !== null)
+  const noPrice = rows.length > 0 && currencyOf(rows) === null
 
   return (
     <>
@@ -214,19 +222,26 @@ export default function Trends() {
             )}
             {view === 'cards' ? (
               <div className="cards">
-                {METRICS.map((def) => (
+                {metrics.map((def) => (
                   <MetricCard key={def.key} def={def} rows={rows} perDay={perDay} />
                 ))}
               </div>
             ) : (
               <Panel>
-                <TrendTable rows={rows} perDay={perDay} />
+                <TrendTable rows={rows} perDay={perDay} metrics={metrics} />
                 {partialMonths.length > 0 && !perDay && (
                   <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>
                     <span className="caveat">*</span> compared with a month that is not complete; tick “per day” for a like-for-like view.
                   </p>
                 )}
               </Panel>
+            )}
+            {noPrice && (
+              <p className="muted" style={{ fontSize: 12, margin: '14px 0 0' }}>
+                No fuel price is set, so the estimated fuel cost is not shown. Add <span className="mono">fuel_currency</span> and{' '}
+                <span className="mono">fuel_prices</span> (or <span className="mono">fuel_price_per_l</span>) to{' '}
+                <span className="mono">config/models/{modelId}/settings.yaml</span>, then run <span className="mono">make model</span>.
+              </p>
             )}
           </>
         )}

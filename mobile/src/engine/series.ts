@@ -4,6 +4,7 @@ import {
   ALARM_EVENT, DOOR_POINT, FUEL_MONTH, LATEST_STATUS, ODOMETER_DAY, STATUS_POINT, TIRE_READING, TRIP_SEGMENT,
 } from './shapes'
 import { pick } from './http'
+import { PRICED } from './trends'
 
 export const span: Handler = async ({ con }) => {
   const s = await con.one(
@@ -47,7 +48,9 @@ export const overview: Handler = async ({ con, range }) => {
   const diag = await con.one('SELECT lifetime_l_per_100km FROM v_diag_summary ORDER BY taken_at DESC, report_id LIMIT 1')
   const seg = rng.clause('end_at')
   const economy = await con.one(
-    `SELECT 100 * sum(fuel_l) / nullif(sum(km), 0) AS v FROM v_trip_segments ${seg.sql}`,
+    'SELECT 100 * sum(fuel_l) / nullif(sum(km), 0) AS v, 100 * sum(fuel_l * per_l) / nullif(sum(km), 0) AS cost, ' +
+      "(SELECT value FROM ref_settings WHERE key = 'fuel_currency') AS currency " +
+      `FROM v_trip_segments ${PRICED} ${seg.sql}`,
     seg.params,
   )
   const w = rng.clause('triggered_at')
@@ -83,6 +86,8 @@ export const overview: Handler = async ({ con, range }) => {
     km_in_range: km,
     lifetime_l_per_100km: diag.lifetime_l_per_100km ?? null,
     l_per_100km_in_range: economy.v ?? null,
+    cost_per_100km_in_range: economy.cost ?? null,
+    currency: economy.cost !== null && economy.cost !== undefined ? (economy.currency ?? null) : null,
     status: pick(status, LATEST_STATUS),
     warnings_total: warnings.total,
     warnings_in_range: warnings.in_range,

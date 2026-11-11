@@ -12,6 +12,12 @@ import duckdb
 from .dates import DateRange
 from .db import one, rows
 
+# every trip with the price in force on its day (NULL when no price is set): see v_fuel_prices
+PRICED = (
+    "LEFT JOIN v_fuel_prices ON CAST(end_at AS DATE) >= valid_from "
+    "AND (valid_to IS NULL OR CAST(end_at AS DATE) < valid_to)"
+)
+
 
 def _month_key(day: date) -> str:
     return f"{day.year:04d}-{day.month:02d}"
@@ -60,8 +66,9 @@ def monthly_metrics(con: duckdb.DuckDBPyConnection, rng: DateRange) -> list[dict
     drives = _by_month(
         con,
         f"SELECT {_month_sql('end_at')} AS month, sum(km) AS km, sum(fuel_l) AS fuel_l, "
+        "sum(fuel_l * per_l) AS fuel_cost, "
         "sum(driving_seconds) AS secs, count(*) AS drives, "
-        f"count(DISTINCT CAST(end_at AS DATE)) AS days_driven FROM v_trip_segments {w} GROUP BY 1",
+        f"count(DISTINCT CAST(end_at AS DATE)) AS days_driven FROM v_trip_segments {PRICED} {w} GROUP BY 1",
         p,
     )
     w, p = where("triggered_at")
@@ -110,6 +117,9 @@ def monthly_metrics(con: duckdb.DuckDBPyConnection, rng: DateRange) -> list[dict
         p,
     )
 
+    currency = one(
+        con, "SELECT value FROM ref_settings WHERE key = 'fuel_currency'"
+    ).get("value")
     out = []
     for first_of_month in _month_series(lo, hi):
         key = _month_key(first_of_month)
@@ -153,6 +163,13 @@ def monthly_metrics(con: duckdb.DuckDBPyConnection, rng: DateRange) -> list[dict
                     row["fuel_l_est"] = round(
                         row["distance_km"] * row["l_per_100km"] / 100, 1
                     )
+                if d["fuel_cost"] is not None:
+                    # an estimate: the litres the car reports times the price you entered (trip by trip)
+                    per_km = d["fuel_cost"] / d["km"]
+                    row["currency"] = currency
+                    row["cost_per_100km"] = round(100 * per_km, 2)
+                    if row.get("distance_km") is not None:
+                        row["fuel_cost_est"] = round(row["distance_km"] * per_km, 2)
         if key in events:
             row["warning_events"] = events[key]["n"]
             row["warning_codes"] = codes.get(key, {}).get("n", 0)

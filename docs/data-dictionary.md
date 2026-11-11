@@ -128,7 +128,8 @@ Created by `make ingest` in `db/<id>.duckdb` (gitignored). All timestamps are na
 | `ingest_runs` | – | audit log of rows read / new per file |
 | `alerts` | `dedup_key` | raised by the alert rules (`config/models/<id>/alerts.yaml`); `status` new / acknowledged. Lives in the same file, so `make reset-db` loses acknowledgements |
 | `ref_warning_codes`, `ref_dtc_codes`, `ref_ecus`, `ref_failure_types`, `ref_warning_flags` | code | rebuilt from `config/models/cx5/codes/*.yaml` by `make model` |
-| `ref_settings` | setting | rebuilt from `config/models/<id>/settings.yaml` by `make model` (`car_timezone`, `tire_stale_hours`) |
+| `ref_settings` | setting | rebuilt from `config/models/<id>/settings.yaml` by `make model` (`car_timezone`, `tire_stale_hours`, and `fuel_currency` when a fuel price is set) |
+| `ref_fuel_prices` | `valid_from` | the fuel price per litre from a date on (`fuel_prices` / `fuel_price_per_l` of the same file); empty when no price is set. The view `v_fuel_prices` gives each price its span (`valid_to` = the next price's date; the earliest price also applies before its own date). The cost figures are the litres of each trip (`v_trip_segments.fuel_l`) times the price in force on its day, so they are **estimates**, not what was paid |
 
 Row counts on the current export: 7,039 warnings (11,177 codes), 47 DTC headers, 1,166 DTC readings (106 faults, 906 none, 154 read errors), 137 snapshots (2,745 values), 42,108 signal readings, 1 diagnostic report.
 

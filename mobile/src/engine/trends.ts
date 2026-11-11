@@ -17,6 +17,10 @@ function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate() // month is 1-based, day 0 of the next month
 }
 
+// every trip with the price in force on its day (NULL when no price is set): see v_fuel_prices
+export const PRICED =
+  'LEFT JOIN v_fuel_prices ON CAST(end_at AS DATE) >= valid_from AND (valid_to IS NULL OR CAST(end_at AS DATE) < valid_to)'
+
 export async function monthlyMetrics(con: Con, rng: DateRange): Promise<Record<string, unknown>[]> {
   const span = await con.one(
     'SELECT CAST(min(read_at) AS DATE) AS a, CAST(max(read_at) AS DATE) AS b FROM v_odometer_readings',
@@ -38,7 +42,7 @@ export async function monthlyMetrics(con: Con, rng: DateRange): Promise<Record<s
   const drives = await byMonth(
     con,
     `SELECT ${monthSql('end_at')} AS month, sum(km) AS km, sum(fuel_l) AS fuel_l, sum(driving_seconds) AS secs, ` +
-      `count(*) AS drives, count(DISTINCT CAST(end_at AS DATE)) AS days_driven FROM v_trip_segments ${w.sql} GROUP BY 1`,
+      `sum(fuel_l * per_l) AS fuel_cost, count(*) AS drives, count(DISTINCT CAST(end_at AS DATE)) AS days_driven FROM v_trip_segments ${PRICED} ${w.sql} GROUP BY 1`,
     w.params,
   )
   w = rng.clause('triggered_at')
@@ -86,6 +90,7 @@ export async function monthlyMetrics(con: Con, rng: DateRange): Promise<Record<s
     w.params,
   )
 
+  const currency = (await con.one("SELECT value FROM ref_settings WHERE key = 'fuel_currency'")).value ?? null
   const out: Record<string, unknown>[] = []
   const [y0, m0] = lo.split('-').map(Number)
   for (let y = y0, m = m0; `${y}-${String(m).padStart(2, '0')}-01` <= hi; m === 12 ? ((y += 1), (m = 1)) : (m += 1)) {
@@ -115,6 +120,15 @@ export async function monthlyMetrics(con: Con, rng: DateRange): Promise<Record<s
         row.l_per_100km = pyRound((100 * d.fuel_l) / d.km, 2)
         if (row.distance_km !== undefined && row.distance_km !== null) {
           row.fuel_l_est = pyRound(((row.distance_km as number) * (row.l_per_100km as number)) / 100, 1)
+        }
+        if (d.fuel_cost !== null && d.fuel_cost !== undefined) {
+          // an estimate: the litres the car reports times the price you entered (trip by trip)
+          const perKm = d.fuel_cost / d.km
+          row.currency = currency
+          row.cost_per_100km = pyRound(100 * perKm, 2)
+          if (row.distance_km !== undefined && row.distance_km !== null) {
+            row.fuel_cost_est = pyRound((row.distance_km as number) * perKm, 2)
+          }
         }
       }
     }

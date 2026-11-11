@@ -295,6 +295,26 @@ make timezone
 It says whether the zone fits (no measurement in the future, most a few minutes before the snapshot) and,
 if not, lists the clocks that do. Apply a change with `make model`.
 
+### Fuel cost (optional)
+
+The dashboard can turn the fuel the car reports into an **estimated cost**: *Fuel cost per 100 km* and *Fuel cost,
+total* on Trends and Compare, and a line under the fuel economy on the Overview. It is an estimate, **not what you
+paid**: the litres the car reports for each trip times the fuel price you enter. Without a price none of it is
+shown (the dashboard never invents one). Add a price to your model's `settings.yaml`:
+
+```yaml
+fuel_currency: EUR              # an ISO code
+fuel_prices:                    # the price of a litre from a date on; one entry per date, oldest first
+  - {from: 2026-03-01, per_l: 1.72}
+  - {from: 2026-05-15, per_l: 1.81}
+```
+
+A single price is enough if it never changed (`fuel_price_per_l: 1.75` instead of the list; the oldest price also
+applies before its date). Each trip is priced with the price in force on its day, so a price change shows up in the
+months it happened. Then run `make model` (the phone app needs a new pack: `make mobile-pack`). It is per car: a
+second model has its own file and its own currency, and the compare page does not set amounts in two currencies
+against each other.
+
 ### Adding newer data later
 
 You can keep adding exports as you receive them; history is never lost.

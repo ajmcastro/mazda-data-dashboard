@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MonthMetrics } from './api/types'
 import {
   METRICS,
+  currencyOf,
   compare,
   describeChange,
   digitsFor,
@@ -149,5 +150,30 @@ describe('wording helpers', () => {
     expect(ok(0, 4)).toBe('new')
     expect(ok(4, 0)).toBe('100.0%')
     expect(ok(10, 12)).toBe('20.0%')
+  })
+})
+
+describe('the estimated fuel cost', () => {
+  it('puts the currency into the unit, per 100 km and per day', () => {
+    expect(unitFor(def('cost_per_100km'), false, 'EUR')).toBe('EUR/100 km')
+    expect(unitFor(def('fuel_cost_est'), false, 'EUR')).toBe('EUR')
+    expect(unitFor(def('fuel_cost_est'), true, 'GBP')).toBe('GBP/day')
+    expect(unitFor(def('distance_km'), false, 'EUR')).toBe('km') // other metrics ignore it
+    expect(unitFor(def('cost_per_100km'), false)).toBe('/100 km') // never shown without a currency
+  })
+  it('finds the currency in the rows, or none when no price is set', () => {
+    expect(currencyOf([row(), row({ currency: 'EUR', cost_per_100km: 12 })])).toBe('EUR')
+    expect(currencyOf([row({ distance_km: 5 })])).toBeNull()
+    expect(currencyOf([])).toBeNull()
+  })
+  it('lower is better, and the totals are per day too', () => {
+    expect(def('cost_per_100km').polarity).toBe('lower')
+    expect(metricValue(row({ fuel_cost_est: 310, days_covered: 31 }), def('fuel_cost_est'), true)).toBeCloseTo(10)
+    expect(metricValue(row(), def('cost_per_100km'), false)).toBeNull() // a gap, never a zero
+  })
+  it('says in its help that it is an estimate, not what was paid', () => {
+    expect(def('cost_per_100km').help).toMatch(/estimate/i)
+    expect(def('cost_per_100km').help).toMatch(/not what you paid/i)
+    expect(def('fuel_cost_est').help).toMatch(/estimate/i)
   })
 })

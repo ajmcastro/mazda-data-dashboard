@@ -10,3 +10,11 @@ car_timezone: Europe/Lisbon
 
 # A tire reading counts as stale when the car still showed a measurement older than this many hours.
 tire_stale_hours: 6
+
+# Optional: an estimated fuel cost (cost per 100 km on Trends, Compare and the Overview). It is an estimate:
+# the litres the car reports for each trip times the price you enter, NOT what you paid. Remove the # to use it,
+# then run `make model`. One entry per date, oldest first; a single price: `fuel_price_per_l: 1.75`.
+# fuel_currency: EUR
+# fuel_prices:
+#   - {from: 2026-03-01, per_l: 1.72}
+#   - {from: 2026-05-15, per_l: 1.81}

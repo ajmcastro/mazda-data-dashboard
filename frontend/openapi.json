@@ -4544,6 +4544,39 @@
             ],
             "title": "Fuel L Est"
           },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "cost_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per 100Km"
+          },
+          "fuel_cost_est": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fuel Cost Est"
+          },
           "drives": {
             "anyOf": [
               {
@@ -5053,6 +5086,28 @@
               }
             ],
             "title": "L Per 100Km In Range"
+          },
+          "cost_per_100km_in_range": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Per 100Km In Range"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
           },
           "status": {
             "$ref": "#/components/schemas/LatestStatus"

@@ -3,7 +3,7 @@
 
 import type { MonthMetrics } from './api/types'
 
-export type MetricKey = Exclude<keyof MonthMetrics, 'month' | 'days_in_month' | 'days_covered' | 'partial'>
+export type MetricKey = Exclude<keyof MonthMetrics, 'month' | 'days_in_month' | 'days_covered' | 'partial' | 'currency'>
 /** Which direction is an improvement: less fuel is better, a higher lowest tire pressure is better. */
 export type Polarity = 'lower' | 'higher' | 'neutral'
 export type Tone = 'good' | 'bad' | 'neutral'
@@ -21,6 +21,8 @@ export type MetricDef = {
   perDayDigits?: number
   /** Per day, this is shown as a percentage of the days covered (days driven / days). */
   asShareOfDays?: boolean
+  /** An amount of money: `¤` in the unit stands for the currency (an ISO code) the model's settings give. */
+  money?: boolean
 }
 
 export const METRICS: MetricDef[] = [
@@ -36,6 +38,8 @@ export const METRICS: MetricDef[] = [
   { key: 'fault_readouts', label: 'Read-outs with faults', unit: 'read-outs', digits: 0, additive: true, polarity: 'lower', perDayUnit: 'read-outs/day', perDayDigits: 2, help: 'Diagnostic read-outs that listed at least one fault.' },
   { key: 'distinct_faults', label: 'Different faults', unit: 'faults', digits: 0, additive: false, polarity: 'lower', help: 'Distinct trouble codes reported.' },
   { key: 'new_faults', label: 'New faults', unit: 'faults', digits: 0, additive: true, polarity: 'lower', perDayUnit: 'faults/day', perDayDigits: 2, help: 'Trouble codes seen for the first time.' },
+  { key: 'cost_per_100km', label: 'Fuel cost (estimated)', unit: '¤/100 km', digits: 2, additive: false, polarity: 'lower', money: true, help: 'An estimate: the litres the car reports times the fuel price you entered in settings.yaml, trip by trip. Not what you paid.' },
+  { key: 'fuel_cost_est', label: 'Fuel cost, total (estimated)', unit: '¤', digits: 0, additive: true, polarity: 'neutral', money: true, perDayUnit: '¤/day', perDayDigits: 2, help: 'Estimated distance × cost per km: an estimate from your fuel price, not what you paid.' },
   { key: 'tire_avg_kpa', label: 'Tire pressure (average)', unit: 'kPa', digits: 0, additive: false, polarity: 'neutral', help: 'Average of the four tires.' },
   { key: 'tire_min_kpa', label: 'Lowest tire reading', unit: 'kPa', digits: 0, additive: false, polarity: 'higher', help: 'The lowest single reading of the month.' },
 ]
@@ -49,12 +53,18 @@ export function metricValue(row: MonthMetrics, def: MetricDef, perDay: boolean):
   return def.asShareOfDays ? (raw / row.days_covered) * 100 : raw / row.days_covered
 }
 
-export const unitFor = (def: MetricDef, perDay: boolean) => (perDay && def.additive ? def.perDayUnit ?? def.unit : def.unit)
+/** The currency of the cost figures in these rows (null when no fuel price is set). */
+export const currencyOf = (rows: readonly MonthMetrics[]): string | null => rows.find((r) => r.currency)?.currency ?? null
+
+export const unitFor = (def: MetricDef, perDay: boolean, currency: string | null = null) => {
+  const unit = perDay && def.additive ? def.perDayUnit ?? def.unit : def.unit
+  return def.money ? unit.replace('¤', currency ?? '').trim() : unit
+}
 
 const COUNTABLE = new Set(['days', 'drives', 'events', 'codes', 'read-outs', 'faults'])
 /** "1 fault", "2 faults": the singular for counted things when the value is exactly 1. */
-export const unitLabel = (def: MetricDef, perDay: boolean, value: number | null) => {
-  const unit = unitFor(def, perDay)
+export const unitLabel = (def: MetricDef, perDay: boolean, value: number | null, currency: string | null = null) => {
+  const unit = unitFor(def, perDay, currency)
   return value === 1 && COUNTABLE.has(unit) ? unit.slice(0, -1) : unit
 }
 

@@ -205,3 +205,40 @@ describe('pickPair', () => {
     expect(pickPair([], {}, undefined)).toEqual({ a: undefined, b: undefined })
   })
 })
+
+describe('cost across two cars', () => {
+  const euros = series('a', [row('2026-05', { currency: 'EUR', cost_per_100km: 12, l_per_100km: 7 })])
+  const more = series('b', [row('2026-05', { currency: 'EUR', cost_per_100km: 15, l_per_100km: 8 })])
+  const pounds = series('b', [row('2026-05', { currency: 'GBP', cost_per_100km: 15, l_per_100km: 8 })])
+  const noPrice = series('b', [row('2026-05', { l_per_100km: 8 })])
+
+  it('compares costs in the same currency, with the currency in the words', () => {
+    const aligned = alignMonths(euros, more, 'overlap', false)
+    const c = compareMetric(def('cost_per_100km'), aligned, false, 'overlap', { a: 'EUR', b: 'EUR' })
+    expect(c.kind).toBe('ok')
+    expect(describeDifference(def('cost_per_100km'), names, c, false, 'EUR')).toBe(
+      'CX-60 is 25.0% higher than CX-5 (15.00 EUR/100 km against 12.00 EUR/100 km)',
+    )
+  })
+  it('refuses to set amounts in two currencies against each other', () => {
+    const c = compareMetric(def('cost_per_100km'), alignMonths(euros, pounds, 'overlap', false), false, 'overlap', { a: 'EUR', b: 'GBP' })
+    expect(c).toMatchObject({ kind: 'not-comparable', delta: null, pct: null })
+    expect(describeDifference(def('cost_per_100km'), names, c, false, 'EUR')).toBe(
+      'not compared: the cost is in EUR for one car and GBP for the other',
+    )
+  })
+  it('says so when only one car has a fuel price', () => {
+    const c = compareMetric(def('cost_per_100km'), alignMonths(euros, noPrice, 'all', false), false, 'all', { a: 'EUR', b: null })
+    expect(c.kind).toBe('one-sided') // the other car has no cost figure at all
+    const both = compareMetric(def('fuel_cost_est'), alignMonths(euros, noPrice, 'all', false), false, 'all', { a: 'EUR', b: null })
+    expect(both.kind).toBe('none')
+  })
+  it('does not apply the currency rule to other metrics', () => {
+    const c = compareMetric(def('l_per_100km'), alignMonths(euros, pounds, 'overlap', false), false, 'overlap', { a: 'EUR', b: 'GBP' })
+    expect(c.kind).toBe('ok')
+  })
+  it('has the cost metrics in the comparability table, as a caution', () => {
+    expect(COMPARABILITY.cost_per_100km.level).toBe('caution')
+    expect(COMPARABILITY.fuel_cost_est.level).toBe('caution')
+  })
+})

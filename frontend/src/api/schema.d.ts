@@ -1200,6 +1200,12 @@ export interface components {
             l_per_100km?: number | null;
             /** Fuel L Est */
             fuel_l_est?: number | null;
+            /** Currency */
+            currency?: string | null;
+            /** Cost Per 100Km */
+            cost_per_100km?: number | null;
+            /** Fuel Cost Est */
+            fuel_cost_est?: number | null;
             /** Drives */
             drives?: number | null;
             /** Days Driven */
@@ -1327,6 +1333,10 @@ export interface components {
             lifetime_l_per_100km?: number | null;
             /** L Per 100Km In Range */
             l_per_100km_in_range?: number | null;
+            /** Cost Per 100Km In Range */
+            cost_per_100km_in_range?: number | null;
+            /** Currency */
+            currency?: string | null;
             status: components["schemas"]["LatestStatus"];
             /** Warnings Total */
             warnings_total: number;

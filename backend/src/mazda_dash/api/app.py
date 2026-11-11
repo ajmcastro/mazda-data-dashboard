@@ -16,7 +16,7 @@ from . import models as m
 from .dates import DateRange, date_range
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
 from .selection import registry
-from .trends import monthly_metrics
+from .trends import PRICED, monthly_metrics
 
 app = FastAPI(title="Mazda CX-5 dashboard API", version="0.2.0")
 Con = Depends(get_con)
@@ -133,7 +133,10 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     seg_where, seg_params = rng.clause("end_at")
     economy = one(
         con,
-        f"SELECT 100 * sum(fuel_l) / nullif(sum(km), 0) AS v FROM v_trip_segments {seg_where}",
+        "SELECT 100 * sum(fuel_l) / nullif(sum(km), 0) AS v, "
+        "100 * sum(fuel_l * per_l) / nullif(sum(km), 0) AS cost, "
+        f"(SELECT value FROM ref_settings WHERE key = 'fuel_currency') AS currency "
+        f"FROM v_trip_segments {PRICED} {seg_where}",
         seg_params,
     )
     w_where, w_params = rng.clause("triggered_at")
@@ -175,6 +178,8 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
         km_in_range=km,
         lifetime_l_per_100km=diag.get("lifetime_l_per_100km"),
         l_per_100km_in_range=economy["v"],
+        cost_per_100km_in_range=economy["cost"],
+        currency=economy["currency"] if economy["cost"] is not None else None,
         status=m.LatestStatus(**status),
         warnings_total=warnings["total"],
         warnings_in_range=warnings["in_range"],

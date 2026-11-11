@@ -91,7 +91,11 @@ export default function OverviewPage() {
                 label="Fuel economy"
                 value={fmtNum(o.l_per_100km_in_range, 1)}
                 unit="l/100 km"
-                sub={`in this period · lifetime ${fmtNum(o.lifetime_l_per_100km, 1)}`}
+                sub={`in this period · lifetime ${fmtNum(o.lifetime_l_per_100km, 1)}${
+                  o.cost_per_100km_in_range !== null && o.cost_per_100km_in_range !== undefined && o.currency
+                    ? ` · about ${fmtNum(o.cost_per_100km_in_range, 2)} ${o.currency} per 100 km (estimate)`
+                    : ''
+                }`}
               />
               <Stat
                 label="Fuel level"

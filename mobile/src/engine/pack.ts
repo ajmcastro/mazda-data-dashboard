@@ -35,7 +35,7 @@ export function usedSignalPrefixes(sql: string = viewsSql): string[] {
 }
 
 /** Tables the views read that older packs did not have (made before the app needed them). */
-const REQUIRED_TABLES = ['ref_settings', 'ref_warning_flags']
+const REQUIRED_TABLES = ['ref_settings', 'ref_fuel_prices', 'ref_warning_flags']
 
 /** Every `signal_readings` signal the views read (same rule as `used_signals` in pack.py). */
 export function usedSignals(sql: string = viewsSql): string[] {

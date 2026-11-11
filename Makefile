@@ -83,7 +83,7 @@ sample-data:
 # Try the app without your own data: load sample_data/<model>/ into db/demo-<model>.duckdb (one per model, never
 # your own databases: MAZDA_DB_PREFIX) and serve them
 demo-ingest:
-	cd backend && for m in $$(uv run python -m mazda_dash.models ids); do echo "== $$m"; MAZDA_DB_PREFIX=demo- uv run python -m mazda_dash.ingest --model $$m --data ../sample_data/$$m || exit 1; done
+	cd backend && for m in $$(uv run python -m mazda_dash.models ids); do echo "== $$m"; MAZDA_DB_PREFIX=demo- uv run python -m mazda_dash.ingest --model $$m --data ../sample_data/$$m --settings ../sample_data/$$m/settings.yaml || exit 1; done
 
 demo: demo-ingest
 	MAZDA_DB_PREFIX=demo- $(MAKE) -j2 api web

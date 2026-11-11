@@ -55,6 +55,10 @@ class Overview(BaseModel):
     km_in_range: float | None = None
     lifetime_l_per_100km: float | None = None
     l_per_100km_in_range: float | None = None
+    cost_per_100km_in_range: float | None = (
+        None  # estimate; None when no fuel price is set
+    )
+    currency: str | None = None
     status: LatestStatus
     warnings_total: int
     warnings_in_range: int
@@ -523,6 +527,11 @@ class MonthMetrics(BaseModel):
     distance_km: float | None = None
     l_per_100km: float | None = None
     fuel_l_est: float | None = None
+    currency: str | None = None  # of the cost figures; None when no fuel price is set
+    cost_per_100km: float | None = (
+        None  # estimate: reported litres x the price you entered
+    )
+    fuel_cost_est: float | None = None  # estimate, like fuel_l_est
     drives: int | None = None
     days_driven: int | None = None
     driving_hours: float | None = None

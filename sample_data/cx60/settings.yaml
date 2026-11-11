@@ -1,0 +1,5 @@
+# Settings of the synthetic cx60 car (the demo ingests the sample data with this file).
+car_timezone: Europe/Berlin
+tire_stale_hours: 6
+fuel_currency: EUR
+fuel_price_per_l: 1.79

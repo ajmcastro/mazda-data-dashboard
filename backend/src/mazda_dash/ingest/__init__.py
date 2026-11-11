@@ -72,7 +72,10 @@ def distinct_vins(db_path: Path) -> list[str]:
 
 
 def ingest(
-    data_dir: Path, db_path: Path, config_dir: Path | None = None
+    data_dir: Path,
+    db_path: Path,
+    config_dir: Path | None = None,
+    settings_path: Path | None = None,
 ) -> list[tuple[str, str, int, int]]:
     db_path.parent.mkdir(parents=True, exist_ok=True)
     con = duckdb.connect(str(db_path))
@@ -88,7 +91,7 @@ def ingest(
         )
         results.append((kind, path.name, rows_read, rows_new))
     if config_dir is not None:
-        build_model(con, config_dir)
+        build_model(con, config_dir, settings_path)
     con.close()
     return results
 
@@ -102,6 +105,11 @@ def main() -> None:
     ap.add_argument("--db", type=Path, help="database (default: the model's)")
     ap.add_argument(
         "--config", type=Path, help="code descriptions (default: the model's)"
+    )
+    ap.add_argument(
+        "--settings",
+        type=Path,
+        help="settings file (default: the model's; the demo uses its own)",
     )
     ap.add_argument(
         "--alerts-config", type=Path, help="alert rules (default: the model's)"
@@ -130,7 +138,9 @@ def main() -> None:
     for note, path in (("code descriptions", codes), ("alert rules", alerts)):
         if not path.exists():
             print(f"note: {path} not found, {note} use the built-in defaults")
-    for kind, name, read, new in ingest(data, db, codes):
+    for kind, name, read, new in ingest(
+        data, db, codes, args.settings or model.settings_path
+    ):
         print(f"{kind:8} read={read:6} new={new:6}  {name}")
     print("database:", db)
     vins = distinct_vins(db)
