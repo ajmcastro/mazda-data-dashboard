@@ -31,6 +31,27 @@ export function oilLine(g: Pick<Garage, 'oil_remaining_km'>): string {
   return g.oil_remaining_km === null || g.oil_remaining_km === undefined ? 'not reported' : `${fmtNum(g.oil_remaining_km)} km left`
 }
 
+type Fuel = Pick<Garage, 'fuel_l_30d' | 'l_per_100km_30d' | 'fuel_cost_30d' | 'cost_per_100km_30d' | 'currency'>
+export type Block = { value: string; sub: string }
+
+/** Fuel used in the 30 days: the litres and the average consumption, both estimates (null without consumption).
+ * The unit is a capital L: in the display font a small l looks like an I. */
+export function fuelBlock(g: Fuel): Block | null {
+  if (g.fuel_l_30d == null || g.l_per_100km_30d == null) return null
+  return { value: `${fmtNum(g.fuel_l_30d)} L`, sub: `${fmtNum(g.l_per_100km_30d, 2)} l/100 km on average (estimated)` }
+}
+
+/** The estimated cost of that fuel: the total and the average per 100 km, in the car's own currency (null without a fuel price). */
+export function costBlock(g: Fuel): Block | null {
+  if (g.fuel_cost_30d == null || g.cost_per_100km_30d == null || !g.currency) return null
+  return { value: `${fmtNum(g.fuel_cost_30d)} ${g.currency}`, sub: `${fmtNum(g.cost_per_100km_30d, 2)} ${g.currency} per 100 km (estimated)` }
+}
+
+/** The caution under the page title: the totals are estimates, and averages between two cars need care. */
+export const FUEL_CAUTION =
+  'Fuel and cost are estimates: the distance times the average consumption, and times the fuel price you entered, not what you paid. ' +
+  "Averages between two cars need care (a plug-in hybrid's l/100 km hides the electric part)."
+
 /** The text of a model selector entry: the name, with the new alerts when there are some. */
 export function optionLabel(name: string, newAlerts: number | undefined, hasData = true): string {
   const suffix = hasData ? '' : ' (no data yet)'

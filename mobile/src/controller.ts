@@ -35,7 +35,7 @@ export interface ModelPack {
  * The version of the engine's answers the cached summaries were made from. Raise it whenever
  * `/api/trends/monthly` or `/api/garage` (their fields or their maths) change, so no summary of the old answer is ever shown.
  */
-export const SUMMARY_VERSION = 2 // 2: the "All cars" card (/api/garage) joined the monthly figures
+export const SUMMARY_VERSION = 3 // 2: the "All cars" card (/api/garage) joined the monthly figures; 3: it gained fuel and cost
 
 export interface DataState {
   status: Status

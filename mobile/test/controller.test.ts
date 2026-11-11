@@ -395,6 +395,8 @@ describe('comparing cars on the device', () => {
     await c.prepareComparison()
     const saved = await readStoredSummaries()
     expect(saved.cx60.garage).toMatchObject({ has_data: true, vin: 'SAMPLEVIN00000002', to_day: '2026-07-31' })
+    // fuel and cost of the 30 days travel with the cached card (a car that is not loaded shows them too)
+    expect(saved.cx60.garage).toMatchObject({ currency: 'EUR', fuel_l_30d: expect.any(Number), l_per_100km_30d: expect.any(Number), fuel_cost_30d: expect.any(Number), cost_per_100km_30d: expect.any(Number) })
 
     const card = (await c.api.handle('GET', '/api/garage?model=cx60')).body
     expect(card).toEqual(saved.cx60.garage)

@@ -4,8 +4,28 @@ import { addDays, DateRange } from './dates'
 import { Query, pick } from './http'
 import { carWarnings } from './carwarnings'
 import { maintenanceOil } from './maintenance'
+import { pyRound } from './pyround'
 import { GARAGE } from './shapes'
 import { overview, span } from './series'
+
+/** The litres and the cost of the overview's period, as estimates: the distance (odometer) times the average
+ * consumption, and times the cost per 100 km (which needs a fuel price). Same as `_fuel_and_cost` in api/app.py. */
+function fuelAndCost(ov: Record<string, any>): Record<string, unknown> { // eslint-disable-line @typescript-eslint/no-explicit-any
+  const out: Record<string, unknown> = {}
+  const km = ov.km_in_range as number | null
+  const l100 = ov.l_per_100km_in_range as number | null
+  const cost100 = ov.cost_per_100km_in_range as number | null
+  if (l100 !== null && l100 !== undefined) {
+    out.l_per_100km_30d = pyRound(l100, 2)
+    if (km !== null && km !== undefined) out.fuel_l_30d = pyRound((km * l100) / 100, 1)
+  }
+  if (cost100 !== null && cost100 !== undefined && ov.currency) {
+    out.cost_per_100km_30d = pyRound(cost100, 2)
+    out.currency = ov.currency
+    if (km !== null && km !== undefined) out.fuel_cost_30d = pyRound((km * cost100) / 100, 2)
+  }
+  return out
+}
 
 export const garage: Handler = async (ctx) => {
   const s = (await span(ctx)) as { first_day: string | null; last_day: string | null }
@@ -27,6 +47,7 @@ export const garage: Handler = async (ctx) => {
       from_day: first,
       to_day: s.last_day,
       km_last_30_days: ov.km_in_range,
+      ...fuelAndCost(ov),
       fuel_level_pct: ov.status?.fuel_level_pct ?? null,
       range_km: ov.status?.range_km ?? null,
       oil_remaining_km: oil.remaining_km,

@@ -396,3 +396,4 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .garage-card button { align-self: flex-start; }
 .cmp-intro { margin: 0 0 12px; font-size: 13px; max-width: 860px; }
 .period-select { min-width: 260px; }
+.garage-caution { margin: 6px 0 0; font-size: 12px; max-width: 860px; }

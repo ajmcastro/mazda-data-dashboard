@@ -82,6 +82,27 @@ def data_span(con: duckdb.DuckDBPyConnection = Con):
     return m.DataSpan(**span)
 
 
+def _fuel_and_cost(ov: m.Overview) -> dict:
+    """The litres and the cost of the overview's period, as estimates: the distance (odometer) times the
+    average consumption, and times the cost per 100 km (which needs a fuel price)."""
+    out: dict = {}
+    km, l100, cost100 = (
+        ov.km_in_range,
+        ov.l_per_100km_in_range,
+        ov.cost_per_100km_in_range,
+    )
+    if l100 is not None:
+        out["l_per_100km_30d"] = round(l100, 2)
+        if km is not None:
+            out["fuel_l_30d"] = round(km * l100 / 100, 1)
+    if cost100 is not None and ov.currency:
+        out["cost_per_100km_30d"] = round(cost100, 2)
+        out["currency"] = ov.currency
+        if km is not None:
+            out["fuel_cost_30d"] = round(km * cost100 / 100, 2)
+    return out
+
+
 @app.get("/api/garage", response_model=m.Garage)
 def garage(con: duckdb.DuckDBPyConnection = Con):
     """One car's headline figures for the "All cars" page, built from the overview, the oil countdown and
@@ -102,6 +123,7 @@ def garage(con: duckdb.DuckDBPyConnection = Con):
         from_day=first,
         to_day=span.last_day,
         km_last_30_days=ov.km_in_range,
+        **_fuel_and_cost(ov),
         fuel_level_pct=ov.status.fuel_level_pct,
         range_km=ov.status.range_km,
         oil_remaining_km=oil.remaining_km,

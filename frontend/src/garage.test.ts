@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { STALE_AFTER_DAYS, alertsLabel, dataAgeDays, faultsLabel, oilLine, optionLabel, staleNote } from './garage'
+import { FUEL_CAUTION, STALE_AFTER_DAYS, alertsLabel, costBlock, dataAgeDays, faultsLabel, fuelBlock, oilLine, optionLabel, staleNote } from './garage'
 
 const now = Date.parse('2026-07-10T12:00:00Z')
 
@@ -39,3 +39,34 @@ describe('labels', () => {
     expect(optionLabel('Mazda CX-60', undefined, false)).toBe('Mazda CX-60 (no data yet)')
   })
 })
+
+describe('fuel and cost of the 30 days', () => {
+  const full = { fuel_l_30d: 73.6, l_per_100km_30d: 7.24, fuel_cost_30d: 133.14, cost_per_100km_30d: 13.1, currency: 'EUR' }
+
+  it('shows the litres and the average consumption, as estimates', () => {
+    expect(fuelBlock(full)).toEqual({ value: '74 L', sub: '7.24 l/100 km on average (estimated)' })
+  })
+  it('shows the total cost and the average per 100 km in the car’s own currency, as estimates', () => {
+    expect(costBlock(full)).toEqual({ value: '133 EUR', sub: '13.10 EUR per 100 km (estimated)' })
+    expect(costBlock({ ...full, currency: 'GBP' })?.value).toBe('133 GBP')
+  })
+  it('has no cost without a fuel price, but keeps the litres', () => {
+    const noPrice = { fuel_l_30d: 73.6, l_per_100km_30d: 7.24, fuel_cost_30d: null, cost_per_100km_30d: null, currency: null }
+    expect(costBlock(noPrice)).toBeNull()
+    expect(fuelBlock(noPrice)).not.toBeNull()
+    expect(costBlock({ ...full, currency: null })).toBeNull() // an amount without a currency is never shown
+  })
+  it('has neither when the car has no consumption in the window', () => {
+    const none = { fuel_l_30d: null, l_per_100km_30d: null, fuel_cost_30d: null, cost_per_100km_30d: null, currency: null }
+    expect(fuelBlock(none)).toBeNull()
+    expect(costBlock(none)).toBeNull()
+    expect(fuelBlock({ ...none, l_per_100km_30d: 7 })).toBeNull() // litres missing: not half a figure
+  })
+  it('says the figures are estimates and that averages between cars need care', () => {
+    expect(FUEL_CAUTION).toMatch(/estimates/)
+    expect(FUEL_CAUTION).toMatch(/not what you paid/)
+    expect(FUEL_CAUTION).toMatch(/plug-in hybrid/)
+    expect(FUEL_CAUTION).not.toMatch(/better|worse/i)
+  })
+})
+

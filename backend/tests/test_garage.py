@@ -126,3 +126,73 @@ def test_the_card_follows_the_chosen_model(dbs, monkeypatch):
     # the real databases may not exist in CI: an unknown model is the contract here
     r = TestClient(app).get("/api/garage", params={"model": "nope"})
     assert r.status_code == 404
+
+
+def bare_db(tmp_path):
+    """The CX-5 sample ingested with settings that set no fuel price."""
+    bare = tmp_path / "bare-settings.yaml"
+    bare.write_text("car_timezone: Europe/Lisbon\n")
+    data = tmp_path / "bare-data"
+    generate(data, profile=PROFILES["cx5"])
+    db = tmp_path / "bare.duckdb"
+    ingest(data, db, REPO / "config" / "models" / "cx5" / "codes", bare)
+    return db
+
+
+def test_fuel_and_cost_are_the_overviews_figures_for_the_same_window(dbs):
+    g = get(dbs["cx5"], "/api/garage")
+    o = get(dbs["cx5"], "/api/overview", **{"from": g["from_day"], "to": g["to_day"]})
+    km = o["km_in_range"]
+    assert g["l_per_100km_30d"] == pytest.approx(o["l_per_100km_in_range"], abs=0.005)
+    assert g["fuel_l_30d"] == pytest.approx(
+        km * o["l_per_100km_in_range"] / 100, abs=0.05
+    )
+    assert g["cost_per_100km_30d"] == pytest.approx(
+        o["cost_per_100km_in_range"], abs=0.005
+    )
+    assert g["fuel_cost_30d"] == pytest.approx(
+        km * o["cost_per_100km_in_range"] / 100, abs=0.005
+    )
+    assert g["currency"] == "EUR" == o["currency"]
+
+
+def test_the_card_agrees_with_trends_when_the_window_is_a_whole_month(dbs):
+    """The CX-5 sample ends on 30 June, so its 30 days are exactly June: the monthly figures must say the same."""
+    g = get(dbs["cx5"], "/api/garage")
+    june = {m["month"]: m for m in get(dbs["cx5"], "/api/trends/monthly")}["2026-06"]
+    assert (g["from_day"], g["to_day"]) == ("2026-06-01", "2026-06-30")
+    assert g["fuel_cost_30d"] == june["fuel_cost_est"]
+    assert g["cost_per_100km_30d"] == june["cost_per_100km"]
+    assert g["l_per_100km_30d"] == june["l_per_100km"]
+    assert g["fuel_l_30d"] == june["fuel_l_est"]
+
+
+def test_each_car_has_its_own_currency_and_prices(dbs):
+    cx60 = get(dbs["cx60"], "/api/garage")
+    assert cx60["currency"] == "EUR" and cx60["cost_per_100km_30d"] == pytest.approx(
+        cx60["l_per_100km_30d"] * 1.79, abs=0.02
+    )
+
+
+def test_without_a_fuel_price_there_are_litres_but_no_cost(tmp_path):
+    g = get(bare_db(tmp_path), "/api/garage")
+    assert g["fuel_l_30d"] > 0 and g["l_per_100km_30d"] > 0
+    assert (
+        g["fuel_cost_30d"] is None
+        and g["cost_per_100km_30d"] is None
+        and g["currency"] is None
+    )
+
+
+def test_a_car_without_consumption_in_the_window_has_none(tmp_path):
+    empty = tmp_path / "e2"
+    empty.mkdir()
+    ingest(
+        empty, tmp_path / "empty2.duckdb", REPO / "config" / "models" / "cx5" / "codes"
+    )
+    g = get(tmp_path / "empty2.duckdb", "/api/garage")
+    assert (
+        g["fuel_l_30d"] is None
+        and g["l_per_100km_30d"] is None
+        and g["fuel_cost_30d"] is None
+    )

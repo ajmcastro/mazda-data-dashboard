@@ -64,7 +64,7 @@ export const MONTH_METRICS = [
 ]
 export const GARAGE = [
   'has_data', 'vin', 'odometer_km', 'odometer_at', 'last_reading_at', 'from_day', 'to_day', 'km_last_30_days',
-  'fuel_level_pct', 'range_km', 'oil_remaining_km', 'oil_read_at', 'alerts_new', 'active_faults', 'car_warnings_on',
+  'fuel_l_30d', 'l_per_100km_30d', 'fuel_cost_30d', 'cost_per_100km_30d', 'currency', 'fuel_level_pct', 'range_km', 'oil_remaining_km', 'oil_read_at', 'alerts_new', 'active_faults', 'car_warnings_on',
 ]
 export const OIL_STEP = ['read_at', 'odometer_km', 'remaining_km', 'serviced']
 export const CAR_WARNING_FLAG = ['flag', 'label', 'is_on', 'value', 'last_read_at', 'readings', 'episodes', 'since']

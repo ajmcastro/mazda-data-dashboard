@@ -36,6 +36,12 @@ class Garage(BaseModel):
     km_last_30_days: float | None = None
     fuel_level_pct: float | None = None
     range_km: float | None = None
+    # fuel and cost of the same 30 days (estimates: distance x the average, see the overview and Trends)
+    fuel_l_30d: float | None = None
+    l_per_100km_30d: float | None = None
+    fuel_cost_30d: float | None = None  # None without a fuel price
+    cost_per_100km_30d: float | None = None
+    currency: str | None = None  # of the cost figures
     oil_remaining_km: float | None = None
     oil_read_at: datetime | None = None
     alerts_new: int = 0

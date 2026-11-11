@@ -1169,6 +1169,16 @@ export interface components {
             fuel_level_pct?: number | null;
             /** Range Km */
             range_km?: number | null;
+            /** Fuel L 30D */
+            fuel_l_30d?: number | null;
+            /** L Per 100Km 30D */
+            l_per_100km_30d?: number | null;
+            /** Fuel Cost 30D */
+            fuel_cost_30d?: number | null;
+            /** Cost Per 100Km 30D */
+            cost_per_100km_30d?: number | null;
+            /** Currency */
+            currency?: string | null;
             /** Oil Remaining Km */
             oil_remaining_km?: number | null;
             /** Oil Read At */

@@ -1,7 +1,7 @@
 import { useGarageOf } from '../api/hooks'
 import type { Garage as GarageCard } from '../api/types'
 import { Panel } from '../components/ui'
-import { alertsLabel, faultsLabel, oilLine, staleNote } from '../garage'
+import { FUEL_CAUTION, alertsLabel, costBlock, faultsLabel, fuelBlock, oilLine, staleNote } from '../garage'
 import { fmtAgo, fmtDate, fmtNum } from '../lib'
 import { useCurrentModel, useSwitchModel } from '../model'
 
@@ -23,6 +23,8 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
   const g: GarageCard | undefined = query.data
   const open = () => switchTo(car.id, '/')
   const stale = g?.has_data ? staleNote(g.last_reading_at) : null
+  const fuel = g?.has_data ? fuelBlock(g) : null
+  const cost = g?.has_data ? costBlock(g) : null
 
   return (
     <article className={`panel garage-card${shown ? ' shown' : ''}`} aria-label={car.name}>
@@ -53,6 +55,8 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
               value={`${fmtNum(g.km_last_30_days)} km`}
               sub={g.from_day && g.to_day ? `${fmtDate(g.from_day)} – ${fmtDate(g.to_day)}` : undefined}
             />
+            {fuel && <Figure label="Fuel used, last 30 days" value={fuel.value} sub={fuel.sub} />}
+            {cost && <Figure label="Fuel cost, last 30 days" value={cost.value} sub={cost.sub} />}
             <Figure label="Fuel level" value={`${fmtNum(g.fuel_level_pct)} %`} sub={g.range_km != null ? `range ≈ ${fmtNum(g.range_km)} km` : undefined} />
             <Figure label="Next oil change" value={oilLine(g)} sub={g.oil_read_at ? `as reported ${fmtDate(g.oil_read_at)}` : undefined} />
             <Figure label="Last reading" value={fmtAgo(g.last_reading_at)} />
@@ -78,6 +82,7 @@ export default function Garage() {
             The headline figures of every car at a glance. The distance is for the 30 days up to each car&apos;s newest data; alerts,
             faults, the oil countdown and the car&apos;s own warnings are the latest.
           </p>
+          <p className="muted garage-caution">{FUEL_CAUTION}</p>
         </div>
       </div>
       {cars.length === 0 ? (
