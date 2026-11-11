@@ -1,4 +1,7 @@
 import { useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { saveModelChoice } from '@frontend/model'
+import type { ModelPack } from './controller'
 import { useController, useData } from './data'
 import { usePwa } from './pwa'
 
@@ -8,7 +11,8 @@ const fmtWhen = (iso: string) => new Date(iso).toLocaleString(undefined, { dateS
 
 export default function DataScreen() {
   const controller = useController()
-  const { status, message, info, error, persisted, lost } = useData()
+  const { status, message, info, current, packs, error, persisted, lost } = useData()
+  const [, setParams] = useSearchParams()
   const pwa = usePwa()
   const [busy, setBusy] = useState(false)
   const input = useRef<HTMLInputElement>(null)
@@ -34,11 +38,35 @@ export default function DataScreen() {
     }
   }
 
-  async function remove() {
-    if (!window.confirm('Delete all data from this device? You can import the data pack again at any time.')) return
+  /** The address follows the model that is loaded now (it may have changed when the one shown was deleted). */
+  function showLoadedModel() {
+    const id = controller.getState().current
+    if (id) saveModelChoice(id)
+    setParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('model')
+      next.delete('report')
+      next.delete('compare')
+      return next
+    }, { replace: true })
+  }
+
+  async function remove(pack: ModelPack) {
+    if (!window.confirm(`Delete ${pack.name} from this device? You can import its data pack again at any time.`)) return
     setBusy(true)
     try {
-      await controller.deleteData()
+      await controller.deleteModel(pack.id)
+      showLoadedModel()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function removeAll() {
+    if (!window.confirm('Delete all data (every car model) from this device? You can import the data packs again at any time.')) return
+    setBusy(true)
+    try {
+      await controller.deleteAll()
     } finally {
       setBusy(false)
     }
@@ -77,18 +105,35 @@ export default function DataScreen() {
         </section>
       )}
 
-      {info && (
-        <section className="panel data-info" aria-label="Data pack">
-          <h2>{info.name === 'demo' ? 'Demo data (synthetic)' : info.name}</h2>
+      {packs.map((pack) => (
+        <section key={pack.id} className="panel data-info" aria-label={`Data pack: ${pack.name}`}>
+          <h2>
+            {pack.name}
+            {pack.info.name === 'demo' && ' (demo data, synthetic)'}
+            {packs.length > 1 && pack.id === current && <span className="muted"> · shown</span>}
+          </h2>
           <dl>
+            <dt>File</dt>
+            <dd>{pack.info.name === 'demo' ? 'demo' : pack.info.name}</dd>
             <dt>Data from</dt>
-            <dd>{fmtDay(info.manifest.first_data_day)} to {fmtDay(info.manifest.last_data_day)}</dd>
+            <dd>{fmtDay(pack.info.manifest.first_data_day)} to {fmtDay(pack.info.manifest.last_data_day)}</dd>
             <dt>Pack created</dt>
-            <dd>{fmtWhen(info.manifest.created_at)}</dd>
+            <dd>{fmtWhen(pack.info.manifest.created_at)}</dd>
             <dt>Imported</dt>
-            <dd>{fmtWhen(info.savedAt)}</dd>
+            <dd>{fmtWhen(pack.info.savedAt)}</dd>
             <dt>Size</dt>
-            <dd>{fmtBytes(info.bytes)}</dd>
+            <dd>{fmtBytes(pack.info.bytes)}</dd>
+          </dl>
+          <button type="button" className="button danger" disabled={working} onClick={() => void remove(pack)}>
+            Delete {pack.name} from this device
+          </button>
+        </section>
+      ))}
+
+      {info && (
+        <section className="panel data-info" aria-label="Storage">
+          <h2>Storage</h2>
+          <dl>
             <dt>Kept by the browser</dt>
             <dd>{persisted === null ? 'unknown' : persisted ? 'yes' : 'not guaranteed'}</dd>
             <dt>Works offline</dt>
@@ -97,7 +142,7 @@ export default function DataScreen() {
           {persisted !== true && (
             <p className="muted">
               The browser may remove this data if the phone runs low on space. Keep the{' '}
-              <span className="mono">.cx5pack</span> file (in Files or iCloud Drive) so you can import it again.
+              <span className="mono">.cx5pack</span> files (in Files or iCloud Drive) so you can import them again.
             </p>
           )}
         </section>
@@ -106,7 +151,7 @@ export default function DataScreen() {
       {status !== 'starting' && (
         <div className="data-actions">
           <label className={`button primary${working ? ' disabled' : ''}`}>
-            {info ? 'Replace with another pack' : 'Import data pack'}
+            {info ? 'Add or replace a data pack' : 'Import data pack'}
             {/* no `accept`: iOS greys out files with an extension it does not know (.cx5pack) */}
             <input
               ref={input}
@@ -120,9 +165,9 @@ export default function DataScreen() {
               Load demo data
             </button>
           )}
-          {info && (
-            <button type="button" className="button danger" disabled={working} onClick={() => void remove()}>
-              Delete data from this device
+          {packs.length > 1 && (
+            <button type="button" className="button danger" disabled={working} onClick={() => void removeAll()}>
+              Delete all data from this device
             </button>
           )}
         </div>
@@ -133,12 +178,12 @@ export default function DataScreen() {
           <h2>Getting your data here</h2>
           <ol>
             <li>On your Mac, in the project folder, run <span className="mono">make mobile-pack</span>.</li>
-            <li>AirDrop <span className="mono">db/cx5.cx5pack</span> to this phone and save it in Files.</li>
-            <li>Tap <b>Import data pack</b> and choose that file.</li>
+            <li>AirDrop <span className="mono">db/&lt;model&gt;.cx5pack</span> (for example <span className="mono">db/cx5.cx5pack</span>) to this phone and save it in Files.</li>
+            <li>Tap <b>Import data pack</b> and choose that file. Each car model has its own pack: import each one, then switch between them at the top of the screen.</li>
           </ol>
           <p className="muted">
-            The pack holds your vehicle's VIN: keep it private. Or try the app with synthetic
-            <b> demo data</b> first.
+            A pack holds your vehicle's VIN: keep it private. Or try the app with synthetic
+            <b> demo data</b> (two demo cars) first.
           </p>
         </section>
       )}

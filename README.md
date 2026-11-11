@@ -309,17 +309,17 @@ caches an app from a secure address.
 
 ```bash
 make ingest        # if you have new exports (see "Adding newer data later")
-make mobile-pack   # writes db/cx5.cx5pack
+make mobile-pack   # writes db/<model>.cx5pack for every model that has data, e.g. db/cx5.cx5pack
 ```
 
-**3. Move it to the phone.** AirDrop `db/cx5.cx5pack` to the iPhone and save it in **Files**
+**3. Move it to the phone.** AirDrop `db/cx5.cx5pack` (and `db/cx60.cx5pack`, one pack per car model) to the iPhone and save it in **Files**
 (iCloud Drive is good: it keeps the file as your backup).
 
 **4. Install the app.** Open the site address in **Safari**, tap **Share → Add to Home Screen**, and
 open the new "CX-5" icon. The first start downloads the app once (about 36 MB). When the **Data**
 screen says **Works offline: yes**, you can switch Wi-Fi off.
 
-**5. Import your data.** On the Data screen tap **Import data pack** and choose the file. Or try
+**5. Import your data.** On the Data screen tap **Import data pack** and choose the file (repeat for each car model: a selector at the top then switches between them). Or try
 **Load demo data** first. To update later, make a new pack and use **Replace with another pack**
 (alerts you acknowledged on the phone stay acknowledged).
 
@@ -387,7 +387,7 @@ Run them from the project folder. The first group is what you need to use the da
 | `make timezone` | check `car_timezone` in `config/models/<id>/settings.yaml` against your data |
 | `make alerts` | evaluate `config/models/<id>/alerts.yaml` only |
 | `make unmapped` | list codes and flags in your data that have no description |
-| `make mobile-pack` | export your database as `db/cx5.cx5pack` for the phone app |
+| `make mobile-pack` | export each model's database as `db/<model>.cx5pack` for the phone app |
 | `make mobile-dev` | run the phone app on this computer (with the demo data bundled) |
 | `make audit` | check for private values before publishing (see [Privacy](#privacy)) |
 | `make reset-db` | **delete** `db/<id>.duckdb`, including acknowledged alerts |

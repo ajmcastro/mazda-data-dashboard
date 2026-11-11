@@ -98,9 +98,9 @@ audit:
 mobile-pack:
 	cd backend && for m in $(LOADED); do uv run python -m mazda_dash.pack --model $$m || exit 1; done
 
-# Data pack of the synthetic demo database: the phone app ships it as its "Load demo data"
+# Data packs of the synthetic demo databases (one per model): the phone app ships them as its "Load demo data"
 mobile-demo-pack: demo-ingest
-	cd backend && uv run python -m mazda_dash.pack --db ../db/demo-cx5.duckdb --out ../mobile/public/demo.cx5pack
+	cd backend && for m in $$(uv run python -m mazda_dash.models ids); do MAZDA_DB_PREFIX=demo- uv run python -m mazda_dash.pack --model $$m --out ../mobile/public/demo-$$m.cx5pack || exit 1; done
 
 # the phone app's packages (installed on first use, again when package-lock.json changes)
 mobile/node_modules: mobile/package-lock.json
@@ -120,14 +120,15 @@ mobile-build: mobile/node_modules mobile-demo-pack
 
 # ---- phone data engine (M13): the TypeScript re-implementation of the API, proven against the Python one ----
 
-# Record what the real Python API answers on the sample data (+ the pack the engine loads) into mobile/contract/
+# Record what the real Python API answers on the sample data of every model (+ the pack the engine loads) into
+# mobile/contract/<model>/
 mobile-golden:
 	cd backend && uv run python -m mazda_dash.contract --out ../mobile/contract
 
 # Same on YOUR database (copied first), to catch what the small sample hides. Contains your VIN: mobile/contract/real
 # is gitignored; delete it afterwards (rm -r mobile/contract/real).
 mobile-golden-real:
-	cd backend && uv run python -m mazda_dash.contract --db "$$(uv run python -m mazda_dash.models db $(ONE))" --out ../mobile/contract/real
+	cd backend && uv run python -m mazda_dash.contract --db "$$(uv run python -m mazda_dash.models db $(ONE))" $(ONE) --out ../mobile/contract/real
 	cd mobile && CONTRACT_DIR=contract/real npm test
 
 mobile-typecheck: mobile/node_modules

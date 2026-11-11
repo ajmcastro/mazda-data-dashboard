@@ -29,9 +29,11 @@ from pathlib import Path
 
 import duckdb
 
-from .models import add_model_option, resolve
+from .models import Model, add_model_option, resolve
 
-PACK_FORMAT = 1
+PACK_FORMAT = (
+    2  # 2: the manifest names the car model (the phone app holds several packs)
+)
 TABLES = [
     "warning_events",
     "warning_codes",
@@ -202,10 +204,23 @@ def _select(
     return f'(SELECT * FROM "{table}")'
 
 
+def model_info(model: Model | None) -> dict:
+    """What the pack says about the car model it holds (the phone's model list is built from it)."""
+    if model is None:  # a pack made without a registry (tests): the original single car
+        return {"id": "cx5", "name": "Mazda CX-5", "platform": None, "hidden_pages": []}
+    return {
+        "id": model.id,
+        "name": model.name,
+        "platform": model.platform,
+        "hidden_pages": list(model.hidden_pages),
+    }
+
+
 def build_pack(
     db: Path,
     out: Path,
     *,
+    model: Model | None = None,
     with_reference: bool = False,
     compression: str = "zstd",
     all_signals: bool = False,
@@ -255,6 +270,7 @@ def build_pack(
             manifest = {
                 "format": PACK_FORMAT,
                 "kind": "cx5pack",
+                "model": model_info(model),
                 "created_at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "generator": "mazda-dash",
                 "duckdb": duckdb.__version__,
@@ -308,6 +324,7 @@ def main() -> None:
     manifest = build_pack(
         args.db,
         args.out,
+        model=model,
         with_reference=args.reference,
         compression=args.compression,
         all_signals=args.all_signals,

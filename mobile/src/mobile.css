@@ -65,3 +65,6 @@
   color: var(--muted); background: none; border: 0; border-left: 1px solid var(--line); cursor: pointer;
 }
 .tabbar .tab-theme svg { width: 20px; height: 20px; }
+
+/* the car model switcher (shown only with two or more models) */
+.m-model:not(:empty) { padding: 8px 0 0; }

@@ -6,12 +6,12 @@ phone**. No server, no account, and no request to any host but its own. The Mac 
 
 How it works (details and measurements in `../PLAN.md`):
 
-- `make mobile-pack` on the Mac exports your database as `db/cx5.cx5pack` (Parquet tables in a zip,
+- `make mobile-pack` on the Mac exports each car model's database as `db/<model>.cx5pack` (for example `db/cx5.cx5pack`; the manifest names the model) (Parquet tables in a zip,
   GPS positions left out). It contains your VIN: keep it private.
 - On the phone the app starts DuckDB (WebAssembly), loads the pack, rebuilds the SQL views from
   `backend/src/mazda_dash/model/views.sql`, and answers the pages' `/api/...` requests with
   `src/engine/`, a TypeScript port of the Python API proven identical by contract tests.
-- The pack and the alert acknowledgements made on the phone are kept in the browser's IndexedDB.
+- The packs (one per car model) and the alert acknowledgements made on the phone (kept per model) are kept in the browser's IndexedDB. One model is loaded in the engine at a time, the one the address names (`#/?model=cx60`); a model selector at the top of the screen switches (it appears with two or more packs). Importing the pack of another model only stores it, so the address and the data on screen never disagree.
 
 ## Run it
 
@@ -33,10 +33,10 @@ real pack over the network.
 |---|---|
 | `src/main.tsx`, `src/App.tsx` | start-up and the phone layout (bottom tab bar, appearance button) around the shared pages |
 | `src/pwa.ts`, `sw.template.js`, `public/manifest.webmanifest` | install and offline: the service worker (written into `dist/sw.js` at build time), its update prompt, the web app manifest |
-| `src/controller.ts` | the data on the device: engine start, stored pack, import / replace / delete |
-| `src/storage.ts` | IndexedDB: pack and acknowledgements |
+| `src/controller.ts` | the data on the device: engine start, the stored packs (one per model), import / switch / delete |
+| `src/storage.ts` | IndexedDB: packs (keyed by model) and acknowledgements (prefixed by model) |
 | `src/engine-browser.ts` | DuckDB-WASM in a Web Worker (one query at a time) |
-| `src/DataScreen.tsx` | import, demo, pack information, delete |
+| `src/DataScreen.tsx` | import, demo (both demo cars), pack information per model, delete one or all |
 | `src/engine/` | the Python API in TypeScript (`api.ts` routes, one file per area, `pack.ts` loader) |
 | `test/` | contract tests (replay the Python API's answers), controller and engine tests |
 

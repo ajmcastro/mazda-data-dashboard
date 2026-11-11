@@ -1,4 +1,4 @@
-/** The 28 routes of the Python API, answered from the in-browser database. */
+/** The routes of the Python API, answered from the in-browser database (of the one car model loaded). */
 import type { Ctx, Handler } from './context'
 import { Con, type RawDb } from './db'
 import { dateRange, type DateRange } from './dates'
@@ -16,6 +16,18 @@ import { unmapped, warningDaily, warningEvents, warningFrequency } from './warni
 export interface ApiResponse {
   status: number
   body: unknown
+}
+
+/** One entry of GET /api/models: the phone lists the models of the packs stored on it. */
+export interface ModelInfo {
+  id: string
+  name: string
+  platform: string | null
+  default: boolean
+  hidden_pages: string[]
+  has_data: boolean
+  first_day: string | null
+  last_day: string | null
 }
 
 export interface ApiOptions {
@@ -36,6 +48,8 @@ interface Route {
 
 export class Api {
   private con: Con | null = null
+  private loadedModel: string | null = null
+  private models: ModelInfo[] = []
   private readonly routes: Route[] = []
   private readonly database: string
 
@@ -48,6 +62,7 @@ export class Api {
       this.routes.push({ method, pattern: new RegExp(`^${source}$`), names, handler, needsData })
     }
     add('GET', '/api/health', async () => ({ status: 'ok', database: this.database, has_data: this.con !== null }), false)
+    add('GET', '/api/models', async () => this.models, false)
     add('GET', '/api/span', span)
     add('GET', '/api/overview', overview)
     add('GET', '/api/trends/monthly', trendsMonthly)
@@ -82,9 +97,16 @@ export class Api {
     add('GET', '/api/dtcs/context', faultContext)
   }
 
-  /** The database to answer from (null = no data on this device yet: data routes answer 503). */
-  use(raw: RawDb | null): void {
+  /** The database to answer from (null = no data on this device yet: data routes answer 503), and the
+   * car model it holds: a request that names another model is refused instead of answered from this one. */
+  use(raw: RawDb | null, model: string | null = null): void {
     this.con = raw ? new Con(raw) : null
+    this.loadedModel = raw ? model : null
+  }
+
+  /** What GET /api/models answers (the packs stored on this phone). */
+  setModels(models: ModelInfo[]): void {
+    this.models = models
   }
 
   async handle(method: string, url: string): Promise<ApiResponse> {
@@ -97,6 +119,12 @@ export class Api {
       known = true
       if (route.method !== method.toUpperCase()) continue
       try {
+        const asked = u.searchParams.get('model')
+        if (asked && path !== '/api/models' && this.loadedModel !== null && asked !== this.loadedModel) {
+          // same answer as the Python API for a model it does not know
+          const ids = this.models.map((x) => x.id).join(', ')
+          throw new HttpError(404, `Unknown model '${asked}'; the models are: ${ids}`)
+        }
         if (route.needsData && !this.con) {
           throw new HttpError(503, 'No data on this phone yet - import a data pack first')
         }

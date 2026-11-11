@@ -4,11 +4,20 @@ import viewsSql from '../../../backend/src/mazda_dash/model/views.sql?raw'
 import type { RawDb } from './db'
 import { Con } from './db'
 
-export const SUPPORTED_FORMAT = 1
+export const SUPPORTED_FORMAT = 2 // 2: the manifest names the car model
+
+/** The car model a pack holds (`model` in the manifest). */
+export interface PackModel {
+  id: string
+  name: string
+  platform: string | null
+  hidden_pages: string[]
+}
 
 export interface Manifest {
   format: number
   kind: string
+  model: PackModel
   created_at: string
   views_sql_sha256: string
   first_data_day: string
@@ -56,6 +65,10 @@ export function readPack(bytes: Uint8Array): { manifest: Manifest; files: Record
       `This data pack has format ${manifest.format}; this app reads format ${SUPPORTED_FORMAT}. Update the app or export the pack again.`,
     )
   }
+  const model = manifest.model as Partial<PackModel> | undefined
+  if (!model || typeof model.id !== 'string' || typeof model.name !== 'string') {
+    throw new PackError('This data pack does not say which car model it holds. Export it again with make mobile-pack.')
+  }
   const missingTables = REQUIRED_TABLES.filter((t) => !(t in manifest.tables))
   if (missingTables.length) {
     throw new PackError(`This data pack was made by an older version and lacks ${missingTables.join(', ')}. Export it again with make mobile-pack.`)
@@ -97,6 +110,11 @@ function statements(sql: string): string[] {
     .filter(Boolean)
 }
 
+/** Parquet files get a name of their own on every load: DuckDB remembers a file's metadata by its name, so a
+ * second pack (another car, or a newer export) registered under the same name is read with the first one's
+ * size and fails ("No magic bytes found"). */
+let loads = 0
+
 export interface LoadOptions {
   /** Verify each table's SHA-256 against the manifest (skipped where crypto.subtle is unavailable). */
   verify?: boolean
@@ -107,6 +125,7 @@ export async function loadPack(raw: RawDb, bytes: Uint8Array, options: LoadOptio
   const { manifest, files } = readPack(bytes)
   await clearDatabase(raw)
   const con = new Con(raw)
+  const load = ++loads
   for (const name of Object.keys(manifest.tables)) {
     const data = files[`tables/${name}.parquet`]
     if (!data) throw new PackError(`The data pack is damaged: table ${name} is missing.`)
@@ -114,7 +133,7 @@ export async function loadPack(raw: RawDb, bytes: Uint8Array, options: LoadOptio
       const hash = await sha256(data)
       if (hash && hash !== manifest.tables[name].sha256) throw new PackError(`The data pack is damaged: table ${name} does not match its checksum.`)
     }
-    const file = `pack_${name}.parquet`
+    const file = `pack_${load}_${name}.parquet`
     await raw.registerFile(file, data)
     await con.exec(`CREATE TABLE "${name}" AS SELECT * FROM read_parquet('${file}')`)
     await raw.dropFile(file)

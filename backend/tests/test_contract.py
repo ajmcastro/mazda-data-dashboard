@@ -7,14 +7,26 @@ import pytest
 from fastapi.routing import APIRoute
 
 from mazda_dash.api.app import app
-from mazda_dash.contract import generate
+from mazda_dash.contract import generate, generate_all, sample_models
 
 
-@pytest.fixture(scope="module")
-def golden(tmp_path_factory):
+@pytest.fixture(scope="module", params=sample_models())
+def golden(request, tmp_path_factory):
+    """The goldens of each model that has sample data (the phone app replays every one of them)."""
     out = tmp_path_factory.mktemp("contract")
-    generate(out)
+    generate(out, model_id=request.param)
     return out, json.loads((out / "golden.json").read_text())
+
+
+def test_every_model_with_sample_data_gets_goldens(tmp_path):
+    infos = generate_all(tmp_path)
+    assert set(infos) == set(sample_models()) and {"cx5", "cx60"} <= set(infos)
+    for model in infos:
+        assert (tmp_path / model / "golden.json").exists()
+        assert (tmp_path / model / "sample.cx5pack").exists()
+    (tmp_path / "golden.json").write_text("[]")  # a leftover of the single-model layout
+    generate_all(tmp_path)
+    assert not (tmp_path / "golden.json").exists()
 
 
 def test_every_api_route_has_a_successful_golden_case(golden):

@@ -7,8 +7,8 @@ import { loadPack, PackError, readPack } from '../src/engine/pack'
 import { pyRound } from '../src/engine/pyround'
 import { nodeDb } from './support/node-db'
 
-const packFile = new URL('../contract/sample.cx5pack', import.meta.url)
-const packBytes = () => new Uint8Array(readFileSync(packFile))
+const packFile = (model: string) => new URL(`../contract/${model}/sample.cx5pack`, import.meta.url)
+const packBytes = (model = 'cx5') => new Uint8Array(readFileSync(packFile(model)))
 const clock = () => new Date('2026-07-01T12:34:56.789000Z')
 
 async function fresh(store = new MemoryAckStore()) {
@@ -16,7 +16,7 @@ async function fresh(store = new MemoryAckStore()) {
   await loadPack(raw, packBytes())
   await replayAcks(new Con(raw), store)
   const api = new Api({ acks: store, now: clock })
-  api.use(raw)
+  api.use(raw, 'cx5')
   return { raw, api, store }
 }
 
@@ -135,5 +135,60 @@ describe('helpers', () => {
     expect(pyRound(6.5, 0)).toBe(6)
     expect(pyRound(-0.25, 1)).toBe(-0.2)
     expect(pyRound(123.456, 1)).toBe(123.5)
+  })
+})
+
+describe('car models', () => {
+  const models = [
+    { id: 'cx5', name: 'Mazda CX-5', platform: '24PF', default: true, hidden_pages: [], has_data: true, first_day: '2026-03-01', last_day: '2026-06-30' },
+    { id: 'cx60', name: 'Mazda CX-60', platform: null, default: false, hidden_pages: ['trends'], has_data: true, first_day: '2026-04-10', last_day: '2026-07-31' },
+  ]
+  let api: Api
+  beforeAll(async () => {
+    ;({ api } = await fresh())
+    api.setModels(models)
+  }, 120_000)
+
+  it('lists the models of the stored packs', async () => {
+    expect(await api.handle('GET', '/api/models')).toEqual({ status: 200, body: models })
+  })
+
+  it('answers for the loaded model, named or not', async () => {
+    const plain = await api.handle('GET', '/api/span')
+    expect(plain.status).toBe(200)
+    expect(await api.handle('GET', '/api/span?model=cx5')).toEqual(plain)
+    expect((await api.handle('GET', '/api/health?model=cx5')).status).toBe(200)
+  })
+
+  it('refuses to answer for a model that is not the one loaded, like the Python API does for an unknown one', async () => {
+    for (const url of ['/api/span?model=cx60', '/api/overview?model=nope', '/api/alerts?model=cx60']) {
+      expect(await api.handle('GET', url)).toEqual({ status: 404, body: { detail: expect.stringMatching(/^Unknown model '\w+'; the models are: cx5, cx60$/) } })
+    }
+    expect((await api.handle('POST', '/api/alerts/acknowledge-all?model=cx60')).status).toBe(404)
+    expect((await api.handle('GET', '/api/models?model=cx60')).status).toBe(200) // the list itself is not about one model
+  })
+
+  it('has no data to refuse for before a pack is loaded: the list is empty and data routes say so', async () => {
+    const empty = new Api()
+    expect(await empty.handle('GET', '/api/models')).toEqual({ status: 200, body: [] })
+    expect((await empty.handle('GET', '/api/span')).status).toBe(503)
+  })
+})
+
+describe('the pack names its car model', () => {
+  it('carries id, name, platform and hidden pages, and the format is 2', () => {
+    const { manifest } = readPack(packBytes('cx60'))
+    expect(manifest.format).toBe(2)
+    expect(manifest.model).toMatchObject({ id: 'cx60', name: 'Mazda CX-60', hidden_pages: [] })
+    expect(readPack(packBytes('cx5')).manifest.model).toMatchObject({ id: 'cx5', name: 'Mazda CX-5', platform: '24PF' })
+  })
+
+  it('refuses a pack of the older format, or one that does not say its model, with a message', async () => {
+    const { files, manifest } = readPack(packBytes())
+    const { zipSync, strToU8 } = await import('fflate')
+    const pack = (m: object) => zipSync({ ...files, 'manifest.json': strToU8(JSON.stringify(m)) }, { level: 0 })
+    expect(() => readPack(pack({ ...manifest, format: 1 }))).toThrow(/format 1; this app reads format 2/)
+    const { model: _gone, ...noModel } = manifest
+    expect(() => readPack(pack(noModel))).toThrow(/does not say which car model/)
   })
 })

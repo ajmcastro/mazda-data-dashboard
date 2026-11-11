@@ -259,3 +259,27 @@ def test_the_warning_lamp_families_are_read_by_prefix_and_only_changing_flags_ar
     assert len(varying) >= 3 and constant  # the sample has both kinds
     packed, _ = _signals_in(out, tmp_path / "lamps")
     assert varying <= packed and not constant & packed
+
+
+def test_the_manifest_names_the_car_model(tmp_path):
+    """The phone app lists its models from the packs, so every pack says which one it holds."""
+    from mazda_dash.models import load_registry
+    from mazda_dash.pack import model_info
+
+    registry = load_registry(Path(__file__).parents[2])
+    generate(tmp_path / "data")
+    ingest(tmp_path / "data", tmp_path / "m.duckdb", CONFIG)
+    manifest = build_pack(
+        tmp_path / "m.duckdb", tmp_path / "m.cx5pack", model=registry.get("cx60")
+    )
+    assert manifest["format"] == 2
+    assert manifest["model"] == {
+        "id": "cx60",
+        "name": "Mazda CX-60",
+        "platform": None,
+        "hidden_pages": [],
+    }
+    assert model_info(registry.get("cx5"))["platform"] == "24PF"
+    # without a registry (older callers) the pack is the original single car
+    plain = build_pack(tmp_path / "m.duckdb", tmp_path / "plain.cx5pack")
+    assert plain["model"]["id"] == "cx5"

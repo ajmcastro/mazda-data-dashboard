@@ -1,13 +1,18 @@
 /**
- * Owns the data on the device: starts the engine, loads the stored pack, imports / replaces /
- * deletes. UI-free so it can be tested; the React side only subscribes to its state.
+ * Owns the data on the device: starts the engine, loads the stored packs (one per car model),
+ * imports / switches / deletes. UI-free so it can be tested; the React side only subscribes to its state.
+ *
+ * One model is loaded in the engine at a time (the one the address names); the others stay stored and are
+ * loaded when asked for. An import of another model's pack stores it without switching to it, so the
+ * address and the data on screen never disagree.
  */
-import { Api } from './engine/api'
+import { Api, type ModelInfo } from './engine/api'
 import { replayAcks } from './engine/alerts'
 import { Con, type RawDb } from './engine/db'
 import { clearDatabase, loadPack, readPack, type Manifest } from './engine/pack'
 import {
-  deleteStoredData, IdbAckStore, readStoredPack, writeStoredPack, type StoredPack,
+  deleteAllStoredData, deleteStoredModel, discardLegacyPack, ModelAckStore, readStoredPacks, writeStoredPack,
+  type StoredPack,
 } from './storage'
 
 export type Status = 'starting' | 'empty' | 'loading' | 'ready' | 'error'
@@ -19,11 +24,23 @@ export interface PackInfo {
   manifest: Manifest
 }
 
+/** A pack stored on the device: one per car model. */
+export interface ModelPack {
+  id: string
+  name: string
+  info: PackInfo
+}
+
 export interface DataState {
   status: Status
   /** what is going on, for the loading screen */
   message: string
+  /** the pack of the model loaded now (null = none) */
   info: PackInfo | null
+  /** id of the model loaded now */
+  current: string | null
+  /** every pack stored on the device */
+  packs: ModelPack[]
   /** shown on the data screen; the data in use (if any) is untouched unless the status is 'error' without info */
   error: string | null
   /** the browser promised to keep the data (null = unknown / not asked yet) */
@@ -39,6 +56,7 @@ export interface Memory {
 }
 
 const KEY = 'cx5.had-data'
+const MODEL_KEY = 'cx5.model' // the model last shown (the same key the Mac dashboard uses for its choice)
 
 export const localMemory: Memory = {
   read() {
@@ -58,6 +76,14 @@ export const localMemory: Memory = {
   },
 }
 
+function savedModel(): string | null {
+  try {
+    return localStorage.getItem(MODEL_KEY)
+  } catch {
+    return null
+  }
+}
+
 /** Asks the browser not to evict our data; resolves to whether it agreed. */
 export async function requestPersistence(): Promise<boolean | null> {
   try {
@@ -70,28 +96,33 @@ export async function requestPersistence(): Promise<boolean | null> {
 
 export interface ControllerDeps {
   startEngine: () => Promise<RawDb>
-  /** The demo pack bundled with this build; throws when there is none. */
-  fetchDemo?: () => Promise<Uint8Array>
+  /** The demo packs bundled with this build (one per demo model); throws when there are none. */
+  fetchDemo?: () => Promise<Uint8Array[]>
   /** Called whenever the data behind the API changed (clear cached query results). */
   onDataChanged?: () => void
   api?: Api
   memory?: Memory
   /** Ask the browser to keep the data (default: navigator.storage.persist). */
   persist?: () => Promise<boolean | null>
+  /** The model last shown, to start with (default: the one saved in localStorage). */
+  lastModel?: () => string | null
 }
 
 const asInfo = (p: StoredPack): PackInfo => ({ name: p.name, bytes: p.bytes.byteLength, savedAt: p.savedAt, manifest: p.manifest })
+const asPack = (p: StoredPack): ModelPack => ({ id: p.manifest.model.id, name: p.manifest.model.name, info: asInfo(p) })
 
 export class DataController {
   readonly api: Api
   private state: DataState = {
-    status: 'starting', message: 'Starting the data engine…', info: null, error: null, persisted: null, lost: null,
+    status: 'starting', message: 'Starting the data engine…', info: null, current: null, packs: [], error: null,
+    persisted: null, lost: null,
   }
   private readonly listeners = new Set<() => void>()
   private raw: RawDb | null = null
   private engine: Promise<RawDb> | null = null
-  private readonly acks = new IdbAckStore()
+  private readonly acks = new ModelAckStore()
   private readonly memory: Memory
+  private stored = new Map<string, StoredPack>()
 
   constructor(private readonly deps: ControllerDeps) {
     this.api = deps.api ?? new Api({ acks: this.acks })
@@ -119,48 +150,117 @@ export class DataController {
     return this.engine
   }
 
-  /** On launch: start the engine and load whatever is stored. */
-  async init(): Promise<void> {
+  /** The models for GET /api/models: the stored packs, the one loaded now being the default. */
+  private publishModels(current: string | null): ModelInfo[] {
+    const models = [...this.stored.values()].map((p): ModelInfo => ({
+      id: p.manifest.model.id,
+      name: p.manifest.model.name,
+      platform: p.manifest.model.platform,
+      default: p.manifest.model.id === current,
+      hidden_pages: p.manifest.model.hidden_pages,
+      has_data: true,
+      first_day: p.manifest.first_data_day,
+      last_day: p.manifest.last_data_day,
+    }))
+    this.api.setModels(models)
+    return models
+  }
+
+  private packs(): ModelPack[] {
+    return [...this.stored.values()].map(asPack)
+  }
+
+  /** On launch: start the engine and load the model last shown (or the one the address asks for). */
+  async init(requested?: string | null): Promise<void> {
     try {
-      const [raw, stored] = await Promise.all([this.engineReady(), readStoredPack()])
-      if (!stored) {
+      const [raw, packs, legacy] = await Promise.all([this.engineReady(), readStoredPacks(), discardLegacyPack()])
+      this.stored = new Map(packs.map((p) => [p.manifest.model.id, p]))
+      if (!packs.length) {
         // data that was here before and is not any more: the browser removed it (iOS does that to sites not opened for a while)
-        return this.set({ status: 'empty', message: '', info: null, lost: this.memory.read() })
+        this.publishModels(null)
+        return this.set({
+          status: 'empty', message: '', info: null, current: null, packs: [], lost: this.memory.read(),
+          error: legacy
+            ? 'The data pack stored on this phone was made by an older version of the app and can no longer be read. Import it again (make mobile-pack).'
+            : null,
+        })
       }
-      await this.activate(raw, stored)
+      const wanted = [requested, (this.deps.lastModel ?? savedModel)()].find((id) => id && this.stored.has(id))
+      await this.activate(raw, this.stored.get(wanted ?? packs[0].manifest.model.id)!)
     } catch (e) {
       this.set({ status: 'error', message: '', error: describe(e) })
     }
   }
 
   private async activate(raw: RawDb, stored: StoredPack): Promise<void> {
-    this.set({ status: 'loading', message: 'Loading your data…' })
-    const manifest = await loadPack(raw, stored.bytes)
+    const id = stored.manifest.model.id
+    this.set({ status: 'loading', message: `Loading ${stored.manifest.model.name}…` })
+    // a copy: the engine takes the buffers it is given, and the stored pack is loaded again on every switch
+    const manifest = await loadPack(raw, stored.bytes.slice())
+    this.acks.use(id)
     await replayAcks(new Con(raw), this.acks)
-    this.api.use(raw)
+    this.api.use(raw, id)
+    this.stored.set(id, { ...stored, manifest })
+    this.publishModels(id)
     this.deps.onDataChanged?.()
     this.memory.write({ name: stored.name, lastDay: manifest.last_data_day })
-    this.set({ status: 'ready', message: '', info: asInfo({ ...stored, manifest }), error: null, lost: null })
+    this.set({ status: 'ready', message: '', info: asInfo({ ...stored, manifest }), current: id, packs: this.packs(), error: null, lost: null })
     void this.keepData()
   }
 
-  /** Validates a pack file, replaces the data with it and stores it. A bad file changes nothing. */
-  async importPack(bytes: Uint8Array, name: string): Promise<boolean> {
-    const previous = this.state.info
+  /** Loads another stored model into the engine. A failure keeps (or brings back) the model that was shown. */
+  async switchTo(id: string): Promise<boolean> {
+    const stored = this.stored.get(id)
+    const previous = this.state.current
+    if (!stored || id === previous) return Boolean(stored)
+    try {
+      this.api.use(null)
+      await this.activate(await this.engineReady(), stored)
+      return true
+    } catch (e) {
+      const message = describe(e)
+      const back = previous ? this.stored.get(previous) : undefined
+      try {
+        if (back) await this.activate(await this.engineReady(), back)
+      } catch {
+        /* reported below */
+      }
+      this.set({ error: message })
+      return false
+    }
+  }
+
+  /**
+   * Validates a pack file and stores it as the pack of the model it holds (replacing that model's
+   * earlier pack). It becomes the model on screen when it replaces the one shown or when there was none;
+   * otherwise it is only stored, and the model switcher offers it. A bad file changes nothing.
+   */
+  async importPack(bytes: Uint8Array, name: string, options: { show?: boolean } = {}): Promise<boolean> {
+    const previous = this.state.current
     try {
       const { manifest } = readPack(bytes) // refuses a wrong file before anything is touched
       const raw = await this.engineReady()
       const stored: StoredPack = { bytes, name, savedAt: new Date().toISOString(), manifest }
-      this.api.use(null)
-      await this.activate(raw, stored)
-      await writeStoredPack(stored)
+      const id = manifest.model.id
+      const show = options.show ?? (previous === null || previous === id)
+      if (show) {
+        this.api.use(null)
+        await this.activate(raw, stored)
+        await writeStoredPack(stored)
+      } else {
+        await writeStoredPack(stored)
+        this.stored.set(id, stored)
+        this.publishModels(previous)
+        this.deps.onDataChanged?.()
+        this.set({ packs: this.packs(), error: null })
+      }
       return true
     } catch (e) {
       const message = describe(e)
       if (previous) {
         // the old data may have been cleared before the failure: bring it back from storage
         try {
-          const stored = await readStoredPack()
+          const stored = (await readStoredPacks()).find((p) => p.manifest.model.id === previous)
           if (stored) await this.activate(await this.engineReady(), stored)
         } catch {
           /* reported below */
@@ -173,23 +273,50 @@ export class DataController {
     }
   }
 
+  /** Imports every demo pack (one per demo model); the first one is shown. */
   async loadDemo(): Promise<boolean> {
     try {
       if (!this.deps.fetchDemo) throw new Error('This build has no demo data.')
-      return await this.importPack(await this.deps.fetchDemo(), 'demo')
+      const packs = await this.deps.fetchDemo()
+      if (!packs.length) throw new Error('This build has no demo data.')
+      for (const [i, bytes] of packs.entries()) {
+        if (!(await this.importPack(bytes, 'demo', { show: i === 0 }))) return false
+      }
+      return true
     } catch (e) {
       this.set({ error: describe(e) })
       return false
     }
   }
 
-  async deleteData(): Promise<void> {
+  /** Removes one model's pack. When it was the one shown, another stored model is shown (or none is left). */
+  async deleteModel(id: string): Promise<void> {
+    if (!this.stored.has(id)) return
+    const wasCurrent = this.state.current === id
+    if (wasCurrent) this.api.use(null)
+    await deleteStoredModel(id)
+    this.stored.delete(id)
+    const next = [...this.stored.values()][0]
+    if (!next) return this.deleteAll()
+    if (wasCurrent) {
+      if (this.raw) await clearDatabase(this.raw)
+      await this.activate(await this.engineReady(), next)
+    } else {
+      this.publishModels(this.state.current)
+      this.deps.onDataChanged?.()
+      this.set({ packs: this.packs() })
+    }
+  }
+
+  async deleteAll(): Promise<void> {
     this.api.use(null)
     if (this.raw) await clearDatabase(this.raw)
-    await deleteStoredData()
+    await deleteAllStoredData()
+    this.stored.clear()
+    this.publishModels(null)
     this.memory.write(null) // deleted on purpose: not "lost"
     this.deps.onDataChanged?.()
-    this.set({ status: 'empty', message: '', info: null, error: null, lost: null })
+    this.set({ status: 'empty', message: '', info: null, current: null, packs: [], error: null, lost: null })
   }
 
   clearError(): void {

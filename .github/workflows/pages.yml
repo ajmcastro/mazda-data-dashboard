@@ -40,10 +40,11 @@ jobs:
       # tests first: a broken engine must not be published
       - run: make mobile-test
       - run: make mobile-build
-      - name: Only the synthetic demo pack may be published
+      - name: Only the synthetic demo packs may be published
         run: |
-          test -f mobile/dist/demo.cx5pack
-          test -z "$(find mobile/dist -name '*.cx5pack' ! -name demo.cx5pack)"
+          test -f mobile/dist/demo-cx5.cx5pack
+          test -f mobile/dist/demo-cx60.cx5pack
+          test -z "$(find mobile/dist -name '*.cx5pack' ! -name 'demo-*.cx5pack')"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

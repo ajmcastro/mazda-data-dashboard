@@ -83,10 +83,11 @@ jobs:
       - run: cd mobile && npm ci
       - run: make mobile-test
       - run: make mobile-build
-      - name: The build holds the synthetic demo pack and no other data pack
+      - name: The build holds the synthetic demo packs (one per model) and no other data pack
         run: |
-          test -f mobile/dist/demo.cx5pack
-          test -z "$(find mobile/dist -name '*.cx5pack' ! -name demo.cx5pack)"
+          test -f mobile/dist/demo-cx5.cx5pack
+          test -f mobile/dist/demo-cx60.cx5pack
+          test -z "$(find mobile/dist -name '*.cx5pack' ! -name 'demo-*.cx5pack')"
 
   # Nothing private may be published: no databases, raw exports or data packs in git (see `make audit`).
   privacy:

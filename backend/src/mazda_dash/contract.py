@@ -24,6 +24,7 @@ from fastapi.testclient import TestClient
 from .alerts import evaluate
 from .api.app import app
 from .ingest import ingest
+from .models import load_registry
 from .pack import build_pack
 
 REPO = Path(__file__).resolve().parents[3]
@@ -280,27 +281,25 @@ def record(client: TestClient) -> list[dict]:
     return rec.cases
 
 
-def generate(out: Path, source_db: Path | None = None) -> dict:
-    """Record the goldens into ``out``. With ``source_db`` (e.g. your real database) that database is
-    used instead of the sample data; it is copied first because the alert requests change state."""
+def generate(out: Path, source_db: Path | None = None, model_id: str = "cx5") -> dict:
+    """Record the goldens of one model into ``out``. With ``source_db`` (e.g. your real database) that
+    database is used instead of the model's sample data; it is copied first because the alert requests
+    change state."""
+    model = load_registry(REPO).get(model_id)
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         db = Path(tmp) / "contract.duckdb"
         if source_db:
             shutil.copyfile(source_db, db)
         else:
-            ingest(
-                REPO / "sample_data" / "cx5",
-                db,
-                REPO / "config" / "models" / "cx5" / "codes",
-            )
-            evaluate(db, REPO / "config" / "models" / "cx5" / "alerts.yaml")
+            ingest(REPO / "sample_data" / model.id, db, model.codes_dir)
+            evaluate(db, model.alerts_path)
         edge = duckdb.connect(str(db))
         add_tire_clock_snapshots(
             edge, TIRE_CLOCK_EDGE_CASES, datetime(2026, 4, 2, 3, 0, 0)
         )
         edge.close()
-        build_pack(db, out / "sample.cx5pack")
+        build_pack(db, out / "sample.cx5pack", model=model)
         previous = os.environ.get("MAZDA_DB")
         os.environ["MAZDA_DB"] = str(db)
         try:
@@ -316,19 +315,44 @@ def generate(out: Path, source_db: Path | None = None) -> dict:
     return {"cases": len(cases), "bytes": (out / "golden.json").stat().st_size}
 
 
+def sample_models() -> list[str]:
+    """The models that have synthetic data to record goldens from."""
+    return [
+        m.id
+        for m in load_registry(REPO).models
+        if (REPO / "sample_data" / m.id).is_dir()
+    ]
+
+
+def generate_all(out: Path) -> dict[str, dict]:
+    """One folder of goldens per model: ``out/<model>/``. Files left by the single-model layout
+    (``out/golden.json``) are removed, or the old format would be replayed."""
+    for stale in ("golden.json", "sample.cx5pack"):
+        (out / stale).unlink(missing_ok=True)
+    return {m: generate(out / m, None, m) for m in sample_models()}
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", type=Path, default=REPO / "mobile" / "contract")
     ap.add_argument(
         "--db",
         type=Path,
-        help="record from this database instead of the sample data (it is copied)",
+        help="record from this database instead of the sample data (it is copied); written to --out itself",
+    )
+    ap.add_argument(
+        "--model", help="the model the --db belongs to (default: the default model)"
     )
     args = ap.parse_args()
-    info = generate(args.out, args.db)
-    print(
-        f"{args.out}: {info['cases']} golden responses ({info['bytes'] / 1024:.0f} KiB) + sample.cx5pack"
-    )
+    if args.db:
+        model = args.model or load_registry(REPO).default.id
+        infos = {model: generate(args.out, args.db, model)}
+    else:
+        infos = generate_all(args.out)
+    for model, info in infos.items():
+        print(
+            f"{model}: {info['cases']} golden responses ({info['bytes'] / 1024:.0f} KiB) + sample.cx5pack in {args.out}"
+        )
 
 
 if __name__ == "__main__":

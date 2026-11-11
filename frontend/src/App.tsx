@@ -4,9 +4,10 @@ import { useOverview } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
 import { ThemeToggle } from './components/ThemeToggle'
 import { RangeNavLink as NavLink } from './components/RangeLink'
+import { ModelGate } from './components/ModelGate'
 import { ModelSwitcher } from './components/ModelSwitcher'
 import { isPageHidden, shortModelName } from './lib'
-import { useCurrentModel, useRestoreSavedModel, useSwitchModel } from './model'
+import { useCurrentModel, useRestoreSavedModel } from './model'
 import { useRangeSearch, useRestoreSavedRange } from './range'
 import Alerts from './pages/Alerts'
 import Diagnostics from './pages/Diagnostics'
@@ -29,33 +30,6 @@ function Logo() {
 // Pages about a period get the date-range bar; alerts and the diagnostic-tool report are not
 // tied to a period.
 const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
-
-/** What stands in for the pages when the model in the address is unknown or has no data yet. */
-function ModelGate({ children }: { children: ReactNode }) {
-  const { models, model, notFound, requested } = useCurrentModel()
-  const switchTo = useSwitchModel()
-  if (notFound) {
-    return (
-      <div className="state error">
-        <p>Unknown model <code>{requested}</code>. Choose one:</p>
-        <p>
-          {models.map((m) => (
-            <button key={m.id} className="chip" onClick={() => switchTo(m.id)}>{m.name}</button>
-          ))}
-        </p>
-      </div>
-    )
-  }
-  if (model && !model.has_data) {
-    return (
-      <div className="state">
-        No data for {model.name} yet: put its exports in <code>data/{model.id}/</code> and run{' '}
-        <code>make ingest MODEL={model.id}</code>.
-      </div>
-    )
-  }
-  return <>{children}</>
-}
 
 export default function App() {
   const overview = useOverview()
