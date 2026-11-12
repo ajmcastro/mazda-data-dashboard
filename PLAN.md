@@ -781,6 +781,62 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 4. **Phone via cached summaries** (M30), not a second engine. Confirmed.
 5. **Order:** M29, then M33 (fuel cost, added afterwards, see below), then M30, M32, M31. The cost milestone goes before the phone one on purpose (see M33).
 
+## More from the CSVs already loaded (M35–M37, planned)
+
+### What the export shows (author's CX-5, Jun–Nov 2026; found by profiling every file in `data/cx5/`)
+No new columns arrived with the latest export; these are things the data already holds that no page shows. All three need **no new ingest**: the signals are in `signal_readings`, `warning_events` and `dtc_snapshot_values`.
+- Warnings cluster in the day (07–10, 12–13, 16–18, almost none 23–06). **Careful:** raw counts per weekday mislead (Sunday has 3,427 events but also 19 days with data; Thursday 3 days), so everything is shown **per day with data** or per engine start, never as raw totals. The warnings table is mostly repeats, so "events" is a poor unit: use distinct warning-days and distinct codes.
+- The freeze frames (142 records in the real data) carry battery voltage (11.9–14.9 V), battery charge (1.5–87.5 %), coolant (43–87 °C), speed, RPM, gear, pedal and ambient temperature. `FaultDetail` lists them raw.
+- Seatbelt/occupancy signals (`firstrowbuckledriver`, `firstrowbucklepsngr`, `rear_*_seatbelt_used`, `ocsstatus`) are loaded but only `seatbeltwrndrq` is read. The `third_*` ones read 1 in 221 of 258 readings (a CX-5 has no third row): **excluded**.
+- Not worth showing: ~40 columns constant in this car (`drv1amntfuel`, `drv1avlpwre/g`, `remainingmileage`, `mnttyreatflg`, `mntset*`, `isinservicemode`, `fuellidopenstatus`, `lightcombiswmode`, `pwsavmode`, `remoildistm` = the km countdown in miles). Parking position (`latitude`/`longitude`, one reading per export) stays out of the pack on purpose and out of this plan.
+
+### Decisions (proposed, to confirm when it starts)
+1. **Order:** M35 time-of-day, M36 fault context, M37 seatbelts: smallest dependency first; each ships Python, TypeScript engine, goldens, types and the phone in the same change (the "keep both in step" rule).
+2. **Time zone:** M35 and M37 show local time through `car_timezone` in SQL (the M19 pattern, one `make_timestamp(epoch_us(timezone(zone, ts)))`), never the browser's zone.
+3. **Hints, not verdicts:** nothing says a voltage "causes" a fault; wording is "tends to appear when", with the counts. No invented titles in config.
+4. **Sample data:** derived from the clock only (no new random numbers) so the CX-5 files stay byte-identical; CX-60 may get the new signals through a `Profile` flag.
+
+### M35 — When does it happen? (time of day and weekday) ✅ done
+- **View and API:** `v_activity_by_hour` and `v_activity_by_weekday` (local time): per bucket the days with data, engine starts (`enginestate`), distinct warning-days, distinct warning codes, distance (odometer-based like Trends). `GET /api/activity/pattern` with the period (`date_range`, add to `PERIOD_ENDPOINTS`) and the `model` parameter.
+- **UI:** a "When" panel on Status: 24-hour bars of engine starts with the warning-days as a second series, and a 7-bar weekday chart **per active day**; a note when a bucket has fewer than 3 days ("too few days"). Wording and bucketing are pure and tested in `frontend/src/` (no tone colours).
+- **Tests:** a warning at 23:30 UTC lands in the next local day in Europe/Lisbon; empty period returns empty buckets; engine against Python on both sample cars.
+- **Done when:** the real data shows the weekday chart normalised per day (Thursday no longer looks quiet because of its 3 days) and both implementations agree.
+
+**M35 as built.**
+- **View** `v_activity_events` (warnings and drives with `local_at`), **route** `GET /api/activity/pattern` (a period endpoint; 24 hour rows and 7 weekday rows, or empty lists for an empty period), in Python and, with the same SQL, in `mobile/src/engine/activity.ts`; the goldens of both sample cars carry it and the view's fingerprint is checked in the browser engine.
+- **Unit decision (changed from the first sketch):** the first idea counted engine starts, but the meaning of `enginestate` is undocumented, so a "moment" is a warning or the end of a drive seen by two snapshots at most 3 hours apart. The panel counts **days with activity**, not events, and each weekday is divided by *its own* days in the period (the raw count had made Sunday look far busier than it is: it has 19 days with data, Thursday 3).
+- **UI:** "When the car is used" panel on Status (hour bars, weekday bars as a share of that weekday's days, one neutral summary line, tooltips with distance and distinct warnings, thin buckets paler and marked "few days"); the phone gets it through the shared page. Pure logic with tests in `frontend/src/activity.ts`.
+- **Real data (author's export):** activity peaks around 11:00, 13:00 and 14:00 and Sundays have activity on 19 of 22.
+- **Tests:** backend `test_activity.py` (summer-time conversion, drives and km add up to the close segments, weekday days not events, period filtering, per-car time zone) plus the shared date-range tests; frontend 8; phone contract replays both cars. Run `make model` once.
+
+### M36 — Fault context from the freeze frames
+- **View and API:** `v_fault_context` per fault (`ecu`, `dtc_code`, `failure_type`): frames, min/median/max of battery voltage (both supply signals), battery charge, coolant temperature and speed at the time of the frame, compared with the same figures over **all** frames of other faults (the baseline). `GET /api/dtcs/context-summary?ecu=&dtc_code=`. Missing signals stay null (the BCM frames lack some).
+- **UI:** a "In the freeze frames" panel in `FaultDetail.tsx` above the raw frame list: one row per signal, "this fault 12.6–13.1 V (median 12.9), all frames 11.9–14.9 V", marked when the fault's range sits in the lowest or highest tenth of the baseline, labelled "tends to appear when …", with the number of frames and a caution when fewer than 5.
+- **Alert `low_battery_frame`** (on by default, per the decision): a freeze frame whose battery voltage is below `min_voltage` (default 12.0 V, in `alerts.yaml`), once per fault.
+- **Tests:** ranges and baseline on a fixture; a fault with one frame; a null signal; goldens on both cars; the alert fires below the threshold and not at it.
+- **Done when:** the panel shows the summary for every fault with frames, and the engine matches Python including the alert.
+
+### M37 — Seatbelts and who rides
+- **Pack:** `pack.py` keeps every signal source whole except `rts`, whose signals reach the pack only when `views.sql` names them, so the new view names `firstrowbuckledriver`, `firstrowbucklepsngr`, `rear_left_seatbelt_used`, `rear_right_seatbelt_used`, `rear_center_seatbelt_used` and `ocsstatus` as `signal = '<name>'` (never `IN`/`LIKE`). `make compat` will list them as read.
+- **View and API:** `v_occupancy` per reading with the car in use (`enginestate` running), then per period: readings, share with passenger belt buckled, share with a rear belt buckled, and the longest/most common pattern ("driver only"). `GET /api/status/occupancy`.
+- **UI:** a small "Who rides" panel on Status: shares and a per-month trend. The seat-sensor status (`ocsstatus`) is shown only as a hint because its values are not documented (1 and 2 seen).
+- **Not included:** the third-row belts (not a CX-5 feature), any alert on belts, and the pack never holds a position.
+- **Tests:** only readings while the engine runs count; a gap; engine against Python on both cars; `SUMMARY_VERSION` untouched unless the monthly answer changes.
+- **Done when:** the panel agrees with a hand count on the real data and both implementations match.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| Raw counts mislead (the weekday spike was just the days the car was used) | everything per day with data or per engine start, with "too few days" notes |
+| Freeze-frame ranges read as causes | "tends to appear when" wording, baseline shown next to it, frames-count caution |
+| Undocumented signal meanings (`ocsstatus`) | shown as hints only, never labelled |
+| New signals break the phone pack | the pack picks up only signals named in `views.sql`; `make mobile-test` and the compat check cover it |
+
+### Points confirmed
+1. **Order** M35, M36, M37 confirmed; **M35 goes on the Status page** (a "When" panel there, not Trends).
+2. **M36 low-voltage alert wanted**, default threshold **12.0 V**, still configurable in `alerts.yaml`.
+3. **M37 ships to the phone too** (pack, TypeScript engine, goldens), not Mac only.
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.

@@ -11,6 +11,7 @@ import { garage } from './garage'
 import { maintenanceOil } from './maintenance'
 import { warningFlagHints, warningFlags } from './warningflags'
 import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, statusTimeline, tireReadings, tripSegments } from './series'
+import { activityPattern } from './activity'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
 
@@ -84,6 +85,7 @@ export class Api {
     add('GET', '/api/alarms', alarms)
     add('GET', '/api/warnings/frequency', warningFrequency)
     add('GET', '/api/warnings/daily', warningDaily)
+    add('GET', '/api/activity/pattern', activityPattern)
     add('GET', '/api/warnings/events', warningEvents)
     add('GET', '/api/dtcs/frequency', dtcFrequency)
     add('GET', '/api/dtcs/events', dtcEvents)

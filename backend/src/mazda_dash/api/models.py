@@ -196,6 +196,28 @@ class WarningDay(BaseModel):
     events: int
 
 
+class ActivityHour(BaseModel):
+    hour: int  # 0-23, the car's local time
+    active_days: int  # distinct local days with a warning or a drive in this hour
+    warning_codes: int  # distinct warning codes raised in this hour
+    km: float
+    drives: int
+
+
+class ActivityWeekday(BaseModel):
+    weekday: int  # 0 = Monday ... 6 = Sunday, the car's local time
+    calendar_days: int  # days of this weekday between the first and the last activity in the period
+    active_days: int  # of those, days with a warning or a drive
+    warning_days: int
+    km: float
+
+
+class ActivityPattern(BaseModel):
+    time_zone: str
+    hours: list[ActivityHour]  # empty when the period has no activity
+    weekdays: list[ActivityWeekday]
+
+
 class WarningEvent(BaseModel):
     transaction_id: str
     triggered_at: datetime | None = None

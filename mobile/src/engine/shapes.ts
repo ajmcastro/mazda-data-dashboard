@@ -26,6 +26,8 @@ export const TIRE_READING = [
 export const WARNING_FREQUENCY = [
   'code', 'title', 'severity', 'known', 'events', 'pct_of_events', 'days_seen', 'first_seen', 'last_seen',
 ]
+export const ACTIVITY_HOUR = ['hour', 'active_days', 'warning_codes', 'km', 'drives']
+export const ACTIVITY_WEEKDAY = ['weekday', 'calendar_days', 'active_days', 'warning_days', 'km']
 export const WARNING_DAY = ['day', 'code', 'events']
 export const WARNING_EVENT = ['transaction_id', 'triggered_at', 'odometer_km', 'code', 'title', 'severity', 'known']
 export const DTC_FREQUENCY = [

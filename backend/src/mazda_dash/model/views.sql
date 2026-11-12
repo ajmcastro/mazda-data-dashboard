@@ -405,6 +405,25 @@ SELECT strftime(date_trunc('month', end_at), '%Y-%m') AS month,
 FROM v_trip_segments
 GROUP BY 1;
 
+-- -------------------------------------------------- when the car is in use (M35)
+-- Two kinds of moment, each with the car's LOCAL time (ref_settings.car_timezone, ICU rules so DST is
+-- handled): a warning the car raised (`warning`, with its code) and the end of a stretch of driving that
+-- two status snapshots saw closely (`drive`, gap up to 3 hours, with its km). make_timestamptz(epoch_us(..))
+-- reads the UTC value without the session time zone and a single timezone() call converts it, because the
+-- in-browser DuckDB cannot bind nested timezone() calls.
+CREATE OR REPLACE VIEW v_activity_events AS
+WITH cfg AS (
+    SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone FROM ref_settings
+), src AS (
+    SELECT 'warning' AS kind, triggered_at AS at_utc, code, CAST(NULL AS DOUBLE) AS km
+    FROM v_warnings WHERE triggered_at IS NOT NULL
+    UNION ALL
+    SELECT 'drive', end_at, CAST(NULL AS VARCHAR), km FROM v_trip_segments WHERE gap_hours <= 3
+)
+SELECT s.kind, s.at_utc, s.code, s.km,
+       timezone(c.zone, make_timestamptz(epoch_us(s.at_utc))) AS local_at
+FROM src s CROSS JOIN cfg c;
+
 -- --------------------------------------------------------- diagnostic tool
 CREATE OR REPLACE VIEW v_diag_values AS
 SELECT r.report_id, r.taken_at, r.odometer_km AS report_odometer_km,

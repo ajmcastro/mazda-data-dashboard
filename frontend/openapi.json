@@ -1186,6 +1186,93 @@
         }
       }
     },
+    "/api/activity/pattern": {
+      "get": {
+        "summary": "Activity Pattern",
+        "description": "When the car is used, by hour of the day and by weekday, in the car's local time (M35).\nA moment is a warning or a drive seen by two close status snapshots (`v_activity_events`).",
+        "operationId": "activity_pattern_api_activity_pattern_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityPattern"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/warnings/events": {
       "get": {
         "summary": "Warning Events",
@@ -2587,6 +2674,101 @@
           "acknowledged"
         ],
         "title": "Acknowledged"
+      },
+      "ActivityHour": {
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "title": "Hour"
+          },
+          "active_days": {
+            "type": "integer",
+            "title": "Active Days"
+          },
+          "warning_codes": {
+            "type": "integer",
+            "title": "Warning Codes"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "drives": {
+            "type": "integer",
+            "title": "Drives"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hour",
+          "active_days",
+          "warning_codes",
+          "km",
+          "drives"
+        ],
+        "title": "ActivityHour"
+      },
+      "ActivityPattern": {
+        "properties": {
+          "time_zone": {
+            "type": "string",
+            "title": "Time Zone"
+          },
+          "hours": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityHour"
+            },
+            "type": "array",
+            "title": "Hours"
+          },
+          "weekdays": {
+            "items": {
+              "$ref": "#/components/schemas/ActivityWeekday"
+            },
+            "type": "array",
+            "title": "Weekdays"
+          }
+        },
+        "type": "object",
+        "required": [
+          "time_zone",
+          "hours",
+          "weekdays"
+        ],
+        "title": "ActivityPattern"
+      },
+      "ActivityWeekday": {
+        "properties": {
+          "weekday": {
+            "type": "integer",
+            "title": "Weekday"
+          },
+          "calendar_days": {
+            "type": "integer",
+            "title": "Calendar Days"
+          },
+          "active_days": {
+            "type": "integer",
+            "title": "Active Days"
+          },
+          "warning_days": {
+            "type": "integer",
+            "title": "Warning Days"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "weekday",
+          "calendar_days",
+          "active_days",
+          "warning_days",
+          "km"
+        ],
+        "title": "ActivityWeekday"
       },
       "AesState": {
         "properties": {

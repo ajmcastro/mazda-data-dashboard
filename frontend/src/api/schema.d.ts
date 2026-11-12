@@ -275,6 +275,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/activity/pattern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Activity Pattern
+         * @description When the car is used, by hour of the day and by weekday, in the car's local time (M35).
+         *     A moment is a warning or a drive seen by two close status snapshots (`v_activity_events`).
+         */
+        get: operations["activity_pattern_api_activity_pattern_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/warnings/events": {
         parameters: {
             query?: never;
@@ -655,6 +676,41 @@ export interface components {
         Acknowledged: {
             /** Acknowledged */
             acknowledged: number;
+        };
+        /** ActivityHour */
+        ActivityHour: {
+            /** Hour */
+            hour: number;
+            /** Active Days */
+            active_days: number;
+            /** Warning Codes */
+            warning_codes: number;
+            /** Km */
+            km: number;
+            /** Drives */
+            drives: number;
+        };
+        /** ActivityPattern */
+        ActivityPattern: {
+            /** Time Zone */
+            time_zone: string;
+            /** Hours */
+            hours: components["schemas"]["ActivityHour"][];
+            /** Weekdays */
+            weekdays: components["schemas"]["ActivityWeekday"][];
+        };
+        /** ActivityWeekday */
+        ActivityWeekday: {
+            /** Weekday */
+            weekday: number;
+            /** Calendar Days */
+            calendar_days: number;
+            /** Active Days */
+            active_days: number;
+            /** Warning Days */
+            warning_days: number;
+            /** Km */
+            km: number;
         };
         /** AesState */
         AesState: {
@@ -2244,6 +2300,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningDay"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    activity_pattern_api_activity_pattern_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityPattern"];
                 };
             };
             /** @description Validation Error */

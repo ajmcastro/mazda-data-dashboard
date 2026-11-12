@@ -13,7 +13,7 @@ from mazda_dash.sample import generate
 CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 PERIOD_ENDPOINTS = [
     "/api/odometer/daily", "/api/fuel/monthly", "/api/trips/segments", "/api/status/timeline",
-    "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily",
+    "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily", "/api/activity/pattern",
     "/api/dtcs/events", "/api/dtcs/readouts",
 ]  # fmt: skip
 
@@ -143,8 +143,9 @@ def test_cleared_faults_only_appear_when_reported_in_the_range(client):
 def test_an_empty_range_gives_empty_results_not_errors(client):
     nothing = {"from": "2027-01-01", "to": "2027-01-31"}
     for path in PERIOD_ENDPOINTS:
-        if path in ("/api/dtcs/events",):
-            assert get(client, path, **nothing) == []
+        if path == "/api/activity/pattern":  # an object, empty lists inside
+            got = get(client, path, **nothing)
+            assert got["hours"] == [] and got["weekdays"] == []
         else:
             assert get(client, path, **nothing) == [], path
     o = get(client, "/api/overview", **nothing)

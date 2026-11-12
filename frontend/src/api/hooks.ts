@@ -146,6 +146,14 @@ export const useWarningDaily = () => {
   })
 }
 
+export const useActivityPattern = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['activity-pattern', range],
+    queryFn: () => unwrap(client.GET('/api/activity/pattern', { params: { query: range } })),
+  })
+}
+
 export const useWarningEvents = (code: string | undefined, offset: number, limit = 25) => {
   const range = useRangeQuery()
   return useQuery({

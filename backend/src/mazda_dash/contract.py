@@ -41,6 +41,7 @@ RANGE_ENDPOINTS = [
     "/api/alarms",
     "/api/warnings/frequency",
     "/api/warnings/daily",
+    "/api/activity/pattern",
     "/api/warnings/events",
     "/api/dtcs/frequency",
     "/api/dtcs/events",
