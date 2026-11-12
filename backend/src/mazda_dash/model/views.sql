@@ -424,6 +424,20 @@ SELECT s.kind, s.at_utc, s.code, s.km,
        timezone(c.zone, make_timestamptz(epoch_us(s.at_utc))) AS local_at
 FROM src s CROSS JOIN cfg c;
 
+-- ----------------------------------------------------------- who rides (M37)
+-- The seat belts of each status snapshot: 1 = buckled, 0 = not, NULL = unknown or not sent. The first-row
+-- signals come as value/validity pairs, the rear ones as plain columns. The third-row belts are not read (a
+-- CX-5 has no third row: they read 1 almost always) and nor is the seat-sensor status (values undocumented).
+CREATE OR REPLACE VIEW v_occupancy AS
+SELECT created_at,
+       max(value_num) FILTER (WHERE signal = 'firstrowbuckledriver' AND valid IS NOT FALSE) AS driver_belt,
+       max(value_num) FILTER (WHERE signal = 'firstrowbucklepsngr' AND valid IS NOT FALSE) AS passenger_belt,
+       max(value_num) FILTER (WHERE signal = 'rear_left_seatbelt_used' AND valid IS NOT FALSE) AS rear_left_belt,
+       max(value_num) FILTER (WHERE signal = 'rear_right_seatbelt_used' AND valid IS NOT FALSE) AS rear_right_belt
+FROM signal_readings
+WHERE source = 'rts'
+GROUP BY created_at;
+
 -- --------------------------------------------------------- diagnostic tool
 CREATE OR REPLACE VIEW v_diag_values AS
 SELECT r.report_id, r.taken_at, r.odometer_km AS report_odometer_km,

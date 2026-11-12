@@ -275,6 +275,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status/occupancy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Occupancy
+         * @description Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),
+         *     how many had the front passenger's or a rear belt buckled too. Seat belts only, not seat sensors.
+         */
+        get: operations["occupancy_api_status_occupancy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/activity/pattern": {
         parameters: {
             query?: never;
@@ -1448,6 +1469,34 @@ export interface components {
             /** Position */
             position?: number | null;
         };
+        /** Occupancy */
+        Occupancy: {
+            /** Available */
+            available: boolean;
+            /** Readings */
+            readings: number;
+            /** Belted Readings */
+            belted_readings: number;
+            /** Passenger Readings */
+            passenger_readings: number;
+            /** Rear Readings */
+            rear_readings: number;
+            /** Driver Only Readings */
+            driver_only_readings: number;
+            /** Months */
+            months: components["schemas"]["OccupancyMonth"][];
+        };
+        /** OccupancyMonth */
+        OccupancyMonth: {
+            /** Month */
+            month: string;
+            /** Belted Readings */
+            belted_readings: number;
+            /** Passenger Readings */
+            passenger_readings: number;
+            /** Rear Readings */
+            rear_readings: number;
+        };
         /** OdometerDay */
         OdometerDay: {
             /**
@@ -2365,6 +2414,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningDay"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    occupancy_api_status_occupancy_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Occupancy"];
                 };
             };
             /** @description Validation Error */

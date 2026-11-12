@@ -363,6 +363,35 @@ def warning_daily(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     )
 
 
+OCCUPANCY_COUNTS = """
+    count(*) AS readings,
+    count(*) FILTER (WHERE driver_belt = 1) AS belted_readings,
+    count(*) FILTER (WHERE driver_belt = 1 AND passenger_belt = 1) AS passenger_readings,
+    count(*) FILTER (WHERE driver_belt = 1 AND (rear_left_belt = 1 OR rear_right_belt = 1)) AS rear_readings,
+    count(*) FILTER (WHERE driver_belt = 1 AND coalesce(passenger_belt, 0) = 0
+                     AND coalesce(rear_left_belt, 0) = 0 AND coalesce(rear_right_belt, 0) = 0)
+        AS driver_only_readings"""
+
+
+@app.get("/api/status/occupancy", response_model=m.Occupancy)
+def occupancy(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),
+    how many had the front passenger's or a rear belt buckled too. Seat belts only, not seat sensors."""
+    where, params = rng.clause("created_at", "AND")
+    base = f"FROM v_occupancy WHERE driver_belt IS NOT NULL {where}"
+    total = one(con, f"SELECT {OCCUPANCY_COUNTS} {base}", params)
+    months = rows(
+        con,
+        "SELECT strftime(date_trunc('month', created_at), '%Y-%m') AS month, "
+        "count(*) FILTER (WHERE driver_belt = 1) AS belted_readings, "
+        "count(*) FILTER (WHERE driver_belt = 1 AND passenger_belt = 1) AS passenger_readings, "
+        "count(*) FILTER (WHERE driver_belt = 1 AND (rear_left_belt = 1 OR rear_right_belt = 1)) AS rear_readings "
+        f"{base} GROUP BY 1 HAVING count(*) FILTER (WHERE driver_belt = 1) > 0 ORDER BY 1",
+        params,
+    )
+    return m.Occupancy(available=total["readings"] > 0, months=months, **total)
+
+
 @app.get("/api/activity/pattern", response_model=m.ActivityPattern)
 def activity_pattern(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     """When the car is used, by hour of the day and by weekday, in the car's local time (M35).

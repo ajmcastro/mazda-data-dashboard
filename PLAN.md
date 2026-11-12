@@ -823,13 +823,21 @@ No new columns arrived with the latest export; these are things the data already
 - **Real data:** four ADU faults (`C1AE1`–`C1AE4`) share a frame at 11.9 V from 13 June; it is outside the 30-day lookback, so the first `make alerts` raises nothing. Honest limit seen on the data: faults recorded at the same instant share one frame, and with only 36 other frames many faults get a "low" or "high" mark, which is why the panel always shows the frame counts and the caution.
 - **Tests:** backend `test_frame_summary.py` (9: ranges, a fault is not its own baseline, no frames gives an empty summary, no position against a tiny baseline, the alert below / at the limit, a configurable limit, off, an old frame); frontend 8; phone contract replays both cars. Run `make model` once.
 
-### M37 — Seatbelts and who rides
+### M37 — Seatbelts and who rides ✅ done
 - **Pack:** `pack.py` keeps every signal source whole except `rts`, whose signals reach the pack only when `views.sql` names them, so the new view names `firstrowbuckledriver`, `firstrowbucklepsngr`, `rear_left_seatbelt_used`, `rear_right_seatbelt_used`, `rear_center_seatbelt_used` and `ocsstatus` as `signal = '<name>'` (never `IN`/`LIKE`). `make compat` will list them as read.
 - **View and API:** `v_occupancy` per reading with the car in use (`enginestate` running), then per period: readings, share with passenger belt buckled, share with a rear belt buckled, and the longest/most common pattern ("driver only"). `GET /api/status/occupancy`.
 - **UI:** a small "Who rides" panel on Status: shares and a per-month trend. The seat-sensor status (`ocsstatus`) is shown only as a hint because its values are not documented (1 and 2 seen).
 - **Not included:** the third-row belts (not a CX-5 feature), any alert on belts, and the pack never holds a position.
 - **Tests:** only readings while the engine runs count; a gap; engine against Python on both cars; `SUMMARY_VERSION` untouched unless the monthly answer changes.
 - **Done when:** the panel agrees with a hand count on the real data and both implementations match.
+
+**M37 as built.**
+- **View** `v_occupancy` (the four belts per status snapshot) and **route** `GET /api/status/occupancy` (a period endpoint): among the snapshots with the **driver's belt buckled**, how many had the front passenger's belt, a rear belt, or nothing else buckled, in total and per month; `available: false` when the car sends no belts. Python and, with the same SQL, `mobile/src/engine/occupancy.ts`; the pack carries the four signals because the view names them as `signal = '...'`.
+- **Changed from the sketch:** the base is "driver's belt buckled", not "`enginestate` running", because the meaning of `enginestate` is undocumented. The seat-sensor status (`ocsstatus`) is **not shown at all** (values 1 and 2, no clean link to the belts), rather than as a hint. Rear-centre is constant 0 and the third row reads 1 almost always, so neither is read.
+- **UI:** a "Who rides" panel on Status (driver only / front passenger belted / a rear seat belted as shares with their counts, the front-passenger share by month with thin months paler, a note that it counts snapshots, not trips, and seat belts only); hidden for a car that sends no belts. Wording and maths with tests in `frontend/src/occupancy.ts`; the phone gets it through the shared page.
+- **Sample data:** `Profile.belts` (CX-60 only), from the odometer, no random numbers: the CX-5 files are byte-identical, the CX-60 rts file gained four columns (regenerated and committed), so the CX-60 goldens exercise the endpoint and the CX-5 ones the "not sent" answer. `test_sample_models.py` now pins that the CX-5 sample lacks the belts and the CX-60 has them. The demo pack of the CX-60 was rebuilt (`make mobile-demo-pack`).
+- **Real data (author's export):** 258 snapshots, 149 with the driver belted: driver only 79% (117), front passenger belted 16% (24), a rear seat 8% (12).
+- **Tests:** backend `test_occupancy.py` (not-sent, a hand count of the raw signals, every share has the belted base, a period) plus the shared date-range tests; frontend 5; phone contract replays both cars (30 more goldens). Run `make model` once.
 
 ### Risks
 | Risk | Plan |

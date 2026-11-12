@@ -64,6 +64,7 @@ class Profile:
     leak_wheel: int = 2  # which tire loses pressure: FL, FR, RL, RR
     diag_offset_hours: int = 0  # the diagnostic tool's clock
     oil: bool = True  # does the car send the oil-change countdown?
+    belts: bool = False  # does the car send the seatbelt signals (who rides)?
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
@@ -170,6 +171,7 @@ CX60 = Profile(
     leak_wheel=0,
     diag_offset_hours=2,
     oil=False,
+    belts=True,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
         (date(2026, 4, 10), 1.79),
@@ -251,10 +253,24 @@ class Car:
             "rltprsdispkp": tires[2],
             "rrtprsdispkp": tires[3],
             **(self.oil(t) if self.p.oil else {}),
+            **(self.seatbelts() if self.p.belts else {}),
             **self.car_warnings(tires),
             **self.tire_clock(t),
             **self.lamp_flags(t),
             **self.extras(),
+        }
+
+    def seatbelts(self) -> dict[str, int]:
+        """Who rides, from the odometer only (no random numbers): the driver's belt is on while a trip is
+        running, a passenger on a quarter of the trips, and on every other of those a rear seat too."""
+        driving = self.trip_km > 0
+        passenger = driving and int(self.odo) % 4 == 0
+        rear = passenger and int(self.odo) % 8 == 0
+        return {
+            "firstrowbuckledriver": int(driving),
+            "firstrowbucklepsngr": int(passenger),
+            "rear_left_seatbelt_used": int(rear),
+            "rear_right_seatbelt_used": int(rear and int(self.odo) % 16 == 0),
         }
 
     def extras(self) -> dict[str, float]:
@@ -372,7 +388,7 @@ def build_drives(rng: random.Random, p: Profile) -> tuple[Car, list[dict]]:
 
 def plain_signals(signals: list[str]) -> list[str]:
     """Signals the real export writes as a plain column (no `_value` / `_validstatus` pair)."""
-    return [s for s in signals if s.startswith("vdt_")]
+    return [s for s in signals if s.startswith("vdt_") or s.endswith("_seatbelt_used")]
 
 
 def write_status(out: Path, rows: list[dict], p: Profile) -> None:

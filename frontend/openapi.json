@@ -1186,6 +1186,93 @@
         }
       }
     },
+    "/api/status/occupancy": {
+      "get": {
+        "summary": "Occupancy",
+        "description": "Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),\nhow many had the front passenger's or a rear belt buckled too. Seat belts only, not seat sensors.",
+        "operationId": "occupancy_api_status_occupancy_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Occupancy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/activity/pattern": {
       "get": {
         "summary": "Activity Pattern",
@@ -5492,6 +5579,80 @@
           "test"
         ],
         "title": "ObdTest"
+      },
+      "Occupancy": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "belted_readings": {
+            "type": "integer",
+            "title": "Belted Readings"
+          },
+          "passenger_readings": {
+            "type": "integer",
+            "title": "Passenger Readings"
+          },
+          "rear_readings": {
+            "type": "integer",
+            "title": "Rear Readings"
+          },
+          "driver_only_readings": {
+            "type": "integer",
+            "title": "Driver Only Readings"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/OccupancyMonth"
+            },
+            "type": "array",
+            "title": "Months"
+          }
+        },
+        "type": "object",
+        "required": [
+          "available",
+          "readings",
+          "belted_readings",
+          "passenger_readings",
+          "rear_readings",
+          "driver_only_readings",
+          "months"
+        ],
+        "title": "Occupancy"
+      },
+      "OccupancyMonth": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "belted_readings": {
+            "type": "integer",
+            "title": "Belted Readings"
+          },
+          "passenger_readings": {
+            "type": "integer",
+            "title": "Passenger Readings"
+          },
+          "rear_readings": {
+            "type": "integer",
+            "title": "Rear Readings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "belted_readings",
+          "passenger_readings",
+          "rear_readings"
+        ],
+        "title": "OccupancyMonth"
       },
       "OdometerDay": {
         "properties": {

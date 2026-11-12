@@ -445,6 +445,25 @@ class FaultFrameSummary(BaseModel):
     signals: list[FrameSignalSummary]
 
 
+class OccupancyMonth(BaseModel):
+    month: str
+    belted_readings: int
+    passenger_readings: int
+    rear_readings: int
+
+
+class Occupancy(BaseModel):
+    available: bool  # the car sent the driver's belt in the period
+    readings: int  # status snapshots with a valid driver's belt value
+    belted_readings: (
+        int  # of those, with the driver's belt buckled: the base of every share
+    )
+    passenger_readings: int  # belted readings with the front passenger's belt buckled
+    rear_readings: int  # belted readings with a rear belt (left or right) buckled
+    driver_only_readings: int  # belted readings with no other belt buckled
+    months: list[OccupancyMonth]
+
+
 class ContextWarning(BaseModel):
     triggered_at: datetime
     code: str

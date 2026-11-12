@@ -32,6 +32,7 @@ export const FRAME_SIGNAL_SUMMARY = [
   'signal', 'label', 'unit', 'frames', 'min', 'median', 'max', 'baseline_frames', 'baseline_min',
   'baseline_median', 'baseline_max', 'baseline_p10', 'baseline_p90', 'position',
 ]
+export const OCCUPANCY_MONTH = ['month', 'belted_readings', 'passenger_readings', 'rear_readings']
 export const WARNING_DAY = ['day', 'code', 'events']
 export const WARNING_EVENT = ['transaction_id', 'triggered_at', 'odometer_km', 'code', 'title', 'severity', 'known']
 export const DTC_FREQUENCY = [

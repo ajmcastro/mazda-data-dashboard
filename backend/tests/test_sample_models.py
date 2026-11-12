@@ -170,9 +170,17 @@ def test_the_compatibility_report_lists_what_the_second_model_lacks(built):
     assert (
         "remoildistk" not in gone["cx5"]
     )  # (the CX-5 sample lacks a few other signals the real car sends)
+    belts = {
+        "firstrowbuckledriver",
+        "firstrowbucklepsngr",
+        "rear_left_seatbelt_used",
+        "rear_right_seatbelt_used",
+    }
+    # the CX-60 sample sends the belts (M37) and lacks the oil countdown; the CX-5 sample is the other way round
     assert set(gone["cx60"]) - set(gone["cx5"]) == {"remoildistk"}
+    assert belts <= set(gone["cx5"]) and not belts & set(gone["cx60"])
     assert "v_oil_readings" in gone["cx60"]["remoildistk"]
-    assert set(gone["cx5"]) <= set(gone["cx60"])
+    assert set(gone["cx5"]) - belts <= set(gone["cx60"])
     assert {"sample60_drivemode", "sample60_cabintemp"} <= set(
         reports["cx60"]["unread"]
     )

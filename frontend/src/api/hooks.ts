@@ -146,6 +146,14 @@ export const useWarningDaily = () => {
   })
 }
 
+export const useOccupancy = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['occupancy', range],
+    queryFn: () => unwrap(client.GET('/api/status/occupancy', { params: { query: range } })),
+  })
+}
+
 export const useActivityPattern = () => {
   const range = useRangeQuery()
   return useQuery({
