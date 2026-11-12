@@ -78,7 +78,7 @@ export default function App() {
           {nav('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
           {nav('/status', 'Status')}
           {nav('/diagnostics', 'Diagnostics')}
-          {withData >= 2 && nav('/garage', 'All cars')}
+          {withData >= 1 && nav('/garage', 'All cars')}
         </nav>
         <div className="rail-foot">
           <ThemeToggle />

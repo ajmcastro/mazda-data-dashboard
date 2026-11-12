@@ -77,7 +77,7 @@ function Ready() {
             <Route path="/compare" element={<SummaryGate><Compare /></SummaryGate>} />
             <Route path="/garage" element={<SummaryGate><Garage /></SummaryGate>} />
             <Route path="/data" element={<DataScreen />} />
-            <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} severalCars={models.filter((m) => m.has_data).length >= 2} />} />
+            <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} severalCars={models.filter((m) => m.has_data).length >= 1} />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>
