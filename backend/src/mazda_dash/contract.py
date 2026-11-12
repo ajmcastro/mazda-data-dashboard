@@ -212,11 +212,13 @@ def record(client: TestClient) -> list[dict]:
         rec.get("/api/dtcs/events", ecu=ecu, dtc_code=dtc, **mid)
         rec.get("/api/dtcs/snapshots", ecu=ecu, dtc_code=dtc)
         rec.get("/api/dtcs/frames", ecu=ecu, dtc_code=dtc)
+        rec.get("/api/dtcs/frame-summary", ecu=ecu, dtc_code=dtc)
     rec.get("/api/dtcs/events", limit=3)
     rec.get("/api/dtcs/events", limit=0)
     rec.get("/api/dtcs/snapshots")
     rec.get("/api/dtcs/snapshots", ecu="ADU")
     rec.get("/api/dtcs/frames", dtc_code="X")
+    rec.get("/api/dtcs/frame-summary", dtc_code="X")
 
     readouts = rec.get("/api/dtcs/readouts")
     for tx in [r["transaction_id"] for r in readouts]:

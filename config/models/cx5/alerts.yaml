@@ -41,6 +41,14 @@ rules:
   # Check your door-jamb sticker for the right value; 200 is a deliberately low default.
   low_tire_pressure: {enabled: true, severity: warning, min_kpa: 200}
 
+  # A fault's freeze frame recorded a supply voltage (main ECU or ECU power) below this value (volts), within
+  # the lookback window. One alert per fault. A hint to look at the battery, not a diagnosis.
+  low_battery_frame: {enabled: true, severity: warning, min_voltage: 12.0}
+
+  # A fault's freeze frame recorded a supply voltage (main ECU or ECU power) below this value (volts), within
+  # the lookback window. One alert per fault. A hint to look at the battery, not a diagnosis.
+  low_battery_frame: {enabled: true, severity: warning, min_voltage: 12.0}
+
   # The car's own oil-change countdown (km until the next change) is at or below this value.
   # The car counts in steps of 1,000 km or more; one alert per service interval.
   oil_change_due: {enabled: true, severity: warning, below_km: 1000}

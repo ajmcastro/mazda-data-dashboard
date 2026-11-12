@@ -894,6 +894,76 @@ def diag_compare(a: str, b: str, con: duckdb.DuckDBPyConnection = Con):
 # --------------------------------------------------------------- freeze frames
 
 
+# What the fault summary compares across freeze frames: (signal in the car's data, label, unit).
+FRAME_SUMMARY_SIGNALS = [
+    ("Main_ECU_Voltage_Supply", "Battery voltage (main ECU supply)", "V"),
+    ("ECU_Power_Voltage", "ECU power voltage", "V"),
+    ("SOC_StateOfCharge", "Battery charge", "%"),
+    ("Engine_Coolant_Temperature", "Coolant temperature", "°C"),
+    ("Vehicle_Speed", "Vehicle speed", "km/h"),
+]
+# the baseline needs this many frames of other faults before a position is claimed
+FRAME_BASELINE_MIN = 10
+
+
+@app.get("/api/dtcs/frame-summary", response_model=m.FaultFrameSummary)
+def frame_summary(ecu: str, dtc_code: str, con: duckdb.DuckDBPyConnection = Con):
+    """How the values in one fault's freeze frames compare with the frames of all other faults.
+    A hint ("tends to appear when ..."), never a cause. A state endpoint: it ignores the period."""
+    names = [s[0] for s in FRAME_SUMMARY_SIGNALS]
+    marks = ", ".join("?" for _ in names)
+    counts = one(
+        con,
+        "SELECT count(*) FILTER (WHERE ecu = ? AND dtc_code = ?) AS frames, "
+        "count(*) FILTER (WHERE NOT (ecu = ? AND dtc_code = ?)) AS baseline_frames "
+        "FROM (SELECT DISTINCT ecu, dtc_code, record_number, snapshot_at FROM v_frame_signals)",
+        [ecu, dtc_code, ecu, dtc_code],
+    )
+    stats = rows(
+        con,
+        f"""SELECT signal,
+                   count(*) FILTER (WHERE mine) AS frames,
+                   round(min(value_num) FILTER (WHERE mine), 2) AS min,
+                   round(median(value_num) FILTER (WHERE mine), 2) AS median,
+                   round(max(value_num) FILTER (WHERE mine), 2) AS max,
+                   count(*) FILTER (WHERE NOT mine) AS baseline_frames,
+                   round(min(value_num) FILTER (WHERE NOT mine), 2) AS baseline_min,
+                   round(median(value_num) FILTER (WHERE NOT mine), 2) AS baseline_median,
+                   round(max(value_num) FILTER (WHERE NOT mine), 2) AS baseline_max,
+                   round(quantile_cont(value_num, 0.1) FILTER (WHERE NOT mine), 2) AS baseline_p10,
+                   round(quantile_cont(value_num, 0.9) FILTER (WHERE NOT mine), 2) AS baseline_p90,
+                   CASE WHEN count(*) FILTER (WHERE NOT mine) >= {FRAME_BASELINE_MIN}
+                             AND quantile_cont(value_num, 0.1) FILTER (WHERE NOT mine)
+                                 < quantile_cont(value_num, 0.9) FILTER (WHERE NOT mine)
+                        THEN CASE
+                            WHEN median(value_num) FILTER (WHERE mine)
+                                 <= quantile_cont(value_num, 0.1) FILTER (WHERE NOT mine) THEN 'low'
+                            WHEN median(value_num) FILTER (WHERE mine)
+                                 >= quantile_cont(value_num, 0.9) FILTER (WHERE NOT mine) THEN 'high'
+                        END
+                   END AS position
+            FROM (SELECT signal, value_num, (ecu = ? AND dtc_code = ?) AS mine
+                  FROM (SELECT DISTINCT ecu, dtc_code, record_number, snapshot_at, signal, value_num
+                        FROM v_frame_signals)
+                  WHERE value_num IS NOT NULL AND signal IN ({marks}))
+            GROUP BY signal HAVING count(*) FILTER (WHERE mine) > 0""",
+        [ecu, dtc_code, *names],
+    )
+    by_signal = {r["signal"]: r for r in stats}
+    signals = [
+        m.FrameSignalSummary(**by_signal[name], label=label, unit=unit)
+        for name, label, unit in FRAME_SUMMARY_SIGNALS
+        if name in by_signal
+    ]
+    return m.FaultFrameSummary(
+        ecu=ecu,
+        dtc_code=dtc_code,
+        frames=counts["frames"],
+        baseline_frames=counts["baseline_frames"],
+        signals=signals,
+    )
+
+
 @app.get("/api/dtcs/frames", response_model=list[m.FreezeFrame])
 def freeze_frames(ecu: str, dtc_code: str, con: duckdb.DuckDBPyConnection = Con):
     """Distinct freeze frames of a DTC, newest first, each with its signals."""

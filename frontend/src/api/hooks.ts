@@ -310,6 +310,20 @@ export const useDiagCompare = (a: string | undefined, b: string | undefined) => 
   })
 }
 
+export const useFrameSummary = (ecu: string | undefined, dtc_code: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['frame-summary', model, ecu, dtc_code],
+    enabled: Boolean(ecu && dtc_code),
+    queryFn: () =>
+      unwrap(
+        client.GET('/api/dtcs/frame-summary', {
+          params: { query: { ecu: ecu!, dtc_code: dtc_code!, model } },
+        }),
+      ),
+  })
+}
+
 export const useFreezeFrames = (ecu: string | undefined, dtc_code: string | undefined) => {
   const { model } = useRangeQuery()
   return useQuery({

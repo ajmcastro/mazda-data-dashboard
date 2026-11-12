@@ -49,6 +49,10 @@ class LowTirePressure(Rule):
     min_kpa: float = Field(200, gt=0)
 
 
+class LowBatteryFrame(Rule):
+    min_voltage: float = Field(12.0, gt=0)
+
+
 class DataGap(Rule):
     severity: Severity = "info"
     max_days: float = Field(3, gt=0)
@@ -117,6 +121,7 @@ class Rules(_Strict):
     high_consumption: HighConsumption = HighConsumption()
     low_fuel: LowFuel = LowFuel()
     low_tire_pressure: LowTirePressure = LowTirePressure()
+    low_battery_frame: LowBatteryFrame = LowBatteryFrame()
     data_gap: DataGap = DataGap()
     oil_change_due: OilChangeDue = OilChangeDue()
     car_warning_flag: CarWarningFlag = CarWarningFlag()

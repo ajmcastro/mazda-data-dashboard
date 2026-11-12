@@ -28,6 +28,10 @@ export const WARNING_FREQUENCY = [
 ]
 export const ACTIVITY_HOUR = ['hour', 'active_days', 'warning_codes', 'km', 'drives']
 export const ACTIVITY_WEEKDAY = ['weekday', 'calendar_days', 'active_days', 'warning_days', 'km']
+export const FRAME_SIGNAL_SUMMARY = [
+  'signal', 'label', 'unit', 'frames', 'min', 'median', 'max', 'baseline_frames', 'baseline_min',
+  'baseline_median', 'baseline_max', 'baseline_p10', 'baseline_p90', 'position',
+]
 export const WARNING_DAY = ['day', 'code', 'events']
 export const WARNING_EVENT = ['transaction_id', 'triggered_at', 'odometer_km', 'code', 'title', 'severity', 'known']
 export const DTC_FREQUENCY = [

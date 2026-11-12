@@ -1,6 +1,7 @@
 """Response models. They double as the OpenAPI contract the frontend types are built from."""
 
 from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -415,6 +416,33 @@ class FreezeFrame(BaseModel):
     times_reported: int
     odometer_km: float | None = None
     signals: list[FrameSignal]
+
+
+class FrameSignalSummary(BaseModel):
+    signal: str
+    label: str
+    unit: str | None = None
+    frames: int  # this fault's distinct frames that have a value for the signal
+    min: float | None = None
+    median: float | None = None
+    max: float | None = None
+    baseline_frames: int  # frames of all OTHER faults with a value
+    baseline_min: float | None = None
+    baseline_median: float | None = None
+    baseline_max: float | None = None
+    baseline_p10: float | None = None
+    baseline_p90: float | None = None
+    # where this fault's median sits among the other faults' frames: at or below their lowest tenth ("low"),
+    # at or above their highest tenth ("high"), or null (in between, too few frames, or no spread)
+    position: Literal["low", "high"] | None = None
+
+
+class FaultFrameSummary(BaseModel):
+    ecu: str
+    dtc_code: str
+    frames: int  # distinct freeze frames of this fault that have signal values
+    baseline_frames: int  # the same for all other faults
+    signals: list[FrameSignalSummary]
 
 
 class ContextWarning(BaseModel):

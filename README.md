@@ -9,7 +9,7 @@ the phone**.
   tire pressure (and when the car really measured it), the car's own oil-change countdown, warnings, fault
   codes with their freeze frames, the diagnostic-tool report, a month-by-month comparison, and a comparison of
   two cars or of two periods of one car.
-- **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, unusually high fuel
+- **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, a low supply voltage in a fault's freeze frame, unusually high fuel
   use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
 - **Several cars**: one folder of exports, one database and one set of code descriptions per Mazda model
   (the CX-5, and a CX-60 set up the same way), a model selector, an *All cars* overview and a *Compare* page,

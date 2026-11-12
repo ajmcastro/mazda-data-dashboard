@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDtcEvents, useFaultContext, useFreezeFrames } from '../api/hooks'
 import type { DtcEvent, DtcFrequency, FreezeFrame } from '../api/types'
 import { fmtDateTime, fmtDateTimeSec, fmtNum, signalLabel, signalValue } from '../lib'
+import { FrameSummary } from './FrameSummary'
 import { Badge, DataTable, Panel, QueryState, type Column } from './ui'
 
 const yesNo = (v: boolean | null | undefined) => (v === null || v === undefined ? '—' : v ? 'yes' : 'no')
@@ -48,6 +49,9 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
 
   return (
     <>
+      <div style={{ marginTop: 14 }}>
+        <FrameSummary fault={fault} />
+      </div>
       <div className="grid cols-2" style={{ marginTop: 14 }}>
         <Panel title={`${fault.ecu} · ${fault.dtc_code}:${fault.failure_type}`} hint="click a read-out to see what surrounded it">
           <QueryState query={events}>

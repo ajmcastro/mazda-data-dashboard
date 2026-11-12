@@ -12,6 +12,7 @@ import { maintenanceOil } from './maintenance'
 import { warningFlagHints, warningFlags } from './warningflags'
 import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, statusTimeline, tireReadings, tripSegments } from './series'
 import { activityPattern } from './activity'
+import { frameSummary } from './framesummary'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
 
@@ -89,6 +90,7 @@ export class Api {
     add('GET', '/api/warnings/events', warningEvents)
     add('GET', '/api/dtcs/frequency', dtcFrequency)
     add('GET', '/api/dtcs/events', dtcEvents)
+    add('GET', '/api/dtcs/frame-summary', frameSummary)
     add('GET', '/api/dtcs/readouts', dtcReadouts)
     add('GET', '/api/dtcs/snapshots', dtcSnapshots)
     add('GET', '/api/codes/unmapped', unmapped)

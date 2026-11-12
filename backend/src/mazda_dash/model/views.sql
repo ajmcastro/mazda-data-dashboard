@@ -472,6 +472,15 @@ SELECT ecu, dtc_code, failure_type, record_number, snapshot_at,
 FROM dtc_snapshots
 GROUP BY ecu, dtc_code, failure_type, record_number, snapshot_at;
 
+-- One value per signal of each DISTINCT freeze frame: the same frame is reported again in later read-outs
+-- with identical values, so the values are taken once per (ECU, DTC, record, snapshot time). Used by the
+-- fault summary (GET /api/dtcs/frame-summary, M36) and the `low_battery_frame` alert.
+CREATE OR REPLACE VIEW v_frame_signals AS
+SELECT ecu, dtc_code, record_number, snapshot_at, signal,
+       any_value(value_num) AS value_num, min(triggered_at) AS triggered_at
+FROM v_dtc_snapshot_signals
+GROUP BY ecu, dtc_code, record_number, snapshot_at, signal;
+
 -- ----------------------------------------------------------- housekeeping
 -- Codes seen in the data that have no description yet (fill them in config/codes).
 CREATE OR REPLACE VIEW v_unmapped_codes AS

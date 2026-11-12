@@ -627,6 +627,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dtcs/frame-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Frame Summary
+         * @description How the values in one fault's freeze frames compare with the frames of all other faults.
+         *     A hint ("tends to appear when ..."), never a cause. A state endpoint: it ignores the period.
+         */
+        get: operations["frame_summary_api_dtcs_frame_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dtcs/frames": {
         parameters: {
             query?: never;
@@ -1114,6 +1135,19 @@ export interface components {
             /** Status Offset Minutes */
             status_offset_minutes?: number | null;
         };
+        /** FaultFrameSummary */
+        FaultFrameSummary: {
+            /** Ecu */
+            ecu: string;
+            /** Dtc Code */
+            dtc_code: string;
+            /** Frames */
+            frames: number;
+            /** Baseline Frames */
+            baseline_frames: number;
+            /** Signals */
+            signals: components["schemas"]["FrameSignalSummary"][];
+        };
         /** FlagHintFault */
         FlagHintFault: {
             /** Ecu */
@@ -1162,6 +1196,37 @@ export interface components {
             value?: string | null;
             /** Value Num */
             value_num?: number | null;
+        };
+        /** FrameSignalSummary */
+        FrameSignalSummary: {
+            /** Signal */
+            signal: string;
+            /** Label */
+            label: string;
+            /** Unit */
+            unit?: string | null;
+            /** Frames */
+            frames: number;
+            /** Min */
+            min?: number | null;
+            /** Median */
+            median?: number | null;
+            /** Max */
+            max?: number | null;
+            /** Baseline Frames */
+            baseline_frames: number;
+            /** Baseline Min */
+            baseline_min?: number | null;
+            /** Baseline Median */
+            baseline_median?: number | null;
+            /** Baseline Max */
+            baseline_max?: number | null;
+            /** Baseline P10 */
+            baseline_p10?: number | null;
+            /** Baseline P90 */
+            baseline_p90?: number | null;
+            /** Position */
+            position?: ("low" | "high") | null;
         };
         /** FreezeFrame */
         FreezeFrame: {
@@ -2947,6 +3012,40 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DiagDelta"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    frame_summary_api_dtcs_frame_summary_get: {
+        parameters: {
+            query: {
+                ecu: string;
+                dtc_code: string;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FaultFrameSummary"];
                 };
             };
             /** @description Validation Error */

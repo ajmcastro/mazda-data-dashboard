@@ -249,6 +249,34 @@ def low_tire_pressure(ctx: Context) -> list[Candidate]:
     ]
 
 
+def low_battery_frame(ctx: Context) -> list[Candidate]:
+    """A freeze frame recorded while a supply voltage was below the limit: one alert per fault (the lowest
+    reading of its frames inside the lookback window). A hint worth a look at the battery, not a diagnosis."""
+    rule = ctx.cfg.rules.low_battery_frame
+    rows = ctx.con.execute(
+        """SELECT ecu, dtc_code, min(value_num) AS volts,
+                  min_by(signal, value_num) AS signal, min(coalesce(triggered_at, snapshot_at)) AS at
+           FROM v_frame_signals
+           WHERE signal IN ('Main_ECU_Voltage_Supply', 'ECU_Power_Voltage')
+                 AND value_num > 0 AND value_num < ? AND coalesce(triggered_at, snapshot_at) >= ?
+           GROUP BY ecu, dtc_code ORDER BY 5, 1, 2""",
+        [rule.min_voltage, ctx.since],
+    ).fetchall()
+    return [
+        Candidate(
+            "low_battery_frame",
+            f"low_battery_frame:{ecu}:{code}",
+            rule.severity,
+            f"Low voltage in a fault's freeze frame ({ecu} {code}): {volts:g} V",
+            f"The freeze frame of fault {ecu} {code} recorded {volts:g} V ({signal}), below your "
+            f"{rule.min_voltage:g} V limit. Worth a look at the battery; a hint, not a diagnosis.",
+            at,
+            "/faults",
+        )
+        for ecu, code, volts, signal, at in rows
+    ]
+
+
 def data_gap(ctx: Context) -> list[Candidate]:
     rule = ctx.cfg.rules.data_gap
     gap = ctx.now - ctx.as_of
@@ -377,6 +405,7 @@ DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "high_consumption": high_consumption,
     "low_fuel": low_fuel,
     "low_tire_pressure": low_tire_pressure,
+    "low_battery_frame": low_battery_frame,
     "data_gap": data_gap,
     "oil_change_due": oil_change_due,
     "car_warning_flag": car_warning_flag,

@@ -2518,6 +2518,73 @@
         }
       }
     },
+    "/api/dtcs/frame-summary": {
+      "get": {
+        "summary": "Frame Summary",
+        "description": "How the values in one fault's freeze frames compare with the frames of all other faults.\nA hint (\"tends to appear when ...\"), never a cause. A state endpoint: it ignores the period.",
+        "operationId": "frame_summary_api_dtcs_frame_summary_get",
+        "parameters": [
+          {
+            "name": "ecu",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ecu"
+            }
+          },
+          {
+            "name": "dtc_code",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dtc Code"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FaultFrameSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/dtcs/frames": {
       "get": {
         "summary": "Freeze Frames",
@@ -4176,6 +4243,42 @@
         ],
         "title": "FaultContext"
       },
+      "FaultFrameSummary": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "frames": {
+            "type": "integer",
+            "title": "Frames"
+          },
+          "baseline_frames": {
+            "type": "integer",
+            "title": "Baseline Frames"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/FrameSignalSummary"
+            },
+            "type": "array",
+            "title": "Signals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu",
+          "dtc_code",
+          "frames",
+          "baseline_frames",
+          "signals"
+        ],
+        "title": "FaultFrameSummary"
+      },
       "FlagHintFault": {
         "properties": {
           "ecu": {
@@ -4341,6 +4444,148 @@
           "signal"
         ],
         "title": "FrameSignal"
+      },
+      "FrameSignalSummary": {
+        "properties": {
+          "signal": {
+            "type": "string",
+            "title": "Signal"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "frames": {
+            "type": "integer",
+            "title": "Frames"
+          },
+          "min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Min"
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          },
+          "max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max"
+          },
+          "baseline_frames": {
+            "type": "integer",
+            "title": "Baseline Frames"
+          },
+          "baseline_min": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Min"
+          },
+          "baseline_median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Median"
+          },
+          "baseline_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline Max"
+          },
+          "baseline_p10": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline P10"
+          },
+          "baseline_p90": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Baseline P90"
+          },
+          "position": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "low",
+                  "high"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Position"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signal",
+          "label",
+          "frames",
+          "baseline_frames"
+        ],
+        "title": "FrameSignalSummary"
       },
       "FreezeFrame": {
         "properties": {
