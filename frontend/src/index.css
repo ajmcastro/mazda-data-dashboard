@@ -136,11 +136,10 @@ h2 { font-size: 20px; font-weight: 700; color: var(--muted); }
 .cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.trips { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); }
 .hero { grid-template-columns: minmax(330px, 1.9fr) repeat(3, minmax(0, 1fr)); }
 .hero > .oil-tile { grid-column: 1 / -1; }
 .split { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
-@media (max-width: 1100px) { .trips { grid-template-columns: 1fr; } .hero { grid-template-columns: 1fr 1fr; } .hero > :first-child { grid-column: 1 / -1; } .cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .split, .cols-3 { grid-template-columns: 1fr; } }
+@media (max-width: 1100px) { .hero { grid-template-columns: 1fr 1fr; } .hero > :first-child { grid-column: 1 / -1; } .cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .split, .cols-3 { grid-template-columns: 1fr; } }
 @media (max-width: 640px) { .cols-2, .cols-4, .hero { grid-template-columns: 1fr; } }
 .stack { display: flex; flex-direction: column; gap: 14px; }
 .panel {
@@ -262,6 +261,21 @@ select { font: inherit; font-size: 13px; letter-spacing: 0; text-transform: none
 .matrix td, .matrix th { font-family: var(--mono); font-size: 12px; }
 .sub-h { font-size: 12px; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 8px; }
 .grid.cols-3 > div { min-width: 0; }
+
+/* ---- the car, part by part (Status) ---- */
+.car-groups { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 22px; }
+.car-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.car-part { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 7px 10px; font-size: 13px; }
+.car-part.attention { border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+.car-part.open { border-color: color-mix(in srgb, var(--amber) 60%, var(--line)); }
+.car-part.unknown { border-style: dashed; }
+.car-part-head { display: flex; gap: 10px; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
+.car-part-name { color: var(--muted); }
+.car-part-value { font-family: var(--mono); text-align: right; margin-left: auto; }
+.car-part.unknown .car-part-value { color: var(--muted); }
+.car-part-note { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.car-notes { margin: 12px 0 0; padding-left: 18px; font-size: 12px; }
+@media (max-width: 1100px) { .car-groups { grid-template-columns: 1fr; } }
 
 /* ---- warning lamps (Status) ---- */
 .lamps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }

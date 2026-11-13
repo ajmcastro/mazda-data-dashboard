@@ -1,6 +1,7 @@
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useCarWarnings, useDoors, useOilService, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
+import { useAlarms, useCarWarnings, useOilService, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
+import { CarPanel } from '../components/CarPanel'
 import { WarningLamps } from '../components/WarningLamps'
 import { WhenPanel } from '../components/WhenPanel'
 import { WhoRidesPanel } from '../components/WhoRidesPanel'
@@ -21,7 +22,6 @@ function oilPoints(o: OilService) {
 
 export default function Status() {
   const status = useStatusTimeline()
-  const doors = useDoors(1)
   const alarms = useAlarms()
   const trips = useTripSegments(60)
   const oil = useOilService()
@@ -67,25 +67,18 @@ export default function Status() {
     { key: 'st', header: 'Burglar status', num: true, render: (a) => fmtNum(a.burglar_status) },
     { key: 'rs', header: 'Reason', num: true, render: (a) => fmtNum(a.alarm_reason) },
   ]
-  const d = doors.data?.[0]
-  const doorRows: [string, number | null | undefined][] = d
-    ? [
-        ['Driver door', d.door_driver], ['Passenger door', d.door_passenger],
-        ['Rear left', d.door_rear_left], ['Rear right', d.door_rear_right],
-        ['Trunk', d.trunk], ['Hood', d.hood],
-      ]
-    : []
-
   return (
     <>
       <div className="page-head">
         <div>
           <h1>Status</h1>
-          <p>Fuel, tires, trips, doors and alarm history from the car's remote-status reports.</p>
+          <p>The car part by part, fuel, tires, trips and alarm history from the car's remote-status reports.</p>
         </div>
       </div>
 
-      <div className="grid cols-2">
+      <CarPanel />
+
+      <div className="grid cols-2" style={{ marginTop: 14 }}>
         <Panel title="Fuel level and range" hint="gauge % and estimated km">
           <QueryState query={status}>
             <ResponsiveContainer width="100%" height={230}>
@@ -184,31 +177,10 @@ export default function Status() {
         </Panel>
       )}
 
-      <div className="grid trips" style={{ marginTop: 14 }}>
+      <div className="grid split" style={{ marginTop: 14 }}>
         <Panel title="Recent trips" hint="between status snapshots">
           <QueryState query={trips}>
             <DataTable rows={trips.data ?? []} columns={tripCols} rowKey={(t) => t.end_at} />
-          </QueryState>
-        </Panel>
-        <Panel title="Doors" hint={d ? fmtDateTime(d.created_at) : ''}>
-          <QueryState query={doors}>
-            <dl className="kv">
-              {doorRows.map(([name, v]) => (
-                <div key={name} style={{ display: 'contents' }}>
-                  <dt>{name}</dt>
-                  <dd>{v === null || v === undefined ? 'unknown' : v === 0 ? 'closed' : `open (${v})`}</dd>
-                </div>
-              ))}
-              {d && (
-                <>
-                  <dt>Locks (driver / passenger)</dt>
-                  <dd>{fmtNum(d.lock_driver)} / {fmtNum(d.lock_passenger)}</dd>
-                  <dt>Invalid signals</dt>
-                  <dd>{d.invalid_signals}</dd>
-                </>
-              )}
-            </dl>
-            <p className="muted" style={{ fontSize: 11 }}>Door value 0 is assumed to mean closed; lock codes are shown raw.</p>
           </QueryState>
         </Panel>
         <Panel title="Alarm history">

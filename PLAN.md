@@ -852,6 +852,101 @@ No new columns arrived with the latest export; these are things the data already
 2. **M36 low-voltage alert wanted**, default threshold **12.0 V**, still configurable in `alerts.yaml`.
 3. **M37 ships to the phone too** (pack, TypeScript engine, goldens), not Mac only.
 
+## The car in 3D (M38–M41; M38 built)
+
+### Goal
+A "The car" panel that draws the car in 3D with what its latest status reports say, each figure next to the part it belongs to. The user turns the car and looks at it from any side. Mac dashboard and phone app, offline on the phone like everything else. This is the first of the 3D ideas (status view); the others (time scrubber, who rides on the seats, alerts on the car, fault map, freeze-frame scene) would build on it and are not planned here.
+
+### What it shows (only data the pages already have)
+| Part of the car | Figure | Comes from |
+|---|---|---|
+| Each wheel | pressure in kPa, "old reading" mark when stale, a mark when the car's own tire flag for that wheel is on | `/api/overview` (`status.tire_*`, `tire_stale`), `/api/status/car-warnings` |
+| Four doors, trunk, hood | closed / open / unknown, drawn ajar when open | `/api/doors/timeline?limit=1` |
+| Locks | the raw codes as text (their meaning is undocumented) | same |
+| Fuel tank | level % and range km | `/api/overview` |
+| Engine bay | km to the next oil change, only for a car that sends the countdown; the oil-level flag | `/api/maintenance/oil`, car warnings |
+| Dashboard | odometer, "as of" time of the snapshot | `/api/overview` |
+
+Not shown, on purpose: battery voltage (the status reports do not carry it; it exists only in freeze frames), ECUs (their positions are not published), seat belts (a later idea), parking position (never leaves the Mac).
+
+### Decisions (confirmed)
+1. **A stylised car, built in code.** No Mazda mesh: none is freely licensed, and a file from a model site would be a licence and a size problem. The body is a generic SUV shape generated from a handful of dimensions (length, width, height, wheelbase, track, wheel size), so a CX-5 and a CX-60 differ in proportion, not in styling. No textures, no model files, nothing to download.
+2. **Plain `three`, not react-three-fiber.** One dependency instead of three, no coupling to React's reconciler version, and no new peer-dependency trouble (`legacy-peer-deps`). The scene is one small class that React mounts into a `<canvas>`. (I mentioned react-three-fiber earlier; for a single scene it is not worth its weight.)
+3. **Labels are HTML, not 3D text.** Each label is a DOM element positioned over the canvas from the projected 3D anchor of its part, with a leader line. So labels use the app's fonts and CSS variables, stay sharp, work in both themes and are readable by a screen reader.
+4. **No new API route.** The panel composes the answers of four existing endpoints in a pure function, so there is no Python change, no engine twin, no golden and no pack change for M38–M40. (Only M41 touches the model list.)
+5. **Loaded only when needed.** `three` goes in its own lazy chunk (about 150–200 kB gzipped; to be measured), fetched when the panel appears; the first paint of every page stays as it is. On the phone the chunk is in the build output, so the service worker precaches it.
+6. **The 2D panel stays.** The same data as a plain list is built first (M38). It is the fallback when WebGL is missing or the context is lost, the accessible text equivalent, and what the tests check.
+7. **Place:** top of the **Status** page. The Overview keeps its small 2D tire drawing (`Tires.tsx`) in this plan.
+8. **Honest drawing.** Unknown or `Invalid` values are drawn as unknown (muted, dashed), never as closed or as zero. A door value of 0 is assumed closed, as today, and the panel says so. No thresholds are invented: a wheel is marked only by the car's own flag, the stale rule, or the existing "lowest by 20 kPa or more" rule of `Tires.tsx`.
+9. **Motion and power.** The scene renders on demand (on a change, a drag or a resize), not in a loop, so an idle phone draws nothing. With `prefers-reduced-motion` nothing moves by itself: no turntable, doors are drawn open without the swing.
+10. **Colours** come from the CSS variables (read from the document and re-read when the theme changes); no literals, so Dark and Light both work and `theme.test.ts` keeps its rule.
+
+### Milestones
+| | What | Visible result |
+|---|---|---|
+| M38 | The car's state as pure logic, and the 2D "The car" panel | a panel on Status listing every part with its figure (Mac and phone) |
+| M39 | The 3D scene on the Mac | the car in 3D, turnable, with labels at the parts |
+| M40 | The 3D scene on the phone | the same in the offline app, by touch |
+| M41 | Each model's own proportions and steering side; docs and screenshots | a CX-60 looks longer than a CX-5; the driver's door is on the right side |
+
+### M38 — The car's state, and the 2D panel ✅ done
+- **`frontend/src/car.ts`** (pure, with `car.test.ts`): `carState(overview, door, oil, carWarnings)` returns one entry per part (`wheel_fl` … `wheel_rr`, `door_driver`, `door_passenger`, `door_rear_left`, `door_rear_right`, `trunk`, `hood`, `fuel`, `engine`, `dash`): a state (`ok` / `attention` / `open` / `unknown` / `absent`), the lines of its label, and the time of the reading. Parts a car does not send are `absent` (no oil countdown on the CX-60 sample), not empty labels.
+- **`components/CarPanel.tsx`**: a "The car" panel at the top of Status with the list form (part, figure, mark), one "as of" line, and the notes (door 0 = closed is an assumption; lock codes raw). It replaces the "Doors" panel at the bottom of Status, whose content it now holds.
+- **Hooks:** the existing ones (`useOverview`, `useDoors(1)`, `useOilService`, `useCarWarnings`), so the model and the period are already in every request and key.
+- **Tests:** every state of every part; `Invalid` door stays unknown; stale tires; a flag on one wheel; a car without the countdown; nothing at all (empty database) gives the empty panel, not an error.
+- **Done when:** the panel shows on both sample cars and on the phone demo, and agrees with the Overview and the old Doors panel.
+
+**M38 as built.**
+- **`frontend/src/car.ts`** (pure, 23 tests in `car.test.ts`): `carState(overview, door, oil, carWarnings)` gives the thirteen parts, always in the same order, each with a state (`ok` / `attention` / `open` / `unknown` / `absent`), its figure, its notes, the time of its reading and `old` (a stale tire measurement); plus `listedParts`, `stateBadge`, `carHeadline` and `CAR_NOTES`. No backend, engine or pack change.
+- **What marks a part:** a wheel by the car's own tire flag for that wheel or by being the lowest by 20 kPa or more (the rule of `Tires.tsx`, now `LOWEST_SPREAD_KPA`); the engine by the oil-level flag or a countdown at or under `OIL_SOON_KM` (the limit the Overview tile already uses); the dashboard by any other flag that is on (tire pressure system, seat belt, door open: flags that name no single part). A stale tire reading is `old`, not a fault. Nothing else is judged: no pressure or fuel limit.
+- **Unknown and absent:** a door value the car flagged Invalid is `unknown` (dashed in the list), never closed; a missing pressure is `unknown`, never zero and never compared; what a car does not send is `absent` and not listed (the CX-60 sample has no countdown, so its engine entry shows the oil-level flag alone).
+- **Times:** fuel, tires, doors and the odometer are the newest in the selected period (as on the Overview); the flags and the countdown are the car's latest (state endpoints). The panel says so in its notes.
+- **UI:** `components/CarPanel.tsx` (`CarPanel` and the reusable `CarList`, which M39 keeps as the fallback) at the top of Status: one headline ("To check: rear left wheel, engine. Unknown: trunk, hood."), three groups (wheels; doors, trunk and hood; fuel, engine and dashboard), the notes. The **Doors panel is gone** (its content is in the list, lock codes as notes on the two front doors; the "invalid signals" count is no longer shown, the unknown doors say it), and "Recent trips" and "Alarm history" now share the row (`grid split`; the `.trips` rule was removed). The phone gets it through the shared page.
+- **Seen on the demo:** CX-5: rear left wheel 180 kPa marked (flag on, 65 kPa under the highest), 1,000 km to the oil change marked; CX-60: front left wheel 190 kPa marked, no countdown. Trunk and hood read unknown in both samples, as the Doors panel showed before. Checked on the Mac at 1400 px and 800 px and in the phone app at 375 px (no sideways scroll, no console errors).
+- **Not done here:** the README screenshots (`status.png`) are retaken in M41 with the 3D view.
+
+### M39 — The 3D scene (Mac)
+- **Dependency:** `three` in `frontend/package.json` (bundled; no loaders, no CDN). Lazy: `const Car3D = lazy(() => import('./car3d/Car3D'))` inside `CarPanel`, with the list as the `Suspense` and error fallback.
+- **`frontend/src/car3d/`**: `geometry.ts` (pure, tested: dimensions → the body outline, wheel centres, hinge lines and the anchor point of every part; defaults for a generic SUV), `scene.ts` (the `three` scene: extruded body with a glass house, four wheels, four doors, hood and trunk as separate meshes that turn on their hinges, a ground disc; lights; picks up `carState`), `labels.ts` (pure, tested: projected anchors → label positions that do not overlap, left/right of the car, hidden when the part faces away), `Car3D.tsx` (canvas, HTML labels, controls).
+- **Controls:** drag to turn, wheel or pinch to zoom, with limits (never under the ground, never inside the car); buttons for fixed views (front-left, side, rear, top) and reset; arrow keys turn when the canvas has focus. Clicking a part or its label highlights both; a second click releases.
+- **States:** part colours from `--accent`, `--amber`, `--muted`, `--line`, `--panel-2`; an open door is turned outward; an unknown part is drawn as a dashed outline.
+- **Fallbacks:** no WebGL, a lost context or an error in the chunk shows the M38 list with one line saying why. A "3D | List" switch remembers the choice (`localStorage` `cx5.car-view`).
+- **Tests:** `geometry.test.ts`, `labels.test.ts` (no overlap, stable order, hidden behind the car), the fallback path with a stubbed canvas; a build check that `three` is not in the entry chunk; chunk size recorded here.
+- **Done when:** on `make demo` the CX-5 shows the leaking wheel marked, turning and zooming are smooth, both themes and reduced motion behave, and the entry bundle has not grown.
+
+### M40 — The 3D scene on the phone
+- **Build:** `three` in `mobile/package.json` and in `dedupe` of `mobile/vite.config.ts`; the chunk appears in `dist/` and so in the service worker's precache list (checked by a test on the generated list). Pages and CI size guards updated if they count files.
+- **Touch:** a horizontal drag turns the car, a vertical drag scrolls the page (`touch-action: pan-y` on the canvas), so the panel can never trap the scroll; zoom by two buttons instead of pinch (pinch belongs to the page); the fixed-view buttons are thumb-sized (`pointer: coarse`).
+- **Narrow screen:** labels become numbered pins with the figures listed under the canvas (the M38 list, numbered), because eight labels do not fit beside a car 360 px wide. CSS under `max-width: 640px` only; desktop unchanged.
+- **Performance and robustness:** device pixel ratio capped at 2, render on demand, the scene and its GPU memory released when leaving Status or switching model (`<Routes key={id}>` remounts), context loss falls back to the list and recovers on return.
+- **Tests:** `make mobile-test` unchanged and passing (no engine change); in the iOS Simulator: install, go offline, reload, open Status, turn the car, switch to the CX-60, both themes.
+- **Done when:** the demo on the phone shows the 3D car with no network, and scrolling Status past the panel works with one finger.
+
+### M41 — Each model's proportions, steering side, docs
+- **Config:** optional `body:` in `config/models/<id>/model.yaml` (`length_mm`, `width_mm`, `height_mm`, `wheelbase_mm`, `track_mm`, `wheel_diameter_mm`, `steering: left | right`), validated in `models.py`; omitted = the generic SUV with left-hand steering. The figures are the public ones from the owner's manual; the two shipped models get theirs after checking them against the manual (to verify, not from memory: CX-5 about 4575 × 1845 × 1680 mm, wheelbase 2700; CX-60 about 4745 × 1890 × 1680 mm, wheelbase 2870).
+- **Why steering matters:** the data says "driver door" and "passenger door", not left and right, so the side they are drawn on depends on it.
+- **API and phone, in one change:** `ModelInfo.body` in `GET /api/models` (Python), `make types`, the pack manifest's `model` block gains the optional `body` (no format bump: a pack without it draws the generic car), the TypeScript engine's answer to `/api/models` passes it on; `test_api_models.py`, `test_add_a_model.py` and the README's "How to add a model" get the new optional block.
+- **Docs:** README (the panel, the controls, the fallback, how to set a model's dimensions), `CLAUDE.md` (the `car.ts` / `car3d/` layout, the rules above), `docs/data-dictionary.md` unchanged (no new data). `make screenshots` retakes `status.png` and adds a 3D shot for each model (headless Chrome draws WebGL in software; if it cannot, the script keeps the list view and says so).
+- **Done when:** the two demo cars are visibly different in length, a `steering: right` model draws the driver's door on the right, and CI is green including the byte-for-byte checks.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| The stylised car looks like a toy, or is mistaken for the real shape | a deliberately schematic, technical look (flat shading, outlines, the app's palette) and a caption "schematic, not to scale in detail" |
+| Bundle and offline size grow | lazy chunk, measured in M39; build check that the entry chunk has no `three`; nothing loaded from another host |
+| Labels overlap or flicker while turning | label layout is pure and tested; positions snap to a side per part; on narrow screens pins replace labels |
+| The canvas traps scrolling on the phone | `pan-y`, buttons for zoom, checked in the Simulator |
+| WebGL missing, context lost, old device | the list panel of M38 is always there |
+| The drawing implies knowledge we do not have (lock state, door 0 = closed) | unknown drawn as unknown; assumptions written under the panel, as today |
+| Headless screenshots cannot draw WebGL | software rendering first; otherwise the list view |
+
+### Points confirmed
+1. The stylised, code-built car (no model file).
+2. Plain `three`.
+3. The panel on **Status** (it replaces the Doors panel), with the Overview keeping its 2D tires.
+4. Per-model dimensions in `model.yaml`, set by the owner from the manual (M41).
+5. On the phone: horizontal drag turns, vertical drag scrolls, buttons zoom (M40).
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.
