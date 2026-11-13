@@ -1378,6 +1378,31 @@ export interface components {
             /** Tire Stale */
             tire_stale?: boolean | null;
         };
+        /**
+         * ModelBody
+         * @description A model's outer dimensions (mm) and steering side, from `body:` in its model.yaml. The 3D drawing of the
+         *     car uses them; a dimension that is not given is drawn in proportion to a generic car.
+         */
+        ModelBody: {
+            /** Length Mm */
+            length_mm?: number | null;
+            /** Width Mm */
+            width_mm?: number | null;
+            /** Height Mm */
+            height_mm?: number | null;
+            /** Wheelbase Mm */
+            wheelbase_mm?: number | null;
+            /** Track Mm */
+            track_mm?: number | null;
+            /** Wheel Diameter Mm */
+            wheel_diameter_mm?: number | null;
+            /**
+             * Steering
+             * @default left
+             * @enum {string}
+             */
+            steering: "left" | "right";
+        };
         /** ModelInfo */
         ModelInfo: {
             /** Id */
@@ -1393,6 +1418,7 @@ export interface components {
              * @default []
              */
             hidden_pages: string[];
+            body?: components["schemas"]["ModelBody"] | null;
             /** Has Data */
             has_data: boolean;
             /** First Day */

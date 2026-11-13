@@ -64,6 +64,7 @@ def list_models():
                 platform=model.platform,
                 default=model is reg.default,
                 hidden_pages=list(model.hidden_pages),
+                body=m.ModelBody(**model.body.as_dict()) if model.body else None,
                 has_data=path.exists(),
                 **_span(path),
             )

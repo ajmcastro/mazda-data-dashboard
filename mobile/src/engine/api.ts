@@ -14,6 +14,7 @@ import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, stat
 import { activityPattern } from './activity'
 import { frameSummary } from './framesummary'
 import { occupancy } from './occupancy'
+import type { PackBody } from './pack'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
 
@@ -29,6 +30,7 @@ export interface ModelInfo {
   platform: string | null
   default: boolean
   hidden_pages: string[]
+  body: PackBody | null
   has_data: boolean
   first_day: string | null
   last_day: string | null

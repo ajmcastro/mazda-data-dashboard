@@ -214,6 +214,8 @@ def model_info(model: Model | None) -> dict:
         "name": model.name,
         "platform": model.platform,
         "hidden_pages": list(model.hidden_pages),
+        # optional (no format change): a pack without it is drawn as the generic car
+        "body": model.body.as_dict() if model.body else None,
     }
 
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PartId } from '../car'
-import { DEFAULT_BODY, carGeometry, facesCamera, saneBody } from './geometry'
+import { DEFAULT_BODY, bodyOfModel, carGeometry, facesCamera, saneBody } from './geometry'
 
 const PARTS: PartId[] = [
   'wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr', 'door_driver', 'door_passenger', 'door_rear_left',
@@ -117,6 +117,32 @@ describe('saneBody', () => {
       for (const d of g.doors) expect(d.x0 - d.x1).toBeGreaterThan(0.25)
       for (const [x] of g.lower) expect(Math.abs(x)).toBeLessThanOrEqual(length / 2 + 1e-9)
     }
+  })
+})
+
+describe('bodyOfModel', () => {
+  it('turns the API\'s millimetres into metres and keeps the steering side', () => {
+    const body = bodyOfModel({ length_mm: 4745, width_mm: 1890, height_mm: 1680, wheelbase_mm: 2870, track_mm: 1640, wheel_diameter_mm: 745, steering: 'right' })
+    expect(body).toEqual({ length: 4.745, width: 1.89, height: 1.68, wheelbase: 2.87, track: 1.64, wheelDiameter: 0.745, steering: 'right' })
+    const g = carGeometry(body)
+    expect(g.body.length).toBe(4.745)
+    expect(g.doors.find((d) => d.id === 'door_driver')!.side).toBe(1)
+  })
+
+  it('leaves out what the model does not give, so the generic car fills it in', () => {
+    expect(bodyOfModel({ length_mm: 4745, width_mm: null, steering: 'left' })).toEqual({ length: 4.745, steering: 'left' })
+    expect(carGeometry(bodyOfModel({ length_mm: 4745, width_mm: null })).body.width).toBe(DEFAULT_BODY.width)
+    expect(bodyOfModel(null)).toBeUndefined()
+    expect(bodyOfModel(undefined)).toBeUndefined()
+    expect(carGeometry(bodyOfModel(null))).toEqual(carGeometry())
+  })
+
+  it('makes a longer model visibly longer than a shorter one', () => {
+    const cx5 = carGeometry(bodyOfModel({ length_mm: 4575, wheelbase_mm: 2700 }))
+    const cx60 = carGeometry(bodyOfModel({ length_mm: 4745, wheelbase_mm: 2870 }))
+    const length = (g: typeof cx5) => Math.max(...g.lower.map((p) => p[0])) - Math.min(...g.lower.map((p) => p[0]))
+    expect(length(cx60) - length(cx5)).toBeCloseTo(0.17, 2)
+    expect(cx60.wheels[0].centre[0] - cx60.wheels[2].centre[0]).toBeGreaterThan(cx5.wheels[0].centre[0] - cx5.wheels[2].centre[0])
   })
 })
 

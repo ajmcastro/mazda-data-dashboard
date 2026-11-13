@@ -32,11 +32,68 @@ LEGACY_MODEL = (
 SLUG = re.compile(r"[a-z0-9]+")
 # page ids a model may hide (the dashboard's routes)
 PAGES = ("overview", "trends", "alerts", "warnings", "faults", "status", "diagnostics")
-_KEYS = {"id", "name", "platform", "pages", "default"}
+_KEYS = {"id", "name", "platform", "pages", "default", "body"}
+# body: the car's outer dimensions for the 3D drawing, each optional, in millimetres (allowed range)
+BODY_MM = {
+    "length_mm": (3600, 6000),
+    "width_mm": (1400, 2300),
+    "height_mm": (1200, 2200),
+    "wheelbase_mm": (2000, 4000),
+    "track_mm": (1200, 2000),
+    "wheel_diameter_mm": (500, 900),
+}
+STEERING = ("left", "right")
 
 
 class ModelConfigError(ValueError):
     """A models file is wrong; the message says which one and what to fix."""
+
+
+@dataclass(frozen=True)
+class Body:
+    """A model's outer dimensions (mm) and steering side, for the 3D drawing. None = not given: the
+    dashboard then draws a generic car with that dimension in proportion."""
+
+    length_mm: float | None = None
+    width_mm: float | None = None
+    height_mm: float | None = None
+    wheelbase_mm: float | None = None
+    track_mm: float | None = None
+    wheel_diameter_mm: float | None = None
+    steering: str = "left"
+
+    def as_dict(self) -> dict:
+        return {k: getattr(self, k) for k in (*BODY_MM, "steering")}
+
+
+def _load_body(path: Path, data: object) -> Body | None:
+    if data is None:
+        return None
+    if not isinstance(data, dict):
+        raise ModelConfigError(f"{path}: body must be a mapping (length_mm, ...)")
+    unknown = set(data) - set(BODY_MM) - {"steering"}
+    if unknown:
+        raise ModelConfigError(
+            f"{path}: body has unknown key(s) {', '.join(sorted(unknown))}; "
+            f"known: {', '.join(BODY_MM)}, steering"
+        )
+    values = {}
+    for key, (lo, hi) in BODY_MM.items():
+        v = data.get(key)
+        if v is None:
+            continue
+        if isinstance(v, bool) or not isinstance(v, (int, float)) or not lo <= v <= hi:
+            raise ModelConfigError(
+                f"{path}: body.{key} must be a number of millimetres between {lo} and {hi}"
+            )
+        values[key] = float(v)
+    steering = data.get("steering", "left")
+    if steering not in STEERING:
+        raise ModelConfigError(f"{path}: body.steering must be left or right")
+    wheelbase, length = values.get("wheelbase_mm"), values.get("length_mm")
+    if wheelbase and length and wheelbase >= length:
+        raise ModelConfigError(f"{path}: body.wheelbase_mm must be less than length_mm")
+    return Body(**values, steering=steering)
 
 
 @dataclass(frozen=True)
@@ -49,6 +106,7 @@ class Model:
     data_dir: Path
     db_path: Path
     config_dir: Path
+    body: Body | None = None
     legacy: tuple[str, ...] = ()  # what is still in the single-car layout: "data", "db"
     db_prefix: str = ""  # MAZDA_DB_PREFIX: the demo keeps its databases apart from yours (demo-cx5.duckdb)
 
@@ -134,6 +192,7 @@ def _load_model(root: Path, model_id: str) -> Model:
     default = data.get("default", False)
     if not isinstance(default, bool):
         raise ModelConfigError(f"{path}: default must be true or false")
+    body = _load_body(path, data.get("body"))
 
     prefix = os.environ.get("MAZDA_DB_PREFIX", "")
     data_dir, db_path, legacy = (
@@ -157,6 +216,7 @@ def _load_model(root: Path, model_id: str) -> Model:
         data_dir=data_dir,
         db_path=db_path,
         config_dir=config_dir,
+        body=body,
         legacy=tuple(legacy),
         db_prefix=prefix,
     )

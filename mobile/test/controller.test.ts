@@ -159,8 +159,11 @@ describe('several car models on the device', () => {
     expect(c.getState().packs.map((p) => [p.id, p.name])).toEqual([['cx5', 'Mazda CX-5'], ['cx60', 'Mazda CX-60']])
     expect(await span(c)).toEqual({ first_day: '2026-03-01', last_day: '2026-06-30' })
 
-    const models = (await c.api.handle('GET', '/api/models')).body as { id: string; default: boolean; last_day: string }[]
+    const models = (await c.api.handle('GET', '/api/models')).body as { id: string; default: boolean; last_day: string; body: unknown }[]
     expect(models.map((m) => [m.id, m.default, m.last_day])).toEqual([['cx5', true, '2026-06-30'], ['cx60', false, '2026-07-31']])
+    // each car's dimensions for the 3D drawing come from its own pack (never another model's)
+    expect(models.map((m) => m.body)).toEqual((await readStoredPacks()).map((p) => p.manifest.model.body ?? null))
+    expect(models.every((m) => m.body !== undefined)).toBe(true)
     expect((await c.api.handle('GET', '/api/span?model=cx60')).status).toBe(404) // not loaded yet
 
     expect(await c.switchTo('cx60')).toBe(true)

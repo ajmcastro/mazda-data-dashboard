@@ -1,10 +1,12 @@
-import { Component, lazy, Suspense, useState, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
 import { useCarWarnings, useDoors, useOilService, useOverview } from '../api/hooks'
 import {
   CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge,
   type CarState, type CarView, type PartGroup,
 } from '../car'
+import { bodyOfModel } from '../car3d/geometry'
 import { fmtDateTime } from '../lib'
+import { useCurrentModel } from '../model'
 import { Badge, Panel, QueryState } from './ui'
 
 // three.js is only fetched when the 3D view is shown (PLAN.md M39): keep this the only import of it
@@ -81,6 +83,9 @@ export function CarPanel() {
   const query = overview.isError || !doors.isError ? overview : doors
   const pending = overview.isPending || doors.isPending
   const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data)
+  // the model's own dimensions and steering side (model.yaml `body:`); none = the generic car
+  const modelBody = useCurrentModel().model?.body
+  const body = useMemo(() => bodyOfModel(modelBody), [modelBody])
   const [choice, setChoice] = useState(savedView)
   const [failed, setFailed] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
@@ -116,7 +121,7 @@ export function CarPanel() {
             {view === '3d' ? (
               <Guard key={attempt} onError={setFailed}>
                 <Suspense fallback={list}>
-                  <Car3D car={car} onFail={setFailed} />
+                  <Car3D car={car} body={body} onFail={setFailed} />
                 </Suspense>
               </Guard>
             ) : (

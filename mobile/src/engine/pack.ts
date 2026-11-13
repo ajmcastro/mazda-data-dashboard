@@ -12,6 +12,18 @@ export interface PackModel {
   name: string
   platform: string | null
   hidden_pages: string[]
+  /** The car's dimensions for the 3D drawing (`body:` in its model.yaml); absent in packs made before M41. */
+  body?: PackBody | null
+}
+
+export interface PackBody {
+  length_mm: number | null
+  width_mm: number | null
+  height_mm: number | null
+  wheelbase_mm: number | null
+  track_mm: number | null
+  wheel_diameter_mm: number | null
+  steering: 'left' | 'right'
 }
 
 export interface Manifest {

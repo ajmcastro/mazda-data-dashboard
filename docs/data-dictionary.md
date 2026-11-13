@@ -99,6 +99,7 @@ model, and where this project keeps it, so that **nothing from one model leaks i
 | The car's local time zone (tire measurement clock), stale limit | `config/models/<id>/settings.yaml` | per model; `make timezone MODEL=<id>` checks it |
 | Alert rules and thresholds | `config/models/<id>/alerts.yaml` | per model; built-in defaults when absent |
 | Pages with no data for the model | `pages:` in `config/models/<id>/model.yaml` | the page leaves the navigation |
+| The car's outer dimensions and steering side (3D drawing on Status) | `body:` in `config/models/<id>/model.yaml` | optional, millimetres; served by `GET /api/models` and carried in the data pack's manifest |
 | How many diagnostic reports, and when | the exports you download | each dump is a report of its own (content hash) |
 | The vehicle | one VIN per model folder | `make ingest` warns when a database holds two |
 

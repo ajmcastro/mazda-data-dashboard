@@ -37,6 +37,15 @@ the phone**.
   </tr>
 </table>
 
+The Status page opens with **the car in 3D**: a schematic car you can turn (drag, or the Front / Side / Rear /
+Top buttons) and zoom (Ctrl + scroll, a trackpad pinch, or the + and − buttons), with each figure next to the
+part it belongs to. A part to check is red, an open door, trunk or hood is amber and drawn open, and something
+the car did not report is a dashed outline. Click a part or a label for its details; the *List* switch shows
+the same as a plain list, which is also what you get in a browser that cannot draw 3D. The shape is a generic
+SUV built from each model's dimensions, not the real body.
+
+![The car in 3D on the Status page: tire pressures, fuel, oil change and odometer at the parts](docs/screenshots/car-3d.png)
+
 With more than one car model loaded, the sidebar has a model selector (here the second demo car, a CX-60), an
 *All cars* page and a *Compare* page (two cars, or two periods of one car):
 
@@ -56,6 +65,7 @@ With more than one car model loaded, the sidebar has a model selector (here the 
   <img src="docs/screenshots/phone-overview-light.png" alt="Overview on an iPhone, light" width="230">
   <img src="docs/screenshots/phone-alerts.png" alt="Alerts on an iPhone" width="230">
   <img src="docs/screenshots/phone-lamps.png" alt="Warning lamps on an iPhone" width="230">
+  <img src="docs/screenshots/phone-car-3d.png" alt="The car in 3D on an iPhone: numbered pins on the car, the figures listed under it" width="230">
 </p>
 
 *(Screenshots show the synthetic demo data in `sample_data/<model>/`, not a real car. `make screenshots` retakes them.)*
@@ -265,6 +275,22 @@ Say you have an export for another car (here an MX-30, id `mx30`). Run these fro
    ```bash
    cp -r config/models/cx60 config/models/mx30
    ```
+
+   Optionally give the car's outer dimensions and steering side in `model.yaml`, for the 3D drawing on the
+   Status page (millimetres, from the owner's manual; leave out what you do not know and a generic car's
+   proportion is used; `steering` decides which side the driver's door is drawn on):
+
+   ```yaml
+   body:
+     length_mm: 4395
+     width_mm: 1795
+     height_mm: 1555
+     wheelbase_mm: 2655
+     steering: left      # left | right
+   ```
+
+   Also accepted: `track_mm` and `wheel_diameter_mm`. For the phone the dimensions travel in the data pack,
+   so make a new pack (`make mobile-pack`) after changing them.
 
    The copied code descriptions start empty on purpose. Set `car_timezone` in the new `settings.yaml` to where
    the car lives (`make timezone MODEL=mx30` checks it against your data).

@@ -4,3 +4,16 @@ name: Mazda CX-5
 platform: 24PF        # optional: the platform code that appears in Mazda's file names
 default: true         # the model shown when none is chosen (optional with a single model)
 # pages: [trends]     # optional: pages this model has no data for (overview cannot be hidden)
+# Optional: the car's outer dimensions (millimetres) and steering side, for the 3D drawing on the Status page.
+# Leave any of them out and the drawing uses a generic car's proportion. The figures below are the published
+# ones of the 2022-2025 CX-5 (length, width, height, wheelbase); track and wheel diameter are approximate
+# (225/55 R19 tires). Check them against your owner's manual. The CX-5 sold from 2026 is larger:
+# 4690 x 1860 x 1695, wheelbase 2815.
+body:
+  length_mm: 4690
+  width_mm: 1860
+  height_mm: 1695
+  wheelbase_mm: 2815
+  track_mm: 1595
+  wheel_diameter_mm: 730
+  steering: left      # left | right: which side the driver's door is drawn on

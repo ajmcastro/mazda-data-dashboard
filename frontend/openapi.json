@@ -5198,6 +5198,88 @@
         "type": "object",
         "title": "LatestStatus"
       },
+      "ModelBody": {
+        "properties": {
+          "length_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Length Mm"
+          },
+          "width_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Width Mm"
+          },
+          "height_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Height Mm"
+          },
+          "wheelbase_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wheelbase Mm"
+          },
+          "track_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Track Mm"
+          },
+          "wheel_diameter_mm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wheel Diameter Mm"
+          },
+          "steering": {
+            "type": "string",
+            "enum": [
+              "left",
+              "right"
+            ],
+            "title": "Steering",
+            "default": "left"
+          }
+        },
+        "type": "object",
+        "title": "ModelBody",
+        "description": "A model's outer dimensions (mm) and steering side, from `body:` in its model.yaml. The 3D drawing of the\ncar uses them; a dimension that is not given is drawn in proportion to a generic car."
+      },
       "ModelInfo": {
         "properties": {
           "id": {
@@ -5230,6 +5312,16 @@
             "type": "array",
             "title": "Hidden Pages",
             "default": []
+          },
+          "body": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelBody"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "has_data": {
             "type": "boolean",

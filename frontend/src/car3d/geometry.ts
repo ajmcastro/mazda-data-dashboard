@@ -24,6 +24,29 @@ export const DEFAULT_BODY: Body = {
   length: 4.6, width: 1.85, height: 1.68, wheelbase: 2.7, track: 1.6, wheelDiameter: 0.72, steering: 'left',
 }
 
+/** A model's dimensions as the API gives them (`body` of GET /api/models): millimetres, any of them missing. */
+export interface ModelBody {
+  length_mm?: number | null
+  width_mm?: number | null
+  height_mm?: number | null
+  wheelbase_mm?: number | null
+  track_mm?: number | null
+  wheel_diameter_mm?: number | null
+  steering?: 'left' | 'right'
+}
+
+/** The model's dimensions in metres, leaving out what it does not give (`saneBody` fills those in). */
+export function bodyOfModel(b: ModelBody | null | undefined): Partial<Body> | undefined {
+  if (!b) return undefined
+  const m = (v: number | null | undefined) => (typeof v === 'number' ? v / 1000 : undefined)
+  const out: Partial<Body> = {
+    length: m(b.length_mm), width: m(b.width_mm), height: m(b.height_mm), wheelbase: m(b.wheelbase_mm),
+    track: m(b.track_mm), wheelDiameter: m(b.wheel_diameter_mm), steering: b.steering,
+  }
+  for (const key of Object.keys(out) as (keyof Body)[]) if (out[key] === undefined) delete out[key]
+  return out
+}
+
 export type Vec3 = readonly [number, number, number]
 export type Vec2 = readonly [number, number]
 

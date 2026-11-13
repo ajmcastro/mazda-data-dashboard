@@ -140,8 +140,8 @@ describe('helpers', () => {
 
 describe('car models', () => {
   const models = [
-    { id: 'cx5', name: 'Mazda CX-5', platform: '24PF', default: true, hidden_pages: [], has_data: true, first_day: '2026-03-01', last_day: '2026-06-30' },
-    { id: 'cx60', name: 'Mazda CX-60', platform: null, default: false, hidden_pages: ['trends'], has_data: true, first_day: '2026-04-10', last_day: '2026-07-31' },
+    { id: 'cx5', name: 'Mazda CX-5', platform: '24PF', default: true, hidden_pages: [], body: { length_mm: 4575, width_mm: null, height_mm: null, wheelbase_mm: 2700, track_mm: null, wheel_diameter_mm: null, steering: 'left' as const }, has_data: true, first_day: '2026-03-01', last_day: '2026-06-30' },
+    { id: 'cx60', name: 'Mazda CX-60', platform: null, default: false, hidden_pages: ['trends'], body: null, has_data: true, first_day: '2026-04-10', last_day: '2026-07-31' },
   ]
   let api: Api
   beforeAll(async () => {
@@ -181,6 +181,10 @@ describe('the pack names its car model', () => {
     expect(manifest.format).toBe(2)
     expect(manifest.model).toMatchObject({ id: 'cx60', name: 'Mazda CX-60', hidden_pages: [] })
     expect(readPack(packBytes('cx5')).manifest.model).toMatchObject({ id: 'cx5', name: 'Mazda CX-5', platform: '24PF' })
+    // the dimensions for the 3D drawing travel with the pack (M41); the figures themselves are the owner's to set
+    const body = manifest.model.body
+    expect(body?.steering === 'left' || body?.steering === 'right').toBe(true)
+    expect(typeof body?.length_mm).toBe('number')
   })
 
   it('refuses a pack of the older format, or one that does not say its model, with a message', async () => {

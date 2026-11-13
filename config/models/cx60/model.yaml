@@ -4,3 +4,14 @@ id: cx60
 name: Mazda CX-60
 # platform: ...       # optional: the platform code that appears in Mazda's file names
 # pages: [trends]     # optional: pages this model has no data for (overview cannot be hidden)
+# Optional: the car's outer dimensions (millimetres) and steering side, for the 3D drawing on the Status page.
+# Leave any of them out and the drawing uses a generic car's proportion. Published figures of the CX-60
+# (length 4740-4745 by version); wheel diameter is approximate (235/50 R20 tires). Check your owner's manual.
+body:
+  length_mm: 4745
+  width_mm: 1890
+  height_mm: 1680
+  wheelbase_mm: 2870
+  track_mm: 1640
+  wheel_diameter_mm: 745
+  steering: left      # left | right: which side the driver's door is drawn on

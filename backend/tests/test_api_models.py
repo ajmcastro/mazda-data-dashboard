@@ -32,7 +32,11 @@ def two_models(tmp_path_factory):
         d.mkdir(parents=True)
         (d / "model.yaml").write_text(
             f"id: {i}\nname: {name}\nplatform: P{i}\n"
-            + ("pages: [trends]\n" if i == "cx60" else "default: true\n")
+            + (
+                "pages: [trends]\nbody: {length_mm: 4745, wheelbase_mm: 2870, steering: right}\n"
+                if i == "cx60"
+                else "default: true\n"
+            )
         )
     generate(root / "data" / "cx5")
     small = root / "data" / "cx60"
@@ -88,6 +92,17 @@ def test_the_model_list(client):
     assert cx5["default"] and not cx60["default"]
     assert cx5["name"] == "Mazda CX-5" and cx60["platform"] == "Pcx60"
     assert cx60["hidden_pages"] == ["trends"] and cx5["hidden_pages"] == []
+    # the dimensions for the 3D drawing: each model's own, None for a model that gives none
+    assert cx5["body"] is None
+    assert cx60["body"] == {
+        "length_mm": 4745,
+        "width_mm": None,
+        "height_mm": None,
+        "wheelbase_mm": 2870,
+        "track_mm": None,
+        "wheel_diameter_mm": None,
+        "steering": "right",
+    }
     assert cx5["has_data"] and cx5["first_day"] == "2026-03-01"
     assert (
         cx60["last_day"] and cx60["last_day"] != cx5["last_day"]

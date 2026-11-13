@@ -90,6 +90,25 @@ def test_registry_errors(tmp_path, models_yaml, message):
         ("id: cx5\nname: X\ndefault: maybe\n", "default must be true or false"),
         ("id: cx5\nname: X\nplatform: [1]\n", "platform must be text"),
         ("- not a mapping\n", "must contain a mapping"),
+        ("id: cx5\nname: X\nbody: 4575\n", "body must be a mapping"),
+        (
+            "id: cx5\nname: X\nbody: {lenght_mm: 4575}\n",
+            "body has unknown key.*lenght_mm",
+        ),
+        (
+            "id: cx5\nname: X\nbody: {length_mm: 4.575}\n",
+            "length_mm must be a number of millimetres",
+        ),
+        ("id: cx5\nname: X\nbody: {width_mm: wide}\n", "width_mm must be a number"),
+        ("id: cx5\nname: X\nbody: {height_mm: true}\n", "height_mm must be a number"),
+        (
+            "id: cx5\nname: X\nbody: {steering: middle}\n",
+            "steering must be left or right",
+        ),
+        (
+            "id: cx5\nname: X\nbody: {length_mm: 3700, wheelbase_mm: 3800}\n",
+            "wheelbase_mm must be less than length_mm",
+        ),
     ],
 )
 def test_model_file_errors(tmp_path, text, message):
@@ -105,6 +124,36 @@ def test_two_defaults_are_an_error(tmp_path):
     )
     with pytest.raises(ModelConfigError, match="more than one model"):
         load_registry(root)
+
+
+def test_body_is_optional_and_each_dimension_too(tmp_path):
+    """`body:` feeds the 3D drawing of the car (PLAN.md M41)."""
+    assert resolve("cx5", make_root(tmp_path / "none")).body is None
+    root = make_root(
+        tmp_path / "some", cx5="body: {length_mm: 4575, wheelbase_mm: 2700}\n"
+    )
+    body = resolve("cx5", root).body
+    assert body.length_mm == 4575 and body.wheelbase_mm == 2700
+    assert body.width_mm is None and body.steering == "left"
+    assert body.as_dict() == {
+        "length_mm": 4575.0,
+        "width_mm": None,
+        "height_mm": None,
+        "wheelbase_mm": 2700.0,
+        "track_mm": None,
+        "wheel_diameter_mm": None,
+        "steering": "left",
+    }
+    right = make_root(tmp_path / "right", cx5="body: {steering: right}\n")
+    assert resolve("cx5", right).body.steering == "right"
+
+
+def test_the_shipped_models_have_dimensions():
+    """The two models in the repository draw as themselves, the CX-60 longer than the CX-5."""
+    registry = load_registry(Path(__file__).parents[2])
+    cx5, cx60 = registry.get("cx5").body, registry.get("cx60").body
+    assert cx5 and cx60 and cx60.length_mm > cx5.length_mm
+    assert cx60.wheelbase_mm > cx5.wheelbase_mm
 
 
 def test_hidden_pages(tmp_path):

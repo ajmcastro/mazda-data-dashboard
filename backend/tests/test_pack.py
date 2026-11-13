@@ -261,6 +261,20 @@ def test_the_warning_lamp_families_are_read_by_prefix_and_only_changing_flags_ar
     assert varying <= packed and not constant & packed
 
 
+def plain_body(tmp_path):
+    """A model without `body:` gives a pack without dimensions (the phone then draws the generic car)."""
+    from mazda_dash.models import load_registry
+    from mazda_dash.pack import model_info
+
+    root = tmp_path / "plain-root"
+    (root / "config" / "models" / "cx5").mkdir(parents=True)
+    (root / "config" / "models.yaml").write_text("models: [cx5]\n")
+    (root / "config" / "models" / "cx5" / "model.yaml").write_text(
+        "id: cx5\nname: Mazda CX-5\n"
+    )
+    return model_info(load_registry(root).get("cx5"))["body"]
+
+
 def test_the_manifest_names_the_car_model(tmp_path):
     """The phone app lists its models from the packs, so every pack says which one it holds."""
     from mazda_dash.models import load_registry
@@ -278,7 +292,10 @@ def test_the_manifest_names_the_car_model(tmp_path):
         "name": "Mazda CX-60",
         "platform": None,
         "hidden_pages": [],
+        "body": registry.get("cx60").body.as_dict(),
     }
+    assert manifest["model"]["body"]["steering"] in ("left", "right")
+    assert plain_body(tmp_path) is None
     assert model_info(registry.get("cx5"))["platform"] == "24PF"
     # without a registry (older callers) the pack is the original single car
     plain = build_pack(tmp_path / "m.duckdb", tmp_path / "plain.cx5pack")

@@ -90,6 +90,17 @@ const scrollToHeading = (page, text, offset = 16) =>
     offset,
   )
 
+/**
+ * Waits for the 3D car on Status (its labels or pins appear once the scene has drawn). Headless Chrome draws
+ * WebGL in software; if it cannot, the panel shows its list instead and the shot is taken of that, with a note.
+ */
+async function car3d(page, name) {
+  const drawn = await page.waitForSelector('.car3d-label, .car3d-pin', { timeout: 15000 }).catch(() => null)
+  if (!drawn) console.log(`note: ${name}: the 3D view did not draw here (no WebGL?); the shot shows the list`)
+  await scrollToHeading(page, 'The car')
+  await sleep(800)
+}
+
 // ---- the Mac dashboard (dark, 1280 px wide)
 const mac = await newPage(1280, 860, 1.5)
 async function shoot(file, url, prepare) {
@@ -108,6 +119,7 @@ await shoot('faults.png', '/faults', async (p) => {
   await sleep(1500)
 })
 await shoot('status.png', '/status', (p) => scrollToHeading(p, 'Tire pressure'))
+await shoot('car-3d.png', '/status', (p) => car3d(p, 'car-3d.png'))
 await shoot('warning-lamps.png', '/status', async (p) => {
   await scrollToHeading(p, 'Warning lamps')
   await p.evaluate(() => document.querySelector('.lamp-head')?.click())
@@ -123,6 +135,11 @@ await mac60.goto('http://localhost:5173/?model=cx60', { waitUntil: 'networkidle0
 await sleep(1100)
 await mac60.screenshot({ path: path.join(out, 'overview-cx60.png') })
 console.log('wrote overview-cx60.png')
+// the same panel for the second model: its own proportions (model.yaml `body:`) and its own figures
+await mac60.goto('http://localhost:5173/status?model=cx60', { waitUntil: 'networkidle0' })
+await car3d(mac60, 'car-3d-cx60.png')
+await mac60.screenshot({ path: path.join(out, 'car-3d-cx60.png') })
+console.log('wrote car-3d-cx60.png')
 await mac60.close()
 
 // all the cars at a glance (clock on 1 August 2026: the CX-5's data is then a month old and says so)
@@ -152,6 +169,7 @@ async function phone(file, hash, { scheme = 'dark', theme, prepare } = {}) {
 await phone('phone-overview.png', '#/')
 await phone('phone-overview-light.png', '#/', { theme: 'light', scheme: 'light' })
 await phone('phone-alerts.png', '#/alerts')
+await phone('phone-car-3d.png', '#/status', { prepare: (p) => car3d(p, 'phone-car-3d.png') })
 await phone('phone-lamps.png', '#/status', {
   prepare: async (p) => {
     await scrollToHeading(p, 'Warning lamps')

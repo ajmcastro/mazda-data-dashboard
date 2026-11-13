@@ -12,12 +12,26 @@ class Health(BaseModel):
     has_data: bool
 
 
+class ModelBody(BaseModel):
+    """A model's outer dimensions (mm) and steering side, from `body:` in its model.yaml. The 3D drawing of the
+    car uses them; a dimension that is not given is drawn in proportion to a generic car."""
+
+    length_mm: float | None = None
+    width_mm: float | None = None
+    height_mm: float | None = None
+    wheelbase_mm: float | None = None
+    track_mm: float | None = None
+    wheel_diameter_mm: float | None = None
+    steering: Literal["left", "right"] = "left"
+
+
 class ModelInfo(BaseModel):
     id: str
     name: str
     platform: str | None = None
     default: bool
     hidden_pages: list[str] = []
+    body: ModelBody | None = None
     has_data: bool
     first_day: date | None = None
     last_day: date | None = None
