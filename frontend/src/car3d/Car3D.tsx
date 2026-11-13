@@ -4,7 +4,7 @@ import { stateBadge } from '../car'
 import { Badge } from '../components/ui'
 import { ANIMATE, fmtDateTime } from '../lib'
 import { carGeometry, type Body } from './geometry'
-import { LABEL, labelText, labelledParts, layoutLabels, type Placed, type Side } from './labels'
+import { COMPACT_WIDTH, LABEL, PIN_RADIUS, labelText, labelledParts, layoutLabels, layoutPins, type Pin, type Placed, type Side } from './labels'
 import { VIEWS, dragOrbit, keyOrbit, mixOrbit, viewOrbit, zoomOrbit, type Orbit, type ViewId } from './orbit'
 import { CarScene, webglAvailable } from './scene'
 
@@ -29,6 +29,9 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
   const dragRef = useRef<{ id: number; x: number; y: number; moved: number } | null>(null)
   const [selected, setSelected] = useState<PartId | null>(null)
   const [labels, setLabels] = useState<Placed[]>([])
+  // a narrow view (a phone) has no room for labels beside the car: numbered pins, and the figures listed below
+  const [pins, setPins] = useState<Pin[]>([])
+  const [compact, setCompact] = useState(false)
   const shown = useMemo(() => labelledParts(car, selected), [car, selected])
   const shownRef = useRef(shown)
   const failRef = useRef(onFail)
@@ -45,9 +48,16 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
     if (!scene || size.width === 0) return
     scene.setOrbit(orbitRef.current)
     scene.render()
-    const placed = layoutLabels(scene.project(shownRef.current.map((p) => p.id)), size, sidesRef.current)
+    const points = scene.project(shownRef.current.map((p) => p.id))
+    if (size.width < COMPACT_WIDTH) {
+      setPins(layoutPins(points, size))
+      setLabels([])
+      return
+    }
+    const placed = layoutLabels(points, size, sidesRef.current)
     sidesRef.current = new Map(placed.map((p) => [p.id, p.side]))
     setLabels(placed)
+    setPins([])
   }, [])
 
   const stopTween = () => cancelAnimationFrame(tweenRef.current)
@@ -92,6 +102,7 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
     const fit = () => {
       const { width, height } = wrap.getBoundingClientRect()
       sizeRef.current = { width, height }
+      setCompact(width < COMPACT_WIDTH)
       scene.resize(width, height)
       refresh()
     }
@@ -139,7 +150,11 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.button !== 0) return
     stopTween()
-    e.currentTarget.setPointerCapture(e.pointerId)
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId) // keeps the drag when the pointer leaves the canvas
+    } catch {
+      /* the pointer is already gone: the drag just ends at the edge */
+    }
     dragRef.current = { id: e.pointerId, x: e.clientX, y: e.clientY, moved: 0 }
   }
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
@@ -224,6 +239,23 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
             </button>
           )
         })}
+        {pins.map((pin) => {
+          const part = byId.get(pin.id)
+          if (!part) return null
+          return (
+            <button
+              key={pin.id}
+              type="button"
+              className={`car3d-pin ${part.state}${part.old ? ' old' : ''}${pin.facing ? '' : ' far'}${pin.id === selected ? ' selected' : ''}`}
+              style={{ left: pin.x - PIN_RADIUS, top: pin.y - PIN_RADIUS, width: 2 * PIN_RADIUS, height: 2 * PIN_RADIUS }}
+              aria-pressed={pin.id === selected}
+              aria-label={`${pin.n}: ${part.name}, ${part.value}`}
+              onClick={() => toggle(pin.id)}
+            >
+              {pin.n}
+            </button>
+          )
+        })}
       </div>
 
       <div className="car3d-bar">
@@ -236,27 +268,54 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
           <button type="button" onClick={() => zoom(1 / 0.8)} aria-label="Zoom out">−</button>
           <button type="button" onClick={() => zoom(0.8)} aria-label="Zoom in">+</button>
         </div>
-        <span className="muted car3d-hint">Drag to turn · Ctrl + scroll to zoom · schematic shape, not the real body</span>
+        <span className="muted car3d-hint">
+          {compact ? 'Drag sideways to turn · schematic shape, not the real body' : 'Drag to turn · Ctrl + scroll to zoom · schematic shape, not the real body'}
+        </span>
       </div>
 
-      <div className="car3d-detail" aria-live="polite">
-        {picked ? (
-          <>
-            <div className="car-part-head">
-              <span className="car-part-name">{picked.name}</span>
-              <span className="car-part-value">
-                {pickedBadge && <Badge kind={pickedBadge.kind}>{pickedBadge.text}</Badge>} {picked.value}
-              </span>
-            </div>
-            {picked.notes.map((n) => (
-              <div key={n} className="car-part-note">{n}</div>
-            ))}
-            {picked.at && picked.group !== 'wheels' && <div className="car-part-note">reported {fmtDateTime(picked.at)}</div>}
-          </>
-        ) : (
-          <span className="muted">Click a part of the car, or a label, to see its details here.</span>
-        )}
-      </div>
+      {compact ? (
+        <ol className="car3d-pins">
+          {pins.map((pin) => {
+            const part = byId.get(pin.id)
+            if (!part) return null
+            const badge = stateBadge(part)
+            const open = pin.id === selected
+            return (
+              <li key={pin.id} className={`car-part ${part.state}${open ? ' selected' : ''}`}>
+                <button type="button" className="car3d-pin-row" aria-expanded={open} onClick={() => toggle(pin.id)}>
+                  <span className={`car3d-pin-n ${part.state}`}>{pin.n}</span>
+                  <span className="car-part-name">{part.name}</span>
+                  <span className="car-part-value">
+                    {badge && <Badge kind={badge.kind}>{badge.text}</Badge>} {part.value}
+                  </span>
+                </button>
+                {open && part.notes.map((n) => (
+                  <div key={n} className="car-part-note">{n}</div>
+                ))}
+              </li>
+            )
+          })}
+        </ol>
+      ) : (
+        <div className="car3d-detail" aria-live="polite">
+          {picked ? (
+            <>
+              <div className="car-part-head">
+                <span className="car-part-name">{picked.name}</span>
+                <span className="car-part-value">
+                  {pickedBadge && <Badge kind={pickedBadge.kind}>{pickedBadge.text}</Badge>} {picked.value}
+                </span>
+              </div>
+              {picked.notes.map((n) => (
+                <div key={n} className="car-part-note">{n}</div>
+              ))}
+              {picked.at && picked.group !== 'wheels' && <div className="car-part-note">reported {fmtDateTime(picked.at)}</div>}
+            </>
+          ) : (
+            <span className="muted">Click a part of the car, or a label, to see its details here.</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }

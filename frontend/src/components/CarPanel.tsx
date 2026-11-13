@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useState, type ReactNode } from 'react'
 import { useCarWarnings, useDoors, useOilService, useOverview } from '../api/hooks'
 import {
   CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge,
@@ -9,18 +9,6 @@ import { Badge, Panel, QueryState } from './ui'
 
 // three.js is only fetched when the 3D view is shown (PLAN.md M39): keep this the only import of it
 const Car3D = lazy(() => import('../car3d/Car3D'))
-
-/** Labels need room beside the car: narrower screens keep the list until M40 gives them pins. */
-const WIDE = '(min-width: 641px)'
-const useWide = () =>
-  useSyncExternalStore(
-    (fn) => {
-      const q = window.matchMedia(WIDE)
-      q.addEventListener('change', fn)
-      return () => q.removeEventListener('change', fn)
-    },
-    () => window.matchMedia(WIDE).matches,
-  )
 
 function savedView(): CarView {
   try {
@@ -93,11 +81,10 @@ export function CarPanel() {
   const query = overview.isError || !doors.isError ? overview : doors
   const pending = overview.isPending || doors.isPending
   const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data)
-  const wide = useWide()
   const [choice, setChoice] = useState(savedView)
   const [failed, setFailed] = useState<string | null>(null)
   const [attempt, setAttempt] = useState(0)
-  const view = carView(choice, wide, failed)
+  const view = carView(choice, failed)
   const choose = (next: CarView) => {
     setChoice(next)
     if (next === '3d') {
@@ -116,7 +103,7 @@ export function CarPanel() {
       <QueryState query={{ isPending: pending, isError: query.isError, error: query.error }}>
         <div className="car-top">
           <p>{carHeadline(car)}</p>
-          {car.hasData && wide && (
+          {car.hasData && (
             <div className="theme-toggle" role="group" aria-label="How the car is shown">
               <button type="button" aria-pressed={view === '3d'} onClick={() => choose('3d')}>3D</button>
               <button type="button" aria-pressed={view === 'list'} onClick={() => choose('list')}>List</button>
@@ -125,7 +112,7 @@ export function CarPanel() {
         </div>
         {car.hasData && (
           <>
-            {failed && choice === '3d' && wide && <p className="muted car-failed">{failed} Showing the list instead.</p>}
+            {failed && choice === '3d' && <p className="muted car-failed">{failed} Showing the list instead.</p>}
             {view === '3d' ? (
               <Guard key={attempt} onError={setFailed}>
                 <Suspense fallback={list}>

@@ -226,10 +226,9 @@ describe('how the panel is shown', () => {
     expect(parseCarView('list')).toBe('list')
     for (const v of ['3d', null, undefined, '', 'LIST', 7]) expect(parseCarView(v)).toBe('3d')
   })
-  it('falls back to the list on a narrow screen or when the 3D view failed', () => {
-    expect(carView('3d', true, null)).toBe('3d')
-    expect(carView('3d', false, null)).toBe('list')
-    expect(carView('3d', true, 'no WebGL')).toBe('list')
-    expect(carView('list', true, null)).toBe('list')
+  it('falls back to the list when the 3D view failed', () => {
+    expect(carView('3d', null)).toBe('3d')
+    expect(carView('3d', 'no WebGL')).toBe('list')
+    expect(carView('list', null)).toBe('list')
   })
 })

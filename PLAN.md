@@ -852,7 +852,7 @@ No new columns arrived with the latest export; these are things the data already
 2. **M36 low-voltage alert wanted**, default threshold **12.0 V**, still configurable in `alerts.yaml`.
 3. **M37 ships to the phone too** (pack, TypeScript engine, goldens), not Mac only.
 
-## The car in 3D (M38–M41; M38 and M39 built)
+## The car in 3D (M38–M41; M38–M40 built)
 
 ### Goal
 A "The car" panel that draws the car in 3D with what its latest status reports say, each figure next to the part it belongs to. The user turns the car and looks at it from any side. Mac dashboard and phone app, offline on the phone like everything else. This is the first of the 3D ideas (status view); the others (time scrubber, who rides on the seats, alerts on the car, fault map, freeze-frame scene) would build on it and are not planned here.
@@ -930,13 +930,23 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 - **Tests:** 34 in `car3d/*.test.ts` (shape, limits for nonsense dimensions, driver's door follows the steering side, camera limits and views, label layout: no overlap, inside the view, input order irrelevant, side kept near the middle) plus 2 in `car.test.ts` for the view choice. A source test fails if anything but `scene.ts` / `Car3D.tsx` imports `three`, or if either is imported statically from outside `car3d/`. The scene itself is not unit tested (no WebGL in the test runner).
 - **Checked in the browser (demo data, Mac layout):** both cars, the four views, dragging, clicking a part and a label, dark and light with a live theme switch, and the fallback with WebGL switched off. **Not seen:** an open door, trunk or hood (neither sample has one; the swing directions are by construction only), and the `Guard` path.
 
-### M40 — The 3D scene on the phone
+### M40 — The 3D scene on the phone ✅ done
 - **Build:** done in M39 (`three` in `mobile/package.json` and `dedupe`; the chunk is precached). Left for here: a test on the generated precache list, and removing the 640 px gate in `CarPanel`. Pages and CI size guards updated if they count files.
 - **Touch:** a horizontal drag turns the car, a vertical drag scrolls the page (`touch-action: pan-y` on the canvas), so the panel can never trap the scroll; zoom by two buttons instead of pinch (pinch belongs to the page); the fixed-view buttons are thumb-sized (`pointer: coarse`).
 - **Narrow screen:** labels become numbered pins with the figures listed under the canvas (the M38 list, numbered), because eight labels do not fit beside a car 360 px wide. CSS under `max-width: 640px` only; desktop unchanged.
 - **Performance and robustness:** device pixel ratio capped at 2, render on demand, the scene and its GPU memory released when leaving Status or switching model (`<Routes key={id}>` remounts), context loss falls back to the list and recovers on return.
 - **Tests:** `make mobile-test` unchanged and passing (no engine change); in the iOS Simulator: install, go offline, reload, open Status, turn the car, switch to the CX-60, both themes.
 - **Done when:** the demo on the phone shows the 3D car with no network, and scrolling Status past the panel works with one finger.
+
+**M40 as built.**
+- **The gate is gone:** every screen gets the 3D view and the 3D | List switch (`carView(choice, failed)`).
+- **Pins on a narrow view:** when the view is under 560 px wide (`COMPACT_WIDTH`, measured on the panel, not the screen) the labels give way to **numbered pins** on the car and a numbered list of the same parts under it; tapping a pin or its row opens that part's notes in the row. `layoutPins` (pure, tested) moves pins apart that would cover each other and keeps them in the view; a closed door that is tapped is added **last**, so the numbers already on screen never change. Pins of parts on the far side are dimmed, as the labels are.
+- **Touch:** a finger turns the car sideways only and its up-and-down movement scrolls the page (`touch-action: pan-y`, the vertical part of a touch drag is ignored), so the panel cannot trap the scroll; zoom is the two buttons. View and zoom buttons are 44 px high on touch screens (the existing rule); a pin is drawn 22 px wide with a 42 px touch area.
+- **Fit:** the view is 270 px high on a phone and the camera's angle opens on a view narrower than 3:2, so the car's length still fits across in portrait.
+- **Robustness:** pointer capture tolerates a pointer that is already gone; the scene and its GPU memory are released when leaving Status or switching the car (the pages remount); a lost context shows the list, and coming back to the page tries again.
+- **Offline:** the chunk is in the build output, so the generated `sw.js` precaches it; CI's phone job now fails if `dist/assets/Car3D-*.js` is missing or not in the precache list (a step in `ci.yml` rather than a unit test, because the list only exists after a build).
+- **Tests:** 5 for `layoutPins` and the door order (frontend 210 in all); `make mobile-test` unchanged and passing (888: no engine change).
+- **Checked:** in the phone app at 375 px on both demo cars: pins, the numbered list, a tapped pin, synthetic touch events (a vertical drag does not turn the car, a horizontal one does), no sideways scroll; then the **production build with the server stopped**: the page reloads from the service worker and draws the 3D car. **In the iOS Simulator** (iPhone 17, iOS 27.1, Safari, the production build): Safari draws the 3D car; a sideways swipe on the car turns it and the page stays put; a vertical swipe that starts on the car scrolls the page and leaves the car as it was; tapping a pin and tapping a row open that part's notes; the view buttons work; and with the server stopped a reload still shows the page and the 3D car. **Not done:** a real iPhone, the app installed to the Home Screen, the dark theme and the CX-60 in the Simulator (both were checked in the desktop browser at phone size).
 
 ### M41 — Each model's proportions, steering side, docs
 - **Config:** optional `body:` in `config/models/<id>/model.yaml` (`length_mm`, `width_mm`, `height_mm`, `wheelbase_mm`, `track_mm`, `wheel_diameter_mm`, `steering: left | right`), validated in `models.py`; omitted = the generic SUV with left-hand steering. The figures are the public ones from the owner's manual; the two shipped models get theirs after checking them against the manual (to verify, not from memory: CX-5 about 4575 × 1845 × 1680 mm, wheelbase 2700; CX-60 about 4745 × 1890 × 1680 mm, wheelbase 2870).
@@ -951,7 +961,7 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 | The stylised car looks like a toy, or is mistaken for the real shape | a deliberately schematic, technical look (flat shading, outlines, the app's palette) and a caption "schematic, not to scale in detail" |
 | Bundle and offline size grow | lazy chunk, measured in M39; build check that the entry chunk has no `three`; nothing loaded from another host |
 | Labels overlap or flicker while turning | label layout is pure and tested; positions snap to a side per part; on narrow screens pins replace labels |
-| The canvas traps scrolling on the phone | `pan-y`, buttons for zoom, checked in the Simulator |
+| The canvas traps scrolling on the phone | `pan-y`, buttons for zoom; checked with real swipes in the iOS Simulator |
 | WebGL missing, context lost, old device | the list panel of M38 is always there |
 | The drawing implies knowledge we do not have (lock state, door 0 = closed) | unknown drawn as unknown; assumptions written under the panel, as today |
 | Headless screenshots cannot draw WebGL | software rendering first; otherwise the list view |

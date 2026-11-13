@@ -89,7 +89,10 @@ export function layoutLabels(
  * would bury the figures.
  */
 export function labelledParts(car: CarState, selected: PartId | null): Part[] {
-  return car.parts.filter((p) => p.state !== 'absent' && (p.group !== 'doors' || p.state !== 'ok' || p.id === selected))
+  const always = car.parts.filter((p) => p.state !== 'absent' && (p.group !== 'doors' || p.state !== 'ok'))
+  // a closed door that was clicked comes last, so the numbers of the pins already on screen do not change
+  const extra = car.parts.filter((p) => p.id === selected && p.state !== 'absent' && !always.includes(p))
+  return [...always, ...extra]
 }
 
 /** The two lines of a label: a short name ("Front left" for "Front left wheel") and the figure. */
@@ -105,4 +108,63 @@ export function labelText(p: Part): { name: string; value: string } {
 /** How many labels fit in one column of a view this high. */
 export function columnCapacity(height: number, box: LabelBox = LABEL): number {
   return Math.max(0, Math.floor((height - box.gap) / (box.height + box.gap)))
+}
+
+// ---- narrow screens: numbered pins on the car, the figures in a numbered list under it (M40) ----
+
+export interface Pin {
+  id: PartId
+  /** The number shown on the pin and in the list (1 = the first labelled part, in the car's fixed order). */
+  n: number
+  /** Centre of the pin. */
+  x: number
+  y: number
+  facing: boolean
+}
+
+/** Radius of a pin, and the view width under which pins replace the labels (two label columns leave no room for the car). */
+export const PIN_RADIUS = 11
+export const COMPACT_WIDTH = 560
+
+/**
+ * Pins at their parts, numbered in the order given, moved apart where two would cover each other (the engine and
+ * the hood are close from most angles) and kept inside the view. The same input always gives the same pins.
+ */
+export function layoutPins(points: readonly Point[], view: { width: number; height: number }, radius = PIN_RADIUS): Pin[] {
+  const pins = points.map((p, i) => ({ id: p.id, n: i + 1, x: p.x, y: p.y, facing: p.facing }))
+  const min = 2 * radius + 2
+  const clamp = (pin: Pin) => {
+    pin.x = Math.min(view.width - radius, Math.max(radius, pin.x))
+    pin.y = Math.min(view.height - radius, Math.max(radius, pin.y))
+  }
+  pins.forEach(clamp)
+  for (let pass = 0; pass < 12; pass++) {
+    let moved = false
+    for (let i = 0; i < pins.length; i++) {
+      for (let j = i + 1; j < pins.length; j++) {
+        const a = pins[i]
+        const b = pins[j]
+        let dx = b.x - a.x
+        let dy = b.y - a.y
+        let d = Math.hypot(dx, dy)
+        if (d >= min) continue
+        if (d < 0.01) {
+          // exactly on top of each other: part them sideways, the lower number to the left
+          dx = 1
+          dy = 0
+          d = 1
+        }
+        const push = (min - d) / 2
+        a.x -= (dx / d) * push
+        a.y -= (dy / d) * push
+        b.x += (dx / d) * push
+        b.y += (dy / d) * push
+        clamp(a)
+        clamp(b)
+        moved = true
+      }
+    }
+    if (!moved) break
+  }
+  return pins
 }

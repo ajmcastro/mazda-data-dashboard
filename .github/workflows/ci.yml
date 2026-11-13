@@ -88,6 +88,10 @@ jobs:
           test -f mobile/dist/demo-cx5.cx5pack
           test -f mobile/dist/demo-cx60.cx5pack
           test -z "$(find mobile/dist -name '*.cx5pack' ! -name 'demo-*.cx5pack')"
+      - name: The 3D view is a chunk of its own and the service worker precaches it (it must work offline)
+        run: |
+          ls mobile/dist/assets/Car3D-*.js
+          grep -q 'assets/Car3D-' mobile/dist/sw.js
 
   # Nothing private may be published: no databases, raw exports or data packs in git (see `make audit`).
   privacy:

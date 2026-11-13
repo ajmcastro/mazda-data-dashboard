@@ -40,6 +40,9 @@ interface Palette {
   open: Color
 }
 
+/** Vertical angle of view (degrees) on a wide view. */
+const FOV = 30
+
 const BEHIND_LINES = { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 } as const
 
 const mix = (a: Color, b: Color, t: number) => a.clone().lerp(b, t)
@@ -82,7 +85,7 @@ function outline(points: readonly Vec2[], width: number, bevel: number): Extrude
 export class CarScene {
   private renderer: WebGLRenderer
   private scene = new Scene()
-  private camera = new PerspectiveCamera(30, 2, 0.1, 100)
+  private camera = new PerspectiveCamera(FOV, 2, 0.1, 100)
   private parts = new Map<PartId, PartObject>()
   private fixed: { mesh: Mesh; role: 'body' | 'glass' | 'hub' | 'ground' }[] = []
   private bodyEdges: LineSegments[] = []
@@ -265,6 +268,9 @@ export class CarScene {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
     this.renderer.setSize(this.width, this.height, false)
     this.camera.aspect = this.width / this.height
+    // on a view narrower than 3:2 the angle opens up so the car's length still fits across (a phone in portrait)
+    const half = Math.tan((FOV / 2) * (Math.PI / 180)) * Math.max(1, 1.5 / this.camera.aspect)
+    this.camera.fov = 2 * Math.atan(half) * (180 / Math.PI)
     this.camera.updateProjectionMatrix()
   }
 

@@ -4,7 +4,7 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { CarState, Part, PartId } from '../car'
-import { LABEL, columnCapacity, labelText, labelledParts, layoutLabels, type Point, type Side } from './labels'
+import { LABEL, PIN_RADIUS, columnCapacity, labelText, labelledParts, layoutLabels, layoutPins, type Point, type Side } from './labels'
 
 const VIEW = { width: 800, height: 400 }
 const pt = (id: PartId, x: number, y: number, facing = true): Point => ({ id, x, y, facing })
@@ -79,7 +79,9 @@ describe('labelledParts', () => {
     expect(labelledParts(car, null).map((p) => p.id)).toEqual(['wheel_fl', 'trunk', 'hood', 'fuel'])
   })
   it('labels a closed door once it is selected', () => {
-    expect(labelledParts(car, 'door_driver').map((p) => p.id)).toContain('door_driver')
+    // last, so the pins already numbered keep their numbers
+    expect(labelledParts(car, 'door_driver').map((p) => p.id)).toEqual(['wheel_fl', 'trunk', 'hood', 'fuel', 'door_driver'])
+    expect(labelledParts(car, 'trunk').map((p) => p.id)).toEqual(['wheel_fl', 'trunk', 'hood', 'fuel'])
   })
   it('never labels what the car does not send, even when selected', () => {
     expect(labelledParts(car, 'engine').map((p) => p.id)).not.toContain('engine')
@@ -91,6 +93,53 @@ describe('labelledParts', () => {
     expect(labelText(engine)).toEqual({ name: 'Oil change in', value: '6,000 km' })
     expect(labelText({ ...engine, value: 'oil level flag clear' })).toEqual({ name: 'Oil level flag', value: 'clear' })
     expect(labelText({ ...engine, value: 'not sent' })).toEqual({ name: 'Driver door', value: 'not sent' })
+  })
+})
+
+describe('layoutPins', () => {
+  const PHONE = { width: 340, height: 260 }
+  const apart = (pins: { x: number; y: number }[]) => {
+    let least = Infinity
+    for (let i = 0; i < pins.length; i++) for (let j = i + 1; j < pins.length; j++) {
+      least = Math.min(least, Math.hypot(pins[i].x - pins[j].x, pins[i].y - pins[j].y))
+    }
+    return least
+  }
+
+  it('numbers the pins in the order given and leaves a free pin on its part', () => {
+    const pins = layoutPins([pt('wheel_fl', 60, 200), pt('fuel', 250, 120, false)], PHONE)
+    expect(pins).toEqual([
+      { id: 'wheel_fl', n: 1, x: 60, y: 200, facing: true },
+      { id: 'fuel', n: 2, x: 250, y: 120, facing: false },
+    ])
+  })
+
+  it('moves pins apart that would cover each other', () => {
+    const pins = layoutPins([pt('engine', 100, 100), pt('hood', 104, 102), pt('dash', 100, 100)], PHONE)
+    expect(apart(pins)).toBeGreaterThanOrEqual(2 * PIN_RADIUS)
+    // and not far: each stays near its part
+    for (const p of pins) expect(Math.hypot(p.x - 100, p.y - 100)).toBeLessThan(4 * PIN_RADIUS)
+  })
+
+  it('keeps every pin inside the view', () => {
+    const pins = layoutPins([pt('trunk', -30, 400), pt('hood', 500, -10), pt('fuel', 339, 259), pt('dash', 338, 258)], PHONE)
+    for (const p of pins) {
+      expect(p.x).toBeGreaterThanOrEqual(PIN_RADIUS)
+      expect(p.x).toBeLessThanOrEqual(PHONE.width - PIN_RADIUS)
+      expect(p.y).toBeGreaterThanOrEqual(PIN_RADIUS)
+      expect(p.y).toBeLessThanOrEqual(PHONE.height - PIN_RADIUS)
+    }
+  })
+
+  it('separates nine pins crowded in the middle of a phone screen', () => {
+    const ids: PartId[] = ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr', 'trunk', 'hood', 'fuel', 'engine', 'dash']
+    const pins = layoutPins(ids.map((id, i) => pt(id, 160 + (i % 3) * 6, 120 + Math.floor(i / 3) * 6)), PHONE)
+    expect(apart(pins)).toBeGreaterThanOrEqual(2 * PIN_RADIUS - 1)
+  })
+
+  it('gives the same pins every time', () => {
+    const points = [pt('engine', 100, 100), pt('hood', 100, 100), pt('fuel', 110, 100)]
+    expect(layoutPins(points, PHONE)).toEqual(layoutPins(points, PHONE))
   })
 })
 
