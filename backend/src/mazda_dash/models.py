@@ -43,6 +43,9 @@ BODY_MM = {
     "wheel_diameter_mm": (500, 900),
 }
 STEERING = ("left", "right")
+# body.shape: which outline the 3D drawing uses. Keep equal to SHAPES in frontend/src/car3d/shapes/common.ts
+# (a frontend test compares the two lists).
+SHAPES = ("generic", "cx60")
 
 
 class ModelConfigError(ValueError):
@@ -61,9 +64,10 @@ class Body:
     track_mm: float | None = None
     wheel_diameter_mm: float | None = None
     steering: str = "left"
+    shape: str = "generic"
 
     def as_dict(self) -> dict:
-        return {k: getattr(self, k) for k in (*BODY_MM, "steering")}
+        return {k: getattr(self, k) for k in (*BODY_MM, "steering", "shape")}
 
 
 def _load_body(path: Path, data: object) -> Body | None:
@@ -71,11 +75,11 @@ def _load_body(path: Path, data: object) -> Body | None:
         return None
     if not isinstance(data, dict):
         raise ModelConfigError(f"{path}: body must be a mapping (length_mm, ...)")
-    unknown = set(data) - set(BODY_MM) - {"steering"}
+    unknown = set(data) - set(BODY_MM) - {"steering", "shape"}
     if unknown:
         raise ModelConfigError(
             f"{path}: body has unknown key(s) {', '.join(sorted(unknown))}; "
-            f"known: {', '.join(BODY_MM)}, steering"
+            f"known: {', '.join(BODY_MM)}, steering, shape"
         )
     values = {}
     for key, (lo, hi) in BODY_MM.items():
@@ -90,10 +94,15 @@ def _load_body(path: Path, data: object) -> Body | None:
     steering = data.get("steering", "left")
     if steering not in STEERING:
         raise ModelConfigError(f"{path}: body.steering must be left or right")
+    shape = data.get("shape", "generic")
+    if shape not in SHAPES:
+        raise ModelConfigError(
+            f"{path}: body.shape must be one of {', '.join(SHAPES)} (the outlines the dashboard can draw)"
+        )
     wheelbase, length = values.get("wheelbase_mm"), values.get("length_mm")
     if wheelbase and length and wheelbase >= length:
         raise ModelConfigError(f"{path}: body.wheelbase_mm must be less than length_mm")
-    return Body(**values, steering=steering)
+    return Body(**values, steering=steering, shape=shape)
 
 
 @dataclass(frozen=True)

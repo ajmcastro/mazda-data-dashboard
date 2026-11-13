@@ -5274,6 +5274,11 @@
             ],
             "title": "Steering",
             "default": "left"
+          },
+          "shape": {
+            "type": "string",
+            "title": "Shape",
+            "default": "generic"
           }
         },
         "type": "object",

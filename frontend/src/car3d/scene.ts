@@ -4,7 +4,7 @@
 // Every colour of the car is read from the page's CSS variables, so both themes work (only the lights are white).
 
 import {
-  BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, DirectionalLight, EdgesGeometry,
+  BufferGeometry, CircleGeometry, Color, CylinderGeometry, DirectionalLight, EdgesGeometry,
   ExtrudeGeometry, Group, HemisphereLight, LineBasicMaterial, LineDashedMaterial, LineSegments, Material, Mesh,
   MeshBasicMaterial, MeshLambertMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, Shape, Vector2, Vector3,
   WebGLRenderer,
@@ -176,32 +176,31 @@ export class CarScene {
     }
 
     for (const d of geo.doors) {
-      const length = d.x0 - d.x1
       const group = new Group()
       group.position.set(d.x0, 0, d.z) // the hinge: the door's front edge
-      const panel = new BoxGeometry(length, d.y1 - d.y0, 0.03)
-      this.addPart(d.id, 'door', group, panel, (o) => o.position.set(-length / 2, (d.y0 + d.y1) / 2, 0), d.side)
+      const panel = outline(d.outline.map(([x, y]): Vec2 => [x - d.x0, y]), 0.03, 0.004)
+      this.addPart(d.id, 'door', group, panel, () => {}, d.side)
     }
 
     {
-      const { hinge, tip, width } = geo.hood
-      const length = Math.hypot(tip[0] - hinge[0], tip[1] - hinge[1])
-      const rest = Math.atan2(tip[1] - hinge[1], tip[0] - hinge[0])
+      // a strip along the hood's line, standing a little proud of the body; it turns about its rear end
+      const { hinge, line, width } = geo.hood
+      const rel = line.map(([x, y]): Vec2 => [x - hinge[0], y - hinge[1]])
+      const strip: Vec2[] = [...rel, ...[...rel].reverse().map(([x, y]): Vec2 => [x, y + 0.028])]
       const group = new Group()
       group.position.set(hinge[0], hinge[1], 0)
-      this.addPart('hood', 'hood', group, new BoxGeometry(length, 0.028, width), (o) => o.position.set(length / 2, 0, 0), 1, rest)
+      this.addPart('hood', 'hood', group, outline(strip, width, 0.004), () => {})
     }
 
     {
-      const { hinge, knee, foot, width } = geo.trunk
+      // the same for the tailgate, down the back of the car from its hinge on the roof
+      const { hinge, line, width } = geo.trunk
       const t = 0.035
-      const rel = (p: Vec2): Vec2 => [p[0] - hinge[0], p[1] - hinge[1]]
-      const k = rel(knee)
-      const f = rel(foot)
-      const shape: Vec2[] = [[0, 0], k, f, [f[0] - t, f[1]], [k[0] - t, k[1] + 0.01], [-t * 0.6, t * 0.6]]
+      const rel = line.map(([x, y]): Vec2 => [x - hinge[0], y - hinge[1]])
+      const outer = [...rel].reverse().map(([x, y], i, all): Vec2 => (i === all.length - 1 ? [-t * 0.6, t * 0.6] : [x - t, y + 0.01]))
       const group = new Group()
       group.position.set(hinge[0], hinge[1], 0)
-      this.addPart('trunk', 'trunk', group, outline(shape, width, 0.008), () => {})
+      this.addPart('trunk', 'trunk', group, outline([...rel, ...outer], width, 0.008), () => {})
     }
 
     this.scene.add(new HemisphereLight(0xffffff, 0x888888, 2.1))

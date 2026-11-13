@@ -24,6 +24,8 @@ export interface PackBody {
   track_mm: number | null
   wheel_diameter_mm: number | null
   steering: 'left' | 'right'
+  /** The outline the 3D drawing uses; absent in packs made before M42 (drawn as the generic car). */
+  shape?: string
 }
 
 export interface Manifest {

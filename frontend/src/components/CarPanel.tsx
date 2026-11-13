@@ -4,7 +4,7 @@ import {
   CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge,
   type CarState, type CarView, type PartGroup,
 } from '../car'
-import { bodyOfModel } from '../car3d/geometry'
+import { bodyOfModel } from '../car3d/shapes/common' // not geometry.ts: the outlines belong in the 3D chunk
 import { fmtDateTime } from '../lib'
 import { useCurrentModel } from '../model'
 import { Badge, Panel, QueryState } from './ui'

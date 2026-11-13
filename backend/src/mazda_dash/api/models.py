@@ -23,6 +23,9 @@ class ModelBody(BaseModel):
     track_mm: float | None = None
     wheel_diameter_mm: float | None = None
     steering: Literal["left", "right"] = "left"
+    shape: str = (
+        "generic"  # the outline the 3D drawing uses (SHAPES in mazda_dash/models.py)
+    )
 
 
 class ModelInfo(BaseModel):

@@ -140,7 +140,7 @@ describe('helpers', () => {
 
 describe('car models', () => {
   const models = [
-    { id: 'cx5', name: 'Mazda CX-5', platform: '24PF', default: true, hidden_pages: [], body: { length_mm: 4575, width_mm: null, height_mm: null, wheelbase_mm: 2700, track_mm: null, wheel_diameter_mm: null, steering: 'left' as const }, has_data: true, first_day: '2026-03-01', last_day: '2026-06-30' },
+    { id: 'cx5', name: 'Mazda CX-5', platform: '24PF', default: true, hidden_pages: [], body: { length_mm: 4575, width_mm: null, height_mm: null, wheelbase_mm: 2700, track_mm: null, wheel_diameter_mm: null, steering: 'left' as const, shape: 'generic' }, has_data: true, first_day: '2026-03-01', last_day: '2026-06-30' },
     { id: 'cx60', name: 'Mazda CX-60', platform: null, default: false, hidden_pages: ['trends'], body: null, has_data: true, first_day: '2026-04-10', last_day: '2026-07-31' },
   ]
   let api: Api
@@ -185,6 +185,8 @@ describe('the pack names its car model', () => {
     const body = manifest.model.body
     expect(body?.steering === 'left' || body?.steering === 'right').toBe(true)
     expect(typeof body?.length_mm).toBe('number')
+    expect(body?.shape).toBe('cx60') // the outline's name travels with the pack too (M42)
+    expect(readPack(packBytes('cx5')).manifest.model.body?.shape).toBe('generic')
   })
 
   it('refuses a pack of the older format, or one that does not say its model, with a message', async () => {

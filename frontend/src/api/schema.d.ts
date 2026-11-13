@@ -1402,6 +1402,11 @@ export interface components {
              * @enum {string}
              */
             steering: "left" | "right";
+            /**
+             * Shape
+             * @default generic
+             */
+            shape: string;
         };
         /** ModelInfo */
         ModelInfo: {

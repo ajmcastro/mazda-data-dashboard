@@ -1,6 +1,9 @@
+/// <reference types="node" />
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { PartId } from '../car'
-import { DEFAULT_BODY, bodyOfModel, carGeometry, facesCamera, saneBody } from './geometry'
+import { DEFAULT_BODY, SHAPES, bodyOfModel, carGeometry, facesCamera, saneBody, type Body, type CarGeometry } from './geometry'
+import fixture from './shapes/generic.fixture.json'
 
 const PARTS: PartId[] = [
   'wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr', 'door_driver', 'door_passenger', 'door_rear_left',
@@ -157,5 +160,165 @@ describe('facesCamera', () => {
   it('is always true for a point inside the car', () => {
     expect(facesCamera(g.anchors.fuel, [6, 2, 6])).toBe(true)
     expect(facesCamera(g.anchors.fuel, [-6, 2, -6])).toBe(true)
+  })
+})
+
+// ---- shapes by name (PLAN.md M42) ----
+
+const CX60: Partial<Body> = { length: 4.745, width: 1.89, height: 1.68, wheelbase: 2.87, track: 1.64, wheelDiameter: 0.745 }
+
+describe('the generic shape', () => {
+  /** What the geometry was before shapes had names: without the fields M42 added. */
+  const before = (g: CarGeometry) => {
+    const { shape: _shape, ...body } = g.body
+    return JSON.parse(JSON.stringify({
+      ...g, body,
+      doors: g.doors.map(({ outline: _outline, ...d }) => d),
+      hood: { hinge: g.hood.hinge, tip: g.hood.tip, width: g.hood.width },
+      trunk: { hinge: g.trunk.hinge, knee: g.trunk.knee, foot: g.trunk.foot, width: g.trunk.width },
+    }))
+  }
+
+  it('is exactly the car drawn before shapes had names', () => {
+    expect(before(carGeometry())).toEqual(fixture.default)
+    expect(before(carGeometry(CX60))).toEqual(fixture.cx60)
+    expect(before(carGeometry({ steering: 'right', length: 4.2 }))).toEqual(fixture.rhd)
+  })
+
+  it('is what an unknown or missing shape name gives', () => {
+    expect(saneBody({ shape: 'cx90' as never }).shape).toBe('generic')
+    expect(bodyOfModel({ length_mm: 4745, shape: 'cx90' })).toEqual({ length: 4.745 })
+    expect(bodyOfModel({ shape: 'cx60' })).toEqual({ shape: 'cx60' })
+    expect(carGeometry(bodyOfModel({ shape: null }))).toEqual(carGeometry())
+  })
+
+  it('has flat doors, a flat hood and a tailgate with one knee', () => {
+    const g = carGeometry()
+    for (const d of g.doors) expect(d.outline).toHaveLength(4)
+    expect(g.hood.line).toEqual([g.hood.hinge, g.hood.tip])
+    expect(g.trunk.line).toEqual([g.trunk.hinge, g.trunk.knee, g.trunk.foot])
+  })
+})
+
+describe.each(SHAPES)('every shape: %s', (shape) => {
+  const bodies: Partial<Body>[] = [{ shape }, { ...CX60, shape }, { shape, length: 3.6, wheelDiameter: 0.9 }, { shape, length: 6, wheelDiameter: 0.5, height: 2.2 }]
+
+  it.each(bodies)('is drawable for %j', (input) => {
+    const g = carGeometry(input)
+    const { length: L, height: H, width: W } = g.body
+    // outlines inside the car's length and height, above the ground
+    for (const [x, y] of [...g.lower, ...g.cabin]) {
+      expect(Math.abs(x)).toBeLessThanOrEqual(L / 2 + 1e-3) // points are rounded to the millimetre
+      expect(y).toBeGreaterThan(0)
+      expect(y).toBeLessThanOrEqual(H + 1e-3)
+    }
+    expect(Math.max(...g.cabin.map((p) => p[1]))).toBeCloseTo(H, 2)
+    expect(Math.max(...g.lower.map((p) => p[0]))).toBeCloseTo(L / 2, 2)
+    expect(Math.min(...g.lower.map((p) => p[0]))).toBeCloseTo(-L / 2, 2)
+    // wheels a wheelbase apart, on the ground, an arch over each that clears the tire
+    const fl = g.wheels.find((w) => w.id === 'wheel_fl')!
+    const rl = g.wheels.find((w) => w.id === 'wheel_rl')!
+    expect(fl.centre[0] - rl.centre[0]).toBeCloseTo(g.body.wheelbase, 2)
+    for (const w of [fl, rl]) {
+      expect(w.centre[1]).toBeCloseTo(w.radius, 3)
+      const over = g.lower.filter(([x]) => Math.abs(x - w.centre[0]) < 0.03)
+      expect(over.length).toBeGreaterThan(0)
+      for (const [, y] of over) expect(y).toBeGreaterThan(2 * w.radius)
+    }
+    // doors: hinged at the front, between the axles' arches, never inside an arch, under the glass
+    for (const d of g.doors) {
+      expect(d.x0).toBeGreaterThan(d.x1)
+      expect(d.x0 - d.x1).toBeGreaterThan(0.25)
+      expect(d.outline.length).toBeGreaterThanOrEqual(4)
+      for (const [x, y] of d.outline) {
+        expect(x).toBeLessThanOrEqual(d.x0 + 1e-9)
+        expect(x).toBeGreaterThanOrEqual(d.x1 - 1e-9)
+        for (const w of [fl, rl]) expect(Math.hypot(x - w.centre[0], y - w.centre[1])).toBeGreaterThan(w.radius + 0.05)
+        expect(y).toBeLessThan(Math.max(...g.cabin.map((p) => p[1])))
+      }
+      expect(Math.abs(d.z)).toBeGreaterThan(W / 2)
+    }
+    // hood from the windshield forward and down, tailgate from the roof down the back
+    expect(g.hood.line[0]).toEqual(g.hood.hinge)
+    expect(g.hood.line.at(-1)).toEqual(g.hood.tip)
+    expect(g.hood.tip[0]).toBeGreaterThan(g.hood.hinge[0])
+    expect(g.hood.tip[1]).toBeLessThan(g.hood.hinge[1])
+    expect(g.trunk.line[0]).toEqual(g.trunk.hinge)
+    expect(g.trunk.line.at(-1)).toEqual(g.trunk.foot)
+    expect(g.trunk.hinge[1]).toBeGreaterThan(g.trunk.knee[1])
+    expect(g.trunk.knee[1]).toBeGreaterThan(g.trunk.foot[1])
+    // a point for every part, on or inside the car
+    expect(Object.keys(g.anchors).sort()).toEqual([...PARTS].sort())
+    for (const id of PARTS) {
+      const [x, y, z] = g.anchors[id].pos
+      expect(Math.abs(x)).toBeLessThanOrEqual(L / 2 + 0.01)
+      expect(y).toBeGreaterThan(0)
+      expect(y).toBeLessThanOrEqual(H)
+      expect(Math.abs(z)).toBeLessThanOrEqual(W / 2 + 0.05)
+    }
+    expect(carGeometry(input)).toEqual(g)
+  })
+
+  it('draws the driver\'s door on the steering side', () => {
+    const side = (steering: 'left' | 'right') => carGeometry({ shape, steering }).doors.find((d) => d.id === 'door_driver')!.side
+    expect(side('left')).toBe(-1)
+    expect(side('right')).toBe(1)
+    expect(carGeometry({ shape, steering: 'right' }).anchors.dash.pos[2]).toBeGreaterThan(0)
+  })
+})
+
+describe('the CX-60 shape', () => {
+  const generic = carGeometry({ ...CX60, shape: 'generic' })
+  const cx60 = carGeometry({ ...CX60, shape: 'cx60' })
+  const axle = (g: CarGeometry, id: 'wheel_fl' | 'wheel_rl') => g.wheels.find((w) => w.id === id)!.centre[0]
+
+  it('is picked by its name and keeps the model\'s dimensions', () => {
+    expect(cx60.body).toMatchObject({ ...CX60, shape: 'cx60' })
+    expect(cx60.lower).not.toEqual(generic.lower)
+    expect(cx60.radius).toBe(generic.radius)
+  })
+
+  it('has a long hood: the windshield starts well behind the front axle, further back than on the generic car', () => {
+    const cowl = (g: CarGeometry) => g.hood.hinge[0]
+    expect(axle(cx60, 'wheel_fl') - cowl(cx60)).toBeGreaterThan(0.5)
+    expect(axle(cx60, 'wheel_fl') - cowl(cx60)).toBeGreaterThan(axle(generic, 'wheel_fl') - cowl(generic))
+    expect(cx60.hood.line.length).toBeGreaterThan(2) // a curved hood, not a flat board
+  })
+
+  it('has its roof highest over the front seats, falling towards the tail', () => {
+    const top = cx60.cabin.reduce((a, b) => (b[1] > a[1] ? b : a))
+    const middle = (axle(cx60, 'wheel_fl') + axle(cx60, 'wheel_rl')) / 2
+    expect(top[0]).toBeLessThan(middle + 0.6)
+    expect(top[0]).toBeGreaterThan(middle - 0.6)
+    const roofEnd = cx60.trunk.hinge
+    expect(roofEnd[1]).toBeLessThan(top[1] - 0.1)
+  })
+
+  it('has a shorter overhang in front than behind, and the tail lights as its rearmost point', () => {
+    const { length: L } = cx60.body
+    expect(L / 2 - axle(cx60, 'wheel_fl')).toBeLessThan(axle(cx60, 'wheel_rl') + L / 2)
+    const rearmost = cx60.lower.reduce((a, b) => (b[0] < a[0] ? b : a))
+    expect(rearmost[1]).toBeGreaterThan(0.5 * cx60.body.height)
+    expect(rearmost[1]).toBeLessThan(0.7 * cx60.body.height)
+  })
+
+  it('cuts the rear door over the wheel arch and leans the pillar between the doors back', () => {
+    const front = cx60.doors.find((d) => d.id === 'door_driver')!
+    const rear = cx60.doors.find((d) => d.id === 'door_rear_left')!
+    expect(rear.outline.length).toBeGreaterThan(4)
+    expect(rear.x1).toBeLessThan(axle(cx60, 'wheel_rl')) // its top corner is behind the rear axle
+    // the pillar leans: the front door is longer at the bottom than at the top
+    const [topFront, bottomFront, bottomRear, topRear] = front.outline
+    expect(bottomFront[0] - bottomRear[0]).toBeLessThan(topFront[0] - topRear[0])
+    expect(front.x0 - front.x1).toBeGreaterThan(1)
+  })
+})
+
+describe('the shape names', () => {
+  it('are the same in the backend, which checks a model.yaml against them', () => {
+    const py = readFileSync(new URL('../../../backend/src/mazda_dash/models.py', import.meta.url), 'utf8')
+    const tuple = /^SHAPES = \(([^)]*)\)/m.exec(py)
+    expect(tuple, 'SHAPES = (...) in models.py').not.toBeNull()
+    expect([...tuple![1].matchAll(/"([a-z0-9]+)"/g)].map((m) => m[1])).toEqual([...SHAPES])
   })
 })

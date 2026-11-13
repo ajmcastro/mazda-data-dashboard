@@ -41,8 +41,9 @@ The Status page opens with **the car in 3D**: a schematic car you can turn (drag
 Top buttons) and zoom (Ctrl + scroll, a trackpad pinch, or the + and − buttons), with each figure next to the
 part it belongs to. A part to check is red, an open door, trunk or hood is amber and drawn open, and something
 the car did not report is a dashed outline. Click a part or a label for its details; the *List* switch shows
-the same as a plain list, which is also what you get in a browser that cannot draw 3D. The shape is a generic
-SUV built from each model's dimensions, not the real body.
+the same as a plain list, which is also what you get in a browser that cannot draw 3D. The shape is a schematic
+built from each model's dimensions (a generic SUV, or the model's own silhouette where one has been drawn, so
+far the CX-60), not the real body.
 
 ![The car in 3D on the Status page: tire pressures, fuel, oil change and odometer at the parts](docs/screenshots/car-3d.png)
 
@@ -289,7 +290,8 @@ Say you have an export for another car (here an MX-30, id `mx30`). Run these fro
      steering: left      # left | right
    ```
 
-   Also accepted: `track_mm` and `wheel_diameter_mm`. For the phone the dimensions travel in the data pack,
+   Also accepted: `track_mm`, `wheel_diameter_mm` and `shape` (the outline that is drawn: `generic`, the
+   default, or `cx60`; a new model uses the generic one). For the phone the dimensions travel in the data pack,
    so make a new pack (`make mobile-pack`) after changing them.
 
    The copied code descriptions start empty on purpose. Set `car_timezone` in the new `settings.yaml` to where

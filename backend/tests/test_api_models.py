@@ -102,6 +102,7 @@ def test_the_model_list(client):
         "track_mm": None,
         "wheel_diameter_mm": None,
         "steering": "right",
+        "shape": "generic",
     }
     assert cx5["has_data"] and cx5["first_day"] == "2026-03-01"
     assert (

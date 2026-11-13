@@ -15,3 +15,4 @@ body:
   track_mm: 1640
   wheel_diameter_mm: 745
   steering: left      # left | right: which side the driver's door is drawn on
+  shape: cx60         # generic | cx60: the outline drawn (cx60 = this car's own silhouette)

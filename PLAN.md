@@ -982,6 +982,71 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 4. Per-model dimensions in `model.yaml`, set by the owner from the manual (M41).
 5. On the phone: horizontal drag turns, vertical drag scrolls, buttons zoom (M40).
 
+## A recognisable car in 3D (M42–M44; M42 built)
+
+### Goal
+The 3D car of M39–M41 is one generic box scaled by each model's dimensions. With the owner's photos of the CX-60 (left side, right side, front, rear) the CX-60 can be drawn so that it reads as a CX-60: its own silhouette, its own door lines and a few details. It stays a schematic drawn in code, in the app's flat technical look, so the part colours (red to check, amber open, dashed unknown) keep their meaning.
+
+### What the photos give, and what they do not
+- **Give:** the side silhouette (long hood, cabin set far back, roof highest over the front seats and falling to a raked rear pillar, short rear overhang), the wheel-arch size against the 20-inch wheels, where the doors are cut (the rear door's edge runs over the rear arch), the window line and pillars, the fuel flap on the **left rear** quarter, left-hand steering (confirms `steering: left`), the front (grille outline, slim headlights, how much the nose narrows) and the rear (tail lights, roof spoiler, how much the cabin narrows above the shoulders).
+- **Do not give:** a top view (the taper seen from above is estimated from the front and rear photos) or true measurements. The side photos were taken close with a wide lens, so the ends are stretched; the traced outline is fitted to the published length, height, wheelbase and wheel size, not trusted as measured. The result is a likeness, not a scan.
+
+### Decisions (confirmed)
+1. **A named shape, drawn in code.** `body:` in `model.yaml` gains an optional `shape` (`generic`, the default, or `cx60`); the outline of each shape lives in `frontend/src/car3d/shapes/` as plain numbers (fractions of the car's length and height, so the model's dimensions still scale it) with tests. An unknown name is a loud config error; the list of names is kept equal in Python and TypeScript by a test. No outline data in the config, API or pack beyond the name (no pack format change: a pack without it draws `generic`).
+2. **The photos never enter the repository**, nor does anything read from the number plate. Only outline numbers traced from them are committed. The copies made for viewing live outside the project and are deleted when the work is done.
+3. **Still no model file and no textures:** same three.js primitives and extrusions, same lazy chunk, colours from the CSS variables (the car is not painted its real grey: body colour stays the theme's, so both themes and the state colours work).
+4. **The parts stay the same thirteen**, each still hinged and coloured by `carState`; only their geometry changes. The list, the labels, the pins and every rule of M38–M41 are untouched.
+5. **The generic shape stays** as the fallback and for the CX-5 until it has its own (M44, which needs photos of that car).
+
+### Milestones
+| | What | Visible result |
+|---|---|---|
+| M42 | Shapes by name, and the CX-60's silhouette | the CX-60 has its real profile, arches and door lines; the CX-5 is unchanged |
+| M43 | Body shaping and details | a narrowing nose and cabin, lights, grille, mirrors, spoked wheels, the fuel flap where it is |
+| M44 | The CX-5 the same way (needs its photos) | both cars recognisable |
+
+### M42 — Shapes by name, and the CX-60's silhouette ✅ done
+- **Plumbing:** `body.shape` in `models.py` (validated against the known names), `ModelBody.shape` in `GET /api/models` (`make types`), the pack manifest and the phone's model list pass it on; `carGeometry(body)` picks the shape. `config/models/cx60/model.yaml` gets `shape: cx60`.
+- **Shape data:** `shapes/generic.ts` (today's outline, moved, **byte-for-byte the same geometry**: a test pins it) and `shapes/cx60.ts`: the lower-body outline, the cabin outline, the arch radius, the four door outlines (as polygons, not rectangles, so the rear door can follow the arch), hood and tailgate lines, and the anchors.
+- **Tracing:** from the left-side photo, corrected for the lens by fitting the axles, the ends and the roof to the published dimensions; cross-checked against the right-side photo mirrored.
+- **Scene:** doors become extruded polygons on their hinges; more segments on the outlines for the curves of the roof and tail.
+- **Tests:** every shape passes the same checks as the generic one today (inside length and height, above the ground, arches clear the tires, doors between the arches and hinged at the front, an anchor for every part, deterministic); the CX-60's cabin starts further back and its roof peaks further forward than the generic car's; the name lists agree in Python and TypeScript.
+- **Done when:** the CX-60's side view next to the photo shows the same silhouette, the CX-5 demo looks exactly as before, and all suites and both builds pass.
+
+**M42 as built.**
+- **Plumbing:** `body.shape` (`generic`, the default, or `cx60`) in `models.py` (`SHAPES`, a loud error for another name), `ModelBody.shape` in `GET /api/models` (`make types`), in the pack manifest's `model.body` (still no format change) and on the phone; `config/models/cx60/model.yaml` has `shape: cx60`. A frontend test reads `SHAPES` out of `models.py` and fails when the two lists differ.
+- **Files:** `frontend/src/car3d/shapes/common.ts` (the types, `saneBody`, `bodyOfModel` and the helpers every shape uses: `archPoints`, `makeWheels`, the wheel and door anchors), `shapes/generic.ts` (the generic SUV, its maths untouched), `shapes/cx60.ts` (the CX-60) and `geometry.ts`, now only the dispatcher (`carGeometry` picks the builder by `body.shape`) and what the app imports. `CarPanel` imports `bodyOfModel` from `shapes/common.ts` so the outlines stay in the lazy 3D chunk.
+- **The generic shape is pinned:** `shapes/generic.fixture.json` holds the geometry of three bodies as it was before this milestone, and a test compares today's output with it field by field (leaving out only the fields M42 added). The CX-5 therefore draws exactly as before.
+- **The CX-60's outline:** traced by hand from the left-side photo, as fractions: `p` along the car by the axles (-1 nose, 0 front axle, 1 rear axle, 2 tail) and `h` as a share of the height, so the published length, wheelbase, height and wheel size place it. It has the long hood (the windshield starts a fifth of the wheelbase behind the front axle), the roof highest over the front seats and falling to the spoiler, the raked tail with the tail lights as the rearmost point, a front overhang shorter than the rear one, the pillar between the doors leaning back, and the rear door's edge running over the rear arch. Doors are kept clear of the arches and under the glass by code, whatever the dimensions.
+- **Judgement calls, because the photo is not a measurement:** it was taken close with a wide lens (the wheels come out about 10% wider than tall, and the rear looks larger than the front), so heights were normalised to the roof, rear heights reduced by up to 6%, and the hood's rise flattened so the windshield base sits just above the door glass line. The second side photo was not needed. Nothing from the photos is in the repository, and the copies made for tracing were deleted.
+- **Scene:** doors are extruded outlines on their hinges, the hood and tailgate are strips along their lines (two points for the generic car, so it looks as before). No new dependency; the 3D chunk is 587 kB (150 kB gzipped), the entry chunk is unchanged apart from about 1 kB.
+- **Tests:** frontend 232 (19 new: the fixture, the checks every shape must pass on four bodies each, the CX-60's own features, the name lists), backend 308, phone 888.
+- **Checked by eye:** the CX-60 in side, front and rear three-quarter views in both themes, and the CX-5 unchanged. The side view reads as the car in the photo; from three-quarter views the cabin still looks low and slab-sided because the body is one extrusion as wide at the roof as at the sills: that is M43. `car-3d-cx60.png` was retaken.
+
+### M43 — Body shaping and details
+- **Shaping:** the body is built from cross-sections along the car instead of one extrusion, so the nose and tail narrow, the cabin leans in above the shoulder line and the corners are rounded (plan-view taper estimated from the front and rear photos).
+- **Details, as simple flat shapes:** headlights and tail lights, the grille outline, door mirrors, window pillars (separate side windows instead of one glass block), the roof spoiler, five-spoke wheels, the fuel flap on the left rear quarter (the fuel label then points at it).
+- **Cost:** triangle count and chunk size measured before and after; the phone must still draw on demand without a visible delay (checked in the Simulator). Details are skipped on the generic shape.
+- **Tests:** geometry checks for the new sections (symmetric left to right, widest at the shoulders, never wider than the body width), anchors still on the surface; screenshots retaken.
+- **Done when:** front, side, rear and top views are each recognisable against the photos, in both themes, on the Mac and the phone.
+
+### M44 — The CX-5 (needs photos)
+The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of that car (a flat side view above all). Until then it keeps the generic shape.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| A traced outline from a wide-angle photo is wrong at the ends | fit to the published dimensions; compare both side photos; say "likeness" in the caption |
+| Details make the state colours hard to read | details stay neutral and flat; a part's state colour always covers the whole part |
+| More geometry slows the phone | measure; details only on named shapes; render on demand as today |
+| The drawing looks like an official Mazda asset | it is drawn from the owner's own photos, schematic, with the existing caption "schematic shape, not the real body" |
+| Private details leak (plate, street) | photos and anything read from the plate stay out of the repository; `make audit` unchanged |
+
+### Points confirmed
+1. A named shape per model in code (`shape: cx60`), not outline data in the config.
+2. The body keeps the theme's colour rather than the car's real grey.
+3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.

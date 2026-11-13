@@ -106,6 +106,10 @@ def test_registry_errors(tmp_path, models_yaml, message):
             "steering must be left or right",
         ),
         (
+            "id: cx5\nname: X\nbody: {shape: cx90}\n",
+            "shape must be one of generic, cx60",
+        ),
+        (
             "id: cx5\nname: X\nbody: {length_mm: 3700, wheelbase_mm: 3800}\n",
             "wheelbase_mm must be less than length_mm",
         ),
@@ -143,7 +147,10 @@ def test_body_is_optional_and_each_dimension_too(tmp_path):
         "track_mm": None,
         "wheel_diameter_mm": None,
         "steering": "left",
+        "shape": "generic",
     }
+    shaped = make_root(tmp_path / "shaped", cx5="body: {shape: cx60}\n")
+    assert resolve("cx5", shaped).body.shape == "cx60"
     right = make_root(tmp_path / "right", cx5="body: {steering: right}\n")
     assert resolve("cx5", right).body.steering == "right"
 
@@ -154,6 +161,8 @@ def test_the_shipped_models_have_dimensions():
     cx5, cx60 = registry.get("cx5").body, registry.get("cx60").body
     assert cx5 and cx60 and cx60.length_mm > cx5.length_mm
     assert cx60.wheelbase_mm > cx5.wheelbase_mm
+    # the CX-60 is drawn with its own outline, the CX-5 with the generic one until it has one
+    assert cx60.shape == "cx60" and cx5.shape == "generic"
 
 
 def test_hidden_pages(tmp_path):
