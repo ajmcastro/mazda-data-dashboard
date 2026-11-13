@@ -4,13 +4,13 @@
 // Every colour of the car is read from the page's CSS variables, so both themes work (only the lights are white).
 
 import {
-  BufferGeometry, CircleGeometry, Color, CylinderGeometry, DirectionalLight, EdgesGeometry,
-  ExtrudeGeometry, Group, HemisphereLight, LineBasicMaterial, LineDashedMaterial, LineSegments, Material, Mesh,
-  MeshBasicMaterial, MeshLambertMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, Shape, Vector2, Vector3,
-  WebGLRenderer,
+  BoxGeometry, BufferGeometry, CircleGeometry, Color, CylinderGeometry, DirectionalLight, DoubleSide, EdgesGeometry,
+  ExtrudeGeometry, Float32BufferAttribute, Group, HemisphereLight, LineBasicMaterial, LineDashedMaterial, LineSegments,
+  Material, Mesh, MeshBasicMaterial, MeshLambertMaterial, Object3D, PerspectiveCamera, Raycaster, Scene, Shape,
+  ShapeUtils, Vector2, Vector3, WebGLRenderer,
 } from 'three'
 import type { CarState, PartId, PartState } from '../car'
-import { OPEN_ANGLE, facesCamera, type CarGeometry, type Vec2, type Vec3 } from './geometry'
+import { OPEN_ANGLE, cabinHalfWidthAt, facesCamera, halfWidthAt, planShiftAt, type CarGeometry, type Vec2, type Vec3 } from './geometry'
 import type { Point } from './labels'
 import { cameraPosition, type Orbit } from './orbit'
 
@@ -44,6 +44,12 @@ interface Palette {
 const FOV = 30
 
 const BEHIND_LINES = { polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 } as const
+
+/** The colour of everything that is not a part with a state: neutral tones only, never red or amber. */
+const ROLE_COLOUR: Record<Role, (p: Palette) => Color> = {
+  body: (p) => p.body, glass: (p) => p.glass, hub: (p) => p.hub, ground: (p) => p.ground,
+  trim: (p) => p.tire, lamp: (p) => p.hub, panel: (p) => p.panel,
+}
 
 const mix = (a: Color, b: Color, t: number) => a.clone().lerp(b, t)
 
@@ -82,12 +88,84 @@ function outline(points: readonly Vec2[], width: number, bevel: number): Extrude
   return g
 }
 
+/** Where the cross-section of a lofted piece has its points: close together at the edges, so they can be rounded. */
+const ACROSS = [-1, -0.94, -0.8, -0.4, 0, 0.4, 0.8, 0.94, 1]
+
+interface LoftOptions {
+  /** Half the piece's width at a point of its outline. */
+  halfWidth: (x: number, y: number) => number
+  /** How far its edges sit back from its middle, along the car (the rounding seen from above). */
+  shift: (x: number) => number
+  /** How far the long edges are rounded off. */
+  fillet: number
+}
+
+/**
+ * A piece of the body with a shape across the car too (M43): the side outline, as `outline()` extrudes it, but
+ * with a width that changes along the car, edges that are rounded, and a nose and tail that curve in plan.
+ * One vertex ring per outline point; the two side faces are the outline triangulated.
+ */
+function loft(points: readonly Vec2[], o: LoftOptions): BufferGeometry {
+  let contour = points.map(([x, y]) => new Vector2(x, y))
+  if (ShapeUtils.isClockWise(contour)) contour = contour.reverse()
+  const n = contour.length
+  const cols = ACROSS.length
+  const position: number[] = []
+  for (let i = 0; i < n; i++) {
+    const p = contour[i]
+    const before = contour[(i + n - 1) % n]
+    const after = contour[(i + 1) % n]
+    // outward direction at this corner of a counter-clockwise outline
+    const normal = new Vector2(after.y - before.y, before.x - after.x).normalize()
+    const half = o.halfWidth(p.x, p.y)
+    const shift = o.shift(p.x)
+    for (const t of ACROSS) {
+      const edge = Math.max(0, (Math.abs(t) - 0.8) / 0.2) // 0 over the middle, 1 at the very edge
+      const pull = o.fillet * edge * edge
+      position.push(p.x - normal.x * pull - shift * t * t, p.y - normal.y * pull, t * half)
+    }
+  }
+  const index: number[] = []
+  for (let i = 0; i < n; i++) {
+    const a = i * cols
+    const b = ((i + 1) % n) * cols
+    for (let j = 0; j < cols - 1; j++) index.push(a + j, b + j, b + j + 1, a + j, b + j + 1, a + j + 1)
+  }
+  for (const [a, b, c] of ShapeUtils.triangulateShape(contour, [])) {
+    index.push(a * cols + cols - 1, b * cols + cols - 1, c * cols + cols - 1) // the right side faces +z
+    index.push(c * cols, b * cols, a * cols) // the left side, turned round
+  }
+  const g = new BufferGeometry()
+  g.setAttribute('position', new Float32BufferAttribute(position, 3))
+  g.setIndex(index)
+  g.computeVertexNormals()
+  return g
+}
+
+/** A flat patch on each side of the cabin (a pillar): the outline at the cabin's own width there. */
+function sidePatches(points: readonly Vec2[], halfWidth: (x: number, y: number) => number, shift: (x: number) => number): BufferGeometry {
+  let contour = points.map(([x, y]) => new Vector2(x, y))
+  if (ShapeUtils.isClockWise(contour)) contour = contour.reverse()
+  const n = contour.length
+  const position: number[] = []
+  for (const side of [1, -1]) for (const p of contour) position.push(p.x - shift(p.x), p.y, side * (halfWidth(p.x, p.y) + 0.004))
+  const index: number[] = []
+  for (const [a, b, c] of ShapeUtils.triangulateShape(contour, [])) index.push(a, b, c, n + c, n + b, n + a)
+  const g = new BufferGeometry()
+  g.setAttribute('position', new Float32BufferAttribute(position, 3))
+  g.setIndex(index)
+  g.computeVertexNormals()
+  return g
+}
+
+type Role = 'body' | 'glass' | 'hub' | 'ground' | 'trim' | 'lamp' | 'panel'
+
 export class CarScene {
   private renderer: WebGLRenderer
   private scene = new Scene()
   private camera = new PerspectiveCamera(FOV, 2, 0.1, 100)
   private parts = new Map<PartId, PartObject>()
-  private fixed: { mesh: Mesh; role: 'body' | 'glass' | 'hub' | 'ground' }[] = []
+  private fixed: { mesh: Mesh; role: Role }[] = []
   private bodyEdges: LineSegments[] = []
   private solid = new LineBasicMaterial()
   private strong = new LineBasicMaterial()
@@ -125,9 +203,9 @@ export class CarScene {
     return lines
   }
 
-  private addFixed(g: BufferGeometry, role: 'body' | 'glass' | 'hub', parent: Object3D = this.scene, edges = true): Mesh {
+  private addFixed(g: BufferGeometry, role: Exclude<Role, 'ground'>, parent: Object3D = this.scene, edges = true): Mesh {
     // the faces are pushed back a little so the outline drawn on their edges is not half hidden by them
-    const material = new MeshLambertMaterial({ ...BEHIND_LINES, ...(role === 'glass' ? { transparent: true, opacity: 0.55 } : {}) })
+    const material = new MeshLambertMaterial({ ...BEHIND_LINES, side: DoubleSide, ...(role === 'glass' ? { transparent: true, opacity: 0.55 } : {}) })
     const mesh = new Mesh(g, material)
     parent.add(mesh)
     this.fixed.push({ mesh, role })
@@ -140,7 +218,7 @@ export class CarScene {
   }
 
   private addPart(id: PartId, kind: Kind, group: Group, g: BufferGeometry, place: (o: Object3D) => void, side = 1, rest = 0) {
-    const mesh = new Mesh(g, new MeshLambertMaterial(BEHIND_LINES))
+    const mesh = new Mesh(g, new MeshLambertMaterial({ ...BEHIND_LINES, side: DoubleSide }))
     mesh.userData.part = id
     const edges = this.edgesOf(g)
     place(mesh)
@@ -154,8 +232,30 @@ export class CarScene {
     const geo = this.geometry
     const { width: W } = geo.body
 
-    this.addFixed(outline(geo.lower, W, 0.03), 'body')
-    this.addFixed(outline(geo.cabin, geo.cabinWidth, 0.03), 'glass')
+    // a shape with a style is lofted (it narrows, leans and is rounded); without one it is a plain slab
+    const style = geo.style
+    const shift = (x: number) => planShiftAt(geo, x)
+    const bodyLoft: LoftOptions = { halfWidth: (x) => halfWidthAt(geo, x), shift, fillet: style?.fillet ?? 0 }
+    const cabinLoft: LoftOptions = { halfWidth: (x, y) => cabinHalfWidthAt(geo, x, y), shift, fillet: style?.fillet ?? 0 }
+    /** A thin piece lying on the body (hood, tailgate, roof): the skin's width there, a touch narrower. */
+    const skin = (scale: number): LoftOptions => ({
+      halfWidth: (x, y) => scale * (style && y > style.beltY ? cabinHalfWidthAt(geo, x, y) : halfWidthAt(geo, x)),
+      shift, fillet: 0.012,
+    })
+    if (style) {
+      this.addFixed(loft(geo.lower, bodyLoft), 'body')
+      this.addFixed(loft(geo.cabin, cabinLoft), 'glass')
+      this.addFixed(loft(style.roof, skin(1.01)), 'panel')
+      for (const pillar of style.pillars) this.addFixed(sidePatches(pillar, cabinLoft.halfWidth, shift), 'panel')
+      for (const d of style.details) {
+        const block = this.addFixed(new BoxGeometry(...d.size), d.tone)
+        block.position.set(...d.centre)
+        this.bodyEdges.at(-1)!.position.set(...d.centre)
+      }
+    } else {
+      this.addFixed(outline(geo.lower, W, 0.03), 'body')
+      this.addFixed(outline(geo.cabin, geo.cabinWidth, 0.03), 'glass')
+    }
 
     const ground = new Mesh(new CircleGeometry(geo.radius * 1.25, 72), new MeshBasicMaterial({ transparent: true, opacity: 0.55 }))
     ground.rotation.x = -Math.PI / 2
@@ -173,6 +273,19 @@ export class CarScene {
       hub.rotation.x = Math.PI / 2
       hub.userData.part = w.id // a click on the hub is a click on the wheel
       this.bodyEdges.at(-1)!.rotation.x = Math.PI / 2
+      for (let k = 0; k < (style?.spokes ?? 0); k++) {
+        // a dark wheel with light spokes instead of a plain disc
+        if (k === 0) {
+          this.fixed.at(-1)!.role = 'trim'
+          hub.scale.set(1.25, 1, 1.25)
+        }
+        const angle = (2 * Math.PI * k) / style!.spokes + Math.PI / 2
+        const reach = w.radius * 0.7
+        const spoke = this.addFixed(new BoxGeometry(reach, w.radius * 0.17, w.width + 0.03), 'lamp', group, false)
+        spoke.position.set((Math.cos(angle) * reach) / 2, (Math.sin(angle) * reach) / 2, 0)
+        spoke.rotation.z = angle
+        spoke.userData.part = w.id
+      }
     }
 
     for (const d of geo.doors) {
@@ -189,7 +302,9 @@ export class CarScene {
       const strip: Vec2[] = [...rel, ...[...rel].reverse().map(([x, y]): Vec2 => [x, y + 0.028])]
       const group = new Group()
       group.position.set(hinge[0], hinge[1], 0)
-      this.addPart('hood', 'hood', group, outline(strip, width, 0.004), () => {})
+      const at = (g: BufferGeometry) => g.translate(-hinge[0], -hinge[1], 0)
+      const absolute = strip.map(([x, y]): Vec2 => [x + hinge[0], y + hinge[1]])
+      this.addPart('hood', 'hood', group, style ? at(loft(absolute, skin(0.93))) : outline(strip, width, 0.004), () => {})
     }
 
     {
@@ -200,7 +315,9 @@ export class CarScene {
       const outer = [...rel].reverse().map(([x, y], i, all): Vec2 => (i === all.length - 1 ? [-t * 0.6, t * 0.6] : [x - t, y + 0.01]))
       const group = new Group()
       group.position.set(hinge[0], hinge[1], 0)
-      this.addPart('trunk', 'trunk', group, outline([...rel, ...outer], width, 0.008), () => {})
+      const absolute = [...rel, ...outer].map(([x, y]): Vec2 => [x + hinge[0], y + hinge[1]])
+      const piece = style ? loft(absolute, skin(0.95)).translate(-hinge[0], -hinge[1], 0) : outline([...rel, ...outer], width, 0.008)
+      this.addPart('trunk', 'trunk', group, piece, () => {})
     }
 
     this.scene.add(new HemisphereLight(0xffffff, 0x888888, 2.1))
@@ -226,7 +343,7 @@ export class CarScene {
     this.dashed.color.copy(p.muted)
     for (const { mesh, role } of this.fixed) {
       const material = mesh.material as MeshLambertMaterial | MeshBasicMaterial
-      material.color.copy(role === 'body' ? p.body : role === 'glass' ? p.glass : role === 'hub' ? p.hub : p.ground)
+      material.color.copy(ROLE_COLOUR[role](p))
     }
     this.apply()
   }

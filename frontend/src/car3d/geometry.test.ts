@@ -2,7 +2,10 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { PartId } from '../car'
-import { DEFAULT_BODY, SHAPES, bodyOfModel, carGeometry, facesCamera, saneBody, type Body, type CarGeometry } from './geometry'
+import {
+  DEFAULT_BODY, SHAPES, bodyOfModel, cabinHalfWidthAt, carGeometry, facesCamera, halfWidthAt, planShiftAt, saneBody,
+  type Body, type CarGeometry,
+} from './geometry'
 import fixture from './shapes/generic.fixture.json'
 
 const PARTS: PartId[] = [
@@ -311,6 +314,96 @@ describe('the CX-60 shape', () => {
     const [topFront, bottomFront, bottomRear, topRear] = front.outline
     expect(bottomFront[0] - bottomRear[0]).toBeLessThan(topFront[0] - topRear[0])
     expect(front.x0 - front.x1).toBeGreaterThan(1)
+  })
+})
+
+describe('shaping across the car and details (M43)', () => {
+  const generic = carGeometry({ ...CX60, shape: 'generic' })
+  const cx60 = carGeometry({ ...CX60, shape: 'cx60' })
+  const style = cx60.style!
+  const half = cx60.body.width / 2
+  const L = cx60.body.length
+  const xs = Array.from({ length: 41 }, (_, i) => -L / 2 + (L * i) / 40)
+
+  it('leaves the generic car a plain slab', () => {
+    expect(generic.style).toBeUndefined()
+    for (const x of xs) {
+      expect(halfWidthAt(generic, x)).toBe(generic.body.width / 2)
+      expect(cabinHalfWidthAt(generic, x, 1.5)).toBe(generic.body.width / 2)
+      expect(planShiftAt(generic, x)).toBe(0)
+    }
+  })
+
+  it('is full width between the axles and narrows towards the nose and the tail, never wider than the car', () => {
+    const [front, rear] = [cx60.wheels[0].centre[0], cx60.wheels[2].centre[0]]
+    for (const x of xs) {
+      const w = halfWidthAt(cx60, x)
+      expect(w).toBeLessThanOrEqual(half + 1e-9)
+      expect(w).toBeGreaterThan(0.7 * half)
+      if (x <= front && x >= rear) expect(w).toBeCloseTo(half, 6) // the wheels and doors sit here
+    }
+    expect(halfWidthAt(cx60, L / 2)).toBeCloseTo(style.noseWidth * half, 6)
+    expect(halfWidthAt(cx60, -L / 2)).toBeCloseTo(style.tailWidth * half, 6)
+    // narrowing only ever goes one way from the middle
+    const widths = xs.filter((x) => x >= front).map((x) => halfWidthAt(cx60, x))
+    for (let i = 1; i < widths.length; i++) expect(widths[i]).toBeLessThanOrEqual(widths[i - 1] + 1e-9)
+  })
+
+  it('leans the cabin in: narrower at the roof than where the glass starts, never wider than the body', () => {
+    const H = cx60.body.height
+    expect(cabinHalfWidthAt(cx60, 0, style.beltY)).toBeCloseTo(style.cabinBelt * half, 6)
+    expect(cabinHalfWidthAt(cx60, 0, H)).toBeCloseTo(style.cabinRoof * half, 6)
+    expect(cabinHalfWidthAt(cx60, 0, H)).toBeLessThan(cabinHalfWidthAt(cx60, 0, style.beltY))
+    for (const y of [0, style.beltY, (style.beltY + H) / 2, H, H + 1]) expect(cabinHalfWidthAt(cx60, 0, y)).toBeLessThanOrEqual(half)
+  })
+
+  it('rounds the nose back and the tail forward, and nothing in between', () => {
+    expect(planShiftAt(cx60, L / 2)).toBeCloseTo(style.noseRound, 6)
+    expect(planShiftAt(cx60, -L / 2)).toBeCloseTo(-style.tailRound, 6)
+    expect(planShiftAt(cx60, 0)).toBe(0)
+  })
+
+  it('keeps the roof and the pillars on the cabin', () => {
+    const H = cx60.body.height
+    const cabinXs = cx60.cabin.map((p) => p[0])
+    for (const [x, y] of [...style.roof, ...style.pillars.flat()]) {
+      expect(x).toBeGreaterThanOrEqual(Math.min(...cabinXs) - 0.12)
+      expect(x).toBeLessThanOrEqual(Math.max(...cabinXs) + 1e-6)
+      expect(y).toBeGreaterThan(0.6 * H)
+      expect(y).toBeLessThanOrEqual(H + 0.02)
+    }
+    expect(style.pillars.length).toBeGreaterThanOrEqual(3)
+    for (const pillar of style.pillars) expect(pillar.length).toBeGreaterThanOrEqual(4)
+  })
+
+  it('puts every detail on the car, in a neutral tone, the same on both sides', () => {
+    const H = cx60.body.height
+    for (const d of style.details) {
+      expect(['trim', 'lamp', 'panel']).toContain(d.tone)
+      expect(Math.abs(d.centre[0])).toBeLessThanOrEqual(L / 2 + 0.01)
+      expect(d.centre[1]).toBeGreaterThan(0.2 * H)
+      expect(d.centre[1]).toBeLessThan(H)
+      expect(Math.abs(d.centre[2])).toBeLessThanOrEqual(half + 0.15) // the mirrors stand out a little
+    }
+    for (const name of ['headlight', 'tail light', 'mirror']) {
+      const [left, right] = [style.details.find((d) => d.name === `${name} left`)!, style.details.find((d) => d.name === `${name} right`)!]
+      expect(left.centre[2]).toBeCloseTo(-right.centre[2], 6)
+      expect([left.centre[0], left.centre[1], left.size]).toEqual([right.centre[0], right.centre[1], right.size])
+    }
+    expect(style.details.find((d) => d.name === 'grille')!.centre[2]).toBe(0)
+    expect(style.details.find((d) => d.name === 'headlight left')!.centre[0]).toBeGreaterThan(cx60.wheels[0].centre[0])
+    expect(style.details.find((d) => d.name === 'tail light left')!.centre[0]).toBeLessThan(cx60.wheels[2].centre[0])
+    expect(style.spokes).toBe(5)
+  })
+
+  it('points the fuel label at the flap, on the left rear quarter', () => {
+    const flap = style.details.find((d) => d.name === 'fuel flap')!
+    expect(cx60.anchors.fuel.pos).toEqual(flap.centre)
+    expect(cx60.anchors.fuel.normal).toEqual([0, 0, -1])
+    expect(flap.centre[2]).toBeLessThan(0) // left
+    expect(flap.centre[0]).toBeLessThan(cx60.wheels[2].centre[0]) // behind the rear axle
+    expect(style.details.filter((d) => d.name.startsWith('fuel flap'))).toHaveLength(1)
+    expect(generic.anchors.fuel.normal).toBeNull()
   })
 })
 

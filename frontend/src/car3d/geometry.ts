@@ -9,8 +9,8 @@ import { saneBody, type Anchor, type Body, type CarGeometry, type ShapeName, typ
 import { cx60Geometry } from './shapes/cx60'
 import { genericGeometry } from './shapes/generic'
 
-export { DEFAULT_BODY, SHAPES, bodyOfModel, saneBody } from './shapes/common'
-export type { Anchor, Body, CarGeometry, Door, ModelBody, ShapeName, Vec2, Vec3, Wheel } from './shapes/common'
+export { DEFAULT_BODY, SHAPES, bodyOfModel, cabinHalfWidthAt, halfWidthAt, planShiftAt, saneBody } from './shapes/common'
+export type { Anchor, Body, CarGeometry, Detail, Door, ModelBody, Style, ShapeName, Vec2, Vec3, Wheel } from './shapes/common'
 
 const BUILDERS: Record<ShapeName, (body: Body) => CarGeometry> = { generic: genericGeometry, cx60: cx60Geometry }
 

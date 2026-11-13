@@ -12,8 +12,8 @@
 
 import type { PartId } from '../../car'
 import {
-  ARCH_GAP, PANEL, archPoints, doorAnchor, makeWheels, round, v2, v3, wheelAnchor,
-  type Anchor, type Body, type CarGeometry, type Door, type Vec2,
+  ARCH_GAP, PANEL, archPoints, doorAnchor, halfWidthAt, heightOnLine, makeWheels, planShiftAt, round, v2, v3, wheelAnchor,
+  type Anchor, type Body, type CarGeometry, type Detail, type Door, type Style, type Vec2,
 } from './common'
 
 type Frac = readonly [number, number]
@@ -88,7 +88,7 @@ export function cx60Geometry(body: Body): CarGeometry {
   const clear = archR + 0.04
   const fit = ([x, y]: Vec2): Vec2 => {
     let px = x
-    let py = Math.min(belt(x) - 0.03, Math.max(sill + 0.05, y))
+    let py = Math.min(belt(x) - 0.06, Math.max(sill + 0.05, y)) // under the rounded shoulder
     for (const cx of [frontAxle, rearAxle]) {
       const d = Math.hypot(px - cx, py - r)
       if (d < clear && d > 0) {
@@ -139,15 +139,60 @@ export function cx60Geometry(body: Body): CarGeometry {
     door_rear_right: doorAnchor(byId(doors, 'door_rear_right'), W),
     trunk: { pos: v3(X(1.93), (deck[1] + trunk.foot[1]) / 2, 0), normal: [-1, 0, 0] },
     hood: { pos: v3(mid[0], mid[1] + 0.02, 0), normal: null },
-    // points inside the car (the tank under the rear seat, the engine between the front wheels, the dashboard
-    // behind the windshield on the driver's side), so they are never "on the far side"
+    // points inside the car (the engine between the front wheels, the dashboard behind the windshield on the
+    // driver's side), so they are never "on the far side"; the fuel label is moved to the flap further down
     fuel: { pos: v3(rearAxle + 0.45, sill + 0.12, 0), normal: null },
     engine: { pos: v3(frontAxle + 0.05, (sill + noseTop) / 2, 0), normal: null },
     dash: { pos: v3(cowl[0] - 0.3, cowl[1] + 0.03, driver * 0.2 * W), normal: null },
   }
 
+  // ---- across the car and on it (M43): from the owner's front and rear photos, by eye ----
+  const roofLine = CABIN.slice(3, 10).map(pt) // from the top of the windshield to the spoiler
+  const under = (line: Vec2[], by: number) => [...line].reverse().map(([x, y]): Vec2 => v2(x, y - by))
+  const roofY = (x: number) => heightOnLine(cabin, x) // the cabin's top edge over x (its points above the belt)
+  const glassTop = (p: number): Vec2 => v2(X(p), roofY(X(p)) - 0.05)
+  const glassFoot = (p: number): Vec2 => v2(X(p), belt(X(p)))
+  const windshield = CABIN.slice(0, 4).map(pt)
+  const style: Style = {
+    noseFrom: frontAxle + 0.2, noseWidth: 0.8, noseRound: 0.2,
+    tailFrom: rearAxle - 0.35, tailWidth: 0.88, tailRound: 0.1,
+    beltY: round((cowl[1] + deck[1]) / 2), cabinBelt: 0.93, cabinRoof: 0.74,
+    fillet: 0.05,
+    // the band starts just above the glass, so the roof is solid seen from above too
+    roof: [...roofLine.map(([x, y]): Vec2 => v2(x, y + 0.012)), ...under(roofLine, 0.05)],
+    pillars: [
+      // beside the windshield, between the doors, and the solid quarter behind the last side window
+      [...windshield, ...[...windshield].reverse().map(([x, y]): Vec2 => v2(x - 0.11, y))],
+      [glassFoot(0.61), glassFoot(0.67), glassTop(0.705), glassTop(0.655)],
+      [glassFoot(1.02), glassFoot(1.07), glassTop(1.0), glassTop(0.96)],
+      [glassFoot(1.3), glassTop(1.12), ...CABIN.slice(8).map(pt)],
+    ],
+    details: [],
+    spokes: 5,
+  }
+  const shaped = { body, style }
+  /** A block on the body's skin at (p, h), `across` from the centre line (0..1 of the half-width there). */
+  const onSkin = (name: string, tone: Detail['tone'], p: number, h: number, across: number, size: [number, number, number]): Detail[] => {
+    const x = X(p)
+    const z = across * halfWidthAt(shaped, x)
+    const at = (side: 1 | -1): Detail => ({
+      name: across === 0 ? name : `${name} ${side < 0 ? 'left' : 'right'}`, tone, size,
+      centre: v3(x - planShiftAt(shaped, x) * across * across, h * H, side * z),
+    })
+    return across === 0 ? [at(1)] : [at(-1), at(1)]
+  }
+  style.details = [
+    ...onSkin('grille', 'trim', -0.995, 0.4, 0, [0.03, 0.2 * H, 0.5 * W]),
+    ...onSkin('headlight', 'lamp', -0.945, 0.515, 0.74, [0.05, 0.045, 0.3]),
+    ...onSkin('tail light', 'lamp', 1.985, 0.615, 0.62, [0.04, 0.06, 0.52]),
+    ...onSkin('mirror', 'trim', 0.33, 0.725, 1.12, [0.12, 0.1, 0.2]),
+    // the fuel flap is on the left rear quarter of this car (seen in the photo): a single block, left side only
+    { name: 'fuel flap', tone: 'panel', size: [0.24, 0.22, 0.02], centre: v3(X(1.2), 0.55 * H, -halfWidthAt(shaped, X(1.2))) },
+  ]
+  anchors.fuel = { pos: v3(X(1.2), 0.55 * H, -halfWidthAt(shaped, X(1.2))), normal: [0, 0, -1] }
+
   return {
-    body, lower, cabin, cabinWidth: round(0.86 * W), wheels, doors, hood, trunk, anchors,
+    body, lower, cabin, cabinWidth: round(0.86 * W), wheels, doors, hood, trunk, anchors, style,
     centre: v3(0, H * 0.42, 0),
     radius: round(Math.hypot(L / 2, H / 2, W / 2)),
   }

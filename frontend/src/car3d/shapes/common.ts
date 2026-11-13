@@ -81,9 +81,97 @@ export interface CarGeometry {
    *  `line` is its surface from hinge to foot. */
   trunk: { hinge: Vec2; knee: Vec2; foot: Vec2; width: number; line: Vec2[] }
   anchors: Record<PartId, Anchor>
+  /** How the body is shaped across its width, and its details (M43). Absent: a plain slab, as the generic car. */
+  style?: Style
   /** What the camera looks at, and the radius of a sphere that holds the whole car. */
   centre: Vec3
   radius: number
+}
+
+/** A small block on the car: a lamp, the grille, a mirror. `tone` is a neutral colour, never a state colour. */
+export interface Detail {
+  name: string
+  centre: Vec3
+  size: Vec3
+  tone: 'trim' | 'lamp' | 'panel'
+}
+
+/**
+ * The shape of a car seen from above and from the front, and what is drawn on it. All lengths in metres,
+ * widths as a share of half the body width.
+ */
+export interface Style {
+  /** The body narrows from `noseFrom` (x) to the nose, where its half-width is `noseWidth` and its corners sit
+   *  `noseRound` behind its middle; the same at the tail (from `tailFrom` rearwards). */
+  noseFrom: number
+  noseWidth: number
+  noseRound: number
+  tailFrom: number
+  tailWidth: number
+  tailRound: number
+  /** The cabin leans in: its half-width at the height where the glass starts (`beltY`) and at the roof. */
+  beltY: number
+  cabinBelt: number
+  cabinRoof: number
+  /** How far the long edges of the body are rounded off. */
+  fillet: number
+  /** The roof as a band in the side view (closed outline), drawn solid on top of the glass. */
+  roof: Vec2[]
+  /** The pillars: closed outlines in the side view, drawn solid on both sides of the glass. */
+  pillars: Vec2[][]
+  details: Detail[]
+  /** Spokes per wheel. */
+  spokes: number
+}
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
+/** 0 at `from`, 1 at `to`, eased so the taper starts gently. */
+const ramp = (from: number, to: number, x: number) => {
+  const t = clamp01((x - from) / (to - from))
+  return t * t
+}
+
+/** The body's half-width at x (metres): full between the axles, narrower towards the nose and the tail. */
+export function halfWidthAt(g: Pick<CarGeometry, 'body' | 'style'>, x: number): number {
+  const half = g.body.width / 2
+  const s = g.style
+  if (!s) return half
+  const nose = ramp(s.noseFrom, g.body.length / 2, x)
+  const tail = ramp(s.tailFrom, -g.body.length / 2, x)
+  return half * (1 - nose * (1 - s.noseWidth) - tail * (1 - s.tailWidth))
+}
+
+/** The cabin's half-width at (x, y): the body's, leaning in from the belt line up to the roof. */
+export function cabinHalfWidthAt(g: Pick<CarGeometry, 'body' | 'style'>, x: number, y: number): number {
+  const s = g.style
+  if (!s) return halfWidthAt(g, x)
+  const up = clamp01((y - s.beltY) / (g.body.height - s.beltY))
+  return halfWidthAt(g, x) * (s.cabinBelt + (s.cabinRoof - s.cabinBelt) * up)
+}
+
+/**
+ * How far a point at the edge of the body (z = the half-width) sits towards the middle of the car's length,
+ * compared with the point on the centre line: the rounding of the nose and tail seen from above. Positive
+ * moves rearwards (at the nose), negative forwards (at the tail).
+ */
+export function planShiftAt(g: Pick<CarGeometry, 'body' | 'style'>, x: number): number {
+  const s = g.style
+  if (!s) return 0
+  return ramp(s.noseFrom, g.body.length / 2, x) * s.noseRound - ramp(s.tailFrom, -g.body.length / 2, x) * s.tailRound
+}
+
+/** The height of a line of points (side view) at x, by straight lines between them; the nearest end outside. */
+export function heightOnLine(line: readonly Vec2[], x: number): number {
+  const pts = [...line].sort((a, b) => a[0] - b[0])
+  if (x <= pts[0][0]) return pts[0][1]
+  for (let i = 1; i < pts.length; i++) {
+    if (x <= pts[i][0]) {
+      const [x0, y0] = pts[i - 1]
+      const [x1, y1] = pts[i]
+      return x1 === x0 ? y1 : y0 + ((y1 - y0) * (x - x0)) / (x1 - x0)
+    }
+  }
+  return pts[pts.length - 1][1]
 }
 
 export const ARCH_STEPS = 10

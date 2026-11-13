@@ -982,7 +982,7 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 4. Per-model dimensions in `model.yaml`, set by the owner from the manual (M41).
 5. On the phone: horizontal drag turns, vertical drag scrolls, buttons zoom (M40).
 
-## A recognisable car in 3D (M42–M44; M42 built)
+## A recognisable car in 3D (M42–M44; M42 and M43 built)
 
 ### Goal
 The 3D car of M39–M41 is one generic box scaled by each model's dimensions. With the owner's photos of the CX-60 (left side, right side, front, rear) the CX-60 can be drawn so that it reads as a CX-60: its own silhouette, its own door lines and a few details. It stays a schematic drawn in code, in the app's flat technical look, so the part colours (red to check, amber open, dashed unknown) keep their meaning.
@@ -1023,12 +1023,23 @@ The 3D car of M39–M41 is one generic box scaled by each model's dimensions. Wi
 - **Tests:** frontend 232 (19 new: the fixture, the checks every shape must pass on four bodies each, the CX-60's own features, the name lists), backend 308, phone 888.
 - **Checked by eye:** the CX-60 in side, front and rear three-quarter views in both themes, and the CX-5 unchanged. The side view reads as the car in the photo; from three-quarter views the cabin still looks low and slab-sided because the body is one extrusion as wide at the roof as at the sills: that is M43. `car-3d-cx60.png` was retaken.
 
-### M43 — Body shaping and details
+### M43 — Body shaping and details ✅ done
 - **Shaping:** the body is built from cross-sections along the car instead of one extrusion, so the nose and tail narrow, the cabin leans in above the shoulder line and the corners are rounded (plan-view taper estimated from the front and rear photos).
 - **Details, as simple flat shapes:** headlights and tail lights, the grille outline, door mirrors, window pillars (separate side windows instead of one glass block), the roof spoiler, five-spoke wheels, the fuel flap on the left rear quarter (the fuel label then points at it).
 - **Cost:** triangle count and chunk size measured before and after; the phone must still draw on demand without a visible delay (checked in the Simulator). Details are skipped on the generic shape.
 - **Tests:** geometry checks for the new sections (symmetric left to right, widest at the shoulders, never wider than the body width), anchors still on the surface; screenshots retaken.
 - **Done when:** front, side, rear and top views are each recognisable against the photos, in both themes, on the Mac and the phone.
+
+**M43 as built.**
+- **Data, not code, describes the shaping:** a shape may carry a `style` (`shapes/common.ts`): where the body starts to narrow towards the nose and the tail, how narrow it gets and how far its corners sit back (the rounding seen from above), how far the cabin leans in from the belt line to the roof, the fillet of the long edges, the roof as a band, the pillars as side-view outlines, a list of details (name, centre, size, neutral tone) and the number of wheel spokes. `halfWidthAt`, `cabinHalfWidthAt`, `planShiftAt` and `heightOnLine` are pure and tested. **The generic shape has no style**, so the CX-5 draws through the old code path and its fixture still holds.
+- **CX-60 values (by eye from the front and rear photos):** nose 80% of the width with corners 20 cm back, tail 88% with 10 cm, cabin 93% of the body at the belt and 74% at the roof, 5 cm fillet; pillars beside the windshield, between the doors, behind the rear door glass, and the solid rear quarter; grille, two headlights, two tail lights, two mirrors and the fuel flap; five spokes.
+- **Scene:** `loft()` builds a piece from its side outline with one ring of nine points across the car per outline point (close together at the edges so they can be rounded), a width that follows the style and a plan-view curve; the two sides are the outline triangulated. The body, the glass, the roof, the hood and the tailgate are lofted; pillars are flat patches on both sides of the glass; details are boxes. Materials are double-sided so a lofted piece cannot show a hole. Spokes are part of their wheel for clicking.
+- **Colours:** details use three neutral roles (`trim` = the tire's dark, `lamp` = the hub's light, `panel` = the door colour). The tail lights are **not red**: red means "check" on this drawing.
+- **The fuel label now points at the flap**, on the left rear quarter where the photo shows it; from the right side of the car it is dimmed like any far-side part. The door tops sit 6 cm under the glass line (they were 3 cm) to stay under the rounded shoulder.
+- **Cost:** the 3D chunk went from 587 to 591 kB (151 kB gzipped); the entry chunk is unchanged. No new dependency.
+- **Tests:** frontend 239 (7 new: the generic car has no style and is a plain slab, full width between the axles and narrowing one way only, the cabin's lean, the plan rounding, roof and pillars on the cabin, details on the car, symmetric and neutral, the fuel label on the flap); backend 308 and phone 888 unchanged in number.
+- **Checked by eye:** front, side, rear and top views in both themes on the Mac; a click on a door and on a wheel through its spokes; the CX-5 unchanged; the phone build at 375 px with fresh demo packs (pins on the shaped car, pin 7 on the fuel flap). `car-3d-cx60.png` retaken. **Not done:** the iOS Simulator for this milestone (it was shut down; the phone check was in the desktop browser at phone size), an open door, hood or tailgate on the lofted shape (no sample has one), and a right-hand-drive CX-60.
+- **Honest limits:** it reads as a CX-60-like SUV, not a faithful model: flat-shaded facets, a simple grille block, no wheel-arch flares, no curved glass, and the widths across the car are estimates (there is no photo from above).
 
 ### M44 — The CX-5 (needs photos)
 The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of that car (a flat side view above all). Until then it keeps the generic shape.
