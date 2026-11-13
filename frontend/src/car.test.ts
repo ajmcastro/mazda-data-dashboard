@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CarWarningFlag, CarWarnings, DoorPoint, LatestStatus, OilService, Overview } from './api/types'
 import { fmtNum } from './lib'
-import { CAR_NOTES, carHeadline, carState, listedParts, stateBadge, type CarState, type PartId } from './car'
+import { CAR_NOTES, carHeadline, carState, carView, parseCarView, listedParts, stateBadge, type CarState, type PartId } from './car'
 
 const AT = '2026-07-01T08:00:00Z'
 
@@ -218,5 +218,18 @@ describe('wording', () => {
     expect(CAR_NOTES.join(' ')).toContain('not documented')
     const all = carState(overview(), door(), oil(), warnings()).parts.flatMap((p) => [p.value, ...p.notes]).join(' ')
     expect(all).not.toMatch(/\b(locked|unlocked)\b/i)
+  })
+})
+
+describe('how the panel is shown', () => {
+  it('remembers only the list; anything else is the 3D view', () => {
+    expect(parseCarView('list')).toBe('list')
+    for (const v of ['3d', null, undefined, '', 'LIST', 7]) expect(parseCarView(v)).toBe('3d')
+  })
+  it('falls back to the list on a narrow screen or when the 3D view failed', () => {
+    expect(carView('3d', true, null)).toBe('3d')
+    expect(carView('3d', false, null)).toBe('list')
+    expect(carView('3d', true, 'no WebGL')).toBe('list')
+    expect(carView('list', true, null)).toBe('list')
   })
 })

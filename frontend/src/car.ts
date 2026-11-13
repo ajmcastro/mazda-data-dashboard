@@ -213,3 +213,19 @@ export function carHeadline(car: CarState): string {
   if (unknown.length) said.push(`Unknown: ${names(unknown)}.`)
   return said.length ? said.join(' ') : 'Nothing to remark in the latest reports.'
 }
+
+// ---- how the panel is shown ----
+
+export type CarView = '3d' | 'list'
+export const CAR_VIEW_KEY = 'cx5.car-view'
+
+/** The remembered choice; anything but "list" means the 3D view. */
+export const parseCarView = (value: unknown): CarView => (value === 'list' ? 'list' : '3d')
+
+/**
+ * What the panel shows: the 3D view only when it was chosen, the screen is wide enough for labels beside the car
+ * and nothing went wrong drawing it. `failed` is the reason the 3D view gave up, if it did.
+ */
+export function carView(choice: CarView, wide: boolean, failed: string | null): CarView {
+  return choice === '3d' && wide && !failed ? '3d' : 'list'
+}

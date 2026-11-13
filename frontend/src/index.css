@@ -277,6 +277,43 @@ select { font: inherit; font-size: 13px; letter-spacing: 0; text-transform: none
 .car-notes { margin: 12px 0 0; padding-left: 18px; font-size: 12px; }
 @media (max-width: 1100px) { .car-groups { grid-template-columns: 1fr; } }
 
+/* the 3D view of the same parts (car3d/) */
+.car-top { display: flex; gap: 12px; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.car-top p { margin: 0; }
+.car-top .theme-toggle { flex: none; }
+.car-failed { font-size: 12px; margin: 0 0 10px; }
+.car3d-view { position: relative; height: 400px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); overflow: hidden; }
+.car3d-view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: grab; touch-action: pan-y; outline: none; }
+.car3d-view canvas:active { cursor: grabbing; }
+.car3d-view canvas:focus-visible { box-shadow: inset 0 0 0 2px var(--steel); }
+.car3d-leaders { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.car3d-leaders line { stroke: var(--muted); stroke-width: 1; }
+.car3d-leaders circle { fill: var(--muted); }
+.car3d-leaders .attention line { stroke: var(--accent); } .car3d-leaders .attention circle { fill: var(--accent); }
+.car3d-leaders .open line { stroke: var(--amber); } .car3d-leaders .open circle { fill: var(--amber); }
+.car3d-leaders .selected line { stroke: var(--text); stroke-width: 1.5; } .car3d-leaders .selected circle { fill: var(--text); }
+.car3d-leaders .far { opacity: 0.45; } .car3d-leaders .far line { stroke-dasharray: 3 3; }
+.car3d-label {
+  position: absolute; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 2px 8px; text-align: left;
+  border: 1px solid var(--line); border-radius: 7px; background: color-mix(in srgb, var(--panel) 88%, transparent); color: var(--text);
+  font: inherit; line-height: 1.2; cursor: pointer; overflow: hidden;
+}
+.car3d-label:hover { border-color: var(--muted); }
+.car3d-label.attention { border-color: var(--accent); }
+.car3d-label.open { border-color: var(--amber); }
+.car3d-label.unknown { border-style: dashed; }
+.car3d-label.far { opacity: 0.6; }
+.car3d-label.selected { border-color: var(--text); opacity: 1; }
+.car3d-label:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; }
+.car3d-label-name { font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.car3d-label-value { font-family: var(--mono); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.car3d-label.attention .car3d-label-value { color: var(--accent); }
+.car3d-label.old .car3d-label-value { color: var(--amber); }
+.car3d-label.unknown .car3d-label-value { color: var(--muted); }
+.car3d-bar { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin-top: 8px; }
+.car3d-hint { font-size: 12px; margin-left: auto; }
+.car3d-detail { margin-top: 8px; min-height: 58px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); padding: 7px 10px; font-size: 13px; }
+
 /* ---- warning lamps (Status) ---- */
 .lamps { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .lamp-row { border: 1px solid var(--line); border-radius: 8px; background: var(--panel-2); }

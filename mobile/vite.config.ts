@@ -42,7 +42,7 @@ export default defineConfig({
   resolve: {
     alias: { '@frontend': frontend },
     // the pages live in ../frontend/src: use ONE copy of these packages, this folder's
-    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'recharts', 'openapi-fetch', 'react-is'],
+    dedupe: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', 'recharts', 'openapi-fetch', 'react-is', 'three'],
   },
   optimizeDeps: { exclude: ['@duckdb/duckdb-wasm'] },
   // the pages (../frontend/src) and views.sql (../backend) are shared with the Mac app

@@ -852,7 +852,7 @@ No new columns arrived with the latest export; these are things the data already
 2. **M36 low-voltage alert wanted**, default threshold **12.0 V**, still configurable in `alerts.yaml`.
 3. **M37 ships to the phone too** (pack, TypeScript engine, goldens), not Mac only.
 
-## The car in 3D (M38–M41; M38 built)
+## The car in 3D (M38–M41; M38 and M39 built)
 
 ### Goal
 A "The car" panel that draws the car in 3D with what its latest status reports say, each figure next to the part it belongs to. The user turns the car and looks at it from any side. Mac dashboard and phone app, offline on the phone like everything else. This is the first of the 3D ideas (status view); the others (time scrubber, who rides on the seats, alerts on the car, fault map, freeze-frame scene) would build on it and are not planned here.
@@ -905,7 +905,7 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 - **Seen on the demo:** CX-5: rear left wheel 180 kPa marked (flag on, 65 kPa under the highest), 1,000 km to the oil change marked; CX-60: front left wheel 190 kPa marked, no countdown. Trunk and hood read unknown in both samples, as the Doors panel showed before. Checked on the Mac at 1400 px and 800 px and in the phone app at 375 px (no sideways scroll, no console errors).
 - **Not done here:** the README screenshots (`status.png`) are retaken in M41 with the 3D view.
 
-### M39 — The 3D scene (Mac)
+### M39 — The 3D scene (Mac) ✅ done
 - **Dependency:** `three` in `frontend/package.json` (bundled; no loaders, no CDN). Lazy: `const Car3D = lazy(() => import('./car3d/Car3D'))` inside `CarPanel`, with the list as the `Suspense` and error fallback.
 - **`frontend/src/car3d/`**: `geometry.ts` (pure, tested: dimensions → the body outline, wheel centres, hinge lines and the anchor point of every part; defaults for a generic SUV), `scene.ts` (the `three` scene: extruded body with a glass house, four wheels, four doors, hood and trunk as separate meshes that turn on their hinges, a ground disc; lights; picks up `carState`), `labels.ts` (pure, tested: projected anchors → label positions that do not overlap, left/right of the car, hidden when the part faces away), `Car3D.tsx` (canvas, HTML labels, controls).
 - **Controls:** drag to turn, wheel or pinch to zoom, with limits (never under the ground, never inside the car); buttons for fixed views (front-left, side, rear, top) and reset; arrow keys turn when the canvas has focus. Clicking a part or its label highlights both; a second click releases.
@@ -914,8 +914,24 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 - **Tests:** `geometry.test.ts`, `labels.test.ts` (no overlap, stable order, hidden behind the car), the fallback path with a stubbed canvas; a build check that `three` is not in the entry chunk; chunk size recorded here.
 - **Done when:** on `make demo` the CX-5 shows the leaking wheel marked, turning and zooming are smooth, both themes and reduced motion behave, and the entry bundle has not grown.
 
+**M39 as built.**
+- **Dependency:** `three` 0.187 (and `@types/three`) in `frontend/` **and already in `mobile/`** (with `three` in the phone build's `dedupe`): the shared page imports the 3D view, and CI's phone job installs only `mobile/`, so the phone build needs it now, not in M40. Nothing else was added (no loaders, no examples, no react-three-fiber).
+- **Files, all in `frontend/src/car3d/`:** `geometry.ts` (pure: `Body`, `DEFAULT_BODY`, `saneBody`, `carGeometry` = the side outlines of the lower body with its two arches and of the cabin, four wheels, four doors with their hinges, hood, tailgate, one anchor per part, `facesCamera`), `orbit.ts` (pure: the camera on a sphere, limits, the four fixed views, drag, zoom, keys, the move between views), `labels.ts` (pure: `layoutLabels`, `labelledParts`, `labelText`), `scene.ts` (`CarScene`, the only three.js code) and `Car3D.tsx` (canvas, labels, controls). `components/CarPanel.tsx` loads `Car3D` with `lazy()` and has the **3D | List** switch (`localStorage` `cx5.car-view`; `carView` / `parseCarView` in `car.ts`).
+- **Own camera control, not three's OrbitControls:** about 80 lines of tested maths, and it does what the plan needs (no scroll trap, a finger turns only sideways) without importing the examples.
+- **Changed from the sketch:**
+  - *Zoom:* the plain mouse wheel is left to the page (the panel is at the top of a long page and would trap scrolling); zoom is **Ctrl/Cmd + wheel** (which is also what a trackpad pinch sends), the `+` / `−` keys and the two buttons.
+  - *Labels of parts on the far side* are **dimmed with a dashed line, not hidden**: all four tire pressures stay readable from any angle.
+  - *Which parts get a label:* wheels, fuel, engine and dashboard always; a door, the trunk or the hood only when it is open or unknown, or once clicked. Six "closed" labels buried the figures.
+  - *Details:* a clicked part's notes appear in a strip under the view instead of growing the label, so label sizes are fixed and the layout stays predictable.
+  - *Narrow screens (640 px and under) keep the list* and show no switch until M40 gives them pins; a wider tablet already gets the 3D view.
+- **Look:** flat-shaded body and darker tires with outlines, translucent cabin, a ground disc; a part to check is red, an open one amber and swung on its hinge, an unknown one a dashed outline. Every colour is read from the CSS variables and re-read when the theme changes (attribute or device scheme). It renders only on a change; view changes move over 320 ms unless reduced motion is on.
+- **Fallbacks:** no WebGL, a lost context, or a chunk that fails to load (`Guard` error boundary) shows the list with one line saying why; choosing 3D again retries.
+- **Sizes (production build):** the lazy chunk `Car3D-*.js` is **583 kB, 149 kB gzipped**; the entry chunk grew by about 2 kB. The phone build precaches the chunk (it is in the generated `sw.js`).
+- **Tests:** 34 in `car3d/*.test.ts` (shape, limits for nonsense dimensions, driver's door follows the steering side, camera limits and views, label layout: no overlap, inside the view, input order irrelevant, side kept near the middle) plus 2 in `car.test.ts` for the view choice. A source test fails if anything but `scene.ts` / `Car3D.tsx` imports `three`, or if either is imported statically from outside `car3d/`. The scene itself is not unit tested (no WebGL in the test runner).
+- **Checked in the browser (demo data, Mac layout):** both cars, the four views, dragging, clicking a part and a label, dark and light with a live theme switch, and the fallback with WebGL switched off. **Not seen:** an open door, trunk or hood (neither sample has one; the swing directions are by construction only), and the `Guard` path.
+
 ### M40 — The 3D scene on the phone
-- **Build:** `three` in `mobile/package.json` and in `dedupe` of `mobile/vite.config.ts`; the chunk appears in `dist/` and so in the service worker's precache list (checked by a test on the generated list). Pages and CI size guards updated if they count files.
+- **Build:** done in M39 (`three` in `mobile/package.json` and `dedupe`; the chunk is precached). Left for here: a test on the generated precache list, and removing the 640 px gate in `CarPanel`. Pages and CI size guards updated if they count files.
 - **Touch:** a horizontal drag turns the car, a vertical drag scrolls the page (`touch-action: pan-y` on the canvas), so the panel can never trap the scroll; zoom by two buttons instead of pinch (pinch belongs to the page); the fixed-view buttons are thumb-sized (`pointer: coarse`).
 - **Narrow screen:** labels become numbered pins with the figures listed under the canvas (the M38 list, numbered), because eight labels do not fit beside a car 360 px wide. CSS under `max-width: 640px` only; desktop unchanged.
 - **Performance and robustness:** device pixel ratio capped at 2, render on demand, the scene and its GPU memory released when leaving Status or switching model (`<Routes key={id}>` remounts), context loss falls back to the list and recovers on return.
