@@ -154,6 +154,15 @@ export const useOccupancy = () => {
   })
 }
 
+/** What the exports cover, the silences and the Invalid signals, for the selected period (M46). */
+export const useDataHealth = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['data-health', range],
+    queryFn: () => unwrap(client.GET('/api/data/health', { params: { query: range } })),
+  })
+}
+
 export const useActivityPattern = () => {
   const range = useRangeQuery()
   return useQuery({

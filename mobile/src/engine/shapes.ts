@@ -33,6 +33,9 @@ export const FRAME_SIGNAL_SUMMARY = [
   'baseline_median', 'baseline_max', 'baseline_p10', 'baseline_p90', 'position',
 ]
 export const OCCUPANCY_MONTH = ['month', 'belted_readings', 'passenger_readings', 'rear_readings']
+export const DATA_KIND = ['kind', 'first_at', 'last_at', 'records', 'days']
+export const DATA_GAP = ['from_at', 'to_at', 'hours']
+export const INVALID_SIGNAL = ['source', 'signal', 'readings', 'invalid', 'pct']
 export const WARNING_DAY = ['day', 'code', 'events']
 export const WARNING_EVENT = ['transaction_id', 'triggered_at', 'odometer_km', 'code', 'title', 'severity', 'known']
 export const DTC_FREQUENCY = [

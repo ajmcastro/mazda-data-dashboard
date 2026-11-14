@@ -14,6 +14,7 @@ import { alarms, doorsTimeline, fuelMonthly, odometerDaily, overview, span, stat
 import { activityPattern } from './activity'
 import { frameSummary } from './framesummary'
 import { occupancy } from './occupancy'
+import { dataHealth } from './datahealth'
 import type { PackBody } from './pack'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
@@ -91,6 +92,7 @@ export class Api {
     add('GET', '/api/warnings/daily', warningDaily)
     add('GET', '/api/activity/pattern', activityPattern)
     add('GET', '/api/status/occupancy', occupancy)
+    add('GET', '/api/data/health', dataHealth)
     add('GET', '/api/warnings/events', warningEvents)
     add('GET', '/api/dtcs/frequency', dtcFrequency)
     add('GET', '/api/dtcs/events', dtcEvents)

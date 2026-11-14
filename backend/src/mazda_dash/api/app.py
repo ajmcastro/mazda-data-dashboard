@@ -15,6 +15,7 @@ from ..models import Model
 from . import models as m
 from .dates import DateRange, date_range
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
+from .health import data_health
 from .selection import registry
 from .trends import PRICED, monthly_metrics
 
@@ -391,6 +392,13 @@ def occupancy(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
         params,
     )
     return m.Occupancy(available=total["readings"] > 0, months=months, **total)
+
+
+@app.get("/api/data/health", response_model=m.DataHealth)
+def data_health_route(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """What each export covers, the silences between status reports and the signals the car flags as
+    Invalid, in the period (M46). It describes the data, not the car."""
+    return data_health(con, rng)
 
 
 @app.get("/api/activity/pattern", response_model=m.ActivityPattern)

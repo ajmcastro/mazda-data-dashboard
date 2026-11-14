@@ -16,6 +16,7 @@ import Compare from './pages/Compare'
 import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
 import Garage from './pages/Garage'
+import DataHealth from './pages/DataHealth'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
 import Trends from './pages/Trends'
@@ -33,7 +34,7 @@ function Logo() {
 
 // Pages about a period get the date-range bar; alerts and the diagnostic-tool report are not
 // tied to a period.
-const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status']
+const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status', '/health']
 
 export default function App() {
   const overview = useOverview()
@@ -82,6 +83,7 @@ export default function App() {
           {nav('/status', 'Status')}
           {nav('/diagnostics', 'Diagnostics')}
           {withData >= 1 && nav('/garage', 'All cars')}
+          {nav('/health', 'Data health')}
         </nav>
         <div className="rail-foot">
           <UnitsControl />
@@ -104,6 +106,7 @@ export default function App() {
             {page('/status', <Status />)}
             {page('/diagnostics', <Diagnostics />)}
             <Route path="/garage" element={<Garage />} />
+            <Route path="/health" element={<DataHealth />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>

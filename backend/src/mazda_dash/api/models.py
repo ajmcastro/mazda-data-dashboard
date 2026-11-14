@@ -481,6 +481,58 @@ class Occupancy(BaseModel):
     months: list[OccupancyMonth]
 
 
+class DataKind(BaseModel):
+    """One kind of export file (named as in Mazda's file names) and what it covers in the period."""
+
+    kind: str  # war | dtc-h | dtc-d | dtc-ssr | rts | vis | alt | diag
+    first_at: datetime | None = None
+    last_at: datetime | None = None
+    records: int  # events, read-outs, reports; for rts / vis / alt the status snapshots
+    days: int  # days with at least one record
+
+
+class DataGap(BaseModel):
+    """A silence between two consecutive status reports."""
+
+    from_at: datetime
+    to_at: datetime
+    hours: float
+
+
+class InvalidSignal(BaseModel):
+    """A signal the car flagged Invalid at least once (the dashboard never trusts such a reading)."""
+
+    source: str  # rts | vis | alt
+    signal: str
+    readings: int
+    invalid: int
+    pct: float
+
+
+class DataHealth(BaseModel):
+    """How much the loaded data can be trusted in a period (PLAN.md M46). Nothing here is a judgement of
+    the car: it describes the exports."""
+
+    has_data: bool
+    range_from: date | None = (
+        None  # the days looked at: the period, or the span of the data
+    )
+    range_to: date | None = None
+    days_in_range: int
+    snapshots: int  # status reports in the period
+    days_with_status: int  # days with at least one
+    gap_threshold_hours: float  # a silence at least this long is listed in `gaps`
+    gaps_total: int  # how many there are (`gaps` lists the longest)
+    longest_gap_hours: float | None = None
+    median_gap_hours: float | None = None  # the usual time between two status reports
+    signals_checked: int  # signals whose validity was looked at
+    readings_checked: int
+    invalid_readings: int
+    kinds: list[DataKind]
+    gaps: list[DataGap]  # longest first
+    invalid: list[InvalidSignal]  # highest share first
+
+
 class ContextWarning(BaseModel):
     triggered_at: datetime
     code: str

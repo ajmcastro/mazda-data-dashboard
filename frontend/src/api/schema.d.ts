@@ -296,6 +296,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/data/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Data Health Route
+         * @description What each export covers, the silences between status reports and the signals the car flags as
+         *     Invalid, in the period (M46). It describes the data, not the car.
+         */
+        get: operations["data_health_route_api_data_health_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/activity/pattern": {
         parameters: {
             query?: never;
@@ -883,6 +904,79 @@ export interface components {
             /** Severity */
             severity: string;
         };
+        /**
+         * DataGap
+         * @description A silence between two consecutive status reports.
+         */
+        DataGap: {
+            /**
+             * From At
+             * Format: date-time
+             */
+            from_at: string;
+            /**
+             * To At
+             * Format: date-time
+             */
+            to_at: string;
+            /** Hours */
+            hours: number;
+        };
+        /**
+         * DataHealth
+         * @description How much the loaded data can be trusted in a period (PLAN.md M46). Nothing here is a judgement of
+         *     the car: it describes the exports.
+         */
+        DataHealth: {
+            /** Has Data */
+            has_data: boolean;
+            /** Range From */
+            range_from?: string | null;
+            /** Range To */
+            range_to?: string | null;
+            /** Days In Range */
+            days_in_range: number;
+            /** Snapshots */
+            snapshots: number;
+            /** Days With Status */
+            days_with_status: number;
+            /** Gap Threshold Hours */
+            gap_threshold_hours: number;
+            /** Gaps Total */
+            gaps_total: number;
+            /** Longest Gap Hours */
+            longest_gap_hours?: number | null;
+            /** Median Gap Hours */
+            median_gap_hours?: number | null;
+            /** Signals Checked */
+            signals_checked: number;
+            /** Readings Checked */
+            readings_checked: number;
+            /** Invalid Readings */
+            invalid_readings: number;
+            /** Kinds */
+            kinds: components["schemas"]["DataKind"][];
+            /** Gaps */
+            gaps: components["schemas"]["DataGap"][];
+            /** Invalid */
+            invalid: components["schemas"]["InvalidSignal"][];
+        };
+        /**
+         * DataKind
+         * @description One kind of export file (named as in Mazda's file names) and what it covers in the period.
+         */
+        DataKind: {
+            /** Kind */
+            kind: string;
+            /** First At */
+            first_at?: string | null;
+            /** Last At */
+            last_at?: string | null;
+            /** Records */
+            records: number;
+            /** Days */
+            days: number;
+        };
         /** DataSpan */
         DataSpan: {
             /** First Day */
@@ -1354,6 +1448,22 @@ export interface components {
             database: string;
             /** Has Data */
             has_data: boolean;
+        };
+        /**
+         * InvalidSignal
+         * @description A signal the car flagged Invalid at least once (the dashboard never trusts such a reading).
+         */
+        InvalidSignal: {
+            /** Source */
+            source: string;
+            /** Signal */
+            signal: string;
+            /** Readings */
+            readings: number;
+            /** Invalid */
+            invalid: number;
+            /** Pct */
+            pct: number;
         };
         /** LatestStatus */
         LatestStatus: {
@@ -2481,6 +2591,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Occupancy"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    data_health_route_api_data_health_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataHealth"];
                 };
             };
             /** @description Validation Error */

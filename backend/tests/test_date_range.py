@@ -13,7 +13,7 @@ from mazda_dash.sample import generate
 CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 PERIOD_ENDPOINTS = [
     "/api/odometer/daily", "/api/fuel/monthly", "/api/trips/segments", "/api/status/timeline",
-    "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily", "/api/activity/pattern", "/api/status/occupancy",
+    "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily", "/api/activity/pattern", "/api/status/occupancy", "/api/data/health",
     "/api/dtcs/events", "/api/dtcs/readouts",
 ]  # fmt: skip
 
@@ -146,6 +146,14 @@ def test_an_empty_range_gives_empty_results_not_errors(client):
         if path == "/api/activity/pattern":  # an object, empty lists inside
             got = get(client, path, **nothing)
             assert got["hours"] == [] and got["weekdays"] == []
+        elif (
+            path == "/api/data/health"
+        ):  # an object: every kind listed with nothing in it
+            got = get(client, path, **nothing)
+            assert (
+                got["has_data"] is False and got["gaps"] == [] and got["invalid"] == []
+            )
+            assert all(k["records"] == 0 for k in got["kinds"])
         elif path == "/api/status/occupancy":
             got = get(client, path, **nothing)
             assert (

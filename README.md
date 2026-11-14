@@ -159,6 +159,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`â
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
 | **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history |
+| **Data health** (also on the phone, under *More*) | how far to trust the rest: what each kind of export file covers (first and last record, how many, on how many days), how many days have a status report, the silences between status reports of two days or more, and the signals the car itself flagged as Invalid (those readings are never used). It describes the exports, not the car |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
 
 **Words used here.** A *warning code* is one of the `$XXX` codes in the warnings export (Mazda does not
@@ -177,7 +178,7 @@ itself does not change, and neither do the alert rules, which stay in kPa and km
 figure means less fuel, so the green and red on Trends and Compare follow that. Two things keep the data's
 units: the text of an alert (it is written when the data is loaded) and the raw values of a diagnostic report.
 
-**Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults and Status
+**Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults, Status and Data health
 pages limits everything to a *from â€“ to* range of days (UTC, both included). Use the quick
 buttons (Last week, Last 2 weeks, Last 30 / 60 / 90 days, All time) or type your own dates. Quick
 ranges count back from your **newest data**, not from today, so they still make sense when your

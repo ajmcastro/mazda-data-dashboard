@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45 built)
+## More value from the same data (M45–M62; M45 and M46 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1141,12 +1141,22 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** frontend 278 (27 new); backend 308 and phone 894 unchanged. Both builds pass; the entry chunk grew by about 4 kB.
 - **Checked in the browser (demo data):** every Mac page in bar / mpg (UK) / mi and in psi / km/l / mi with a sweep for leftover kPa, km or l/100 km (none but the deliberate ones above); the phone app at 375 px: the Units section, the Overview and the Status pins and list. **Not done:** the iOS Simulator; the Trends colours in mpg were checked by test, not by eye.
 
-### M46 — Data health
+### M46 — Data health ✅ done
 - **View and route:** `v_data_health` and `GET /api/health/data` (a period endpoint): per file kind the first and last day and the number of rows; the gaps between status snapshots longer than a threshold (default 48 h, the list and the longest); per signal the share of readings flagged `Invalid`, for the signals the views read; the days with data out of the days in the period; the loads from `ingest_runs` (when, how many new rows).
 - **UI:** a "Data" page (Mac nav; under More on the phone, next to the existing storage screen, which keeps its name "Data on this phone"): a coverage strip per file kind over the period, the gaps table, the invalid-signal table, and one honest sentence ("Status reports cover 63 of 152 days; the longest silence was 11 days").
 - **Why early:** the forecasts of M51 and M52 and the fill-ups of M47 quote these figures as their basis.
 - **Tests:** a fixture with a gap and invalid readings; the empty period; engine against Python on both sample cars.
 - **Done when:** the page agrees with a hand count on the real data and both implementations match.
+
+**M46 as built.**
+- **Route:** `GET /api/data/health` (`/api/health` already existed for the server's own state), a period endpoint (`PERIOD_ENDPOINTS`, the golden matrix): `backend/src/mazda_dash/api/health.py` and, with the same SQL, `mobile/src/engine/datahealth.ts`. **No view, no table and no pack change**, so no `make model` and old packs keep working.
+- **What it answers:** per kind of file (`war`, `dtc-h`, `dtc-d`, `dtc-ssr`, `rts`, `vis`, `alt`, `diag`, always all eight) the first and last record, how many and on how many days (for the three kinds of report a record is one report, whatever the number of signals); the status reports and the days that have one out of the days looked at (the chosen period, or the span of the data); the silences between two consecutive status reports of 48 hours or more (the 20 longest, the total, the longest and the median of all); and per signal how many readings the car flagged Invalid.
+- **Changed from the sketch:** the list of loads from `ingest_runs` is **left to M53** (the import page), where it belongs: that table is not in the phone's pack, so including it here would have meant a pack change for a figure only the Mac can explain. No `v_data_health` view either: the queries read the existing tables and views.
+- **One rule so both apps agree:** of the remote-status source only the signals a view reads **by name** are judged (`pack.used_signals`, `usedSignals` on the phone), because the pack carries no other; the door and alarm reports are counted whole; GPS signals are never looked at.
+- **UI:** `pages/DataHealth.tsx` at `/health` ("Data health": the last entry of the Mac's menu, under More on the phone, with the period bar): the headline sentence, four figures (days with a status report, status reports, longest silence, Invalid readings), a table of the exports with a strip showing where each one's records fall in the period, the silences, and the Invalid signals. Wording and the strip's maths are pure and tested in `frontend/src/health.ts`; the page describes the exports, never the car (a test forbids verdict words), and uses no good/bad colours.
+- **Real data (the owner's CX-5, 12 Jun – 10 Nov 2026):** 258 status reports on 65 of 152 days; half of them within 1.6 hours of the one before; 22 silences of 48 hours or more, the longest 262 hours (10.9 days); 578 of 11,524 judged readings flagged Invalid (5.0%), in 33 of 48 signals. It agrees with the hand count made before planning.
+- **Tests:** backend 13 in `test_data_health.py` (each kind counted as the tables hold it, the days looked at, gaps against a hand computation, only flagged signals and only signals a view reads, a period, a period wider than the data, an empty period, two cars) plus the shared date-range tests (321 in all); frontend 12 in `health.test.ts` (290); the phone contract replays both cars (30 more goldens, 924).
+- **Checked in the browser:** the page on the Mac with the demo data. **Not done:** the phone app by eye for this page (it is the shared page, type-checked in the phone build, and the engine's answers are replayed against Python), and the iOS Simulator.
 
 ### M47 — Refuel log
 - **Setting:** `tank_litres` in `settings.yaml` (validated; the sample profiles already know their tank). Without it the log shows points of fuel level, not litres.

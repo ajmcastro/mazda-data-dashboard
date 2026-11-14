@@ -1273,6 +1273,93 @@
         }
       }
     },
+    "/api/data/health": {
+      "get": {
+        "summary": "Data Health Route",
+        "description": "What each export covers, the silences between status reports and the signals the car flags as\nInvalid, in the period (M46). It describes the data, not the car.",
+        "operationId": "data_health_route_api_data_health_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataHealth"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/activity/pattern": {
       "get": {
         "summary": "Activity Pattern",
@@ -3274,6 +3361,204 @@
         ],
         "title": "ContextWarning"
       },
+      "DataGap": {
+        "properties": {
+          "from_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "From At"
+          },
+          "to_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "To At"
+          },
+          "hours": {
+            "type": "number",
+            "title": "Hours"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_at",
+          "to_at",
+          "hours"
+        ],
+        "title": "DataGap",
+        "description": "A silence between two consecutive status reports."
+      },
+      "DataHealth": {
+        "properties": {
+          "has_data": {
+            "type": "boolean",
+            "title": "Has Data"
+          },
+          "range_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range From"
+          },
+          "range_to": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range To"
+          },
+          "days_in_range": {
+            "type": "integer",
+            "title": "Days In Range"
+          },
+          "snapshots": {
+            "type": "integer",
+            "title": "Snapshots"
+          },
+          "days_with_status": {
+            "type": "integer",
+            "title": "Days With Status"
+          },
+          "gap_threshold_hours": {
+            "type": "number",
+            "title": "Gap Threshold Hours"
+          },
+          "gaps_total": {
+            "type": "integer",
+            "title": "Gaps Total"
+          },
+          "longest_gap_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longest Gap Hours"
+          },
+          "median_gap_hours": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Gap Hours"
+          },
+          "signals_checked": {
+            "type": "integer",
+            "title": "Signals Checked"
+          },
+          "readings_checked": {
+            "type": "integer",
+            "title": "Readings Checked"
+          },
+          "invalid_readings": {
+            "type": "integer",
+            "title": "Invalid Readings"
+          },
+          "kinds": {
+            "items": {
+              "$ref": "#/components/schemas/DataKind"
+            },
+            "type": "array",
+            "title": "Kinds"
+          },
+          "gaps": {
+            "items": {
+              "$ref": "#/components/schemas/DataGap"
+            },
+            "type": "array",
+            "title": "Gaps"
+          },
+          "invalid": {
+            "items": {
+              "$ref": "#/components/schemas/InvalidSignal"
+            },
+            "type": "array",
+            "title": "Invalid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "has_data",
+          "days_in_range",
+          "snapshots",
+          "days_with_status",
+          "gap_threshold_hours",
+          "gaps_total",
+          "signals_checked",
+          "readings_checked",
+          "invalid_readings",
+          "kinds",
+          "gaps",
+          "invalid"
+        ],
+        "title": "DataHealth",
+        "description": "How much the loaded data can be trusted in a period (PLAN.md M46). Nothing here is a judgement of\nthe car: it describes the exports."
+      },
+      "DataKind": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "first_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First At"
+          },
+          "last_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last At"
+          },
+          "records": {
+            "type": "integer",
+            "title": "Records"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "records",
+          "days"
+        ],
+        "title": "DataKind",
+        "description": "One kind of export file (named as in Mazda's file names) and what it covers in the period."
+      },
       "DataSpan": {
         "properties": {
           "first_day": {
@@ -5079,6 +5364,40 @@
           "has_data"
         ],
         "title": "Health"
+      },
+      "InvalidSignal": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "signal": {
+            "type": "string",
+            "title": "Signal"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "invalid": {
+            "type": "integer",
+            "title": "Invalid"
+          },
+          "pct": {
+            "type": "number",
+            "title": "Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "signal",
+          "readings",
+          "invalid",
+          "pct"
+        ],
+        "title": "InvalidSignal",
+        "description": "A signal the car flagged Invalid at least once (the dashboard never trusts such a reading)."
       },
       "LatestStatus": {
         "properties": {

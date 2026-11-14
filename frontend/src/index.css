@@ -448,6 +448,12 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
   border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; color-scheme: inherit;
 }
 
+/* ---- data health: where an export's records fall in the period ---- */
+.cover-track { position: relative; height: 10px; min-width: 120px; border-radius: 3px; background: var(--grid); }
+.cover-track i { position: absolute; top: 0; bottom: 0; background: var(--steel); border-radius: 2px; }
+.panel.mt { margin-top: 14px; }
+.note { font-size: 12px; margin: 10px 0 0; }
+
 /* ---- units (pressure, consumption, distance): three small selects ---- */
 .units-control { display: grid; grid-template-columns: 1fr 1.7fr 0.9fr; gap: 4px; }
 .units-control select {
