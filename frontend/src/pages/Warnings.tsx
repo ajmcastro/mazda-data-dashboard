@@ -5,7 +5,9 @@ import type { WarningEvent, WarningFrequency } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
 import { fmtDistance } from '../units'
-import { useDateRange } from '../range'
+import { useNavigate } from 'react-router-dom'
+import { isDay } from '../day'
+import { useDateRange, useDayHref } from '../range'
 import { useCurrentModel } from '../model'
 
 const PALETTE = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--steel)', '#b58bd6', '#d6b48b', '#8bd6c4']
@@ -16,6 +18,8 @@ export default function Warnings() {
   const { id } = useCurrentModel()
   const freq = useWarningFrequency()
   const daily = useWarningDaily()
+  const navigate = useNavigate()
+  const dayHref = useDayHref()
   const { from, to } = useDateRange()
   const [chosen, setChosen] = useState<string | undefined>()
   const [hideNoisy, setHideNoisy] = useState(true)
@@ -83,7 +87,15 @@ export default function Warnings() {
       >
         <QueryState query={daily}>
           <ResponsiveContainer width="100%" height={240}>
-            <BarChart margin={{ right: 18, top: 5 }} data={chartData}>
+            <BarChart
+              margin={{ right: 18, top: 5 }}
+              data={chartData}
+              style={{ cursor: 'pointer' }}
+              onClick={(state) => {
+                const day = state?.activeLabel
+                if (typeof day === 'string' && isDay(day)) navigate(dayHref(day))
+              }}
+            >
               <CartesianGrid vertical={false} />
               <XAxis dataKey="day" tickFormatter={(d: string) => fmtTick(Date.parse(d))} minTickGap={36} {...axis} />
               <YAxis {...axis} width={34} />

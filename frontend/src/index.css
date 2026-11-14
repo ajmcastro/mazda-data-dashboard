@@ -455,6 +455,20 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* the day page (M49): a list down the page, the car's local time first */
+.day-list { list-style: none; margin: 0; padding: 0; }
+.day-entry { display: grid; grid-template-columns: 52px 92px 1fr; gap: 10px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+.day-entry:last-child { border-bottom: 0; }
+.day-time { font-size: 13px; }
+.day-what { min-width: 0; }
+.day-detail { display: block; font-size: 12px; margin-top: 2px; overflow-wrap: anywhere; }
+a.day-step { text-decoration: none; }
+@media (max-width: 640px) {
+  .day-entry { grid-template-columns: 46px 1fr; }
+  .day-entry .badge { grid-column: 2; justify-self: start; }
+  .day-what { grid-column: 2; }
+}
+
 /* ---- units (pressure, consumption, distance): three small selects ---- */
 .units-control { display: grid; grid-template-columns: 1fr 1.7fr 0.9fr; gap: 4px; }
 .units-control select {

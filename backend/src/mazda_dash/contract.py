@@ -233,6 +233,15 @@ def record(client: TestClient) -> list[dict]:
     rec.get("/api/dtcs/context", transaction_id="nope")
     rec.get("/api/dtcs/context")
 
+    # --- one day (M49): every third day of the data, the days around its edges, a day with nothing, bad dates
+    rec.get("/api/day")
+    for offset in range(-2, (last - first).days + 3, 3):
+        rec.get("/api/day", date=(first + timedelta(days=offset)).isoformat())
+    rec.get("/api/day", date=last.isoformat())
+    rec.get("/api/day", date="2031-01-01")
+    for bad in ("x", "2026-02-30", ""):
+        rec.get("/api/day", date=bad)
+
     rec.get("/api/codes/unmapped")
     rec.get("/api/maintenance/oil")
     rec.get("/api/status/car-warnings")

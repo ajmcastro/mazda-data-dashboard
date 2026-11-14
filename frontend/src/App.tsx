@@ -17,6 +17,7 @@ import Diagnostics from './pages/Diagnostics'
 import Faults from './pages/Faults'
 import Garage from './pages/Garage'
 import DataHealth from './pages/DataHealth'
+import DayPage from './pages/Day'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
 import Trends from './pages/Trends'
@@ -83,6 +84,7 @@ export default function App() {
           {nav('/status', 'Status')}
           {nav('/diagnostics', 'Diagnostics')}
           {withData >= 1 && nav('/garage', 'All cars')}
+          {nav('/day', 'Day')}
           {nav('/health', 'Data health')}
         </nav>
         <div className="rail-foot">
@@ -106,6 +108,7 @@ export default function App() {
             {page('/status', <Status />)}
             {page('/diagnostics', <Diagnostics />)}
             <Route path="/garage" element={<Garage />} />
+            <Route path="/day" element={<DayPage />} />
             <Route path="/health" element={<DataHealth />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>

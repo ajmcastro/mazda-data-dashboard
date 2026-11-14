@@ -12,6 +12,7 @@ import Diagnostics from '@frontend/pages/Diagnostics'
 import Compare from '@frontend/pages/Compare'
 import Faults from '@frontend/pages/Faults'
 import DataHealth from '@frontend/pages/DataHealth'
+import DayPage from '@frontend/pages/Day'
 import Garage from '@frontend/pages/Garage'
 import OverviewPage from '@frontend/pages/Overview'
 import Status from '@frontend/pages/Status'
@@ -39,6 +40,7 @@ function More({ hidden, canCompare, severalCars }: { hidden: readonly string[] |
         {severalCars && <RangeNavLink to="/garage">All cars</RangeNavLink>}
         {canCompare && <RangeNavLink to="/compare">Compare</RangeNavLink>}
         {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">Diagnostics</RangeNavLink>}
+        <RangeNavLink to="/day">Day</RangeNavLink>
         <RangeNavLink to="/health">Data health</RangeNavLink>
         <NavLink to="/data">Data on this phone</NavLink>
       </nav>
@@ -62,7 +64,7 @@ function Ready() {
   const page = (path: string, element: ReactNode) => (
     <Route path={path} element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element} />
   )
-  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/health', '/data'].includes(pathname)
+  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/health', '/day', '/data'].includes(pathname)
   const [units] = useUnits() // pages are drawn again when the units change
   return (
     <div className="m-shell">
@@ -80,6 +82,7 @@ function Ready() {
             {page('/diagnostics', <Diagnostics />)}
             <Route path="/compare" element={<SummaryGate><Compare /></SummaryGate>} />
             <Route path="/garage" element={<SummaryGate><Garage /></SummaryGate>} />
+            <Route path="/day" element={<DayPage />} />
             <Route path="/health" element={<DataHealth />} />
             <Route path="/data" element={<DataScreen />} />
             <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} severalCars={models.filter((m) => m.has_data).length >= 1} />} />

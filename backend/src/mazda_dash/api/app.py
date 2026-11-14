@@ -4,6 +4,7 @@ Endpoints that describe a period take optional ``from`` / ``to`` days (see ``dat
 Endpoints that describe a *state* (active faults, alerts, the diagnostic-tool report, the
 description lookups) deliberately ignore them."""
 
+import datetime as dt
 from datetime import timedelta
 from pathlib import Path
 from typing import Literal
@@ -14,6 +15,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 from ..models import Model
 from . import models as m
 from .dates import DateRange, date_range
+from .day import day
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
 from .driving import driving_pattern
 from .health import data_health
@@ -284,6 +286,12 @@ def fuel_refuels(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     """Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres
     and an estimated cost when the tank size and a price are set, and what the owner noted paying."""
     return refuels(con, rng)
+
+
+@app.get("/api/day", response_model=m.Day)
+def one_day(date: dt.date | None = None, con: duckdb.DuckDBPyConnection = Con):
+    """Everything the exports say about one day of the car's local calendar (M49), in time order."""
+    return day(con, date)
 
 
 @app.get("/api/trips/pattern", response_model=m.DrivingPattern)

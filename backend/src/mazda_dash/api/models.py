@@ -531,6 +531,49 @@ class Refuels(BaseModel):
     unmatched: list[FuelPayment]
 
 
+class DayEntry(BaseModel):
+    """One thing that happened on a day. `kind` says which fields are filled: drive, status, doors, warning,
+    readout, alarm, fill_up, diag, alert."""
+
+    kind: str
+    at: datetime | None = None  # UTC; a drive's or a fill-up's EARLIER report
+    until: datetime | None = (
+        None  # a drive's or a fill-up's later report; a warning's last time
+    )
+    local: str | None = None  # `at` in the car's time zone, "YYYY-MM-DD HH:MM"
+    local_until: str | None = None
+    code: str | None = None  # warning code; an alert's rule
+    title: str | None = None
+    severity: str | None = None
+    n: int | None = None  # warnings of that code; faults in a read-out
+    km: float | None = (
+        None  # a drive's distance; a status report's distance since the report before
+    )
+    l_per_100km: float | None = None
+    odometer_km: float | None = None
+    fuel_level_pct: float | None = None
+    d_fuel_pct: float | None = None  # against the report before; a fill-up's rise
+    tire_min_kpa: float | None = None
+    litres: float | None = None
+    doubtful: bool | None = None
+    text: str | None = (
+        None  # what is open; fault codes; an alarm's raw codes; an alert's detail
+    )
+    ref: str | None = None  # read-out transaction id, report id, alert key
+
+
+class Day(BaseModel):
+    date: str | None = (
+        None  # the car's local day, YYYY-MM-DD; None for an empty database
+    )
+    time_zone: str
+    first_day: str | None = None
+    last_day: str | None = None
+    previous: str | None = None  # the nearest day with anything before / after this one
+    next: str | None = None
+    entries: list[DayEntry]
+
+
 class DrivingBand(BaseModel):
     band: str  # under_5, 5_to_20, 20_to_100, over_100
     min_km: float

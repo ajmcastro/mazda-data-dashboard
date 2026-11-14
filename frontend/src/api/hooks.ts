@@ -154,6 +154,15 @@ export const useOccupancy = () => {
   })
 }
 
+/** Everything about one day of the car's local calendar (M49); without a day, the newest one. A state: no period. */
+export const useDay = (day: string | undefined) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['day', model, day ?? null],
+    queryFn: () => unwrap(client.GET('/api/day', { params: { query: { model, date: day } } })),
+  })
+}
+
 /** How the car is driven in the selected period: stretches of driving by length (M48). */
 export const useDrivingPattern = () => {
   const range = useRangeQuery()

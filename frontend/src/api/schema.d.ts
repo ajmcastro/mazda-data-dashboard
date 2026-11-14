@@ -174,6 +174,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/day": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One Day
+         * @description Everything the exports say about one day of the car's local calendar (M49), in time order.
+         */
+        get: operations["one_day_api_day_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trips/pattern": {
         parameters: {
             query?: never;
@@ -1025,6 +1045,68 @@ export interface components {
             first_day?: string | null;
             /** Last Day */
             last_day?: string | null;
+        };
+        /** Day */
+        Day: {
+            /** Date */
+            date?: string | null;
+            /** Time Zone */
+            time_zone: string;
+            /** First Day */
+            first_day?: string | null;
+            /** Last Day */
+            last_day?: string | null;
+            /** Previous */
+            previous?: string | null;
+            /** Next */
+            next?: string | null;
+            /** Entries */
+            entries: components["schemas"]["DayEntry"][];
+        };
+        /**
+         * DayEntry
+         * @description One thing that happened on a day. `kind` says which fields are filled: drive, status, doors, warning,
+         *     readout, alarm, fill_up, diag, alert.
+         */
+        DayEntry: {
+            /** Kind */
+            kind: string;
+            /** At */
+            at?: string | null;
+            /** Until */
+            until?: string | null;
+            /** Local */
+            local?: string | null;
+            /** Local Until */
+            local_until?: string | null;
+            /** Code */
+            code?: string | null;
+            /** Title */
+            title?: string | null;
+            /** Severity */
+            severity?: string | null;
+            /** N */
+            n?: number | null;
+            /** Km */
+            km?: number | null;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Fuel Level Pct */
+            fuel_level_pct?: number | null;
+            /** D Fuel Pct */
+            d_fuel_pct?: number | null;
+            /** Tire Min Kpa */
+            tire_min_kpa?: number | null;
+            /** Litres */
+            litres?: number | null;
+            /** Doubtful */
+            doubtful?: boolean | null;
+            /** Text */
+            text?: string | null;
+            /** Ref */
+            ref?: string | null;
         };
         /** DiagDelta */
         DiagDelta: {
@@ -2554,6 +2636,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Refuels"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    one_day_api_day_get: {
+        parameters: {
+            query?: {
+                date?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Day"];
                 };
             };
             /** @description Validation Error */

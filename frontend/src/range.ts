@@ -85,3 +85,13 @@ export function useRestoreSavedRange(ready = true) {
     if (restored) setRange(restored)
   }, [span, ready, isFiltered, setRange])
 }
+
+/** The address of a day's page, keeping the car and the period of the page it is linked from. */
+export function useDayHref(): (day: string) => { pathname: string; search: string } {
+  const search = useRangeSearch()
+  return (day) => {
+    const p = new URLSearchParams(search)
+    p.set('day', day)
+    return { pathname: '/day', search: `?${p}` }
+  }
+}

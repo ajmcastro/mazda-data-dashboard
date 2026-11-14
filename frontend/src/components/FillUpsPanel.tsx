@@ -1,4 +1,6 @@
+import { Link } from 'react-router-dom'
 import { useRefuels } from '../api/hooks'
+import { useDayHref } from '../range'
 import type { Refuel } from '../api/types'
 import { fmtDate, fmtNum } from '../lib'
 import { useCurrentModel } from '../model'
@@ -9,13 +11,14 @@ import { Badge, DataTable, Panel, QueryState, type Column } from './ui'
 export function FillUpsPanel() {
   const query = useRefuels()
   const { id } = useCurrentModel()
+  const dayHref = useDayHref()
   const d = query.data
   const columns: Column<Refuel>[] = [
     {
       key: 'when', header: 'Seen by', sort: (r) => r.after_at,
       render: (r) => (
         <span title={between(r)}>
-          {fmtDate(r.after_at)} {r.doubtful && <Badge kind="warning">doubtful</Badge>}
+          <Link to={dayHref(r.after_at.slice(0, 10))}>{fmtDate(r.after_at)}</Link> {r.doubtful && <Badge kind="warning">doubtful</Badge>}
         </span>
       ),
     },

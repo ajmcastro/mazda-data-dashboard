@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M48 built)
+## More value from the same data (M45–M62; M45–M49 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1197,11 +1197,20 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** backend 9 in `test_driving.py` (band limits, consumption and speed, no consumption from a few km, a long silence, by month, a period, nothing driven, both sample cars against Trends) plus the shared date-range and contract tests (359 in all); frontend 14 in `driving.test.ts` (315); the phone contract replays both cars (986).
 - **Checked by eye:** the panel on the Mac with the demo data and with the real data, and on the phone in the iOS Simulator (the built app, demo data). **Not done:** the README screenshots were not retaken (the Trends shot shows the top of the page, which did not change).
 
-### M49 — One day at a glance
+### M49 — One day at a glance ✅ done
 - **Route:** `GET /api/day?date=` (a state endpoint keyed by its own date, not the period): the day's trips, warnings (grouped by code with the first and last time), fault read-outs, status snapshots with what changed against the one before (fuel, tires, doors), alarm events, alerts raised that day, a fill-up if M47 found one and a service-log entry if M50 has one, in time order in the car's local time (`car_timezone`, in SQL as M35 does).
 - **UI:** `/day/2026-11-03`, reached by clicking a day on any chart or table that has one (Warnings per day, Trends, the activity panel) and by previous and next day arrows that skip days without data. A timeline down the page, each entry linking to its own page. Phone: under More, and from the same clicks.
 - **Tests:** a day across midnight UTC that is one local day; an empty day; order with ties; engine against Python on both cars.
 - **Done when:** a day with a fault read-out shows the trip before it, the warnings around it and the fill-up that evening, in order.
+
+**M49 as built.**
+- **Route:** `GET /api/day?date=` (a state endpoint; without a date, the newest day that has anything): `backend/src/mazda_dash/api/day.py` and, with the same SQL, `mobile/src/engine/day.ts`. **No view, no table and no pack change.** One union of every kind of entry with its local time (`car_timezone`; one `timezone(zone, make_timestamptz(epoch_us(ts)))`), then the day's rows, the nearest day with anything before and after it, and the first and last day.
+- **Entries (`kind`):** `drive` (a stretch of `v_trip_segments`), `status` (a report, with the fuel level and distance against the report before and the lowest tire), `doors` (only when what is open differs from the report before), `warning` (once per code and day: how often, first and last), `readout` (a fault read-out with its codes), `alarm`, `fill_up` (`v_refuels`), `diag` (a diagnostic report) and `alert` (by the time it is about; left out by a pack with no alerts table). A drive and a fill-up belong to the day of the LATER of their two reports, when they were seen, and are worded "between".
+- **Page:** `pages/Day.tsx` at `/day?day=YYYY-MM-DD` ("Day" in the Mac's menu, under More on the phone): the day's name, arrows to the previous and next day **that has anything**, a one-line summary, and the entries down the page, each with the car's local time, its kind and a link to the page that has more. Wording is pure and tested in `frontend/src/day.ts`; times are the car's, never the browser's.
+- **Reached from:** a click on a day of the Warnings page's "Events per day" chart and the date of a fill-up. **Left for later:** clicks from Trends (it shows months) and from the activity panel (hours and weekdays, not days). The Warnings chart's days are UTC days, so a warning within an hour or two of midnight can sit on the neighbouring local day.
+- **Service-log entries** join the page in M50.
+- **Tests:** backend 8 in `test_day.py` (a report after midnight UTC that is the next local day and the same data in UTC, a drive and a fill-up on the day they were seen, previous and next skipping empty days, the newest day by default, an empty database, bad dates, a walk back through every day of both sample cars checking order and membership); frontend 10 in `day.test.ts`; the goldens ask for every third day of both sample cars, the days around their edges and bad dates (93 more cases; 1,079 in all).
+- **Checked by eye:** the page on the Mac with the demo data. **Not done:** the phone by eye (the shared page, type-checked in the phone build, the engine's answers replayed against Python).
 
 ### M50 — Service log
 - **File:** `config/models/<id>/service_log.yaml`: a list of `{date, kind, note, odometer_km?}` with `kind` one of `oil_change | tires | service | software | repair | other` (validated; a typo fails loudly). Loaded to `ref_service_log` by `make model`, carried in the pack.
