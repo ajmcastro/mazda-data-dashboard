@@ -618,6 +618,93 @@
         }
       }
     },
+    "/api/trips/pattern": {
+      "get": {
+        "summary": "Trips Pattern",
+        "description": "How the car is driven in the period (M48): the stretches of driving between two status reports by\nlength, with the consumption of each band, in total and by month.",
+        "operationId": "trips_pattern_api_trips_pattern_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DrivingPattern"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/trips/segments": {
       "get": {
         "summary": "Trip Segments",
@@ -4407,6 +4494,278 @@
           "invalid_signals"
         ],
         "title": "DoorPoint"
+      },
+      "DrivingBand": {
+        "properties": {
+          "band": {
+            "type": "string",
+            "title": "Band"
+          },
+          "min_km": {
+            "type": "number",
+            "title": "Min Km"
+          },
+          "max_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Km"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "fuel_l": {
+            "type": "number",
+            "title": "Fuel L"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "band",
+          "min_km",
+          "stretches",
+          "km",
+          "fuel_l"
+        ],
+        "title": "DrivingBand"
+      },
+      "DrivingBandTotal": {
+        "properties": {
+          "band": {
+            "type": "string",
+            "title": "Band"
+          },
+          "min_km": {
+            "type": "number",
+            "title": "Min Km"
+          },
+          "max_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Km"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "fuel_l": {
+            "type": "number",
+            "title": "Fuel L"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          },
+          "driving_hours": {
+            "type": "number",
+            "title": "Driving Hours"
+          },
+          "avg_speed_kmh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Speed Kmh"
+          }
+        },
+        "type": "object",
+        "required": [
+          "band",
+          "min_km",
+          "stretches",
+          "km",
+          "fuel_l",
+          "driving_hours"
+        ],
+        "title": "DrivingBandTotal"
+      },
+      "DrivingMonth": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "fuel_l": {
+            "type": "number",
+            "title": "Fuel L"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          },
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/DrivingBand"
+            },
+            "type": "array",
+            "title": "Bands"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "stretches",
+          "km",
+          "fuel_l",
+          "bands"
+        ],
+        "title": "DrivingMonth"
+      },
+      "DrivingPattern": {
+        "properties": {
+          "gap_hours": {
+            "type": "integer",
+            "title": "Gap Hours"
+          },
+          "min_km": {
+            "type": "integer",
+            "title": "Min Km"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "fuel_l": {
+            "type": "number",
+            "title": "Fuel L"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          },
+          "driving_hours": {
+            "type": "number",
+            "title": "Driving Hours"
+          },
+          "avg_speed_kmh": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avg Speed Kmh"
+          },
+          "unclassified": {
+            "$ref": "#/components/schemas/DrivingUnclassified"
+          },
+          "bands": {
+            "items": {
+              "$ref": "#/components/schemas/DrivingBandTotal"
+            },
+            "type": "array",
+            "title": "Bands"
+          },
+          "months": {
+            "items": {
+              "$ref": "#/components/schemas/DrivingMonth"
+            },
+            "type": "array",
+            "title": "Months"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gap_hours",
+          "min_km",
+          "stretches",
+          "km",
+          "fuel_l",
+          "driving_hours",
+          "unclassified",
+          "bands",
+          "months"
+        ],
+        "title": "DrivingPattern",
+        "description": "Stretches of driving (between two consecutive status reports) by length."
+      },
+      "DrivingUnclassified": {
+        "properties": {
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stretches",
+          "km"
+        ],
+        "title": "DrivingUnclassified"
       },
       "DtcEvent": {
         "properties": {

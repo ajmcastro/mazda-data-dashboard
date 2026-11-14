@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useMonthly } from '../api/hooks'
 import type { MonthMetrics } from '../api/types'
+import { DrivingPanel } from '../components/DrivingPanel'
 import { Panel, QueryState } from '../components/ui'
 import { ANIMATE, fmtNum } from '../lib'
 import { useCurrentModel } from '../model'
@@ -236,6 +237,9 @@ export default function Trends() {
                 )}
               </Panel>
             )}
+            <div style={{ marginTop: 14 }}>
+              <DrivingPanel />
+            </div>
             {noPrice && (
               <p className="muted" style={{ fontSize: 12, margin: '14px 0 0' }}>
                 No fuel price is set, so the estimated fuel cost is not shown. Add <span className="mono">fuel_currency</span> and{' '}

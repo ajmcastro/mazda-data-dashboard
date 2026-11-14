@@ -531,6 +531,51 @@ class Refuels(BaseModel):
     unmatched: list[FuelPayment]
 
 
+class DrivingBand(BaseModel):
+    band: str  # under_5, 5_to_20, 20_to_100, over_100
+    min_km: float
+    max_km: float | None = None
+    stretches: int
+    km: float
+    fuel_l: float
+    l_per_100km: float | None = None  # only from min_km on
+
+
+class DrivingBandTotal(DrivingBand):
+    driving_hours: float
+    avg_speed_kmh: float | None = None
+
+
+class DrivingMonth(BaseModel):
+    month: str  # YYYY-MM
+    stretches: int  # every stretch of the month, as on Trends
+    km: float
+    fuel_l: float
+    l_per_100km: float | None = None
+    bands: list[DrivingBand]  # the stretches put in a band
+
+
+class DrivingUnclassified(BaseModel):
+    stretches: int
+    km: float
+
+
+class DrivingPattern(BaseModel):
+    """Stretches of driving (between two consecutive status reports) by length."""
+
+    gap_hours: int  # a stretch whose reports are this far apart is not put in a band
+    min_km: int  # a consumption is given only from this distance on
+    stretches: int  # put in a band
+    km: float
+    fuel_l: float
+    l_per_100km: float | None = None
+    driving_hours: float
+    avg_speed_kmh: float | None = None
+    unclassified: DrivingUnclassified
+    bands: list[DrivingBandTotal]  # always the four
+    months: list[DrivingMonth]
+
+
 class DataKind(BaseModel):
     """One kind of export file (named as in Mazda's file names) and what it covers in the period."""
 

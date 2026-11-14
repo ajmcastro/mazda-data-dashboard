@@ -39,6 +39,8 @@ export const REFUEL = [
   'payments',
 ]
 export const FUEL_PAYMENT = ['paid_on', 'paid', 'litres']
+export const DRIVING_BAND = ['band', 'min_km', 'max_km', 'stretches', 'km', 'fuel_l', 'l_per_100km']
+export const DRIVING_BAND_TOTAL = [...DRIVING_BAND, 'driving_hours', 'avg_speed_kmh']
 export const DATA_KIND = ['kind', 'first_at', 'last_at', 'records', 'days']
 export const DATA_GAP = ['from_at', 'to_at', 'hours']
 export const INVALID_SIGNAL = ['source', 'signal', 'readings', 'invalid', 'pct']

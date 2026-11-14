@@ -45,6 +45,7 @@ RANGE_ENDPOINTS = [
     "/api/status/occupancy",
     "/api/data/health",
     "/api/fuel/refuels",
+    "/api/trips/pattern",
     "/api/warnings/events",
     "/api/dtcs/frequency",
     "/api/dtcs/events",

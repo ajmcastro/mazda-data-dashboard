@@ -115,7 +115,8 @@ h2 { font-size: 20px; font-weight: 700; color: var(--muted); }
 /* the rail is 180 px wide: words only (the icons are for places with more room) */
 .rail .theme-toggle { width: 100%; }
 .rail .theme-toggle svg { display: none; }
-.main { padding: 28px 34px 60px; max-width: 1280px; width: 100%; }
+/* min-width: 0 lets a wide table scroll inside its panel instead of widening the page (a grid item is otherwise as wide as its content) */
+.main { padding: 28px 34px 60px; max-width: 1280px; width: 100%; min-width: 0; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
 .page-head p { margin: 6px 0 0; color: var(--muted); }
 

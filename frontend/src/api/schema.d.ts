@@ -174,6 +174,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trips/pattern": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trips Pattern
+         * @description How the car is driven in the period (M48): the stretches of driving between two status reports by
+         *     length, with the consumption of each band, in total and by month.
+         */
+        get: operations["trips_pattern_api_trips_pattern_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trips/segments": {
         parameters: {
             query?: never;
@@ -1187,6 +1208,93 @@ export interface components {
             light_switch?: number | null;
             /** Invalid Signals */
             invalid_signals: number;
+        };
+        /** DrivingBand */
+        DrivingBand: {
+            /** Band */
+            band: string;
+            /** Min Km */
+            min_km: number;
+            /** Max Km */
+            max_km?: number | null;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** Fuel L */
+            fuel_l: number;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+        };
+        /** DrivingBandTotal */
+        DrivingBandTotal: {
+            /** Band */
+            band: string;
+            /** Min Km */
+            min_km: number;
+            /** Max Km */
+            max_km?: number | null;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** Fuel L */
+            fuel_l: number;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+            /** Driving Hours */
+            driving_hours: number;
+            /** Avg Speed Kmh */
+            avg_speed_kmh?: number | null;
+        };
+        /** DrivingMonth */
+        DrivingMonth: {
+            /** Month */
+            month: string;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** Fuel L */
+            fuel_l: number;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+            /** Bands */
+            bands: components["schemas"]["DrivingBand"][];
+        };
+        /**
+         * DrivingPattern
+         * @description Stretches of driving (between two consecutive status reports) by length.
+         */
+        DrivingPattern: {
+            /** Gap Hours */
+            gap_hours: number;
+            /** Min Km */
+            min_km: number;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** Fuel L */
+            fuel_l: number;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+            /** Driving Hours */
+            driving_hours: number;
+            /** Avg Speed Kmh */
+            avg_speed_kmh?: number | null;
+            unclassified: components["schemas"]["DrivingUnclassified"];
+            /** Bands */
+            bands: components["schemas"]["DrivingBandTotal"][];
+            /** Months */
+            months: components["schemas"]["DrivingMonth"][];
+        };
+        /** DrivingUnclassified */
+        DrivingUnclassified: {
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
         };
         /** DtcEvent */
         DtcEvent: {
@@ -2446,6 +2554,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Refuels"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trips_pattern_api_trips_pattern_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrivingPattern"];
                 };
             };
             /** @description Validation Error */

@@ -154,6 +154,15 @@ export const useOccupancy = () => {
   })
 }
 
+/** How the car is driven in the selected period: stretches of driving by length (M48). */
+export const useDrivingPattern = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['driving-pattern', range],
+    queryFn: () => unwrap(client.GET('/api/trips/pattern', { params: { query: range } })),
+  })
+}
+
 /** The fill-ups of the selected period, with what was noted as paid (M47). */
 export const useRefuels = () => {
   const range = useRangeQuery()

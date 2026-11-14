@@ -15,6 +15,7 @@ import { activityPattern } from './activity'
 import { frameSummary } from './framesummary'
 import { occupancy } from './occupancy'
 import { dataHealth } from './datahealth'
+import { drivingPattern } from './driving'
 import { refuels } from './refuels'
 import type { PackBody } from './pack'
 import { trendsMonthly } from './trends'
@@ -85,6 +86,7 @@ export class Api {
     add('GET', '/api/odometer/daily', odometerDaily)
     add('GET', '/api/fuel/monthly', fuelMonthly)
     add('GET', '/api/fuel/refuels', refuels)
+    add('GET', '/api/trips/pattern', drivingPattern)
     add('GET', '/api/trips/segments', tripSegments)
     add('GET', '/api/status/timeline', statusTimeline)
     add('GET', '/api/status/tires', tireReadings)

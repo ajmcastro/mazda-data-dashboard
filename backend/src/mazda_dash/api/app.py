@@ -15,6 +15,7 @@ from ..models import Model
 from . import models as m
 from .dates import DateRange, date_range
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
+from .driving import driving_pattern
 from .health import data_health
 from .refuels import refuels
 from .selection import registry
@@ -283,6 +284,13 @@ def fuel_refuels(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     """Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres
     and an estimated cost when the tank size and a price are set, and what the owner noted paying."""
     return refuels(con, rng)
+
+
+@app.get("/api/trips/pattern", response_model=m.DrivingPattern)
+def trips_pattern(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """How the car is driven in the period (M48): the stretches of driving between two status reports by
+    length, with the consumption of each band, in total and by month."""
+    return driving_pattern(con, rng)
 
 
 @app.get("/api/trips/segments", response_model=list[m.TripSegment])
