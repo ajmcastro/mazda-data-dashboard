@@ -448,6 +448,16 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
   border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; color-scheme: inherit;
 }
 
+/* ---- units (pressure, consumption, distance): three small selects ---- */
+.units-control { display: grid; grid-template-columns: 1fr 1.7fr 0.9fr; gap: 4px; }
+.units-control select {
+  min-width: 0; width: 100%; font: inherit; font-size: 11px; color: var(--text); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 7px; padding: 4px 4px; color-scheme: inherit;
+}
+.units-control select:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; }
+.units-panel .units-control { max-width: 420px; gap: 8px; }
+.units-panel .units-control select { font-size: 15px; padding: 6px 8px; }
+
 /* ---- compare two cars ---- */
 .cmp-figures { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
 .cmp-figure { display: flex; gap: 8px; align-items: flex-start; min-width: 0; }

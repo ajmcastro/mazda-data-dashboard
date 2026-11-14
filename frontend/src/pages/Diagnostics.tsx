@@ -5,6 +5,7 @@ import type { DiagDelta, ObdTest } from '../api/types'
 import { ReportHistory } from '../components/ReportHistory'
 import { Badge, DataTable, Panel, QueryState, Stat, type Column } from '../components/ui'
 import { fmtDateTime, fmtNum, pickReport, reportLabel } from '../lib'
+import { consumptionLabel, distanceLabel, fmtConsumption, fmtDistance } from '../units'
 
 function RangeBar({ t }: { t: ObdTest }) {
   const pos = t.position === null || t.position === undefined ? null : Math.min(1, Math.max(0, t.position))
@@ -78,7 +79,7 @@ export default function Diagnostics() {
           <h1>Diagnostics</h1>
           <p>
             {r
-              ? `Diagnostic tool report from ${fmtDateTime(r.info.taken_at)} at ${fmtNum(r.info.odometer_km, 0, 'km')}`
+              ? `Diagnostic tool report from ${fmtDateTime(r.info.taken_at)} at ${fmtDistance(r.info.odometer_km)}`
               : 'The diagnostic report from your Mazda data download.'}
           </p>
         </div>
@@ -148,8 +149,8 @@ export default function Diagnostics() {
             {r && (
               <>
                 <div className="grid cols-4">
-                  <Stat label="Lifetime economy" value={fmtNum(s?.lifetime_l_per_100km, 2)} unit="l/100 km" sub={`${fmtNum(s?.lifetime_fuel_l, 0)} l over ${fmtNum(s?.lifetime_km, 0)} km`} />
-                  <Stat label="Since last reset" value={fmtNum(s?.recent_l_per_100km, 2)} unit="l/100 km" sub={`${fmtNum(s?.recent_fuel_l, 1)} l over ${fmtNum(s?.recent_km, 0)} km`} />
+                  <Stat label="Lifetime economy" value={fmtConsumption(s?.lifetime_l_per_100km, 2)} unit={consumptionLabel()} sub={`${fmtNum(s?.lifetime_fuel_l, 0)} l over ${fmtDistance(s?.lifetime_km, 0, false)} ${distanceLabel()}`} />
+                  <Stat label="Since last reset" value={fmtConsumption(s?.recent_l_per_100km, 2)} unit={consumptionLabel()} sub={`${fmtNum(s?.recent_fuel_l, 1)} l over ${fmtDistance(s?.recent_km, 0, false)} ${distanceLabel()}`} />
                   <Stat label="Engine running" value={fmtNum(s?.engine_hours, 0)} unit="h" sub={`${fmtNum(s?.ignition_cycles)} ignition cycles`} />
                   <Stat label="Emission monitors" value={`${r.obd_tests.length - failed}/${r.obd_tests.length}`} unit="pass" sub={`${activeAes} of ${r.aes.length} AES active`} alert={failed > 0} />
                 </div>

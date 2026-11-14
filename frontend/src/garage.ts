@@ -2,6 +2,7 @@
 
 import type { Garage } from './api/types'
 import { fmtAgo, fmtNum } from './lib'
+import { consumptionLabel, distanceText, fmtConsumption, per100Label, toPer100 } from './units'
 
 /** A car whose newest reading is older than this is flagged: its figures may be out of date. */
 export const STALE_AFTER_DAYS = 7
@@ -28,7 +29,7 @@ export function faultsLabel(n: number): string {
 
 /** The car's own countdown, as it reports it (not a calculation). */
 export function oilLine(g: Pick<Garage, 'oil_remaining_km'>): string {
-  return g.oil_remaining_km === null || g.oil_remaining_km === undefined ? 'not reported' : `${fmtNum(g.oil_remaining_km)} km left`
+  return g.oil_remaining_km === null || g.oil_remaining_km === undefined ? 'not reported' : `${distanceText(g.oil_remaining_km)} left`
 }
 
 type Fuel = Pick<Garage, 'fuel_l_30d' | 'l_per_100km_30d' | 'fuel_cost_30d' | 'cost_per_100km_30d' | 'currency'>
@@ -38,19 +39,19 @@ export type Block = { value: string; sub: string }
  * The unit is a capital L: in the display font a small l looks like an I. */
 export function fuelBlock(g: Fuel): Block | null {
   if (g.fuel_l_30d == null || g.l_per_100km_30d == null) return null
-  return { value: `${fmtNum(g.fuel_l_30d)} L`, sub: `${fmtNum(g.l_per_100km_30d, 2)} l/100 km on average (estimated)` }
+  return { value: `${fmtNum(g.fuel_l_30d)} L`, sub: `${fmtConsumption(g.l_per_100km_30d, 2)} ${consumptionLabel()} on average (estimated)` }
 }
 
 /** The estimated cost of that fuel: the total and the average per 100 km, in the car's own currency (null without a fuel price). */
 export function costBlock(g: Fuel): Block | null {
   if (g.fuel_cost_30d == null || g.cost_per_100km_30d == null || !g.currency) return null
-  return { value: `${fmtNum(g.fuel_cost_30d)} ${g.currency}`, sub: `${fmtNum(g.cost_per_100km_30d, 2)} ${g.currency} per 100 km (estimated)` }
+  return { value: `${fmtNum(g.fuel_cost_30d)} ${g.currency}`, sub: `${fmtNum(toPer100(g.cost_per_100km_30d), 2)} ${g.currency} per ${per100Label()} (estimated)` }
 }
 
 /** The caution under the page title: the totals are estimates, and averages between two cars need care. */
 export const FUEL_CAUTION =
   'Fuel and cost are estimates: the distance times the average consumption, and times the fuel price you entered, not what you paid. ' +
-  "Averages between two cars need care (a plug-in hybrid's l/100 km hides the electric part)."
+  "Averages between two cars need care (a plug-in hybrid's fuel consumption hides the electric part)."
 
 /** The text of a model selector entry: the name, with the new alerts when there are some. */
 export function optionLabel(name: string, newAlerts: number | undefined, hasData = true): string {

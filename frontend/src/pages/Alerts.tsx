@@ -4,6 +4,7 @@ import type { Alert } from '../api/types'
 import { RangeLink } from '../components/RangeLink'
 import { Badge, Panel, QueryState } from '../components/ui'
 import { fmtDateTime } from '../lib'
+import { DEFAULT_UNITS, unitsKey } from '../units'
 import { useCurrentModel } from '../model'
 
 const KIND: Record<string, string> = { critical: 'critical', warning: 'warning', info: 'info' }
@@ -51,6 +52,11 @@ export default function Alerts() {
             Raised by the rules in <span className="mono">config/models/{id}/alerts.yaml</span> each time you run{' '}
             <span className="mono">make ingest</span>. Acknowledged alerts are not raised again.
           </p>
+          {unitsKey() !== unitsKey(DEFAULT_UNITS) && (
+            <p className="muted" style={{ fontSize: 12 }}>
+              An alert's text is written when the data is loaded, so its figures stay in kPa, km and l/100 km whatever units you chose.
+            </p>
+          )}
         </div>
         {tab === 'new' && list.length > 1 && (
           <button onClick={() => ackAll.mutate()} disabled={ackAll.isPending}>

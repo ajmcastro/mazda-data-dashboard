@@ -5,7 +5,7 @@
 
 import type { MonthMetrics } from './api/types'
 import { addDays, fmtDate, fmtNum } from './lib'
-import { digitsFor, metricValue, monthLabel, toneFor, unitFor, type MetricDef, type MetricKey, type Tone } from './trends'
+import { digitsFor, monthLabel, polarityOf, rawValue, shown, toneFor, unitFor, type MetricDef, type MetricKey, type Tone } from './trends'
 
 export type Series = { label: string; rows: MonthMetrics[] }
 
@@ -112,7 +112,7 @@ export function summarise(def: MetricDef, rows: MonthMetrics[], perDay: boolean)
   let plain = 0
   let months = 0
   for (const row of rows) {
-    const v = metricValue(row, def, perDay)
+    const v = rawValue(row, def, perDay) // in the data's unit: a mean of converted values would be wrong for mpg
     if (v === null) continue
     const key = def.additive && perDay ? 'days_covered' : WEIGHT[def.key]
     const raw = key ? Number(row[key] ?? 0) : 1
@@ -123,7 +123,7 @@ export function summarise(def: MetricDef, rows: MonthMetrics[], perDay: boolean)
     months += 1
   }
   if (months === 0) return { value: null, months: 0 }
-  return { value: weights > 0 ? sum / weights : plain / months, months }
+  return { value: shown(def, weights > 0 ? sum / weights : plain / months), months }
 }
 
 export type MetricComparison = {
@@ -154,7 +154,7 @@ export function compareMetric(
   basis: Basis,
   currencies?: Currencies,
 ): MetricComparison {
-  const has = (r: MonthMetrics | undefined) => r !== undefined && metricValue(r, def, perDay) !== null
+  const has = (r: MonthMetrics | undefined) => r !== undefined && rawValue(r, def, perDay) !== null
   const paired = basis === 'overlap' ? aligned.filter((m) => has(m.a) && has(m.b)) : aligned
   const rowsOf = (side: 'a' | 'b') => paired.flatMap((m) => (m[side] ? [m[side]] : []))
   const a = summarise(def, rowsOf('a'), perDay)
@@ -259,12 +259,12 @@ export const PERIOD_UNAVAILABLE: Partial<Record<MetricKey, string>> = {
  */
 export function summarisePeriod(def: MetricDef, rows: MonthMetrics[], perDay: boolean): Summary {
   if (def.additive && !perDay) {
-    const values = rows.map((r) => metricValue(r, def, false)).filter((v): v is number => v !== null)
-    return values.length ? { value: values.reduce((x, y) => x + y, 0), months: values.length } : { value: null, months: 0 }
+    const values = rows.map((r) => rawValue(r, def, false)).filter((v): v is number => v !== null)
+    return values.length ? { value: shown(def, values.reduce((x, y) => x + y, 0)), months: values.length } : { value: null, months: 0 }
   }
   if (def.key === 'tire_min_kpa') {
-    const values = rows.map((r) => metricValue(r, def, false)).filter((v): v is number => v !== null)
-    return values.length ? { value: Math.min(...values), months: values.length } : { value: null, months: 0 }
+    const values = rows.map((r) => rawValue(r, def, false)).filter((v): v is number => v !== null)
+    return values.length ? { value: shown(def, Math.min(...values)), months: values.length } : { value: null, months: 0 }
   }
   return summarise(def, rows, perDay)
 }
@@ -285,7 +285,7 @@ export function comparePeriods(def: MetricDef, rowsA: MonthMetrics[], rowsB: Mon
   if (a.value === null && b.value === null) return { kind: 'none', a, b, ...empty, tone: 'neutral' }
   if (a.value === null || b.value === null) return { kind: 'one-sided', a, b, ...empty, tone: 'neutral' }
   const d = difference(a.value, b.value)
-  return { kind: 'ok', a, b, ...d, months: [], tone: toneFor(def.polarity, d.direction) }
+  return { kind: 'ok', a, b, ...d, months: [], tone: toneFor(polarityOf(def), d.direction) }
 }
 
 export type Period = { from: string; to: string }

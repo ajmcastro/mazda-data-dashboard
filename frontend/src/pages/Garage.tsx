@@ -3,6 +3,7 @@ import type { Garage as GarageCard } from '../api/types'
 import { Panel } from '../components/ui'
 import { FUEL_CAUTION, alertsLabel, costBlock, faultsLabel, fuelBlock, oilLine, staleNote } from '../garage'
 import { fmtAgo, fmtDate, fmtNum } from '../lib'
+import { distanceLabel, fmtDistance } from '../units'
 import { useCurrentModel, useSwitchModel } from '../model'
 
 type Car = { id: string; name: string; platform?: string | null }
@@ -49,15 +50,15 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
           </div>
           {stale && <div className="caveat garage-stale">{stale}</div>}
           <div className="garage-figures">
-            <Figure label="Odometer" value={`${fmtNum(g.odometer_km)} km`} sub={g.odometer_at ? `as of ${fmtDate(g.odometer_at)}` : undefined} />
+            <Figure label="Odometer" value={`${fmtDistance(g.odometer_km, 0, false)} ${distanceLabel()}`} sub={g.odometer_at ? `as of ${fmtDate(g.odometer_at)}` : undefined} />
             <Figure
               label="Last 30 days"
-              value={`${fmtNum(g.km_last_30_days)} km`}
+              value={`${fmtDistance(g.km_last_30_days, 0, false)} ${distanceLabel()}`}
               sub={g.from_day && g.to_day ? `${fmtDate(g.from_day)} – ${fmtDate(g.to_day)}` : undefined}
             />
             {fuel && <Figure label="Fuel used, last 30 days" value={fuel.value} sub={fuel.sub} />}
             {cost && <Figure label="Fuel cost, last 30 days" value={cost.value} sub={cost.sub} />}
-            <Figure label="Fuel level" value={`${fmtNum(g.fuel_level_pct)} %`} sub={g.range_km != null ? `range ≈ ${fmtNum(g.range_km)} km` : undefined} />
+            <Figure label="Fuel level" value={`${fmtNum(g.fuel_level_pct)} %`} sub={g.range_km != null ? `range ≈ ${fmtDistance(g.range_km, 0, false)} ${distanceLabel()}` : undefined} />
             <Figure label="Next oil change" value={oilLine(g)} sub={g.oil_read_at ? `as reported ${fmtDate(g.oil_read_at)}` : undefined} />
             <Figure label="Last reading" value={fmtAgo(g.last_reading_at)} />
           </div>

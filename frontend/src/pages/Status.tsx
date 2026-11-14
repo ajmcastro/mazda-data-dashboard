@@ -7,15 +7,16 @@ import { WhenPanel } from '../components/WhenPanel'
 import { WhoRidesPanel } from '../components/WhoRidesPanel'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, tireReadingsNote, ts } from '../lib'
+import { consumptionLabel, distanceLabel, fmtConsumption, fmtDistance, pressureLabel, toDistance, toPressure, getUnits } from '../units'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const tipLabel = (v: number | string) => fmtDateTime(new Date(Number(v)).toISOString())
 
 /** Chart points: every step of the countdown, plus the latest reading so the line reaches it. */
 function oilPoints(o: OilService) {
-  const points = o.steps.map((s) => ({ t: ts(s.read_at), km: s.remaining_km }))
+  const points = o.steps.map((s) => ({ t: ts(s.read_at), km: toDistance(s.remaining_km) }))
   if (o.read_at && o.remaining_km != null && ts(o.read_at) !== points.at(-1)?.t) {
-    points.push({ t: ts(o.read_at), km: o.remaining_km })
+    points.push({ t: ts(o.read_at), km: toDistance(o.remaining_km) })
   }
   return points
 }
@@ -31,7 +32,7 @@ export default function Status() {
   const points = (status.data ?? []).map((s) => ({
     t: ts(s.created_at),
     'fuel %': s.fuel_level_pct ?? null,
-    'range km': s.range_km ?? null,
+    range: toDistance(s.range_km),
     FL: s.tire_fl_kpa ?? null,
     FR: s.tire_fr_kpa ?? null,
     RL: s.tire_rl_kpa ?? null,
@@ -41,18 +42,20 @@ export default function Status() {
   // one point per MEASUREMENT, at the time the car took it (snapshots repeating it are not extra points)
   const tirePoints = (tires.data ?? []).map((r) => ({
     t: ts(r.reading_at),
-    FL: r.tire_fl_kpa ?? null,
-    FR: r.tire_fr_kpa ?? null,
-    RL: r.tire_rl_kpa ?? null,
-    RR: r.tire_rr_kpa ?? null,
+    FL: toPressure(r.tire_fl_kpa),
+    FR: toPressure(r.tire_fr_kpa),
+    RL: toPressure(r.tire_rl_kpa),
+    RR: toPressure(r.tire_rr_kpa),
   }))
+  // room above and below the lines, in the unit shown: 10 kPa is 0.1 bar or about 1.5 psi
+  const tirePad = { kPa: 10, bar: 0.1, psi: 1.5 }[getUnits().pressure]
   const tireNote = tireReadingsNote(tires.data)
 
   const tripCols: Column<TripSegment>[] = [
     { key: 'end', header: 'Ended', sort: (t) => t.end_at, render: (t) => fmtDateTime(t.end_at) },
-    { key: 'km', header: 'Distance', num: true, sort: (t) => t.km, render: (t) => fmtNum(t.km, 1, 'km') },
+    { key: 'km', header: 'Distance', num: true, sort: (t) => t.km, render: (t) => fmtDistance(t.km, 1) },
     { key: 'fuel', header: 'Fuel', num: true, sort: (t) => t.fuel_l, render: (t) => fmtNum(Math.max(0, t.fuel_l), 2, 'l') },
-    { key: 'cons', header: 'l/100 km', num: true, sort: (t) => t.l_per_100km ?? -1, render: (t) => fmtNum(t.l_per_100km, 1) },
+    { key: 'cons', header: consumptionLabel(), num: true, sort: (t) => t.l_per_100km ?? -1, render: (t) => fmtConsumption(t.l_per_100km, 1) },
     { key: 'gap', header: 'Gap', num: true, render: (t) => fmtNum(t.gap_hours, 1, 'h') },
   ]
   const episodeCols: Column<CarWarningEpisode>[] = [
@@ -79,7 +82,7 @@ export default function Status() {
       <CarPanel />
 
       <div className="grid cols-2" style={{ marginTop: 14 }}>
-        <Panel title="Fuel level and range" hint="gauge % and estimated km">
+        <Panel title="Fuel level and range" hint={`gauge % and estimated ${distanceLabel()}`}>
           <QueryState query={status}>
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={points}>
@@ -90,19 +93,19 @@ export default function Status() {
                 <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
                 <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--mono)' }} />
                 <Line isAnimationActive={ANIMATE} yAxisId="l" name="fuel %" dataKey="fuel %" stroke="var(--teal)" dot={false} strokeWidth={2} connectNulls />
-                <Line isAnimationActive={ANIMATE} yAxisId="r" name="range km" dataKey="range km" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
+                <Line isAnimationActive={ANIMATE} yAxisId="r" name={`range ${distanceLabel()}`} dataKey="range" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </QueryState>
         </Panel>
 
-        <Panel title="Tire pressure" hint="kPa per wheel, at the time measured">
+        <Panel title="Tire pressure" hint={`${pressureLabel()} per wheel, at the time measured`}>
           <QueryState query={tires}>
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={tirePoints}>
                 <CartesianGrid vertical={false} />
                 <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={fmtTick} minTickGap={36} {...axis} />
-                <YAxis {...axis} width={40} domain={['dataMin - 10', 'dataMax + 10']} />
+                <YAxis {...axis} width={40} domain={[(min: number) => min - tirePad, (max: number) => max + tirePad]} />
                 <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
                 <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--mono)' }} />
                 <Line isAnimationActive={ANIMATE} name="front left" dataKey="FL" stroke="var(--accent)" dot={false} connectNulls />
@@ -160,14 +163,14 @@ export default function Status() {
       <WhoRidesPanel />
 
       {oil.data?.has_data && (
-        <Panel title="Oil change countdown" hint="km left until the next oil change, as the car reports it">
+        <Panel title="Oil change countdown" hint={`${distanceLabel()} left until the next oil change, as the car reports it`}>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={oilPoints(oil.data)} margin={{ right: 18, top: 5 }}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="t" type="number" scale="time" domain={['dataMin', 'dataMax']} tickFormatter={fmtTick} minTickGap={36} {...axis} />
               <YAxis {...axis} width={44} domain={[0, 'auto']} />
               <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
-              <Line isAnimationActive={ANIMATE} type="stepAfter" name="km left" dataKey="km" stroke="var(--amber)" strokeWidth={2} dot={{ r: 3 }} />
+              <Line isAnimationActive={ANIMATE} type="stepAfter" name={`${distanceLabel()} left`} dataKey="km" stroke="var(--amber)" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
           <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>

@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my cars (a CX-5, and a CX-60 set up the same way), with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: complete. All planned milestones (M1–M44) are done except M28** (adapting to a real CX-60 export: conditional, not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), and the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos). What is left is under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
+**Status: complete. All planned milestones (M1–M44) are done except M28** (adapting to a real CX-60 export: conditional, not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), and the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos). **Planned next, not started: eighteen further milestones, M45–M62 (see "More value from the same data"); M28 stays on hold until there is a real CX-60 export.** Other ideas are under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
 
 ## Decisions
 
@@ -1072,6 +1072,197 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
+## More value from the same data (M45–M62; M45 built)
+
+### Goal
+Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
+
+### What the owner's data says about them (CX-5, 12 Jun – 10 Nov 2026; checked before planning)
+- **Fill-ups are visible.** 240 status snapshots with a fuel level on 63 days; the level rises by 15 points or more between two consecutive snapshots **12 times** (58 points on average, 18 at the least), and only twice by a small amount (3 to 15 points) that could be noise or a slope. So a fill-up can be detected with a simple threshold, and the doubtful ones can be shown as doubtful.
+- **Snapshots are uneven.** Half of them are within 1.6 hours of the one before, but one in ten follows a gap of 44 hours or more, and the longest gap is 262 hours. Everything below that is worded as "between two reports", and every forecast shows what it is based on.
+- **Short trips dominate.** 214 trip segments, a median of 5.8 km, **47% under 5 km**: the driving-pattern page has something real to show.
+- **Invalid values exist** (669 of 46,956 remote-status readings, 128 of 3,776 door readings): the data health page has a subject.
+- **Four control units** report faults in this car: a fault map is small enough to place by hand.
+- `ingest_runs` already records each load, which the "what changed" summary can build on.
+
+### Decisions (confirmed 14 Nov 2026)
+1. **Order:** quick wins and foundations first (units, data health), then the features that add insight (fill-ups, driving, the day page), then planning ahead (service log, leak forecast, maintenance forecast), then ease of use (import, report), then the 3D follow-ups from the cheapest to the one that needs the owner's input, then sharing, and the language last, so every string exists before it is translated once.
+2. **Every milestone ships on the Mac and the phone together** where it shows data (the "keep both implementations in step" rule: Python route, TypeScript twin, goldens, `make types`). The exceptions are things only the Mac can do: importing Mazda's files (M53) and writing entries (M47, M50), which the phone shows read-only from its pack.
+3. **Estimates are worded as estimates.** A forecast gives its figure, the period it was measured over and how many readings it rests on, and is withheld under a minimum; a detected fill-up says "between two reports"; nothing is presented as a fact the data does not hold.
+4. **What the owner types in lives in files, not in the database:** the service log and the amounts paid go in `config/models/<id>/` (like the code descriptions and prices), so `make reset-db` never loses them and they travel in git if the owner wants. They are loaded into `ref_*` tables by `make model` and carried in the pack.
+5. **No new outside request, no new private data in the repository.** Uploading Mazda's download (M53) is to the API on the same machine only. Description packs (M61) hold descriptions, never a VIN or data.
+6. **Sample data:** new demo data is derived from the clock and the odometer, never from new random numbers, so the committed CX-5 sample bytes stay the same unless a milestone says it must change them (then the goldens and the demo packs are regenerated in that milestone).
+7. **One milestone at a time,** each started on the owner's word, each ending with tests, both builds, the docs and a commit.
+
+### Milestones
+| | What | Visible result |
+|---|---|---|
+| **Quick wins** | | |
+| M45 | Units | pressures in kPa, bar or psi, and consumption in l/100 km, km/l or mpg, chosen once |
+| M46 | Data health | a page saying what each export covers, where the gaps are and which signals the car flags invalid |
+| **Understand the car** | | |
+| M47 | Refuel log | a list of fill-ups with litres, distance and cost; optionally what was really paid |
+| M48 | Driving pattern | short trips, consumption by trip length and by month, and why a month used more fuel |
+| M49 | One day at a glance | a page with everything that happened on a chosen day, in order |
+| **Plan ahead** | | |
+| M50 | Service log | dated notes per car (oil change, tires, dealer visit) shown as markers on the charts |
+| M51 | Tire leak forecast | per wheel: how fast it loses pressure and when it reaches the limit |
+| M52 | Maintenance and mileage forecast | a date for the next oil change, yearly distance against a limit, a calendar file |
+| **Easier to use** | | |
+| M53 | Import from the dashboard | drop Mazda's download on a page instead of running a command, then see what changed |
+| M54 | Report for the mechanic | a printable page with the faults, their context and the car's state |
+| **The 3D car, further** | | |
+| M55 | Alerts on the car | a marker on the part each new alert is about |
+| M56 | Time scrubber | drag through the period and watch the car's state change |
+| M57 | Who rides, on the seats | the seats shaded by how often each belt was buckled |
+| M58 | Freeze-frame scene | for one fault, the conditions of its frames shown at their parts |
+| M59 | Fault map | the control units, placed by the owner, lit by their faults |
+| M60 | Cars elsewhere | a small car on each All cars card; two cars or two reports side by side |
+| **Share and translate** | | |
+| M61 | Code description packs | export and import a model's code descriptions as a file |
+| M62 | A second language | the interface in Portuguese as well as English |
+
+### M45 — Units ✅ done
+- **Setting:** `units:` in `config/models/<id>/settings.yaml` is the wrong place (a unit is the reader's, not the car's): the choice is per device, in `localStorage` (`cx5.units`: pressure `kPa | bar | psi`, consumption `l/100km | km/l | mpg-uk | mpg-us`, distance `km | mi`), with a small control next to the theme switch on the Mac and on the phone's Data screen. Defaults: kPa, l/100 km, km (what the data is in).
+- **One place converts:** `frontend/src/units.ts` (pure, tested): `fmtPressure`, `fmtConsumption`, `fmtDistance` and the inverse for thresholds shown to the user. The API and the database keep SI values; **no backend or engine change**. Every page, the alerts' text excepted (it is written at ingest, in kPa and km: noted next to the alert), goes through these.
+- **Care:** a consumption in mpg turns "lower is better" into "higher is better": the polarity in `trends.ts` and `compare.ts` follows the unit; the 3D labels and pins use the same formatters.
+- **Tests:** round trips, the polarity flip, every `kPa` and `l/100 km` literal in a page gone (a source test); screenshots unchanged at the defaults.
+- **Done when:** switching to bar and mpg changes every figure on every page on both apps, and switching back restores them exactly.
+
+**M45 as built.**
+- **`frontend/src/units.ts`** (pure apart from the stored choice, 27 tests in `units.test.ts`): the choice (`cx5.units` in `localStorage`, per device, defaults = what the data is in: kPa, l/100 km, km), `toPressure` / `toDistance` / `toSpeed` / `toConsumption` / `toPer100`, the labels and sensible digits (245 kPa, 2.45 bar, 35.5 psi), and the formatters. **No backend, engine or pack change.** The current choice is module state, so the pure wording modules format without being handed it; both apps key their `<Routes>` on `unitsKey()`, so every page is drawn again when it changes.
+- **Units offered:** pressure kPa, bar, psi; consumption l/100 km, km/l, mpg (UK), mpg (US); distance km, mi (which also turns km/h into mph and a cost per 100 km into a cost per 100 mi). Fuel volumes stay in litres.
+- **The control:** three small selects, in the Mac's side rail above the appearance switch and in a "Units" section on the phone's Data screen (`components/UnitsControl.tsx`).
+- **Maths stays in the data's units.** `trends.ts` gained `quantity` on the six metrics that have a unit to choose, `rawValue` (what sums and weighted means are made from), `shown` (the conversion) and `polarityOf`; `compare.ts` summarises raw values and converts the result. A mean of mpg figures would be wrong (a test pins 18.18 km/l, not 19). **Rules are never converted:** the "lowest by 20 kPa" rule, `OIL_SOON_KM` and the alert thresholds stay in kPa and km.
+- **Colours follow the meaning:** with km/l or mpg a higher figure is less fuel, so "lower is better" turns round for consumption only (tested in all four units: going from 9 to 7 l/100 km is good whichever way the shown number moves).
+- **What deliberately stays as it is:** an alert's text is written at ingest, so its figures stay in kPa, km and l/100 km (the Alerts page says so when other units are chosen); "the car counts in steps of 1,000 km or more" is a fact about the car; the raw values of a diagnostic report and of freeze frames are shown as the tool prints them.
+- **A guard:** a source test fails if a page or component spells out kPa, l/100 km, km/h or km as a unit; only `units.ts`, the metric table and the raw freeze-frame units may.
+- **Defaults unchanged:** with the default units every page's text is what it was (the existing tests pass untouched, and switching to other units and back restores the Overview's text exactly), so no screenshot was retaken.
+- **Tests:** frontend 278 (27 new); backend 308 and phone 894 unchanged. Both builds pass; the entry chunk grew by about 4 kB.
+- **Checked in the browser (demo data):** every Mac page in bar / mpg (UK) / mi and in psi / km/l / mi with a sweep for leftover kPa, km or l/100 km (none but the deliberate ones above); the phone app at 375 px: the Units section, the Overview and the Status pins and list. **Not done:** the iOS Simulator; the Trends colours in mpg were checked by test, not by eye.
+
+### M46 — Data health
+- **View and route:** `v_data_health` and `GET /api/health/data` (a period endpoint): per file kind the first and last day and the number of rows; the gaps between status snapshots longer than a threshold (default 48 h, the list and the longest); per signal the share of readings flagged `Invalid`, for the signals the views read; the days with data out of the days in the period; the loads from `ingest_runs` (when, how many new rows).
+- **UI:** a "Data" page (Mac nav; under More on the phone, next to the existing storage screen, which keeps its name "Data on this phone"): a coverage strip per file kind over the period, the gaps table, the invalid-signal table, and one honest sentence ("Status reports cover 63 of 152 days; the longest silence was 11 days").
+- **Why early:** the forecasts of M51 and M52 and the fill-ups of M47 quote these figures as their basis.
+- **Tests:** a fixture with a gap and invalid readings; the empty period; engine against Python on both sample cars.
+- **Done when:** the page agrees with a hand count on the real data and both implementations match.
+
+### M47 — Refuel log
+- **Setting:** `tank_litres` in `settings.yaml` (validated; the sample profiles already know their tank). Without it the log shows points of fuel level, not litres.
+- **View and route:** `v_refuels` = each rise of the fuel level between two consecutive snapshots at or above a threshold (default 15 points, in `settings.yaml`), with the two snapshots' times, the odometer, the level before and after, the litres (points × tank ÷ 100), the distance since the previous fill-up and the consumption between them, and `doubtful` for a rise under the threshold but above the noise, or one that spans a long silence. `GET /api/fuel/refuels` (a period endpoint, `PERIOD_ENDPOINTS`). Cost = litres × the price in force that day (the `PRICED` join of M33).
+- **What was paid (optional):** `config/models/<id>/fuel_log.yaml`, a list of `{date, litres?, paid, currency?}` the owner keeps; loaded to `ref_fuel_paid`, matched to the detected fill-up of that day. The log then shows estimated and paid side by side, and the period's real cost per 100 km where every fill-up in it has a payment. **Never mixed silently:** a total says how many of its fill-ups are estimates.
+- **UI:** a "Fill-ups" panel on Status (table, and marks on the fuel chart); a line on the Overview ("last fill-up 3 Nov, 41 l, 612 km since the one before"). Phone: the same, read-only.
+- **Tests:** the threshold and the doubtful band; a fill-up across a silence; no tank size; a payment matched, unmatched and on a day with two fill-ups; goldens on both cars (the samples refuel by design); `SUMMARY_VERSION` untouched (the monthly and garage answers do not change).
+- **Done when:** the real data lists the 12 fill-ups seen in the check above, with the two doubtful rises marked, and both implementations agree.
+
+### M48 — Driving pattern and consumption
+- **Route:** `GET /api/trips/pattern` (a period endpoint) from `v_trip_segments`: trips and distance by length band (under 5 km, 5–20, 20–100, over 100), the consumption of each band, the same by month, and the share of the month's fuel that short trips used. A trip here is "between two status reports", said so on the page.
+- **UI:** a "How the car is driven" panel on Trends: bands as bars, consumption by band, and under the monthly consumption chart one sentence that explains a change when the mix explains it ("November used 0.8 l/100 km more than October; short trips went from 38% to 55% of the distance"), and says nothing when it does not. Wording pure and tested in `frontend/src/driving.ts`; neutral ("more short trips"), never a verdict on the driver.
+- **Tests:** bands on a fixture; a month with too few trips is not explained; the explanation only appears when the mix moved with the consumption; engine against Python.
+- **Done when:** the real data shows the 47% of trips under 5 km and their consumption next to the longer ones.
+
+### M49 — One day at a glance
+- **Route:** `GET /api/day?date=` (a state endpoint keyed by its own date, not the period): the day's trips, warnings (grouped by code with the first and last time), fault read-outs, status snapshots with what changed against the one before (fuel, tires, doors), alarm events, alerts raised that day, a fill-up if M47 found one and a service-log entry if M50 has one, in time order in the car's local time (`car_timezone`, in SQL as M35 does).
+- **UI:** `/day/2026-11-03`, reached by clicking a day on any chart or table that has one (Warnings per day, Trends, the activity panel) and by previous and next day arrows that skip days without data. A timeline down the page, each entry linking to its own page. Phone: under More, and from the same clicks.
+- **Tests:** a day across midnight UTC that is one local day; an empty day; order with ties; engine against Python on both cars.
+- **Done when:** a day with a fault read-out shows the trip before it, the warnings around it and the fill-up that evening, in order.
+
+### M50 — Service log
+- **File:** `config/models/<id>/service_log.yaml`: a list of `{date, kind, note, odometer_km?}` with `kind` one of `oil_change | tires | service | software | repair | other` (validated; a typo fails loudly). Loaded to `ref_service_log` by `make model`, carried in the pack.
+- **Suggestions, never entries:** the oil countdown's jumps (M17 already finds them) and a new set of diagnostic reports are offered on the page as "looks like an oil change on 14 Sep: add it?" with the lines to paste into the file. Nothing is written for the owner.
+- **Route and UI:** `GET /api/service-log`; a "Service log" panel on Status; **markers on the time charts** (fuel, tires, oil countdown, Trends by month) with the note on hover; the entry appears on the day page (M49) and in the report (M54). An "Add an entry" form on the Mac writes the file through `POST /api/service-log` (the second kind of write endpoint; it edits one YAML file, keeps comments, and refuses while `make ingest` runs); the phone is read-only.
+- **Tests:** validation; markers land on the right day in the car's time zone; the form's file edit is idempotent and keeps what was there; engine against Python.
+- **Done when:** an entry typed on the Mac shows on the oil chart, on its day page and, after a new pack, on the phone.
+
+### M51 — Tire leak forecast
+- **Maths (pure Python and the same in TypeScript, or one SQL):** per wheel, the difference between that wheel and the mean of the other three at each **measurement** (`v_tire_readings`, not snapshots), which cancels the temperature that moves all four together; a robust slope of that difference over the last N days (default 30, at least 8 measurements over at least 10 days, else no forecast); the date the wheel's own pressure reaches the limit (`low_tire_pressure.min_kpa` from `alerts.yaml`) at that rate; a refill (a rise of the wheel against the others) restarts the series.
+- **Route and UI:** `GET /api/status/tire-forecast` (a state endpoint over the newest data); a line per wheel under the tire chart ("rear left: losing about 4 kPa a week against the other three; at this rate it reaches 200 kPa around 12 Dec. Based on 14 measurements over 23 days."), a dashed projection on the chart, and the same in the wheel's 3D detail. A wheel that is not leaking says nothing.
+- **Alert:** `tire_leak_forecast` (off by default: `low_tire_pressure` and the car's own flag already fire): raised once per wheel when the forecast date is within `days` (default 14).
+- **Tests:** a steady leak, a leak with a refill, temperature swings on all four, too little data, a wheel that gains; the limit read from the model's alerts; both sample cars (each has a leaking wheel by design).
+- **Done when:** the demo's leaking wheels get a forecast that matches the generator's leak rate, and the real data's forecast (or its absence) can be checked against the chart by eye.
+
+### M52 — Maintenance and mileage forecast
+- **Oil change date:** the car's countdown (M17) gives the distance left; the recent distance per day (the last 30 and 90 days, both shown) turns it into a date range ("in about 9 to 12 weeks, around mid-March"). Withheld for a car that does not send the countdown or with too little recent driving.
+- **Yearly distance:** `mileage:` in `settings.yaml`: `{limit_km_per_year, start_date}` (a lease or warranty year). The Overview gets "11,200 km so far this year; at the last 90 days' pace about 17,400 km by 3 March, 2,400 over the limit" and Trends a line against the limit. Without the setting, only the yearly pace is shown.
+- **Route:** `GET /api/forecast` (state); the All cars card gains the oil date (raise `SUMMARY_VERSION`).
+- **Calendar:** `GET /api/forecast.ics` on the Mac (one all-day event per forecast, regenerated on each request, to subscribe to or download); the phone offers the same file from its engine as a download. No outside request: the file is local.
+- **Alert:** the existing `oil_change_due` gains an optional `days` trigger next to its distance.
+- **Tests:** the two paces; no countdown; a year that wraps; the limit; the calendar file's format; engine against Python and the summary cache.
+- **Done when:** the real car shows a date for its oil change and the demo CX-60, which sends no countdown, shows none.
+
+### M53 — Import from the dashboard
+- **Upload:** `POST /api/import?model=` on the local API takes Mazda's download (the zip as it arrives, or the loose CSV and text files), checks every name against the kinds the ingest knows, refuses anything else, writes into `data/<id>/` (never outside it; names are sanitised; an existing file with the same content is skipped) and runs the same `ingest()` and alerts as `make ingest`. It only listens where the API does (localhost) and is refused when a `MAZDA_READONLY` setting is on.
+- **What changed:** from `ingest_runs` and the alerts raised by that run: rows added per kind, the new newest day, distance since the previous load, faults that appeared or cleared, new warning codes, new alerts. `GET /api/imports` lists the loads; the summary of the last one shows on the Overview until dismissed.
+- **UI (Mac only):** an "Import" page: drop zone, the model the files go to (with the VIN check `make ingest` already does: a second VIN is refused, not warned), progress, the summary. The phone keeps getting packs (parsing Mazda's files on the phone stays an idea).
+- **Tests:** a zip, loose files, a wrong file, a path that tries to leave the folder, the same file twice, a second VIN, a load while another runs; the summary against a known pair of loads.
+- **Done when:** a new export dropped on the page appears in the dashboard with its summary, without a terminal.
+
+### M54 — Report for the mechanic
+- **Page:** `/report` (Mac and phone), a print stylesheet and "Print or save as PDF" (the browser's own print: no PDF library): the car (model, VIN shown only if a box is ticked, odometer, the date range), the faults active in the latest read-out and those seen in the period with their freeze-frame summary (M36), the car's own warning flags and episodes, the warning lamps that changed, the tire history and any leak forecast, the latest diagnostic report's headline and what changed since the previous one, the service log, and the open alerts. Each section can be left out. Units follow M45.
+- **No new route:** it composes existing answers (and M46, M47, M50, M51 when they exist), so it works on the phone as it is.
+- **Wording:** the same hedges as the pages ("tends to appear when", "between two reports", "no description yet"); a footer says what the data is and is not.
+- **Tests:** the sections' composition (pure); the print layout checked in the screenshot script (a PDF of the demo car, compared for page count and headings); nothing private in it unless ticked.
+- **Done when:** the demo car's report prints on two or three clean pages in light colours from either app.
+
+### M55 — Alerts on the car
+- `car.ts` gains `alertPart(alert)`: the part an alert is about (a wheel for the tire rules and flags, the engine for oil, a door for the door flag, the dashboard for the rest), from the rule and its `dedup_key`, never from the text. The 3D view and the list show a marker with the count on that part; clicking opens the Alerts page filtered to it. Acknowledging removes the marker (the same query key as the alert counts).
+- **Tests:** every rule maps to a part or to none; acknowledged alerts leave no marker; the mapping is exhaustive (a new rule without an entry fails a test).
+
+### M56 — Time scrubber
+- A slider under the 3D car over the selected period: `carState` is fed the snapshot at that time (`/api/status/timeline`, `/api/doors/timeline` and `/api/status/tires`, already period endpoints) instead of the newest, with the time and "report 37 of 212" shown. Play and pause (off with reduced motion: the slider only), and step by snapshot with the arrow keys when the slider has focus. The flags and the oil countdown, which are states, are greyed while scrubbing, and the panel says so.
+- **Tests:** `carStateAt` (pure): the snapshot at or before a time, a door reading older than the status one, the edges of the period; no new route.
+
+### M57 — Who rides, on the seats
+- A cut-away view (the roof and glass hidden) with four seats, each shaded by the share of the driver-belted snapshots in which its belt was buckled (the M37 answer, extended per seat: `GET /api/status/occupancy` gains `rear_left_readings` and `rear_right_readings`, with its twin and goldens). Hidden for a car that sends no belts; the same hedge as the panel ("snapshots, not trips; belts only").
+- **Tests:** per-seat counts on the CX-60 sample; the CX-5 sample (no belts) shows no button.
+
+### M58 — Freeze-frame scene
+- From a fault's detail: "Show on the car" turns the 3D view to that fault: the battery (voltage and charge), the engine (coolant temperature) and the dashboard (speed) labelled with the fault's range and the baseline's (the M36 summary), a part marked only where M36 marks a position. A caption repeats M36's caution. New anchor: the battery (placed generically under the hood; the label says "battery", not where it is).
+- **Tests:** the mapping of M36's signals to parts; fewer than five frames shows the caution; no position, no mark.
+
+### M59 — Fault map
+- **The owner places the units:** `config/models/<id>/layout.yaml`: for each ECU name the data has, a position as fractions of the car (along, across, up) or a zone (`engine bay | dashboard | under front seats | rear | roof`), with `source:` free text. Validated against the ECUs in `ref_ecus`; an ECU without a place is listed beside the car as "not placed", never guessed. A page helper lists the unplaced units with the lines to paste.
+- **View:** the placed units as small blocks inside a see-through body, lit by their active faults and dimmed for past ones; clicking opens that unit's faults. Carried in `GET /api/models` and the pack like `body`.
+- **Tests:** validation; unplaced units are listed and not drawn; a unit the data no longer has is ignored with a note.
+- **Needs from the owner:** where the four units of the CX-5 are (a dealer or the workshop manual), or the decision to use zones only.
+
+### M60 — Cars elsewhere
+- A small, slowly turnable car (static under reduced motion) on each All cars card with its alert markers; on Compare, the two cars side by side to the same scale (the two-cars view) and, on Diagnostics, two reports as before and after once M59 exists. One shared scene per page (several WebGL contexts are a known limit on phones): the cards draw into one canvas.
+- **Tests:** the shared-canvas layout (pure); the pages without WebGL fall back to what they show today.
+
+### M61 — Code description packs
+- **Export:** `make codes-export MODEL=<id>` and a button on the Unmapped codes panel write `<model>-codes.yaml`: only the entries that have a title, each with `source` (the owner's note of how they know) and the model's name and platform; **no VIN, no counts, no dates**. `make audit` checks an exported file for private values.
+- **Import:** `make codes-import MODEL=<id> FILE=…` and a page: shows, per code, "new", "same as yours" or "differs from yours", and adds only what the owner ticks, marking each added entry `from: <file>` so it can be told from their own. Never automatic, never across models without a warning ("this pack is for a CX-60; you are importing into a CX-5").
+- **Tests:** export leaves untitled codes out; import never overwrites silently; a pack for another model warns; the audit refuses a file with a VIN in it.
+
+### M62 — A second language
+- **Mechanism:** a small catalogue (`frontend/src/i18n/en.ts`, `pt.ts`: typed keys, so a missing translation is a compile error), `t()` and plural helpers, the language chosen per device (`cx5.lang`, Auto follows the browser), numbers and dates through `Intl` in that language. No library, no outside request.
+- **Scope:** every string of both apps, the pure wording modules included (`trends.ts`, `compare.ts`, `car.ts`, `activity.ts` and the rest return keys and values, not English sentences; their tests then check structure, with one test per language for the sentences). Alert texts are written at ingest: they gain a rule key and parameters so the page can word them, with the stored English text as the fallback for old alerts. Code descriptions are the owner's and are never translated.
+- **Why last:** every earlier milestone adds strings; translating once at the end is half the work and catches them all.
+- **Tests:** the two catalogues have the same keys; no English literal left in a component (a source test); the neutral-wording tests (no verdict words) run in both languages.
+- **Done when:** both apps read naturally in Portuguese end to end, and switching back is exact.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| A fill-up, a trip or a leak is inferred from reports hours apart | say "between two reports"; mark the doubtful; show the basis of every figure; withhold under a minimum |
+| Units or language touch every page and break something quietly | one module converts, source tests forbid literals, screenshots at the defaults must not change |
+| Two write paths appear (the service log form, the import) | both edit only inside the project's own folders, refuse while ingest runs, are Mac-only, and have path tests |
+| Sample data changes ripple through goldens and demo packs | derive new demo data from the clock; where bytes must change, regenerate everything in the same milestone |
+| More WebGL views drain a phone or hit the context limit | one scene per page, render on demand, the existing list fallbacks |
+| The fault map invites guessing | only the owner's placements are drawn; the rest is listed as not placed |
+| Shared descriptions spread a wrong meaning | attributed, opt-in per code, marked as imported, never automatic |
+| Eighteen milestones drift from the plan | one at a time, each confirmed, each with its "as built" note here |
+
+### Points to confirm
+1. The order (decision 1), or which group to pull forward.
+2. Units per device, not per car (M45).
+3. What the owner types in lives in files under `config/models/<id>/` (decision 4), with a form on the Mac that edits them (M50) and an optional payments file (M47).
+4. The import page writes into `data/<id>/` and runs the ingest from the browser, Mac only (M53).
+5. The fault map waits for the owner's placements, or uses zones only (M59).
+6. The second language is Portuguese of Portugal (M62).
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.
@@ -1085,17 +1276,10 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 
 Email or push notifications; several cars of the same model (a vehicle level under the model, see "Several car models"); parsing Mazda's zip and CSV files on the phone (so the Mac is not needed at all); Android testing on a real device; Windows support without WSL; a published Docker image; the maintenance-reminder signals (`mntsetdist`, `remregdist`), which are not set up in the author's car.
 
-Ideas for the 3D car that were proposed with M38 and not built (each would draw from data the pages already have, on top of `car.ts` and `car3d/`):
-- **A time scrubber:** replay the status snapshots of the period on the car (a slow leak developing on one wheel, the fuel going down).
-- **Who rides, on the seats:** the seats shaded by how often each belt was buckled (the M37 data).
-- **Alerts on the car:** a marker on the part an alert is about, linking to the alert.
-- **A fault map:** control units lit by their faults. It needs the owner to place the units (Mazda does not publish where they sit), in a per-model file, with unplaced ones listed beside the car and never guessed.
-- **A freeze-frame scene:** for one fault, the battery voltage, coolant temperature and speed of its frames at their parts (the M36 data).
-- **Small cars on the All cars cards**, two cars side by side on Compare, and two diagnostic reports as before and after.
-- **A closer likeness:** curved glass, wheel-arch flares and cladding, a real grille; or a view from above to replace the estimated widths.
+The 3D follow-ups proposed with M38 (time scrubber, seats, alerts on the car, fault map, freeze-frame scene, cars on other pages) are now milestones M55–M60. Still only an idea: **a closer likeness** of the 3D cars (curved glass, wheel-arch flares and cladding, a real grille, or a view from above to replace the estimated widths).
 
 Ideas around comparing that are not milestones yet (smaller, or they need a decision first):
 - **Code vocabulary across models:** which warning and fault codes appear in both cars and which in one only, as a *hint* for filling in a model's code descriptions ("this code is described for the CX-5; it may or may not mean the same here"). It must stay a suggestion the user copies by hand: descriptions are never shared or borrowed automatically.
-- **Notes on the charts:** dated notes ("new tires", "software update", "service") kept per model in a small file and shown on the Trends and Status charts, to explain a change.
-- **Export:** a CSV of a comparison table, or a printable summary.
+- **Notes on the charts:** now M50 (the service log).
+- **Export:** a CSV of a comparison table (the printable summary is now M54, the report for the mechanic).
 - **A combined alerts view** across cars, read-only (the Garage cards of M32 only show the counts).

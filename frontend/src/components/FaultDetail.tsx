@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDtcEvents, useFaultContext, useFreezeFrames } from '../api/hooks'
 import type { DtcEvent, DtcFrequency, FreezeFrame } from '../api/types'
 import { fmtDateTime, fmtDateTimeSec, fmtNum, signalLabel, signalValue } from '../lib'
+import { fmtDistance } from '../units'
 import { FrameSummary } from './FrameSummary'
 import { Badge, DataTable, Panel, QueryState, type Column } from './ui'
 
@@ -42,7 +43,7 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
 
   const evCols: Column<DtcEvent>[] = [
     { key: 'at', header: 'Read-out', render: (e) => fmtDateTime(e.event_at) },
-    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtNum(e.odometer_km, 0, 'km') },
+    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtDistance(e.odometer_km) },
     { key: 'conf', header: 'Confirmed', render: (e) => yesNo(e.confirmed) },
     { key: 'pend', header: 'Pending', render: (e) => yesNo(e.pending) },
   ]
@@ -163,7 +164,7 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
                       <dt>Fuel</dt>
                       <dd>{fmtNum(ctx.status.fuel_level_pct, 0, '%')}</dd>
                       <dt>Odometer</dt>
-                      <dd>{fmtNum(ctx.status.odometer_km, 0, 'km')}</dd>
+                      <dd>{fmtDistance(ctx.status.odometer_km)}</dd>
                       <dt>Engine state</dt>
                       <dd>{fmtNum(ctx.status.engine_state)}</dd>
                     </dl>

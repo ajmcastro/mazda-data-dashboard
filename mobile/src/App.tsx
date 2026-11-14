@@ -6,6 +6,7 @@ import { ModelGate } from '@frontend/components/ModelGate'
 import { ModelSwitcher } from '@frontend/components/ModelSwitcher'
 import { RangeNavLink } from '@frontend/components/RangeLink'
 import { ThemeCycleButton } from '@frontend/components/ThemeToggle'
+import { unitsKey, useUnits } from '@frontend/units'
 import Alerts from '@frontend/pages/Alerts'
 import Diagnostics from '@frontend/pages/Diagnostics'
 import Compare from '@frontend/pages/Compare'
@@ -60,13 +61,14 @@ function Ready() {
     <Route path={path} element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element} />
   )
   const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/data'].includes(pathname)
+  const [units] = useUnits() // pages are drawn again when the units change
   return (
     <div className="m-shell">
       <main className="main">
         <div className="m-model"><ModelSwitcher /></div>
         {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
         <ModelGate>
-          <Routes>
+          <Routes key={unitsKey(units)}>
             {page('/', <OverviewPage />)}
             {page('/trends', <Trends />)}
             {page('/alerts', <Alerts />)}

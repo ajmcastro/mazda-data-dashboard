@@ -3,6 +3,8 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
 import { ThemeToggle } from './components/ThemeToggle'
+import { UnitsControl } from './components/UnitsControl'
+import { unitsKey, useUnits } from './units'
 import { RangeNavLink as NavLink } from './components/RangeLink'
 import { ModelGate } from './components/ModelGate'
 import { ModelSwitcher } from './components/ModelSwitcher'
@@ -58,6 +60,7 @@ export default function App() {
       element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element}
     />
   )
+  const [units] = useUnits()
   return (
     <div className="shell">
       <aside className="rail">
@@ -81,6 +84,7 @@ export default function App() {
           {withData >= 1 && nav('/garage', 'All cars')}
         </nav>
         <div className="rail-foot">
+          <UnitsControl />
           <ThemeToggle />
           {o?.vin && <div className="vin">VIN …{o.vin.slice(-6)}</div>}
         </div>
@@ -89,7 +93,8 @@ export default function App() {
         {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
         <ModelGate>
           {/* keyed by the model: everything a page remembers (a chosen fault, a flag) belongs to one model */}
-          <Routes key={id}>
+          {/* remounted for another car and for other units, so no page keeps a figure of the old ones */}
+          <Routes key={`${id}|${unitsKey(units)}`}>
             {page('/', <OverviewPage />)}
             {page('/trends', <Trends />)}
             {page('/compare', <Compare />)}

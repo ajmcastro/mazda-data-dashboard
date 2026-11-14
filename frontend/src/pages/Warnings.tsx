@@ -4,6 +4,7 @@ import { useWarningDaily, useWarningEvents, useWarningFrequency } from '../api/h
 import type { WarningEvent, WarningFrequency } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
+import { fmtDistance } from '../units'
 import { useDateRange } from '../range'
 import { useCurrentModel } from '../model'
 
@@ -56,7 +57,7 @@ export default function Warnings() {
   const evCols: Column<WarningEvent>[] = [
     { key: 'at', header: 'When', render: (e) => fmtDateTime(e.triggered_at) },
     { key: 'code', header: 'Code', render: (e) => <span className="mono">{e.code}</span> },
-    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtNum(e.odometer_km, 0, 'km') },
+    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtDistance(e.odometer_km) },
   ]
 
   const page = events.data

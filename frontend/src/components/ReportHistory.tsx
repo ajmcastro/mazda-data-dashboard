@@ -2,6 +2,7 @@ import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tool
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { DiagHistoryPoint } from '../api/types'
 import { ANIMATE, fmtDate, fmtNum, fmtTick, ts } from '../lib'
+import { consumptionDigits, consumptionLabel, distanceLabel, fmtConsumption, fmtDistance, toConsumption } from '../units'
 import { ChartTip, DataTable, Panel, QueryState, type Column } from './ui'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
@@ -45,9 +46,9 @@ export function ReportHistory({ query, selected, onSelect }: {
   const data = query.data ?? []
   const columns: Column<DiagHistoryPoint>[] = [
     { key: 'at', header: 'Report', sort: (p) => p.taken_at ?? '', render: (p) => <span title={p.source_file}>{fmtDate(p.taken_at)}</span> },
-    { key: 'odo', header: 'Odometer', num: true, sort: (p) => p.odometer_km ?? 0, render: (p) => fmtNum(p.odometer_km, 0, 'km') },
-    { key: 'km', header: 'Lifetime km', num: true, sort: (p) => p.lifetime_km ?? 0, render: (p) => fmtNum(p.lifetime_km, 0) },
-    { key: 'eco', header: 'l/100 km', num: true, sort: (p) => p.lifetime_l_per_100km ?? 0, render: (p) => fmtNum(p.lifetime_l_per_100km, 2) },
+    { key: 'odo', header: 'Odometer', num: true, sort: (p) => p.odometer_km ?? 0, render: (p) => fmtDistance(p.odometer_km) },
+    { key: 'km', header: `Lifetime ${distanceLabel()}`, num: true, sort: (p) => p.lifetime_km ?? 0, render: (p) => fmtDistance(p.lifetime_km, 0, false) },
+    { key: 'eco', header: consumptionLabel(), num: true, sort: (p) => p.lifetime_l_per_100km ?? 0, render: (p) => fmtConsumption(p.lifetime_l_per_100km, 2) },
     { key: 'ign', header: 'Ignitions', num: true, sort: (p) => p.ignition_cycles ?? 0, render: (p) => fmtNum(p.ignition_cycles) },
     { key: 'h', header: 'Engine h', num: true, sort: (p) => p.engine_hours ?? 0, render: (p) => fmtNum(p.engine_hours, 0) },
     { key: 'mon', header: 'Monitors', num: true, render: (p) => `${p.monitors_passed}/${p.monitors_total}` },
@@ -65,7 +66,13 @@ export function ReportHistory({ query, selected, onSelect }: {
         />
         {data.length > 1 && (
           <div className="grid cols-2" style={{ marginTop: 14 }}>
-            <Trend title="Lifetime fuel economy (l/100 km)" data={data} field="lifetime_l_per_100km" digits={2} selected={selected} />
+            <Trend
+              title={`Lifetime fuel economy (${consumptionLabel()})`}
+              data={data.map((p) => ({ ...p, lifetime_l_per_100km: toConsumption(p.lifetime_l_per_100km) }))}
+              field="lifetime_l_per_100km"
+              digits={consumptionDigits(2)}
+              selected={selected}
+            />
             <Trend title="Ignition cycles" data={data} field="ignition_cycles" digits={0} selected={selected} />
           </div>
         )}

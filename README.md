@@ -14,6 +14,8 @@ the phone**.
   and on the phone.
 - **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, a low supply voltage in a fault's freeze frame, unusually high fuel
   use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
+- **Your units**: tire pressure in kPa, bar or psi, fuel consumption in l/100 km, km/l or mpg, distance in km
+  or miles; chosen once per device.
 - **Several cars**: one folder of exports, one database and one set of code descriptions per Mazda model
   (the CX-5, and a CX-60 set up the same way), a model selector, an *All cars* overview and a *Compare* page,
   on the Mac and on the phone.
@@ -167,6 +169,13 @@ pressure system, oil level, seat belt, door). The *warning lamps* are 128 furthe
 dashboard lamps; almost all never change, and what they mean is unknown, so the dashboard shows the few
 that do change and what happens around them. A *data pack* (`.cx5pack`) is your database exported for the
 phone app.
+
+**Units.** The three small lists at the bottom of the side menu (on the phone: *More → Data on this phone →
+Units*) choose how figures are shown on this device: tire pressure in kPa, bar or psi; fuel consumption in
+l/100 km, km/l, mpg (UK) or mpg (US); distance in km or miles (speeds and costs per distance follow). The data
+itself does not change, and neither do the alert rules, which stay in kPa and km. With km/l or mpg a higher
+figure means less fuel, so the green and red on Trends and Compare follow that. Two things keep the data's
+units: the text of an alert (it is written when the data is loaded) and the raw values of a diagnostic report.
 
 **Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults and Status
 pages limits everything to a *from – to* range of days (UTC, both included). Use the quick
@@ -474,6 +483,8 @@ Good to know:
   it, tap a pin or a row for the details. A sideways swipe turns the car; swiping up or down scrolls the page,
   and the + and − buttons zoom. It works offline like everything else. A car's dimensions and shape come from
   its data pack.
+- **Units.** On the Data screen: pressure, fuel consumption and distance, as on the Mac. The choice is per
+  device.
 - **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of
   the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the
   bottom of the side menu. The choice is remembered per device.

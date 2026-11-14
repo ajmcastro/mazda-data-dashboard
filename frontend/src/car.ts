@@ -6,6 +6,7 @@
 
 import type { CarWarningFlag, CarWarnings, DoorPoint, OilService, Overview } from './api/types'
 import { fmtAge, fmtDateTime, fmtNum, OIL_SOON_KM } from './lib'
+import { distanceText, fmtDistance, fmtPressure, pressureText } from './units'
 
 export type PartId =
   | 'wheel_fl' | 'wheel_fr' | 'wheel_rl' | 'wheel_rr'
@@ -41,7 +42,8 @@ export interface CarState {
   asOf: string | null
 }
 
-/** A wheel is "clearly the lowest" when it is the lowest and this far (kPa) under the highest: the rule of `Tires.tsx`. */
+/** A wheel is "clearly the lowest" when it is the lowest and this far (kPa) under the highest: the rule of `Tires.tsx`.
+ *  Rules are always applied in the data's units; only what is shown follows the reader's choice (`units.ts`). */
 export const LOWEST_SPREAD_KPA = 20
 
 export const CAR_NOTES = [
@@ -90,7 +92,7 @@ function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Pa
     }
     if (num(v) && v === lowest && spread >= LOWEST_SPREAD_KPA) {
       state = 'attention'
-      notes.push(`lowest of the four, ${fmtNum(spread)} kPa under the highest`)
+      notes.push(`lowest of the four, ${pressureText(spread)} under the highest`)
     }
     const old = num(v) && s?.tire_stale === true
     if (num(v) && s?.tire_measured_at) {
@@ -102,7 +104,7 @@ function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Pa
     } else if (num(v)) notes.push('measurement time unknown')
     return {
       id: w.id, name: w.name, group: 'wheels', state, old,
-      value: num(v) ? fmtNum(v, 0, 'kPa') : state === 'absent' ? 'not sent' : 'unknown',
+      value: num(v) ? fmtPressure(v) : state === 'absent' ? 'not sent' : 'unknown',
       notes,
       at: num(v) ? (s?.tire_measured_at ?? s?.at ?? null) : (flag?.last_read_at ?? null),
     }
@@ -126,7 +128,7 @@ function doors(d: DoorPoint | undefined): Part[] {
 function fuel(o: Overview | undefined): Part {
   const s = o?.status
   const level = s?.fuel_level_pct
-  const notes = num(s?.range_km) ? [`range ${fmtNum(s.range_km, 0, 'km')}`] : []
+  const notes = num(s?.range_km) ? [`range ${fmtDistance(s.range_km)}`] : []
   return {
     id: 'fuel', name: 'Fuel tank', group: 'other', old: false, notes, at: num(level) ? (s?.at ?? null) : null,
     state: num(level) ? 'ok' : 'absent',
@@ -149,11 +151,11 @@ function engine(oil: OilService | undefined, flags: Map<string, CarWarningFlag>)
       notes.push('oil change due soon')
     }
     notes.push("the car's own countdown, in steps of 1,000 km or more")
-    if (num(oil?.km_since_reading) && oil.km_since_reading >= 50) notes.push(`${fmtNum(oil.km_since_reading)} km driven since`)
+    if (num(oil?.km_since_reading) && oil.km_since_reading >= 50) notes.push(`${distanceText(oil.km_since_reading)} driven since`)
   }
   return {
     id: 'engine', name: 'Engine', group: 'other', state, old: false, notes,
-    value: num(km) ? `${fmtNum(km)} km to oil change` : flag ? (flag.is_on ? 'oil level flag on' : 'oil level flag clear') : 'not sent',
+    value: num(km) ? `${distanceText(km)} to oil change` : flag ? (flag.is_on ? 'oil level flag on' : 'oil level flag clear') : 'not sent',
     at: num(km) ? (oil?.read_at ?? null) : (flag?.last_read_at ?? null),
   }
 }
@@ -164,7 +166,7 @@ function dash(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Part
   return {
     id: 'dash', name: 'Dashboard', group: 'other', old: false,
     state: on.length ? 'attention' : num(km) ? 'ok' : 'absent',
-    value: num(km) ? fmtNum(km, 0, 'km') : on.length ? 'warning on' : 'not sent',
+    value: num(km) ? fmtDistance(km) : on.length ? 'warning on' : 'not sent',
     notes: on.map((f) => `flag on: ${f.label} (raw ${fmtNum(f.value)})`),
     at: num(km) ? (o?.odometer_at ?? null) : (on[0]?.last_read_at ?? null),
   }

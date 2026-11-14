@@ -1,7 +1,8 @@
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useActivityPattern } from '../api/hooks'
 import { ACTIVITY_NOTE, hourBars, hourLabel, summaryLine, weekdayBars } from '../activity'
-import { ANIMATE, fmtNum } from '../lib'
+import { ANIMATE } from '../lib'
+import { fmtDistance } from '../units'
 import { Panel, QueryState } from './ui'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
@@ -38,7 +39,7 @@ export function WhenPanel() {
                             <div className="t">{hourLabel(d.hour)}</div>
                             <div className="row"><span>Days</span><span>{d.days}{d.few ? ' (few days)' : ''}</span></div>
                             <div className="row"><span>Different warnings</span><span>{d.codes}</span></div>
-                            <div className="row"><span>Distance seen</span><span>{fmtNum(d.km, 0, 'km')}</span></div>
+                            <div className="row"><span>Distance seen</span><span>{fmtDistance(d.km)}</span></div>
                           </div>
                         )
                       }}
@@ -66,7 +67,7 @@ export function WhenPanel() {
                           <div className="chart-tip">
                             <div className="t">{d.name}</div>
                             <div className="row"><span>Days with activity</span><span>{d.activeDays} of {d.calendarDays}{d.few ? ' (few days)' : ''}</span></div>
-                            <div className="row"><span>Distance seen per day</span><span>{fmtNum(d.kmPerDay, 1, 'km')}</span></div>
+                            <div className="row"><span>Distance seen per day</span><span>{fmtDistance(d.kmPerDay, 1)}</span></div>
                           </div>
                         )
                       }}

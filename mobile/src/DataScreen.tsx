@@ -1,3 +1,4 @@
+import { UnitsControl } from '@frontend/components/UnitsControl'
 import { useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { saveModelChoice } from '@frontend/model'
@@ -145,6 +146,13 @@ export default function DataScreen() {
               <span className="mono">.cx5pack</span> files (in Files or iCloud Drive) so you can import them again.
             </p>
           )}
+        </section>
+      )}
+
+      {status !== 'starting' && (
+        <section className="panel units-panel">
+          <div className="panel-head"><h2>Units</h2><span className="hint">how figures are shown on this phone</span></div>
+          <UnitsControl />
         </section>
       )}
 

@@ -8,6 +8,7 @@ import { Tires } from '../components/Tires'
 import { useCurrentModel } from '../model'
 import { ChartTip, Panel, QueryState, Stat } from '../components/ui'
 import { ANIMATE, carWarningHeadline, fmtAgo, fmtDate, fmtDateTime, fmtNum, fmtTick, oilTile, tireMeasuredNote, ts } from '../lib'
+import { consumptionLabel, distanceLabel, fmtConsumption, fmtDistance, per100Label, toConsumption, toPer100 } from '../units'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
@@ -83,17 +84,17 @@ export default function OverviewPage() {
               </Panel>
               <Stat
                 label="Distance driven"
-                value={fmtNum(o.km_in_range)}
-                unit="km"
+                value={fmtDistance(o.km_in_range, 0, false)}
+                unit={distanceLabel()}
                 sub={`${fmtDate(o.range_from)} – ${fmtDate(o.range_to)}`}
               />
               <Stat
                 label="Fuel economy"
-                value={fmtNum(o.l_per_100km_in_range, 1)}
-                unit="l/100 km"
-                sub={`in this period · lifetime ${fmtNum(o.lifetime_l_per_100km, 1)}${
+                value={fmtConsumption(o.l_per_100km_in_range, 1)}
+                unit={consumptionLabel()}
+                sub={`in this period · lifetime ${fmtConsumption(o.lifetime_l_per_100km, 1)}${
                   o.cost_per_100km_in_range !== null && o.cost_per_100km_in_range !== undefined && o.currency
-                    ? ` · about ${fmtNum(o.cost_per_100km_in_range, 2)} ${o.currency} per 100 km (estimate)`
+                    ? ` · about ${fmtNum(toPer100(o.cost_per_100km_in_range), 2)} ${o.currency} per ${per100Label()} (estimate)`
                     : ''
                 }`}
               />
@@ -101,12 +102,12 @@ export default function OverviewPage() {
                 label="Fuel level"
                 value={fmtNum(o.status.fuel_level_pct)}
                 unit="%"
-                sub={`range ≈ ${fmtNum(o.status.range_km)} km`}
+                sub={`range ≈ ${fmtDistance(o.status.range_km, 0, false)} ${distanceLabel()}`}
                 alert={(o.status.fuel_level_pct ?? 100) < 15}
               />
               {oil && (
                 <div className="oil-tile">
-                  <Stat label="Next oil change" value={oil.value} unit="km left" sub={oil.sub} alert={oil.soon} />
+                  <Stat label="Next oil change" value={oil.value} unit={`${distanceLabel()} left`} sub={oil.sub} alert={oil.soon} />
                 </div>
               )}
             </div>
@@ -146,15 +147,15 @@ export default function OverviewPage() {
         </Panel>
       </div>
 
-      <Panel title="Fuel economy by month" hint="l/100 km, from the car's trip counters">
+      <Panel title="Fuel economy by month" hint={`${consumptionLabel()}, from the car's trip counters`}>
         <QueryState query={fuel}>
           <ResponsiveContainer width="100%" height={230}>
-            <BarChart margin={{ right: 18, top: 5 }} data={fuel.data ?? []}>
+            <BarChart margin={{ right: 18, top: 5 }} data={(fuel.data ?? []).map((m) => ({ ...m, l_per_100km: toConsumption(m.l_per_100km) }))}>
               <CartesianGrid vertical={false} />
               <XAxis dataKey="month" {...axis} />
               <YAxis {...axis} width={34} domain={[0, 'auto']} />
               <Tooltip cursor={{ fill: 'var(--grid)' }} content={<ChartTip fmtLabel={String} />} />
-              <Bar isAnimationActive={ANIMATE} name="l/100 km" dataKey="l_per_100km" fill="var(--teal)" radius={[4, 4, 0, 0]} />
+              <Bar isAnimationActive={ANIMATE} name={consumptionLabel()} dataKey="l_per_100km" fill="var(--teal)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </QueryState>
