@@ -982,7 +982,7 @@ Not shown, on purpose: battery voltage (the status reports do not carry it; it e
 4. Per-model dimensions in `model.yaml`, set by the owner from the manual (M41).
 5. On the phone: horizontal drag turns, vertical drag scrolls, buttons zoom (M40).
 
-## A recognisable car in 3D (M42–M44; M42 and M43 built)
+## A recognisable car in 3D (M42–M44, built)
 
 ### Goal
 The 3D car of M39–M41 is one generic box scaled by each model's dimensions. With the owner's photos of the CX-60 (left side, right side, front, rear) the CX-60 can be drawn so that it reads as a CX-60: its own silhouette, its own door lines and a few details. It stays a schematic drawn in code, in the app's flat technical look, so the part colours (red to check, amber open, dashed unknown) keep their meaning.
@@ -1043,8 +1043,19 @@ The 3D car of M39–M41 is one generic box scaled by each model's dimensions. Wi
 
 **After M43: demo data follows the app (14 Nov 2026).** Found on the owner's iPhone: after the app updated, both demo cars still drew the generic shape, because the shape and dimensions travel in the data pack and the demo packs stored on the phone were the old ones (the published app and its demo packs were right, checked on the live site and in the iOS Simulator). `DataController.refreshDemo()` now runs at launch: a stored pack named `demo` whose `created_at` differs from the bundled demo pack of the same model is replaced by it. **A pack the user imported is never touched**, even of a model the demo has too; with no bundled pack at hand (offline before it was cached, or a broken file) the stored one stays; with no demo pack stored the bundled ones are not even fetched. The figures cached for Compare and All cars are made again (their key is the pack's `savedAt`). Tests: 6 in `test/controller.test.ts` (phone 894); tried in the browser on the production build by making the stored packs look old and shapeless and reloading. Not covered: a pack of **your own** data made before a change still needs `make mobile-pack` and a new import, which only the owner can do.
 
-### M44 — The CX-5 (needs photos)
+### M44 — The CX-5 ✅ done
 The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of that car (a flat side view above all). Until then it keeps the generic shape.
+
+**M44 as built (14 Nov 2026).**
+- **Photos:** six of the owner's CX-5, the generation sold from 2026: left side, right side, front, rear and two high three-quarter views. The left side view was taken from further away than the CX-60's and is nearly free of distortion: wheelbase, height and wheel size measured in it agree with the published figures to within a percent, so the trace was used as read, with no correction. The two high views are not a plan view, but they confirmed how much the cabin leans in and the roof narrows. None of the photos is in the repository; the copies made for tracing were deleted.
+- **One builder for every traced car:** the CX-60's builder moved to `shapes/traced.ts` (`tracedGeometry(body, spec)`, the `Traced` spec type and the [p, h] fractions); `shapes/cx60.ts` and the new `shapes/cx5.ts` are now only numbers. **The CX-60's geometry is byte-identical after the move** (compared before and after on three bodies). The builder also keeps the bumpers' bottom corners out of the wheel arches on an unusually short car with large wheels.
+- **The CX-5's outline against the CX-60's:** a shorter hood (the windshield starts a sixth of the wheelbase behind the front axle, not a fifth), a flatter and longer roof that is still nearly full height over the rear axle and ends in a longer spoiler, a more upright tail with the lights high up and rearmost, a taller sill (the dark cladding), overhangs of nearly equal length, and a rear door that ends just ahead of the rear axle. Across the car: nose 82% of the width, tail 90%, cabin 93% at the belt and 76% at the roof (a little boxier than the CX-60). Same kinds of details; the fuel flap is on the left rear quarter here too, and the fuel label points at it.
+- **Wiring:** `cx5` joined both `SHAPES` lists and `BUILDERS`; `config/models/cx5/model.yaml` has `shape: cx5` next to the 2026 dimensions the owner set. The demo CX-5 uses the same config, so it changed shape too. The generic shape stays for any other model and is still pinned by its fixture.
+- **Tests:** frontend 251 (12 new: the checks every shape must pass now run for `cx5` on four bodies, plus seven that pin the CX-5's features against the CX-60's); backend 308 (the shipped models each have their own shape); phone 894 (the pack carries `cx5`).
+- **Cost:** the 3D chunk is 593 kB (152 kB gzipped), 2 kB more; the entry chunk is unchanged.
+- **Checked by eye:** side, front and rear three-quarter views on the Mac in both themes, next to the photos; the phone app through the retaken `phone-car-3d.png` (pins on the shaped car). `car-3d.png` and `phone-car-3d.png` retaken. **Not done:** the iOS Simulator for this milestone, an open door, hood or tailgate, right-hand drive.
+- **Honest limits:** as for the CX-60, a likeness in flat facets, not a faithful model; the grille is a plain block (the real one is a large hexagon mesh) and the black wheel-arch cladding is not drawn. `track_mm` and `wheel_diameter_mm` in the config are still approximations.
+- **For the owner's real data on the phone:** the shape and dimensions travel in the pack, so `make mobile-pack` and a new import are needed once.
 
 ### Risks
 | Risk | Plan |

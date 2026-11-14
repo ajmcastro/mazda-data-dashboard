@@ -17,3 +17,4 @@ body:
   track_mm: 1595
   wheel_diameter_mm: 730
   steering: left      # left | right: which side the driver's door is drawn on
+  shape: cx5          # generic | cx60 | cx5: the outline drawn (cx5 = this car's own silhouette, 2026 generation)

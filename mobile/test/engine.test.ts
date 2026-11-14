@@ -186,7 +186,7 @@ describe('the pack names its car model', () => {
     expect(body?.steering === 'left' || body?.steering === 'right').toBe(true)
     expect(typeof body?.length_mm).toBe('number')
     expect(body?.shape).toBe('cx60') // the outline's name travels with the pack too (M42)
-    expect(readPack(packBytes('cx5')).manifest.model.body?.shape).toBe('generic')
+    expect(readPack(packBytes('cx5')).manifest.model.body?.shape).toBe('cx5')
   })
 
   it('refuses a pack of the older format, or one that does not say its model, with a message', async () => {

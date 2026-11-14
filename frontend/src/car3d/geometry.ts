@@ -6,13 +6,14 @@
 // side at +z (so the left side is -z). The origin is under the middle of the car's length.
 
 import { saneBody, type Anchor, type Body, type CarGeometry, type ShapeName, type Vec3 } from './shapes/common'
+import { cx5Geometry } from './shapes/cx5'
 import { cx60Geometry } from './shapes/cx60'
 import { genericGeometry } from './shapes/generic'
 
 export { DEFAULT_BODY, SHAPES, bodyOfModel, cabinHalfWidthAt, halfWidthAt, planShiftAt, saneBody } from './shapes/common'
 export type { Anchor, Body, CarGeometry, Detail, Door, ModelBody, Style, ShapeName, Vec2, Vec3, Wheel } from './shapes/common'
 
-const BUILDERS: Record<ShapeName, (body: Body) => CarGeometry> = { generic: genericGeometry, cx60: cx60Geometry }
+const BUILDERS: Record<ShapeName, (body: Body) => CarGeometry> = { generic: genericGeometry, cx60: cx60Geometry, cx5: cx5Geometry }
 
 export function carGeometry(input?: Partial<Body>): CarGeometry {
   const body = saneBody(input)

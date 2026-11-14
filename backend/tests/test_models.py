@@ -107,7 +107,7 @@ def test_registry_errors(tmp_path, models_yaml, message):
         ),
         (
             "id: cx5\nname: X\nbody: {shape: cx90}\n",
-            "shape must be one of generic, cx60",
+            "shape must be one of generic, cx60, cx5",
         ),
         (
             "id: cx5\nname: X\nbody: {length_mm: 3700, wheelbase_mm: 3800}\n",
@@ -161,8 +161,8 @@ def test_the_shipped_models_have_dimensions():
     cx5, cx60 = registry.get("cx5").body, registry.get("cx60").body
     assert cx5 and cx60 and cx60.length_mm > cx5.length_mm
     assert cx60.wheelbase_mm > cx5.wheelbase_mm
-    # the CX-60 is drawn with its own outline, the CX-5 with the generic one until it has one
-    assert cx60.shape == "cx60" and cx5.shape == "generic"
+    # each is drawn with its own outline
+    assert cx60.shape == "cx60" and cx5.shape == "cx5"
 
 
 def test_hidden_pages(tmp_path):

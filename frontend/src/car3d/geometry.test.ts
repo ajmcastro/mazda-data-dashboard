@@ -192,6 +192,7 @@ describe('the generic shape', () => {
     expect(saneBody({ shape: 'cx90' as never }).shape).toBe('generic')
     expect(bodyOfModel({ length_mm: 4745, shape: 'cx90' })).toEqual({ length: 4.745 })
     expect(bodyOfModel({ shape: 'cx60' })).toEqual({ shape: 'cx60' })
+    expect(bodyOfModel({ shape: 'cx5' })).toEqual({ shape: 'cx5' })
     expect(carGeometry(bodyOfModel({ shape: null }))).toEqual(carGeometry())
   })
 
@@ -404,6 +405,68 @@ describe('shaping across the car and details (M43)', () => {
     expect(flap.centre[0]).toBeLessThan(cx60.wheels[2].centre[0]) // behind the rear axle
     expect(style.details.filter((d) => d.name.startsWith('fuel flap'))).toHaveLength(1)
     expect(generic.anchors.fuel.normal).toBeNull()
+  })
+})
+
+describe('the CX-5 shape (M44)', () => {
+  const CX5_BODY: Partial<Body> = { length: 4.69, width: 1.86, height: 1.695, wheelbase: 2.815, track: 1.595, wheelDiameter: 0.73 }
+  const cx5 = carGeometry({ ...CX5_BODY, shape: 'cx5' })
+  const cx60 = carGeometry({ ...CX60, shape: 'cx60' })
+  const axle = (g: CarGeometry, id: 'wheel_fl' | 'wheel_rl') => g.wheels.find((w) => w.id === id)!.centre[0]
+  /** A length along the car as a share of that car's wheelbase, so the two cars can be compared. */
+  const share = (g: CarGeometry, metres: number) => metres / g.body.wheelbase
+
+  it('is picked by its name, keeps the model\'s dimensions and is shaped across the car', () => {
+    expect(cx5.body).toMatchObject({ ...CX5_BODY, shape: 'cx5' })
+    expect(cx5.style).toBeDefined()
+    expect(cx5.lower).not.toEqual(carGeometry({ ...CX5_BODY, shape: 'generic' }).lower)
+  })
+
+  it('has a shorter hood than the CX-60: its windshield starts closer to the front axle', () => {
+    const behindAxle = (g: CarGeometry) => share(g, axle(g, 'wheel_fl') - g.hood.hinge[0])
+    expect(behindAxle(cx5)).toBeGreaterThan(0.1)
+    expect(behindAxle(cx5)).toBeLessThan(behindAxle(cx60))
+  })
+
+  it('has a flatter roof than the CX-60: it is still nearly full height over the rear axle', () => {
+    const overRearAxle = (g: CarGeometry) => {
+      const pts = [...g.cabin].sort((a, b) => a[0] - b[0])
+      const x = axle(g, 'wheel_rl')
+      const i = pts.findIndex((p) => p[0] >= x)
+      const [a, b] = [pts[i - 1], pts[i]]
+      return (a[1] + ((b[1] - a[1]) * (x - a[0])) / (b[0] - a[0])) / g.body.height
+    }
+    expect(overRearAxle(cx5)).toBeGreaterThan(0.97)
+    expect(overRearAxle(cx5)).toBeGreaterThan(overRearAxle(cx60))
+  })
+
+  it('has a taller sill and overhangs of nearly the same length', () => {
+    const sill = (g: CarGeometry) => Math.min(...g.lower.map((p) => p[1])) / g.body.height
+    expect(sill(cx5)).toBeGreaterThan(sill(cx60))
+    const front = cx5.body.length / 2 - axle(cx5, 'wheel_fl')
+    const rear = axle(cx5, 'wheel_rl') + cx5.body.length / 2
+    expect(Math.abs(front - rear)).toBeLessThan(0.1)
+  })
+
+  it('ends the rear door just ahead of the rear axle, with the tail lights high and rearmost', () => {
+    const rear = cx5.doors.find((d) => d.id === 'door_rear_left')!
+    expect(rear.x1).toBeGreaterThan(axle(cx5, 'wheel_rl'))
+    expect(rear.outline.length).toBeGreaterThan(4)
+    const rearmost = cx5.lower.reduce((a, b) => (b[0] < a[0] ? b : a))
+    expect(rearmost[1] / cx5.body.height).toBeGreaterThan(0.6)
+  })
+
+  it('has its fuel flap on the left rear quarter, behind the rear axle, and the label on it', () => {
+    const flap = cx5.style!.details.find((d) => d.name === 'fuel flap')!
+    expect(flap.centre[2]).toBeLessThan(0)
+    expect(flap.centre[0]).toBeLessThan(axle(cx5, 'wheel_rl'))
+    expect(cx5.anchors.fuel).toEqual({ pos: flap.centre, normal: [0, 0, -1] })
+  })
+
+  it('has the same kinds of details as the CX-60, all neutral', () => {
+    const names = (g: CarGeometry) => g.style!.details.map((d) => d.name).sort()
+    expect(names(cx5)).toEqual(names(cx60))
+    for (const d of cx5.style!.details) expect(['trim', 'lamp', 'panel']).toContain(d.tone)
   })
 })
 

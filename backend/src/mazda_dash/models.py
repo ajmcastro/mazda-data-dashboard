@@ -45,7 +45,7 @@ BODY_MM = {
 STEERING = ("left", "right")
 # body.shape: which outline the 3D drawing uses. Keep equal to SHAPES in frontend/src/car3d/shapes/common.ts
 # (a frontend test compares the two lists).
-SHAPES = ("generic", "cx60")
+SHAPES = ("generic", "cx60", "cx5")
 
 
 class ModelConfigError(ValueError):

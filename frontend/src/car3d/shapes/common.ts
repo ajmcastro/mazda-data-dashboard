@@ -22,7 +22,7 @@ export interface Body {
 }
 
 /** The shapes that exist. Keep equal to `SHAPES` in backend/src/mazda_dash/models.py (a test compares them). */
-export const SHAPES = ['generic', 'cx60'] as const
+export const SHAPES = ['generic', 'cx60', 'cx5'] as const
 export type ShapeName = (typeof SHAPES)[number]
 
 /** A mid-size SUV, used until a model brings its own dimensions (M41). */
