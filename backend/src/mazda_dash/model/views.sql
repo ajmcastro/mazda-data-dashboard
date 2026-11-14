@@ -394,6 +394,59 @@ SELECT CASE WHEN row_number() OVER w = 1 THEN DATE '0001-01-01' ELSE valid_from 
        per_l
 FROM ref_fuel_prices WINDOW w AS (ORDER BY valid_from);
 
+-- ------------------------------------------------------------- fill-ups (M47)
+-- A fill-up is a RISE of the fuel level between two consecutive status snapshots: the car was refuelled
+-- some time between the two, which is all the data can say. `points` is the rise in points of the gauge; a
+-- rise under 5 points is gauge noise (a slope, sloshing) and is not listed. `doubtful` = a rise that is under
+-- ref_settings.refuel_min_points (default 15), or one seen across a silence of 48 hours or more (the car may
+-- have driven a lot in between, so the rise understates what went in). `litres` needs ref_settings.tank_litres
+-- and is a LOWER bound: fuel burned between the two snapshots is not seen. Between two fill-ups the fuel
+-- used is the fall of the gauge from one's level after to the next one's level before, whatever the level the
+-- tank was filled to. `est_cost` = litres x the price in force that day (v_fuel_prices), an estimate.
+-- `local_day_before` / `local_day_after` are the car's local dates of the two snapshots (to match a payment
+-- the owner noted by date).
+CREATE OR REPLACE VIEW v_refuels AS
+WITH cfg AS (
+    SELECT try_cast(max(value) FILTER (WHERE key = 'tank_litres') AS DOUBLE) AS tank,
+           coalesce(try_cast(max(value) FILTER (WHERE key = 'refuel_min_points') AS DOUBLE), 15) AS min_points,
+           coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone,
+           max(value) FILTER (WHERE key = 'fuel_currency') AS currency
+    FROM ref_settings
+), s AS (
+    SELECT created_at, fuel_level_pct, odometer_km,
+           lag(created_at) OVER w AS prev_at,
+           lag(fuel_level_pct) OVER w AS prev_pct
+    FROM v_vehicle_status WHERE fuel_level_pct IS NOT NULL WINDOW w AS (ORDER BY created_at)
+), r AS (
+    SELECT prev_at AS before_at, created_at AS after_at, prev_pct AS level_before, fuel_level_pct AS level_after,
+           round(fuel_level_pct - prev_pct, 1) AS points, odometer_km,
+           round(date_diff('second', prev_at, created_at) / 3600.0, 1) AS gap_hours
+    FROM s WHERE prev_at IS NOT NULL AND fuel_level_pct - prev_pct >= 5
+), chained AS (
+    SELECT r.*,
+           lag(level_after) OVER w AS previous_level_after,
+           lag(odometer_km) OVER w AS previous_odometer_km,
+           lag(after_at) OVER w AS previous_after_at
+    FROM r WINDOW w AS (ORDER BY after_at)
+)
+SELECT c.before_at, c.after_at,
+       CAST(timezone(cfg.zone, make_timestamptz(epoch_us(c.before_at))) AS DATE) AS local_day_before,
+       CAST(timezone(cfg.zone, make_timestamptz(epoch_us(c.after_at))) AS DATE) AS local_day_after,
+       c.level_before, c.level_after, c.points, c.gap_hours, c.odometer_km,
+       c.points < cfg.min_points OR c.gap_hours >= 48 AS doubtful,
+       round(c.points * cfg.tank / 100, 1) AS litres,
+       c.previous_after_at,
+       round(c.odometer_km - c.previous_odometer_km, 1) AS km_since_previous,
+       round((c.previous_level_after - c.level_before) * cfg.tank / 100, 1) AS used_since_previous_l,
+       CASE WHEN c.odometer_km - c.previous_odometer_km >= 50 AND c.previous_level_after > c.level_before
+            THEN round(100 * (c.previous_level_after - c.level_before) * cfg.tank / 100
+                       / (c.odometer_km - c.previous_odometer_km), 2) END AS l_per_100km_since_previous,
+       round(c.points * cfg.tank / 100 * p.per_l, 2) AS est_cost,
+       CASE WHEN p.per_l IS NOT NULL AND cfg.tank IS NOT NULL THEN cfg.currency END AS currency
+FROM chained c CROSS JOIN cfg
+LEFT JOIN v_fuel_prices p
+       ON CAST(c.after_at AS DATE) >= p.valid_from AND (p.valid_to IS NULL OR CAST(c.after_at AS DATE) < p.valid_to);
+
 CREATE OR REPLACE VIEW v_fuel_monthly AS
 SELECT strftime(date_trunc('month', end_at), '%Y-%m') AS month,
        count(*) AS segments,

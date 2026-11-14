@@ -153,6 +153,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/fuel/refuels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Fuel Refuels
+         * @description Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres
+         *     and an estimated cost when the tank size and a price are set, and what the owner noted paying.
+         */
+        get: operations["fuel_refuels_api_fuel_refuels_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trips/segments": {
         parameters: {
             query?: never;
@@ -1380,6 +1401,21 @@ export interface components {
             avg_speed_kmh?: number | null;
         };
         /**
+         * FuelPayment
+         * @description A payment in the fuel log that no fill-up was seen around.
+         */
+        FuelPayment: {
+            /**
+             * Paid On
+             * Format: date
+             */
+            paid_on: string;
+            /** Paid */
+            paid: number;
+            /** Litres */
+            litres?: number | null;
+        };
+        /**
          * Garage
          * @description One car's headline figures for the "All cars" page. State figures (alerts, faults, oil, car warnings)
          *     are the latest; the distance is for the 30 days up to the newest day with data.
@@ -1760,6 +1796,79 @@ export interface components {
             read_errors: number;
             /** Ecus Reported */
             ecus_reported: number;
+        };
+        /**
+         * Refuel
+         * @description A fill-up: a rise of the fuel level between two consecutive status snapshots (PLAN.md M47). When it
+         *     happened is only known to lie between the two.
+         */
+        Refuel: {
+            /**
+             * Before At
+             * Format: date-time
+             */
+            before_at: string;
+            /**
+             * After At
+             * Format: date-time
+             */
+            after_at: string;
+            /** Level Before */
+            level_before: number;
+            /** Level After */
+            level_after: number;
+            /** Points */
+            points: number;
+            /** Gap Hours */
+            gap_hours: number;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Doubtful */
+            doubtful: boolean;
+            /** Litres */
+            litres?: number | null;
+            /** Km Since Previous */
+            km_since_previous?: number | null;
+            /** Used Since Previous L */
+            used_since_previous_l?: number | null;
+            /** L Per 100Km Since Previous */
+            l_per_100km_since_previous?: number | null;
+            /** Est Cost */
+            est_cost?: number | null;
+            /** Paid */
+            paid?: number | null;
+            /** Paid Litres */
+            paid_litres?: number | null;
+            /**
+             * Payments
+             * @default 0
+             */
+            payments: number;
+        };
+        /** Refuels */
+        Refuels: {
+            /** Tank Litres */
+            tank_litres?: number | null;
+            /** Min Points */
+            min_points: number;
+            /** Currency */
+            currency?: string | null;
+            /** Fill Ups */
+            fill_ups: number;
+            /** Doubtful */
+            doubtful: number;
+            /** Litres */
+            litres?: number | null;
+            /** Est Cost */
+            est_cost?: number | null;
+            /** Paid */
+            paid?: number | null;
+            /** Paid Fill Ups */
+            paid_fill_ups: number;
+            /** Refuels */
+            refuels: components["schemas"]["Refuel"][];
+            /** Unmatched */
+            unmatched: components["schemas"]["FuelPayment"][];
         };
         /** SnapshotSignal */
         SnapshotSignal: {
@@ -2301,6 +2410,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["FuelMonth"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    fuel_refuels_api_fuel_refuels_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Refuels"];
                 };
             };
             /** @description Validation Error */

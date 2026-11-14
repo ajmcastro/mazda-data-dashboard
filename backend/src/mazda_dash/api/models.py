@@ -481,6 +481,56 @@ class Occupancy(BaseModel):
     months: list[OccupancyMonth]
 
 
+class Refuel(BaseModel):
+    """A fill-up: a rise of the fuel level between two consecutive status snapshots (PLAN.md M47). When it
+    happened is only known to lie between the two."""
+
+    before_at: datetime  # the last snapshot before it
+    after_at: datetime  # the first snapshot after it
+    level_before: float  # fuel level in points of the gauge (%)
+    level_after: float
+    points: float  # the rise
+    gap_hours: float  # the time between the two snapshots
+    odometer_km: float | None = None
+    doubtful: bool  # a small rise, or one seen across a long silence
+    litres: float | None = (
+        None  # needs tank_litres; a lower bound (fuel burned in between is not seen)
+    )
+    km_since_previous: float | None = None
+    used_since_previous_l: float | None = (
+        None  # by the gauge, from the previous fill-up to this one
+    )
+    l_per_100km_since_previous: float | None = None
+    est_cost: float | None = None  # litres x the price in force that day: an estimate
+    paid: float | None = None  # what the owner noted paying (fuel_log.yaml)
+    paid_litres: float | None = None
+    payments: int = 0  # how many noted payments it adds up
+
+
+class FuelPayment(BaseModel):
+    """A payment in the fuel log that no fill-up was seen around."""
+
+    paid_on: date
+    paid: float
+    litres: float | None = None
+
+
+class Refuels(BaseModel):
+    tank_litres: float | None = (
+        None  # settings.yaml; without it there are no litres or costs
+    )
+    min_points: float  # a rise under this is doubtful
+    currency: str | None = None
+    fill_ups: int
+    doubtful: int
+    litres: float | None = None  # of the fill-ups listed
+    est_cost: float | None = None
+    paid: float | None = None  # only of the fill-ups that have a payment
+    paid_fill_ups: int
+    refuels: list[Refuel]  # newest first
+    unmatched: list[FuelPayment]
+
+
 class DataKind(BaseModel):
     """One kind of export file (named as in Mazda's file names) and what it covers in the period."""
 

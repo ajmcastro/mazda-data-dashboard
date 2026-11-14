@@ -2,6 +2,7 @@
 car_timezone: Europe/Lisbon
 tire_stale_hours: 6
 fuel_currency: EUR
+tank_litres: 56
 fuel_prices:
   - {from: 2026-03-01, per_l: 1.72}
   - {from: 2026-05-15, per_l: 1.81}

@@ -54,6 +54,7 @@ TABLES = [
     "ref_failure_types",
     "ref_settings",
     "ref_fuel_prices",
+    "ref_fuel_paid",
     "ref_warning_flags",
 ]
 # The one big signal source; the others (vis, alt) are small and exported whole.

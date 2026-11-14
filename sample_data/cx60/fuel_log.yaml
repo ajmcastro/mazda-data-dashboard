@@ -1,0 +1,7 @@
+# What the synthetic cx60 car's owner paid for fuel (the demo's fuel log, see settings.yaml).
+- {date: 2026-04-18, paid: 92.93, litres: 50.9}
+- {date: 2026-05-04, paid: 92.70, litres: 50.8}
+- {date: 2026-06-10, paid: 90.71, litres: 49.7}
+- {date: 2026-06-27, paid: 88.37, litres: 48.4}
+- {date: 2026-07-26, paid: 93.75, litres: 51.3}
+- {date: 2026-04-11, paid: 20.00}

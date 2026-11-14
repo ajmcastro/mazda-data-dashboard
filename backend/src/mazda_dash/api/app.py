@@ -16,6 +16,7 @@ from . import models as m
 from .dates import DateRange, date_range
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
 from .health import data_health
+from .refuels import refuels
 from .selection import registry
 from .trends import PRICED, monthly_metrics
 
@@ -275,6 +276,13 @@ def fuel_monthly(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
         f"FROM v_trip_segments {where} GROUP BY 1 ORDER BY month",
         params,
     )
+
+
+@app.get("/api/fuel/refuels", response_model=m.Refuels)
+def fuel_refuels(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres
+    and an estimated cost when the tank size and a price are set, and what the owner noted paying."""
+    return refuels(con, rng)
 
 
 @app.get("/api/trips/segments", response_model=list[m.TripSegment])

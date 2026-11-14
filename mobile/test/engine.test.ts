@@ -234,3 +234,43 @@ describe('summaries of cars that are not loaded', () => {
   })
 })
 
+
+describe('fill-ups (M47)', () => {
+  type Refuels = { fill_ups: number; paid_fill_ups: number; paid: number | null; tank_litres: number | null; unmatched: unknown[]; refuels: { litres: number | null; payments: number; points: number }[] }
+
+  it('lists the fill-ups of the loaded car with the payments its pack carries', async () => {
+    const { api } = await fresh()
+    const got = (await api.handle('GET', '/api/fuel/refuels')).body as Refuels
+    expect(got.fill_ups).toBeGreaterThan(4)
+    expect(got.tank_litres).toBe(56)
+    expect(got.paid_fill_ups).toBeGreaterThan(0)
+    expect(got.unmatched).toHaveLength(1)
+  }, 120_000)
+
+  it('still lists them from a pack made before the fuel log existed, without payments', async () => {
+    // such a pack has no ref_fuel_paid table and no tank size in its settings: points, but no litres
+    const { files, manifest } = readPack(packBytes())
+    const { zipSync, strToU8 } = await import('fflate')
+    const { ref_fuel_paid: _gone, ...tables } = manifest.tables
+    const { 'tables/ref_fuel_paid.parquet': _file, ...rest } = files
+    const old = zipSync({ ...rest, 'manifest.json': strToU8(JSON.stringify({ ...manifest, tables })) }, { level: 0 })
+    const raw = await nodeDb()
+    await loadPack(raw, old)
+    await new Con(raw).exec("DELETE FROM ref_settings WHERE key IN ('tank_litres', 'refuel_min_points')")
+    const api = new Api({ acks: new MemoryAckStore(), now: clock })
+    api.use(raw, 'cx5')
+    const res = await api.handle('GET', '/api/fuel/refuels')
+    expect(res.status).toBe(200)
+    const got = res.body as Refuels
+    expect(got.fill_ups).toBeGreaterThan(4)
+    expect(got.tank_litres).toBeNull()
+    expect(got.paid).toBeNull()
+    expect(got.paid_fill_ups).toBe(0)
+    expect(got.unmatched).toEqual([])
+    for (const r of got.refuels) {
+      expect(r.points).toBeGreaterThan(15)
+      expect(r.litres).toBeNull()
+      expect(r.payments).toBe(0)
+    }
+  }, 120_000)
+})

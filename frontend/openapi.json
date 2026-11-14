@@ -531,6 +531,93 @@
         }
       }
     },
+    "/api/fuel/refuels": {
+      "get": {
+        "summary": "Fuel Refuels",
+        "description": "Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres\nand an estimated cost when the tank size and a price are set, and what the owner noted paying.",
+        "operationId": "fuel_refuels_api_fuel_refuels_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Refuels"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/trips/segments": {
       "get": {
         "summary": "Trip Segments",
@@ -5116,6 +5203,37 @@
         ],
         "title": "FuelMonth"
       },
+      "FuelPayment": {
+        "properties": {
+          "paid_on": {
+            "type": "string",
+            "format": "date",
+            "title": "Paid On"
+          },
+          "paid": {
+            "type": "number",
+            "title": "Paid"
+          },
+          "litres": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Litres"
+          }
+        },
+        "type": "object",
+        "required": [
+          "paid_on",
+          "paid"
+        ],
+        "title": "FuelPayment",
+        "description": "A payment in the fuel log that no fill-up was seen around."
+      },
       "Garage": {
         "properties": {
           "has_data": {
@@ -6469,6 +6587,244 @@
           "ecus_reported"
         ],
         "title": "Readout"
+      },
+      "Refuel": {
+        "properties": {
+          "before_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Before At"
+          },
+          "after_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "After At"
+          },
+          "level_before": {
+            "type": "number",
+            "title": "Level Before"
+          },
+          "level_after": {
+            "type": "number",
+            "title": "Level After"
+          },
+          "points": {
+            "type": "number",
+            "title": "Points"
+          },
+          "gap_hours": {
+            "type": "number",
+            "title": "Gap Hours"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          },
+          "doubtful": {
+            "type": "boolean",
+            "title": "Doubtful"
+          },
+          "litres": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Litres"
+          },
+          "km_since_previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Since Previous"
+          },
+          "used_since_previous_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Used Since Previous L"
+          },
+          "l_per_100km_since_previous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km Since Previous"
+          },
+          "est_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Est Cost"
+          },
+          "paid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid"
+          },
+          "paid_litres": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid Litres"
+          },
+          "payments": {
+            "type": "integer",
+            "title": "Payments",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "before_at",
+          "after_at",
+          "level_before",
+          "level_after",
+          "points",
+          "gap_hours",
+          "doubtful"
+        ],
+        "title": "Refuel",
+        "description": "A fill-up: a rise of the fuel level between two consecutive status snapshots (PLAN.md M47). When it\nhappened is only known to lie between the two."
+      },
+      "Refuels": {
+        "properties": {
+          "tank_litres": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tank Litres"
+          },
+          "min_points": {
+            "type": "number",
+            "title": "Min Points"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "fill_ups": {
+            "type": "integer",
+            "title": "Fill Ups"
+          },
+          "doubtful": {
+            "type": "integer",
+            "title": "Doubtful"
+          },
+          "litres": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Litres"
+          },
+          "est_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Est Cost"
+          },
+          "paid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paid"
+          },
+          "paid_fill_ups": {
+            "type": "integer",
+            "title": "Paid Fill Ups"
+          },
+          "refuels": {
+            "items": {
+              "$ref": "#/components/schemas/Refuel"
+            },
+            "type": "array",
+            "title": "Refuels"
+          },
+          "unmatched": {
+            "items": {
+              "$ref": "#/components/schemas/FuelPayment"
+            },
+            "type": "array",
+            "title": "Unmatched"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_points",
+          "fill_ups",
+          "doubtful",
+          "paid_fill_ups",
+          "refuels",
+          "unmatched"
+        ],
+        "title": "Refuels"
       },
       "SnapshotSignal": {
         "properties": {

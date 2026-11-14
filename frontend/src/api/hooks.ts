@@ -154,6 +154,15 @@ export const useOccupancy = () => {
   })
 }
 
+/** The fill-ups of the selected period, with what was noted as paid (M47). */
+export const useRefuels = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['refuels', range],
+    queryFn: () => unwrap(client.GET('/api/fuel/refuels', { params: { query: range } })),
+  })
+}
+
 /** What the exports cover, the silences and the Invalid signals, for the selected period (M46). */
 export const useDataHealth = () => {
   const range = useRangeQuery()

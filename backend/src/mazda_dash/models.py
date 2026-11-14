@@ -128,6 +128,11 @@ class Model:
         return self.config_dir / "settings.yaml"
 
     @property
+    def fuel_log_path(self) -> Path:
+        """What the owner paid for fuel (optional; read with the settings)."""
+        return self.config_dir / "fuel_log.yaml"
+
+    @property
     def alerts_path(self) -> Path:
         return self.config_dir / "alerts.yaml"
 

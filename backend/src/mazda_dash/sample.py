@@ -214,6 +214,9 @@ class Car:
         self.tire_measured = p.start - timedelta(
             hours=1
         )  # when the car last measured the tires (UTC)
+        self.refuels: list[
+            tuple[datetime, float]
+        ] = []  # (time, litres) of every fill-up
         self.events: list[
             tuple[datetime, float]
         ] = []  # (time, odometer) of every drive end
@@ -380,7 +383,10 @@ def build_drives(rng: random.Random, p: Profile) -> tuple[Car, list[dict]]:
                 l100 += 0.8  # short city trips use more
             end = car.drive(start, km, max(5.2, l100))
             if car.fuel_pct < 14:
+                before = car.fuel_pct
                 car.fuel_pct = rng.uniform(88, 100)
+                # noted for the demo's fuel log (no extra random number: the committed exports stay the same)
+                car.refuels.append((end, (car.fuel_pct - before) / 100 * p.tank_l))
             rows.append({"at": end + timedelta(seconds=10), **car.row(end)})
         day += timedelta(days=1)
     return car, rows
@@ -799,6 +805,7 @@ def settings_text(p: Profile) -> str:
         f"car_timezone: {p.timezone}",
         "tire_stale_hours: 6",
         f"fuel_currency: {p.fuel_currency}",
+        f"tank_litres: {p.tank_l:g}",
     ]
     if len(p.fuel_prices) == 1:
         lines.append(f"fuel_price_per_l: {p.fuel_prices[0][1]}")
@@ -811,11 +818,37 @@ def settings_text(p: Profile) -> str:
     return "\n".join(lines) + "\n"
 
 
+def fuel_log_text(p: Profile, refuels: list[tuple[datetime, float]]) -> str:
+    """The demo car's fuel log (what its owner "paid"): a payment for two fill-ups out of three, each a little
+    above the estimate (a receipt is never exactly litres x the average price), and one payment on a day with
+    no fill-up in the data, which the dashboard must report as unmatched."""
+    zone = ZoneInfo(p.timezone)
+    lines = [
+        f"# What the synthetic {p.id} car's owner paid for fuel (the demo's fuel log, see settings.yaml).",
+    ]
+    for i, (at, litres) in enumerate(refuels):
+        if i % 3 == 2:
+            continue  # a fill-up the owner did not note: it stays an estimate
+        day = at.replace(tzinfo=UTC).astimezone(zone).date()
+        price = (
+            [per_l for start, per_l in p.fuel_prices if start <= day]
+            or [p.fuel_prices[0][1]]
+        )[-1]
+        lines.append(
+            f"- {{date: {day.isoformat()}, paid: {litres * price * 1.02:.2f}, litres: {litres:.1f}}}"
+        )
+    lines.append(
+        f"- {{date: {(p.start + timedelta(days=1)).date().isoformat()}, paid: 20.00}}"
+    )
+    return "\n".join(lines) + "\n"
+
+
 def generate(out: Path, seed: int | None = None, profile: Profile = CX5) -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "settings.yaml").write_text(settings_text(profile))
     rng = random.Random(profile.seed if seed is None else seed)
     car, status = build_drives(rng, profile)
+    (out / "fuel_log.yaml").write_text(fuel_log_text(profile, car.refuels))
     write_status(out, status, profile)
     write_doors(out, rng, status, profile)
     write_alarms(out, profile)

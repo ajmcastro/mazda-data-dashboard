@@ -33,6 +33,12 @@ export const FRAME_SIGNAL_SUMMARY = [
   'baseline_median', 'baseline_max', 'baseline_p10', 'baseline_p90', 'position',
 ]
 export const OCCUPANCY_MONTH = ['month', 'belted_readings', 'passenger_readings', 'rear_readings']
+export const REFUEL = [
+  'before_at', 'after_at', 'level_before', 'level_after', 'points', 'gap_hours', 'odometer_km', 'doubtful', 'litres',
+  'km_since_previous', 'used_since_previous_l', 'l_per_100km_since_previous', 'est_cost', 'paid', 'paid_litres',
+  'payments',
+]
+export const FUEL_PAYMENT = ['paid_on', 'paid', 'litres']
 export const DATA_KIND = ['kind', 'first_at', 'last_at', 'records', 'days']
 export const DATA_GAP = ['from_at', 'to_at', 'hours']
 export const INVALID_SIGNAL = ['source', 'signal', 'readings', 'invalid', 'pct']

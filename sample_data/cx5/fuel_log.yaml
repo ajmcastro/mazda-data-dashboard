@@ -1,0 +1,7 @@
+# What the synthetic cx5 car's owner paid for fuel (the demo's fuel log, see settings.yaml).
+- {date: 2026-03-20, paid: 84.89, litres: 48.4}
+- {date: 2026-04-08, paid: 80.17, litres: 45.7}
+- {date: 2026-05-09, paid: 79.30, litres: 45.2}
+- {date: 2026-05-24, paid: 88.67, litres: 48.0}
+- {date: 2026-06-27, paid: 89.95, litres: 48.7}
+- {date: 2026-03-02, paid: 20.00}

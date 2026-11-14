@@ -23,3 +23,12 @@ fuel_prices:
    - {from: 2026-10-01, per_l: 2.094}
    - {from: 2026-11-01, per_l: 1.922}
 
+# Optional: fill-ups (the "Fill-ups" panel on Status). The car reports the fuel level in % only, so litres
+# need the size of the fuel tank (see the owner's manual). Remove the # and set YOUR tank's size, then run
+# `make model`. Without it fill-ups are shown in points of the gauge.
+tank_litres: 56
+# A rise of the fuel level smaller than this many points is listed as doubtful (default 15).
+# refuel_min_points: 15
+# What you actually paid goes in a file next to this one, fuel_log.yaml (amounts in fuel_currency), e.g.
+#   - {date: 2026-06-06, paid: 78.40, litres: 41.1}
+# `litres` is optional. A payment is matched to the fill-up seen around its date.

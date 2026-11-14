@@ -2,4 +2,5 @@
 car_timezone: Europe/Berlin
 tire_stale_hours: 6
 fuel_currency: EUR
+tank_litres: 58
 fuel_price_per_l: 1.79

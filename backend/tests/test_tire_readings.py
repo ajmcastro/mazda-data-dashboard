@@ -157,7 +157,11 @@ def test_settings_are_validated(tmp_path):
     bad.write_text("car_timezon: Europe/Lisbon\n")
     with pytest.raises(ValueError, match="unknown setting"):
         load_settings(con, bad)
-    assert load_settings(con, None) == {"car_timezone": "UTC", "tire_stale_hours": "6"}
+    assert load_settings(con, None) == {
+        "car_timezone": "UTC",
+        "tire_stale_hours": "6",
+        "refuel_min_points": "15",
+    }
 
 
 # ------------------------------------------------------ readings

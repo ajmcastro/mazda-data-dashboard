@@ -1,7 +1,8 @@
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview } from '../api/hooks'
+import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview, useRefuels } from '../api/hooks'
+import { lastFillUp } from '../refuels'
 import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
 import { Tires } from '../components/Tires'
@@ -18,6 +19,7 @@ export default function OverviewPage() {
   const odometer = useOdometerDaily()
   const fuel = useFuelMonthly()
   const oil = oilTile(useOilService().data)
+  const filled = lastFillUp(useRefuels().data)
   const carWarning = carWarningHeadline(useCarWarnings().data?.flags)
   const o = overview.data
   const tireNote = tireMeasuredNote(o?.status)
@@ -102,7 +104,7 @@ export default function OverviewPage() {
                 label="Fuel level"
                 value={fmtNum(o.status.fuel_level_pct)}
                 unit="%"
-                sub={`range ≈ ${fmtDistance(o.status.range_km, 0, false)} ${distanceLabel()}`}
+                sub={`range ≈ ${fmtDistance(o.status.range_km, 0, false)} ${distanceLabel()}${filled ? ` · ${filled}` : ''}`}
                 alert={(o.status.fuel_level_pct ?? 100) < 15}
               />
               {oil && (

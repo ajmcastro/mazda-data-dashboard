@@ -1,5 +1,6 @@
 """Settings (``config/models/<id>/settings.yaml``) as a ``ref_settings`` table and a ``ref_fuel_prices`` table, so
-the SQL views and the phone app's copy of them read the same values."""
+the SQL views and the phone app's copy of them read the same values. The optional ``fuel_log.yaml`` next to
+it (what the owner paid for fuel) becomes ``ref_fuel_paid``."""
 
 import itertools
 import math
@@ -13,6 +14,10 @@ import yaml
 DEFAULTS = {"car_timezone": "UTC", "tire_stale_hours": "6"}
 # fuel_currency / fuel_prices / fuel_price_per_l are optional: without a price there is no cost figure
 FUEL_KEYS = {"fuel_currency", "fuel_prices", "fuel_price_per_l"}
+# the fill-ups (M47): the tank's size turns points of fuel level into litres (no default: without it the log
+# shows points), and a rise of the level counts as a fill-up from this many points on
+REFUEL_KEYS = {"tank_litres", "refuel_min_points"}
+REFUEL_MIN_POINTS = 15.0
 CURRENCY = re.compile(r"[A-Z]{3}")
 SINGLE_PRICE_FROM = date(1970, 1, 1)  # a lone fuel_price_per_l applies to all the data
 
@@ -84,6 +89,62 @@ def fuel_prices(path: Path | None, data: dict) -> list[tuple[date, float]]:
     return entries
 
 
+def _number(path: Path | None, data: dict, key: str, lo: float, hi: float, what: str):
+    """An optional number in a range; None when the file does not set it."""
+    if key not in data:
+        return None
+    value = data[key]
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int | float)
+        or not lo <= value <= hi
+    ):
+        raise ValueError(
+            f"{path}: {key} must be a number from {lo:g} to {hi:g} ({what})"
+        )
+    return float(value)
+
+
+def fuel_paid(path: Path) -> list[tuple[date, float, float | None]]:
+    """What the owner paid for fuel, from ``fuel_log.yaml``: a list of ``{date, paid, litres?}``, checked.
+    Empty when there is no file. The amounts are in the settings' ``fuel_currency``."""
+    if not path.exists():
+        return []
+    raw = yaml.safe_load(path.read_text())
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError(  # noqa: TRY004 - every settings error is a ValueError that names the file
+            f"{path}: expected a list of {{date: 2026-05-15, paid: 62.40, litres: 34.1}} (litres optional)"
+        )
+    entries = []
+    for i, item in enumerate(raw, 1):
+        where = f"entry {i}"
+        if (
+            not isinstance(item, dict)
+            or not {"date", "paid"} <= set(item)
+            or set(item) - {"date", "paid", "litres"}
+        ):
+            raise ValueError(
+                f"{path}: {where} must have `date` and `paid`, and may have `litres`"
+            )
+        day = item["date"]
+        try:
+            day = day if isinstance(day, date) else date.fromisoformat(str(day))
+        except ValueError as e:
+            raise ValueError(
+                f"{path}: {where}: `date` must be a date such as 2026-05-15"
+            ) from e
+        paid = _price(path, item["paid"], f"{where}: paid")
+        litres = (
+            _price(path, item["litres"], f"{where}: litres")
+            if item.get("litres") is not None
+            else None
+        )
+        entries.append((day, paid, litres))
+    return entries
+
+
 def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str, str]:
     """Create ``ref_settings`` and ``ref_fuel_prices`` from the file (defaults for what is missing) and
     return the settings."""
@@ -92,7 +153,7 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
         data = yaml.safe_load(path.read_text()) or {}
         if not isinstance(data, dict):
             raise TypeError(f"{path}: expected a mapping of setting -> value")
-    known = {*DEFAULTS, *FUEL_KEYS}
+    known = {*DEFAULTS, *FUEL_KEYS, *REFUEL_KEYS}
     unknown = set(data) - known
     if unknown:
         raise ValueError(
@@ -123,6 +184,20 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
     values["tire_stale_hours"] = f"{hours:g}"
     if prices:
         values["fuel_currency"] = data["fuel_currency"]
+    tank = _number(path, data, "tank_litres", 20, 200, "the size of the fuel tank")
+    if tank is not None:
+        values["tank_litres"] = f"{tank:g}"
+    points = _number(
+        path,
+        data,
+        "refuel_min_points",
+        5,
+        80,
+        "how many points the fuel level must rise to count as a fill-up",
+    )
+    values["refuel_min_points"] = (
+        f"{points if points is not None else REFUEL_MIN_POINTS:g}"
+    )
     con.execute("CREATE OR REPLACE TABLE ref_settings (key VARCHAR, value VARCHAR)")
     con.executemany("INSERT INTO ref_settings VALUES (?, ?)", list(values.items()))
     con.execute(
@@ -130,4 +205,16 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
     )
     if prices:
         con.executemany("INSERT INTO ref_fuel_prices VALUES (?, ?)", prices)
+    # what the owner paid, from fuel_log.yaml next to the settings (always a table, empty without the file)
+    con.execute(
+        "CREATE OR REPLACE TABLE ref_fuel_paid (paid_on DATE, paid DOUBLE, litres DOUBLE)"
+    )
+    paid = fuel_paid(path.with_name("fuel_log.yaml")) if path is not None else []
+    if paid and not prices:
+        raise ValueError(
+            f"{path.with_name('fuel_log.yaml')}: amounts paid need a currency: set fuel_currency and a fuel "
+            f"price in {path.name}"
+        )
+    if paid:
+        con.executemany("INSERT INTO ref_fuel_paid VALUES (?, ?, ?)", paid)
     return values

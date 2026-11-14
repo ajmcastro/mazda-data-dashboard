@@ -1,7 +1,8 @@
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useCarWarnings, useOilService, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
+import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { useAlarms, useCarWarnings, useOilService, useRefuels, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
 import { CarPanel } from '../components/CarPanel'
+import { FillUpsPanel } from '../components/FillUpsPanel'
 import { WarningLamps } from '../components/WarningLamps'
 import { WhenPanel } from '../components/WhenPanel'
 import { WhoRidesPanel } from '../components/WhoRidesPanel'
@@ -28,6 +29,8 @@ export default function Status() {
   const oil = useOilService()
   const carWarnings = useCarWarnings()
   const tires = useTires()
+  // the clear fill-ups of the period, marked on the fuel chart at the report that first showed them
+  const fillUps = (useRefuels().data?.refuels ?? []).filter((r) => !r.doubtful).map((r) => ts(r.after_at))
 
   const points = (status.data ?? []).map((s) => ({
     t: ts(s.created_at),
@@ -82,7 +85,7 @@ export default function Status() {
       <CarPanel />
 
       <div className="grid cols-2" style={{ marginTop: 14 }}>
-        <Panel title="Fuel level and range" hint={`gauge % and estimated ${distanceLabel()}`}>
+        <Panel title="Fuel level and range" hint={`gauge % and estimated ${distanceLabel()}; dashed lines are fill-ups`}>
           <QueryState query={status}>
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={points}>
@@ -92,6 +95,9 @@ export default function Status() {
                 <YAxis yAxisId="r" orientation="right" {...axis} width={40} />
                 <Tooltip content={<ChartTip fmtLabel={tipLabel} />} />
                 <Legend wrapperStyle={{ fontSize: 11, fontFamily: 'var(--mono)' }} />
+                {fillUps.map((t) => (
+                  <ReferenceLine key={t} yAxisId="l" x={t} stroke="var(--muted)" strokeDasharray="2 4" />
+                ))}
                 <Line isAnimationActive={ANIMATE} yAxisId="l" name="fuel %" dataKey="fuel %" stroke="var(--teal)" dot={false} strokeWidth={2} connectNulls />
                 <Line isAnimationActive={ANIMATE} yAxisId="r" name={`range ${distanceLabel()}`} dataKey="range" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
               </LineChart>
@@ -117,6 +123,10 @@ export default function Status() {
             {tireNote && <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tireNote}</p>}
           </QueryState>
         </Panel>
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <FillUpsPanel />
       </div>
 
       {carWarnings.data?.has_data && (

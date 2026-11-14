@@ -30,7 +30,7 @@ the phone**.
 <table>
   <tr>
     <td><img src="docs/screenshots/warning-lamps.png" alt="Warning lamps: the car's bit flags that ever change, with a timeline and hints"></td>
-    <td><img src="docs/screenshots/status.png" alt="Status: tire pressure at the time it was measured, oil-change countdown, fuel, trips"></td>
+    <td><img src="docs/screenshots/status.png" alt="Status: fuel level with the fill-ups marked, tire pressure at the time it was measured, and the list of fill-ups"></td>
   </tr>
   <tr>
     <td><img src="docs/screenshots/trends.png" alt="Month-by-month trends"></td>
@@ -158,7 +158,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`â
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
-| **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history |
+| **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history; the **fill-ups** the fuel level shows (when, how much, the distance and consumption since the one before, an estimated cost and, if you keep a fuel log, what you paid: see [Fill-ups](#fill-ups-optional)) |
 | **Data health** (also on the phone, under *More*) | how far to trust the rest: what each kind of export file covers (first and last record, how many, on how many days), how many days have a status report, the silences between status reports of two days or more, and the signals the car itself flagged as Invalid (those readings are never used). It describes the exports, not the car |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
 
@@ -385,6 +385,33 @@ applies before its date). Each trip is priced with the price in force on its day
 months it happened. Then run `make model` (the phone app needs a new pack: `make mobile-pack`). It is per car: a
 second model has its own file and its own currency, and the compare page does not set amounts in two currencies
 against each other.
+
+### Fill-ups (optional)
+
+The Status page lists the **fill-ups**: every time the fuel level rose between two status reports. The car sends
+the level in % only, so two optional lines in your model's `settings.yaml` make it more useful:
+
+```yaml
+tank_litres: 56          # the size of YOUR fuel tank (owner's manual): shows litres instead of points of the gauge
+refuel_min_points: 15    # a smaller rise is listed as "doubtful" (default 15)
+```
+
+What it shows is an estimate and says so: a fill-up happened some time *between* two reports, the litres are what
+the gauge gained (fuel burned in between is not seen, so the real amount is a little higher), and the cost is those
+litres times your [fuel price](#fuel-cost-optional). A rise seen across two days or more without a report is marked
+doubtful too.
+
+To see **what you really paid** next to the estimate, keep a file `fuel_log.yaml` next to `settings.yaml`
+(`config/models/<id>/fuel_log.yaml`), one line per payment, in the currency of `fuel_currency`:
+
+```yaml
+- {date: 2026-06-06, paid: 78.40, litres: 41.1}   # litres is optional
+- {date: 2026-06-27, paid: 89.95}
+```
+
+A payment is matched to the fill-up seen around its date; one that matches none is listed under the table. Then run
+`make model` (and, for the phone, `make mobile-pack` and import the new pack). The two amounts are never mixed: the
+total says how many fill-ups the paid amount covers.
 
 ### Adding newer data later
 
@@ -656,6 +683,7 @@ data.
 - **The model selector does not show my second car**: it lists only models that have data. Put the car's exports
   in `data/<id>/` and run `make ingest MODEL=<id>`. (The address `?model=<id>` shows where to put the files.)
 - **The cost figures are missing**: no fuel price is set for that car; see [Fuel cost](#fuel-cost-optional).
+- **Fill-ups show "points" instead of litres**: `tank_litres` is not set for that car; see [Fill-ups](#fill-ups-optional).
 - **Port 8000 or 5173 already in use**: stop the other program using it, then run `make dev`
   again.
 - **`npm install` fails**: use `make setup`; `frontend/.npmrc` sets the option this project's
