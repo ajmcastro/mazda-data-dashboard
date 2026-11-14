@@ -65,6 +65,9 @@ export interface Memory {
   write(value: { name: string; lastDay: string } | null): void
 }
 
+/** The name a pack is stored under when it is the bundled demo data (a pack the user imports has its file name). */
+export const DEMO_NAME = 'demo'
+
 const KEY = 'cx5.had-data'
 const MODEL_KEY = 'cx5.model' // the model last shown (the same key the Mac dashboard uses for its choice)
 
@@ -228,11 +231,38 @@ export class DataController {
     this.publishSummaries()
   }
 
+  /**
+   * Demo data stored by an earlier version of the app is replaced by the demo data this version brings. What
+   * the app draws can depend on the pack (the car's shape and dimensions travel in it), so after an update
+   * old demo packs would keep showing the old picture until someone thought of loading them again.
+   * Only packs stored as demo data are touched, never a pack the user imported, even of the same model.
+   * Without the bundled packs at hand (offline before they were cached) the stored ones simply stay.
+   */
+  private async refreshDemo(): Promise<void> {
+    const demos = [...this.stored.values()].filter((p) => p.name === DEMO_NAME)
+    if (!demos.length || !this.deps.fetchDemo) return
+    try {
+      for (const bytes of await this.deps.fetchDemo()) {
+        const { manifest } = readPack(bytes)
+        const id = manifest.model.id
+        const stored = this.stored.get(id)
+        // the same build of the demo data: nothing to do (a pack's creation time is its identity here)
+        if (!stored || stored.name !== DEMO_NAME || stored.manifest.created_at === manifest.created_at) continue
+        const fresh: StoredPack = { bytes, name: DEMO_NAME, savedAt: new Date().toISOString(), manifest }
+        await writeStoredPack(fresh)
+        this.stored.set(id, fresh) // its cached figures were made from the old pack: their key no longer matches
+      }
+    } catch {
+      /* no demo data to compare with: keep what is stored */
+    }
+  }
+
   /** On launch: start the engine and load the model last shown (or the one the address asks for). */
   async init(requested?: string | null): Promise<void> {
     try {
       const [raw, packs, legacy] = await Promise.all([this.engineReady(), readStoredPacks(), discardLegacyPack()])
       this.stored = new Map(packs.map((p) => [p.manifest.model.id, p]))
+      await this.refreshDemo()
       await this.loadSummaries()
       if (!packs.length) {
         // data that was here before and is not any more: the browser removed it (iOS does that to sites not opened for a while)
@@ -345,7 +375,7 @@ export class DataController {
       const packs = await this.deps.fetchDemo()
       if (!packs.length) throw new Error('This build has no demo data.')
       for (const [i, bytes] of packs.entries()) {
-        if (!(await this.importPack(bytes, 'demo', { show: i === 0 }))) return false
+        if (!(await this.importPack(bytes, DEMO_NAME, { show: i === 0 }))) return false
       }
       return true
     } catch (e) {

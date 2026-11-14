@@ -1,5 +1,6 @@
 import 'fake-indexeddb/auto'
 import { readFileSync } from 'node:fs'
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { DataController, SUMMARY_VERSION } from '../src/controller'
 import { readStoredPacks, readStoredSummaries } from '../src/storage'
@@ -142,6 +143,116 @@ describe('data on the device', () => {
     await last.init()
     expect(last.getState().lost).toBeNull()
   }, 180_000)
+})
+
+/** The same pack as a later build of the app would bring it: only its creation time (and what is asked) differs. */
+function rebuilt(bytes: Uint8Array, createdAt: string, change: (manifest: Record<string, any>) => void = () => {}): Uint8Array {
+  const files = unzipSync(bytes)
+  const manifest = JSON.parse(strFromU8(files['manifest.json']))
+  manifest.created_at = createdAt
+  change(manifest)
+  return zipSync({ ...files, 'manifest.json': strToU8(JSON.stringify(manifest)) }, { level: 0 })
+}
+
+describe('demo data after an update of the app', () => {
+  beforeEach(wipe, 60_000)
+  const NEWER = '2027-01-01T00:00:00Z'
+  const newerDemo = async () => [
+    rebuilt(packOf('cx5'), NEWER),
+    rebuilt(packOf('cx60'), NEWER, (m) => void (m.model.body = { ...m.model.body, shape: 'cx60', length_mm: 4999 })),
+  ]
+  const launchWith = (fetchDemo: () => Promise<Uint8Array[]>) =>
+    new DataController({ startEngine: nodeDb, fetchDemo, memory, persist: async () => true, lastModel: () => lastShown })
+  const stored = async () => Object.fromEntries((await readStoredPacks()).map((p) => [p.manifest.model.id, p]))
+
+  it('replaces stored demo packs by the ones the new version brings, and shows them', async () => {
+    const old = launch()
+    await old.init()
+    await old.loadDemo()
+    const before = await stored()
+
+    const updated = launchWith(newerDemo)
+    await updated.init()
+    const after = await stored()
+    expect(Object.keys(after).sort()).toEqual(['cx5', 'cx60'])
+    for (const id of ['cx5', 'cx60']) {
+      expect(after[id].name).toBe('demo')
+      expect(after[id].manifest.created_at).toBe(NEWER)
+      expect(after[id].manifest.created_at).not.toBe(before[id].manifest.created_at)
+    }
+    // the app works on the new packs: the model list carries what the new pack says about the car
+    expect(updated.getState()).toMatchObject({ status: 'ready', current: 'cx5', error: null })
+    const models = (await updated.api.handle('GET', '/api/models')).body as { id: string; body: { length_mm: number; shape: string } }[]
+    expect(models.find((m) => m.id === 'cx60')!.body).toMatchObject({ shape: 'cx60', length_mm: 4999 })
+    expect((await updated.api.handle('GET', '/api/span')).status).toBe(200)
+    expect(await updated.switchTo('cx60')).toBe(true)
+  }, 240_000)
+
+  it('leaves demo packs of the same build alone', async () => {
+    const first = launch()
+    await first.init()
+    await first.loadDemo()
+    const before = await stored()
+    const again = launch()
+    await again.init()
+    const after = await stored()
+    for (const id of ['cx5', 'cx60']) expect(after[id].savedAt).toBe(before[id].savedAt)
+    expect(again.getState().status).toBe('ready')
+  }, 240_000)
+
+  it('never touches a pack the user imported, even of a model the demo has too', async () => {
+    const first = launch()
+    await first.init()
+    await first.loadDemo() // cx5 and cx60 as demo
+    await first.importPack(packOf('cx5'), 'my-car.cx5pack') // the user's own CX-5 replaces the demo one
+    const before = await stored()
+
+    const updated = launchWith(newerDemo)
+    await updated.init()
+    const after = await stored()
+    expect(after.cx5.name).toBe('my-car.cx5pack')
+    expect(after.cx5.savedAt).toBe(before.cx5.savedAt)
+    expect(after.cx5.manifest.created_at).toBe(before.cx5.manifest.created_at)
+    expect(after.cx60.manifest.created_at).toBe(NEWER) // the demo car next to it is refreshed
+  }, 240_000)
+
+  it('does not ask for the demo data when none is stored', async () => {
+    const first = launch()
+    await first.init()
+    await first.importPack(pack(), 'my-car.cx5pack')
+    const fetchDemo = vi.fn(newerDemo)
+    const next = launchWith(fetchDemo)
+    await next.init()
+    expect(fetchDemo).not.toHaveBeenCalled()
+    expect(next.getState().status).toBe('ready')
+  }, 180_000)
+
+  it('keeps the stored demo data when the new one cannot be read (offline, or a broken file)', async () => {
+    const first = launch()
+    await first.init()
+    await first.loadDemo()
+    const before = await stored()
+    for (const fetchDemo of [async () => { throw new Error('offline') }, async () => [new Uint8Array([1, 2, 3])]]) {
+      const next = launchWith(fetchDemo as () => Promise<Uint8Array[]>)
+      await next.init()
+      expect(next.getState()).toMatchObject({ status: 'ready', error: null })
+      expect((await stored()).cx5.savedAt).toBe(before.cx5.savedAt)
+    }
+  }, 240_000)
+
+  it('makes the figures cached for Compare and All cars again from the new pack', async () => {
+    const first = launch()
+    await first.init()
+    await first.loadDemo()
+    expect(Object.keys(await readStoredSummaries())).toContain('cx5')
+    const oldKey = (await readStoredSummaries()).cx5.key
+
+    const updated = launchWith(newerDemo)
+    await updated.init()
+    const key = (await readStoredSummaries()).cx5.key
+    expect(key).not.toBe(oldKey)
+    expect(key).toBe(`${SUMMARY_VERSION}:${(await stored()).cx5.savedAt}`)
+  }, 240_000)
 })
 
 describe('several car models on the device', () => {

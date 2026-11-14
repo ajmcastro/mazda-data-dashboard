@@ -615,6 +615,10 @@ data.
   (see [After updating the code](#after-updating-the-code)).
 - **Tire measurement times look wrong** (in the future, or hours old): the time zone in
   `config/models/<id>/settings.yaml` does not match your car; run `make timezone`.
+- **After an update the phone app looks different from the Mac for your own car** (for example the 3D car has
+  the generic shape): what is drawn can depend on the data pack, and the pack on the phone was made before the
+  change. Run `make mobile-pack` and import the new pack. The demo cars refresh by themselves when the app
+  updates.
 - **The phone app says a data pack is from an older version**: run `make mobile-pack` again and import the
   new file.
 - **`make screenshots` or `make mobile-dev` says a port is in use**: stop `make dev` (ports 8000, 5173,
