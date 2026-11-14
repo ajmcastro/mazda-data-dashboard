@@ -158,7 +158,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`â
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
-| **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history; the **fill-ups** the fuel level shows (when, how much, the distance and consumption since the one before, an estimated cost and, if you keep a fuel log, what you paid: see [Fill-ups](#fill-ups-optional)) |
+| **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history; the **fill-ups** the fuel level shows (when, how much, the distance and consumption since the one before, an estimated cost and, if you keep a fuel log, what you paid: see [Fill-ups](#fill-ups-optional)); and the **service log**: what you noted was done to the car, marked on the fuel, tire and oil charts (see [Service log](#service-log-optional)) |
 | **Day** (also on the phone, under *More*) | one day at a glance, in the car's own time: the stretches driven, each status report with what changed, doors, the warning codes of the day, fault read-outs, alarm reports, a fill-up, a diagnostic report and the alerts about that day, in order, each linking to its page; arrows step to the previous and next day that has anything. Also opened by clicking a day on the Warnings chart or a fill-up's date |
 | **Data health** (also on the phone, under *More*) | how far to trust the rest: what each kind of export file covers (first and last record, how many, on how many days), how many days have a status report, the silences between status reports of two days or more, and the signals the car itself flagged as Invalid (those readings are never used). It describes the exports, not the car |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
@@ -413,6 +413,25 @@ To see **what you really paid** next to the estimate, keep a file `fuel_log.yaml
 A payment is matched to the fill-up seen around its date; one that matches none is listed under the table. Then run
 `make model` (and, for the phone, `make mobile-pack` and import the new pack). The two amounts are never mixed: the
 total says how many fill-ups the paid amount covers.
+
+### Service log (optional)
+
+Keep a note of what was done to the car and the dashboard shows it on the Status page, as marks on the fuel, tire
+and oil charts, and on that day's page. On the Mac, press **Add an entry** in the *Service log* panel; or edit the
+file yourself, `config/models/<id>/service_log.yaml`, one line per entry:
+
+```yaml
+- {date: 2026-09-14, kind: oil_change, note: "Oil and filter at the dealer", odometer_km: 4310}
+- {date: 2026-10-02, kind: tires, note: "Winter tires"}
+```
+
+`kind` is one of `oil_change`, `tires`, `service`, `software`, `repair`, `other`; `odometer_km` is optional. After
+editing the file run `make model` (the form does that part for you), and for the phone make a new pack
+(`make mobile-pack`): the phone shows the log but never changes it.
+
+The panel also lists what the data hints at and your log does not have: the oil countdown going up, or a day with a
+diagnostic report. These are **suggestions, never entries**: nothing is added unless you add it. Set
+`MAZDA_READONLY=1` to switch the form off; the demo is always read-only.
 
 ### Adding newer data later
 

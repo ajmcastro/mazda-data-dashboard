@@ -174,6 +174,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/service-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Service Log
+         * @description What the owner noted was done to the car (M50), newest first, and what the data hints at that the log
+         *     does not have. A state, so it ignores the period.
+         */
+        get: operations["get_service_log_api_service_log_get"];
+        put?: never;
+        /**
+         * Add To Service Log
+         * @description Add one entry to the model's ``service_log.yaml`` and reload it. The file keeps everything it had; an
+         *     entry it already has is not added twice. Refused in the demo and while ``make ingest`` holds the database.
+         */
+        post: operations["add_to_service_log_api_service_log_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/day": {
         parameters: {
             query?: never;
@@ -1066,7 +1092,7 @@ export interface components {
         /**
          * DayEntry
          * @description One thing that happened on a day. `kind` says which fields are filled: drive, status, doors, warning,
-         *     readout, alarm, fill_up, diag, alert.
+         *     readout, alarm, fill_up, diag, alert, service.
          */
         DayEntry: {
             /** Kind */
@@ -1674,6 +1700,11 @@ export interface components {
             database: string;
             /** Has Data */
             has_data: boolean;
+            /**
+             * Writable
+             * @default false
+             */
+            writable: boolean;
         };
         /**
          * InvalidSignal
@@ -2059,6 +2090,58 @@ export interface components {
             refuels: components["schemas"]["Refuel"][];
             /** Unmatched */
             unmatched: components["schemas"]["FuelPayment"][];
+        };
+        /** ServiceAdded */
+        ServiceAdded: {
+            /** Added */
+            added: boolean;
+            /** Entries */
+            entries: number;
+        };
+        /** ServiceEntry */
+        ServiceEntry: {
+            /** Date */
+            date: string;
+            /** Kind */
+            kind: string;
+            /** Note */
+            note: string;
+            /** Odometer Km */
+            odometer_km?: number | null;
+        };
+        /** ServiceEntryIn */
+        ServiceEntryIn: {
+            /** Date */
+            date: string;
+            /** Kind */
+            kind: string;
+            /** Note */
+            note: string;
+            /** Odometer Km */
+            odometer_km?: number | null;
+        };
+        /** ServiceLog */
+        ServiceLog: {
+            /** Kinds */
+            kinds: string[];
+            /** Entries */
+            entries: components["schemas"]["ServiceEntry"][];
+            /** Suggestions */
+            suggestions: components["schemas"]["ServiceSuggestion"][];
+        };
+        /**
+         * ServiceSuggestion
+         * @description Something the data hints at that the log does not have; offered, never added.
+         */
+        ServiceSuggestion: {
+            /** Kind */
+            kind: string;
+            /** Reason */
+            reason: string;
+            /** Date */
+            date: string;
+            /** Odometer Km */
+            odometer_km?: number | null;
         };
         /** SnapshotSignal */
         SnapshotSignal: {
@@ -2636,6 +2719,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Refuels"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_service_log_api_service_log_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceLog"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_to_service_log_api_service_log_post: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceEntryIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceAdded"];
                 };
             };
             /** @description Validation Error */

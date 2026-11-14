@@ -1,0 +1,3 @@
+# What was done to the synthetic cx5 car (the demo's service log).
+- {date: 2026-03-13, kind: tires, note: "Pressures checked and set at the tire shop"}
+- {date: 2026-04-10, kind: software, note: "Infotainment update at the dealer"}

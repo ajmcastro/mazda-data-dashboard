@@ -182,6 +182,8 @@ def test_the_sample_cars(demo, pid):
         ]
         assert times == sorted(times)  # in time order
         for e in day["entries"]:
+            if e["kind"] == "service":  # a day, not a moment
+                continue
             placed = (
                 e["local_until"] if e["kind"] in ("drive", "fill_up") else e["local"]
             )

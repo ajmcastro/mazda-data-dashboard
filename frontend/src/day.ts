@@ -37,6 +37,7 @@ export function timeOn(local: string | null | undefined, day: string): string {
 
 /** "12:06", "12:06 – 12:15" or, for what is only known between two reports, "between 26 Jun 18:29 and 12:30". */
 export function when(e: DayEntry, day: string): string {
+  if (e.kind === 'service') return 'that day'
   if (e.kind === 'drive' || e.kind === 'fill_up') return `between ${timeOn(e.local, day)} and ${timeOn(e.local_until, day)}`
   if (e.local_until && e.local_until !== e.local) return `${timeOn(e.local, day)} – ${timeOn(e.local_until, day)}`
   return timeOn(e.local, day)
@@ -44,7 +45,7 @@ export function when(e: DayEntry, day: string): string {
 
 /** The time an entry is placed at on the page (a drive and a fill-up: when they were seen). */
 export const placedAt = (e: DayEntry, day: string): string =>
-  timeOn(e.kind === 'drive' || e.kind === 'fill_up' ? e.local_until : e.local, day)
+  e.kind === 'service' ? 'that day' : timeOn(e.kind === 'drive' || e.kind === 'fill_up' ? e.local_until : e.local, day)
 
 const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtNum(Math.abs(v), 1)}`
 const has = (v: number | null | undefined): v is number => v !== null && v !== undefined
@@ -105,6 +106,12 @@ export function describe(e: DayEntry): Line {
         to: '/diagnostics',
         params: e.ref ? { report: e.ref } : undefined,
       }
+    case 'service':
+      return {
+        title: `Service log: ${(e.code ?? 'entry').replace('_', ' ')}`,
+        detail: [e.text, has(e.odometer_km) ? `odometer ${distanceText(e.odometer_km)}` : null].filter(Boolean).join(' · ') || null,
+        to: '/status',
+      }
     case 'alert':
       return { title: `Alert: ${e.title ?? e.code ?? ''}`.trim(), detail: e.text ?? null, to: '/alerts' }
     default:
@@ -134,11 +141,12 @@ export function summary(d: Day | undefined): string | null {
   count('diag', 'diagnostic report', 'diagnostic reports')
   count('alarm', 'alarm report', 'alarm reports')
   count('alert', 'alert', 'alerts')
+  count('service', 'service-log entry', 'service-log entries')
   return said.join(' · ')
 }
 
 /** The label of each kind, for the mark next to an entry. */
 export const KIND_LABEL: Record<string, string> = {
   drive: 'drive', status: 'status', doors: 'doors', warning: 'warning', readout: 'faults', alarm: 'alarm',
-  fill_up: 'fuel', diag: 'diagnostic', alert: 'alert',
+  fill_up: 'fuel', diag: 'diagnostic', alert: 'alert', service: 'service',
 }

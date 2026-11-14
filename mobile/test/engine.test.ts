@@ -235,6 +235,38 @@ describe('summaries of cars that are not loaded', () => {
 })
 
 
+describe('the service log (M50)', () => {
+  type Log = { kinds: string[]; entries: { kind: string; date: string }[]; suggestions: { reason: string }[] }
+
+  it('lists what the pack carries and never offers to write', async () => {
+    const { api } = await fresh()
+    const got = (await api.handle('GET', '/api/service-log')).body as Log
+    expect(got.entries.map((e) => e.kind)).toEqual(['software', 'tires'])
+    expect(got.suggestions.length).toBeGreaterThan(0)
+    expect(((await api.handle('GET', '/api/health')).body as { writable: boolean }).writable).toBe(false)
+    expect((await api.handle('POST', '/api/service-log')).status).toBe(405)
+    const day = (await api.handle('GET', `/api/day?date=${got.entries[0].date}`)).body as { entries: { kind: string }[] }
+    expect(day.entries[0].kind).toBe('service')
+  }, 120_000)
+
+  it('is empty, with the suggestions, from a pack made before the log existed', async () => {
+    const { files, manifest } = readPack(packBytes())
+    const { zipSync, strToU8 } = await import('fflate')
+    const { ref_service_log: _gone, ...tables } = manifest.tables
+    const { 'tables/ref_service_log.parquet': _file, ...rest } = files
+    const old = zipSync({ ...rest, 'manifest.json': strToU8(JSON.stringify({ ...manifest, tables })) }, { level: 0 })
+    const raw = await nodeDb()
+    await loadPack(raw, old)
+    const api = new Api({ acks: new MemoryAckStore(), now: clock })
+    api.use(raw, 'cx5')
+    const got = (await api.handle('GET', '/api/service-log')).body as Log
+    expect(got.entries).toEqual([])
+    expect(got.suggestions.length).toBeGreaterThan(1)
+    const day = await api.handle('GET', '/api/day')
+    expect(day.status).toBe(200)
+  }, 120_000)
+})
+
 describe('fill-ups (M47)', () => {
   type Refuels = { fill_ups: number; paid_fill_ups: number; paid: number | null; tank_litres: number | null; unmatched: unknown[]; refuels: { litres: number | null; payments: number; points: number }[] }
 

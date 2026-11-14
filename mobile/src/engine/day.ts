@@ -20,9 +20,11 @@ const NULLS: [string, string][] = [
 ]
 
 /** One kind of entry: the columns it has, NULL for the rest. */
-function select(kind: string, order: number, dayAt: string, at: string, source: string, cols: Record<string, string> = {}): string {
+function select(
+  kind: string, order: number, dayAt: string, at: string, source: string, cols: Record<string, string> = {}, fixedDay = 'CAST(NULL AS DATE)',
+): string {
   const fields = NULLS.map(([name, type]) => `${cols[name] ?? `CAST(NULL AS ${type})`} AS ${name}`).join(', ')
-  return `SELECT '${kind}' AS kind, ${order} AS ord, ${dayAt} AS day_at, ${at} AS at_utc, ${fields} FROM ${source}`
+  return `SELECT '${kind}' AS kind, ${order} AS ord, ${dayAt} AS day_at, ${fixedDay} AS fixed_day, ${at} AS at_utc, ${fields} FROM ${source}`
 }
 
 const OPEN =
@@ -84,44 +86,51 @@ const ALERTS = select('alert', 9, 'occurred_at', 'occurred_at', 'alerts WHERE oc
   code: 'rule', title: 'title', severity: 'severity', text: 'detail', ref: 'dedup_key',
 })
 
+// an entry of the service log: a day, not a moment, so it comes first on its day
+const SERVICE = select(
+  'service', 0, 'CAST(served_on AS TIMESTAMP)', 'CAST(NULL AS TIMESTAMP)', 'ref_service_log',
+  { code: 'kind', text: 'note', odometer_km: 'odometer_km', n: 'n' }, 'served_on',
+)
+
 /** The CTEs every query starts with: `ev` = every entry of all time with its local day. */
-const baseSql = (withAlerts: boolean): string =>
+const baseSql = (withAlerts: boolean, withService: boolean): string =>
   "WITH cfg AS (SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone " +
   'FROM ref_settings), src AS (' +
-  [...SOURCES, ...(withAlerts ? [ALERTS] : [])].join(' UNION ALL ') +
+  [...SOURCES, ...(withAlerts ? [ALERTS] : []), ...(withService ? [SERVICE] : [])].join(' UNION ALL ') +
   '), ' +
-  'ev AS (SELECT s.*, timezone(c.zone, make_timestamptz(epoch_us(s.day_at))) AS local_day_at, ' +
+  'ev AS (SELECT s.*, coalesce(s.fixed_day, CAST(timezone(c.zone, make_timestamptz(epoch_us(s.day_at))) ' +
+  'AS DATE)) AS local_day, ' +
   'timezone(c.zone, make_timestamptz(epoch_us(s.at_utc))) AS local_at, ' +
   'timezone(c.zone, make_timestamptz(epoch_us(s.until_utc))) AS local_until FROM src s CROSS JOIN cfg c) '
 
 export const day: Handler = async ({ con, q }) => {
   const asked = q.str('date')
   const on = asked === undefined ? undefined : parseDay('date', asked)
-  const base = baseSql(await con.hasTable('alerts'))
+  const base = baseSql(await con.hasTable('alerts'), await con.hasTable('ref_service_log'))
   const zone = (
     await con.one("SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone FROM ref_settings")
   ).zone as string
   const span = await con.one(
     base +
-      "SELECT strftime(min(CAST(local_day_at AS DATE)), '%Y-%m-%d') AS first_day, " +
-      "strftime(max(CAST(local_day_at AS DATE)), '%Y-%m-%d') AS last_day FROM ev",
+      "SELECT strftime(min(local_day), '%Y-%m-%d') AS first_day, " +
+      "strftime(max(local_day), '%Y-%m-%d') AS last_day FROM ev",
   )
   const chosen = on ?? (span.last_day as string | null | undefined) ?? null
   const none = { first_day: null, last_day: null, previous: null, next: null }
   if (chosen === null) return { date: null, time_zone: zone, ...none, entries: [] }
   const around = await con.one(
     base +
-      'SELECT strftime(max(CAST(local_day_at AS DATE)) FILTER (WHERE CAST(local_day_at AS DATE) < ' +
-      "CAST(? AS DATE)), '%Y-%m-%d') AS previous, strftime(min(CAST(local_day_at AS DATE)) FILTER " +
-      "(WHERE CAST(local_day_at AS DATE) > CAST(? AS DATE)), '%Y-%m-%d') AS next FROM ev",
+      'SELECT strftime(max(local_day) FILTER (WHERE local_day < ' +
+      "CAST(? AS DATE)), '%Y-%m-%d') AS previous, strftime(min(local_day) FILTER " +
+      "(WHERE local_day > CAST(? AS DATE)), '%Y-%m-%d') AS next FROM ev",
     [chosen, chosen],
   )
   const entries = await con.rows(
     base +
       `SELECT ${COLS}, strftime(local_at, '%Y-%m-%d %H:%M') AS local, ` +
       "strftime(local_until, '%Y-%m-%d %H:%M') AS local_until FROM ev " +
-      'WHERE CAST(local_day_at AS DATE) = CAST(? AS DATE) ' +
-      'ORDER BY day_at, ord, at_utc, code, ref, text',
+      'WHERE local_day = CAST(? AS DATE) ' +
+      'ORDER BY day_at, ord, at_utc, code, ref, n, text',
     [chosen],
   )
   return {

@@ -618,6 +618,112 @@
         }
       }
     },
+    "/api/service-log": {
+      "get": {
+        "summary": "Get Service Log",
+        "description": "What the owner noted was done to the car (M50), newest first, and what the data hints at that the log\ndoes not have. A state, so it ignores the period.",
+        "operationId": "get_service_log_api_service_log_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceLog"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add To Service Log",
+        "description": "Add one entry to the model's ``service_log.yaml`` and reload it. The file keeps everything it had; an\nentry it already has is not added twice. Refused in the demo and while ``make ingest`` holds the database.",
+        "operationId": "add_to_service_log_api_service_log_post",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ServiceEntryIn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServiceAdded"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/day": {
       "get": {
         "summary": "One Day",
@@ -4117,7 +4223,7 @@
           "kind"
         ],
         "title": "DayEntry",
-        "description": "One thing that happened on a day. `kind` says which fields are filled: drive, status, doors, warning,\nreadout, alarm, fill_up, diag, alert."
+        "description": "One thing that happened on a day. `kind` says which fields are filled: drive, status, doors, warning,\nreadout, alarm, fill_up, diag, alert, service."
       },
       "DiagDelta": {
         "properties": {
@@ -6188,6 +6294,11 @@
           "has_data": {
             "type": "boolean",
             "title": "Has Data"
+          },
+          "writable": {
+            "type": "boolean",
+            "title": "Writable",
+            "default": false
           }
         },
         "type": "object",
@@ -7540,6 +7651,159 @@
           "unmatched"
         ],
         "title": "Refuels"
+      },
+      "ServiceAdded": {
+        "properties": {
+          "added": {
+            "type": "boolean",
+            "title": "Added"
+          },
+          "entries": {
+            "type": "integer",
+            "title": "Entries"
+          }
+        },
+        "type": "object",
+        "required": [
+          "added",
+          "entries"
+        ],
+        "title": "ServiceAdded"
+      },
+      "ServiceEntry": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "kind",
+          "note"
+        ],
+        "title": "ServiceEntry"
+      },
+      "ServiceEntryIn": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "kind",
+          "note"
+        ],
+        "title": "ServiceEntryIn"
+      },
+      "ServiceLog": {
+        "properties": {
+          "kinds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Kinds"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceEntry"
+            },
+            "type": "array",
+            "title": "Entries"
+          },
+          "suggestions": {
+            "items": {
+              "$ref": "#/components/schemas/ServiceSuggestion"
+            },
+            "type": "array",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kinds",
+          "entries",
+          "suggestions"
+        ],
+        "title": "ServiceLog"
+      },
+      "ServiceSuggestion": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "odometer_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Odometer Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "reason",
+          "date"
+        ],
+        "title": "ServiceSuggestion",
+        "description": "Something the data hints at that the log does not have; offered, never added."
       },
       "SnapshotSignal": {
         "properties": {

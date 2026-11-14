@@ -10,6 +10,7 @@ class Health(BaseModel):
     status: str
     database: str
     has_data: bool
+    writable: bool = False  # this server may edit the model's own files (the service log); never the phone
 
 
 class ModelBody(BaseModel):
@@ -531,9 +532,43 @@ class Refuels(BaseModel):
     unmatched: list[FuelPayment]
 
 
+class ServiceEntry(BaseModel):
+    date: str  # the car's local day, YYYY-MM-DD
+    kind: str  # oil_change, tires, service, software, repair, other
+    note: str
+    odometer_km: float | None = None
+
+
+class ServiceSuggestion(BaseModel):
+    """Something the data hints at that the log does not have; offered, never added."""
+
+    kind: str
+    reason: str  # oil_countdown (it went up) or diagnostic_report (one was taken)
+    date: str  # the day it was seen
+    odometer_km: float | None = None
+
+
+class ServiceLog(BaseModel):
+    kinds: list[str]
+    entries: list[ServiceEntry]  # newest first
+    suggestions: list[ServiceSuggestion]
+
+
+class ServiceEntryIn(BaseModel):
+    date: str
+    kind: str
+    note: str
+    odometer_km: float | None = None
+
+
+class ServiceAdded(BaseModel):
+    added: bool  # false: the file already had this entry
+    entries: int  # in the log now
+
+
 class DayEntry(BaseModel):
     """One thing that happened on a day. `kind` says which fields are filled: drive, status, doors, warning,
-    readout, alarm, fill_up, diag, alert."""
+    readout, alarm, fill_up, diag, alert, service."""
 
     kind: str
     at: datetime | None = None  # UTC; a drive's or a fill-up's EARLIER report

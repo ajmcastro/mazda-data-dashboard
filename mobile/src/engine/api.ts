@@ -18,6 +18,7 @@ import { dataHealth } from './datahealth'
 import { day } from './day'
 import { drivingPattern } from './driving'
 import { refuels } from './refuels'
+import { serviceLog } from './service'
 import type { PackBody } from './pack'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
@@ -78,7 +79,7 @@ export class Api {
       const source = path.replace(/\{(\w+)\}/g, (_, n: string) => (names.push(n), '([^/]+)'))
       this.routes.push({ method, pattern: new RegExp(`^${source}$`), names, handler, needsData })
     }
-    add('GET', '/api/health', async () => ({ status: 'ok', database: this.database, has_data: this.con !== null }), false)
+    add('GET', '/api/health', async () => ({ status: 'ok', database: this.database, has_data: this.con !== null, writable: false }), false)
     add('GET', '/api/models', async () => this.models, false)
     add('GET', '/api/span', span)
     add('GET', '/api/garage', garage)
@@ -87,6 +88,7 @@ export class Api {
     add('GET', '/api/odometer/daily', odometerDaily)
     add('GET', '/api/fuel/monthly', fuelMonthly)
     add('GET', '/api/fuel/refuels', refuels)
+    add('GET', '/api/service-log', serviceLog)
     add('GET', '/api/day', day)
     add('GET', '/api/trips/pattern', drivingPattern)
     add('GET', '/api/trips/segments', tripSegments)

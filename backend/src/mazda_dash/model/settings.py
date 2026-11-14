@@ -3,6 +3,7 @@ the SQL views and the phone app's copy of them read the same values. The optiona
 it (what the owner paid for fuel) becomes ``ref_fuel_paid``."""
 
 import itertools
+import json
 import math
 import re
 from datetime import date
@@ -145,6 +146,110 @@ def fuel_paid(path: Path) -> list[tuple[date, float, float | None]]:
     return entries
 
 
+SERVICE_KINDS = ("oil_change", "tires", "service", "software", "repair", "other")
+SERVICE_HEADER = (
+    "# What was done to the car (the dashboard's service log). One line per entry:\n"
+    '#   - {date: 2026-09-14, kind: oil_change, note: "Oil and filter at the dealer", odometer_km: 4310}\n'
+    f"# kind is one of: {', '.join(SERVICE_KINDS)}. odometer_km is optional. Then run `make model`.\n"
+)
+
+
+def service_entry(
+    where: str, day, kind, note, odometer
+) -> tuple[date, str, str, float | None]:
+    """One checked entry of the service log; ``where`` names the file and the entry in an error."""
+    try:
+        day = day if isinstance(day, date) else date.fromisoformat(str(day))
+    except ValueError as e:
+        raise ValueError(f"{where}: `date` must be a date such as 2026-09-14") from e
+    if kind not in SERVICE_KINDS:
+        raise ValueError(
+            f"{where}: `kind` must be one of {', '.join(SERVICE_KINDS)}, not {kind!r}"
+        )
+    if not isinstance(note, str) or not note.strip() or "\n" in note or len(note) > 200:
+        raise ValueError(
+            f"{where}: `note` must be one line of text, up to 200 characters"
+        )
+    if odometer is not None:
+        if (
+            isinstance(odometer, bool)
+            or not isinstance(odometer, int | float)
+            or not 0 <= odometer <= 2_000_000
+        ):
+            raise ValueError(f"{where}: `odometer_km` must be a number of kilometres")
+        odometer = float(odometer)
+    return day, kind, note.strip(), odometer
+
+
+def service_entries(path: Path) -> list[tuple[date, str, str, float | None]]:
+    """What was done to the car, from ``service_log.yaml``: a list of ``{date, kind, note, odometer_km?}``,
+    checked (a typo in ``kind`` fails loudly). Empty when there is no file."""
+    if not path.exists():
+        return []
+    raw = yaml.safe_load(path.read_text())
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise ValueError(  # noqa: TRY004 - every settings error is a ValueError that names the file
+            f"{path}: expected a list of {{date: 2026-09-14, kind: oil_change, note: ...}}"
+        )
+    entries = []
+    for i, item in enumerate(raw, 1):
+        where = f"{path}: entry {i}"
+        if (
+            not isinstance(item, dict)
+            or not {"date", "kind", "note"} <= set(item)
+            or set(item) - {"date", "kind", "note", "odometer_km"}
+        ):
+            raise ValueError(
+                f"{where} must have `date`, `kind` and `note`, and may have `odometer_km`"
+            )
+        entries.append(
+            service_entry(
+                where, item["date"], item["kind"], item["note"], item.get("odometer_km")
+            )
+        )
+    return entries
+
+
+def load_service_log(con: duckdb.DuckDBPyConnection, path: Path | None) -> int:
+    """(Re)create ``ref_service_log`` from the file (always a table, empty without the file); `n` keeps the
+    file's order. Returns the number of entries."""
+    entries = service_entries(path) if path is not None else []
+    con.execute(
+        "CREATE OR REPLACE TABLE ref_service_log "
+        "(n INTEGER, served_on DATE, kind VARCHAR, note VARCHAR, odometer_km DOUBLE)"
+    )
+    if entries:
+        con.executemany(
+            "INSERT INTO ref_service_log VALUES (?, ?, ?, ?, ?)",
+            [(i, *e) for i, e in enumerate(entries, 1)],
+        )
+    return len(entries)
+
+
+def service_line(day: date, kind: str, note: str, odometer: float | None) -> str:
+    """One entry as the line the file holds (the note quoted the JSON way, which YAML reads)."""
+    text = f"- {{date: {day.isoformat()}, kind: {kind}, note: {json.dumps(note, ensure_ascii=False)}"
+    if odometer is not None:
+        text += f", odometer_km: {odometer:g}"
+    return text + "}"
+
+
+def add_service_entry(path: Path, day, kind, note, odometer) -> bool:
+    """Append one entry to ``service_log.yaml``, keeping everything that is there (comments included). An
+    entry the file already has is not added again (False). The file is checked before and after."""
+    entry = service_entry(str(path), day, kind, note, odometer)
+    if entry in service_entries(path):
+        return False
+    before = path.read_text() if path.exists() else SERVICE_HEADER
+    if before and not before.endswith("\n"):
+        before += "\n"
+    path.write_text(before + service_line(*entry) + "\n")
+    service_entries(path)  # what was written must read back
+    return True
+
+
 def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str, str]:
     """Create ``ref_settings`` and ``ref_fuel_prices`` from the file (defaults for what is missing) and
     return the settings."""
@@ -217,4 +322,8 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
         )
     if paid:
         con.executemany("INSERT INTO ref_fuel_paid VALUES (?, ?, ?)", paid)
+    # what was done to the car, from service_log.yaml next to the settings (M50)
+    load_service_log(
+        con, path.with_name("service_log.yaml") if path is not None else None
+    )
     return values

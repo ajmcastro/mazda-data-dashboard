@@ -5,6 +5,7 @@ Endpoints that describe a *state* (active faults, alerts, the diagnostic-tool re
 description lookups) deliberately ignore them."""
 
 import datetime as dt
+import os
 from datetime import timedelta
 from pathlib import Path
 from typing import Literal
@@ -12,6 +13,7 @@ from typing import Literal
 import duckdb
 from fastapi import Depends, FastAPI, HTTPException, Query
 
+from ..model.settings import add_service_entry, load_service_log
 from ..models import Model
 from . import models as m
 from .dates import DateRange, date_range
@@ -21,6 +23,7 @@ from .driving import driving_pattern
 from .health import data_health
 from .refuels import refuels
 from .selection import registry
+from .service import service_log
 from .trends import PRICED, monthly_metrics
 
 app = FastAPI(title="Mazda data dashboard API", version="0.2.0")
@@ -32,7 +35,19 @@ Range = Depends(date_range)
 @app.get("/api/health", response_model=m.Health)
 def health(model: Model = Selected):
     path = db_path(model)
-    return m.Health(status="ok", database=str(path), has_data=path.exists())
+    return m.Health(
+        status="ok", database=str(path), has_data=path.exists(), writable=writable()
+    )
+
+
+def writable() -> bool:
+    """Whether this server may edit a model's own files (the service log). Not in the demo or under a test's
+    database override (their databases were not built from the model's config folder), nor when
+    ``MAZDA_READONLY`` is set."""
+    return not any(
+        os.environ.get(name)
+        for name in ("MAZDA_READONLY", "MAZDA_DB_PREFIX", "MAZDA_DB")
+    )
 
 
 def _span(path: Path) -> dict:
@@ -286,6 +301,36 @@ def fuel_refuels(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     """Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres
     and an estimated cost when the tank size and a price are set, and what the owner noted paying."""
     return refuels(con, rng)
+
+
+@app.get("/api/service-log", response_model=m.ServiceLog)
+def get_service_log(con: duckdb.DuckDBPyConnection = Con):
+    """What the owner noted was done to the car (M50), newest first, and what the data hints at that the log
+    does not have. A state, so it ignores the period."""
+    return service_log(con)
+
+
+@app.post("/api/service-log", response_model=m.ServiceAdded)
+def add_to_service_log(
+    entry: m.ServiceEntryIn,
+    model: Model = Selected,
+    con: duckdb.DuckDBPyConnection = RwCon,
+):
+    """Add one entry to the model's ``service_log.yaml`` and reload it. The file keeps everything it had; an
+    entry it already has is not added twice. Refused in the demo and while ``make ingest`` holds the database."""
+    if not writable():
+        raise HTTPException(
+            403, "This server is read-only (the demo, or MAZDA_READONLY is set)"
+        )
+    path = model.service_log_path
+    try:
+        added = add_service_entry(
+            path, entry.date, entry.kind, entry.note, entry.odometer_km
+        )
+        entries = load_service_log(con, path)
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    return m.ServiceAdded(added=added, entries=entries)
 
 
 @app.get("/api/day", response_model=m.Day)

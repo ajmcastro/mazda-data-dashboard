@@ -62,6 +62,11 @@ group('an entry in words', () => {
     expect(describe(e('alarm', { text: 'status 5, reason 5' }))).toMatchObject({ title: 'Alarm report', detail: 'status 5, reason 5' })
     expect(describe(e('diag', { ref: 'abc', odometer_km: 4800 }))).toMatchObject({ to: '/diagnostics', params: { report: 'abc' } })
     expect(describe(e('alert', { title: 'Low tire pressure', text: 'below your limit' }))).toMatchObject({ title: 'Alert: Low tire pressure', to: '/alerts' })
+    expect(describe(e('service', { code: 'oil_change', text: 'Oil and filter', odometer_km: 4310 }))).toEqual({
+      title: 'Service log: oil change', detail: `Oil and filter · odometer ${fmtNum(4310)} km`, to: '/status',
+    })
+    expect(placedAt(e('service', { local: null }), DAY)).toBe('that day')
+    expect(when(e('service', { local: null }), DAY)).toBe('that day')
     expect(describe(e('something new', { text: 'x' }))).toEqual({ title: 'something new', detail: 'x', to: null })
   })
   it('words a fill-up as an estimate between two reports, in litres or points', () => {
@@ -71,7 +76,7 @@ group('an entry in words', () => {
     expect(describe(e('fill_up', { d_fuel_pct: 81.3, doubtful: true })).title).toBe('Fill-up: 81 points (doubtful)')
   })
   it('has a label for every kind it describes', () => {
-    for (const kind of ['drive', 'status', 'doors', 'warning', 'readout', 'alarm', 'fill_up', 'diag', 'alert']) {
+    for (const kind of ['drive', 'status', 'doors', 'warning', 'readout', 'alarm', 'fill_up', 'diag', 'alert', 'service']) {
       expect(KIND_LABEL[kind]).toBeTruthy()
       expect(describe(e(kind)).to).not.toBeNull()
     }

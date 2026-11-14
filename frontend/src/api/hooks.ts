@@ -154,6 +154,40 @@ export const useOccupancy = () => {
   })
 }
 
+/** The service log: what the owner noted and what the data hints at (M50). A state: no period. */
+export const useServiceLog = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['service-log', model],
+    queryFn: () => unwrap(client.GET('/api/service-log', { params: { query: { model } } })),
+  })
+}
+
+/** Whether this server may edit the model's own files (the Mac's API, not the demo, never the phone). */
+export const useWritable = (): boolean => {
+  const { model } = useRangeQuery()
+  const health = useQuery({
+    queryKey: ['health', model],
+    queryFn: () => unwrap(client.GET('/api/health', { params: { query: { model } } })),
+    staleTime: 60_000,
+  })
+  return health.data?.writable === true
+}
+
+/** Add one entry to the model's service log (the Mac only); the log and the day pages are read again. */
+export const useAddServiceEntry = () => {
+  const queryClient = useQueryClient()
+  const { model } = useRangeQuery()
+  return useMutation({
+    mutationFn: (entry: { date: string; kind: string; note: string; odometer_km?: number | null }) =>
+      unwrap(client.POST('/api/service-log', { params: { query: { model } }, body: entry })),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['service-log'] })
+      void queryClient.invalidateQueries({ queryKey: ['day'] })
+    },
+  })
+}
+
 /** Everything about one day of the car's local calendar (M49); without a day, the newest one. A state: no period. */
 export const useDay = (day: string | undefined) => {
   const { model } = useRangeQuery()

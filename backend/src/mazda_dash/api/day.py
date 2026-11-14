@@ -40,14 +40,20 @@ NULLS = {
 
 
 def _select(
-    kind: str, order: int, day_at: str, at: str, source: str, **cols: str
+    kind: str,
+    order: int,
+    day_at: str,
+    at: str,
+    source: str,
+    fixed_day: str = "CAST(NULL AS DATE)",
+    **cols: str,
 ) -> str:
     """One kind of entry: the columns it has, NULL for the rest."""
     fields = ", ".join(
         f"{cols.get(name, f'CAST(NULL AS {kind_})')} AS {name}"
         for name, kind_ in NULLS.items()
     )
-    return f"SELECT '{kind}' AS kind, {order} AS ord, {day_at} AS day_at, {at} AS at_utc, {fields} FROM {source}"
+    return f"SELECT '{kind}' AS kind, {order} AS ord, {day_at} AS day_at, {fixed_day} AS fixed_day, {at} AS at_utc, {fields} FROM {source}"
 
 
 OPEN = (
@@ -172,47 +178,65 @@ ALERTS = _select(
 )
 
 
-def base_sql(with_alerts: bool) -> str:
+# an entry of the service log: a day, not a moment, so it comes first on its day
+SERVICE = _select(
+    "service",
+    0,
+    "CAST(served_on AS TIMESTAMP)",
+    "CAST(NULL AS TIMESTAMP)",
+    "ref_service_log",
+    fixed_day="served_on",
+    code="kind",
+    text="note",
+    odometer_km="odometer_km",
+    n="n",
+)
+
+
+def base_sql(with_alerts: bool, with_service: bool = False) -> str:
     """The CTEs every query starts with: `ev` = every entry of all time with its local day."""
-    sources = SOURCES + ([ALERTS] if with_alerts else [])
+    sources = (
+        SOURCES
+        + ([ALERTS] if with_alerts else [])
+        + ([SERVICE] if with_service else [])
+    )
     return (
         "WITH cfg AS (SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone "
         "FROM ref_settings), src AS (" + " UNION ALL ".join(sources) + "), "
-        "ev AS (SELECT s.*, timezone(c.zone, make_timestamptz(epoch_us(s.day_at))) AS local_day_at, "
+        "ev AS (SELECT s.*, coalesce(s.fixed_day, CAST(timezone(c.zone, make_timestamptz(epoch_us(s.day_at))) "
+        "AS DATE)) AS local_day, "
         "timezone(c.zone, make_timestamptz(epoch_us(s.at_utc))) AS local_at, "
         "timezone(c.zone, make_timestamptz(epoch_us(s.until_utc))) AS local_until FROM src s CROSS JOIN cfg c) "
     )
 
 
 def day(con: duckdb.DuckDBPyConnection, on: date | None) -> m.Day:
-    base = base_sql(has_table(con, "alerts"))
+    base = base_sql(has_table(con, "alerts"), has_table(con, "ref_service_log"))
     zone = one(
         con,
         "SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone FROM ref_settings",
     )["zone"]
     span = one(
         con,
-        base
-        + "SELECT strftime(min(CAST(local_day_at AS DATE)), '%Y-%m-%d') AS first_day, "
-        "strftime(max(CAST(local_day_at AS DATE)), '%Y-%m-%d') AS last_day FROM ev",
+        base + "SELECT strftime(min(local_day), '%Y-%m-%d') AS first_day, "
+        "strftime(max(local_day), '%Y-%m-%d') AS last_day FROM ev",
     )
     chosen = on.isoformat() if on else span["last_day"]
     if chosen is None:  # nothing in the database at all
         return m.Day(date=None, time_zone=zone, entries=[])
     around = one(
         con,
-        base
-        + "SELECT strftime(max(CAST(local_day_at AS DATE)) FILTER (WHERE CAST(local_day_at AS DATE) < "
-        "CAST(? AS DATE)), '%Y-%m-%d') AS previous, strftime(min(CAST(local_day_at AS DATE)) FILTER "
-        "(WHERE CAST(local_day_at AS DATE) > CAST(? AS DATE)), '%Y-%m-%d') AS next FROM ev",
+        base + "SELECT strftime(max(local_day) FILTER (WHERE local_day < "
+        "CAST(? AS DATE)), '%Y-%m-%d') AS previous, strftime(min(local_day) FILTER "
+        "(WHERE local_day > CAST(? AS DATE)), '%Y-%m-%d') AS next FROM ev",
         [chosen, chosen],
     )
     entries = rows(
         con,
         base + f"SELECT {COLS}, strftime(local_at, '%Y-%m-%d %H:%M') AS local, "
         "strftime(local_until, '%Y-%m-%d %H:%M') AS local_until FROM ev "
-        "WHERE CAST(local_day_at AS DATE) = CAST(? AS DATE) "
-        "ORDER BY day_at, ord, at_utc, code, ref, text",
+        "WHERE local_day = CAST(? AS DATE) "
+        "ORDER BY day_at, ord, at_utc, code, ref, n, text",
         [chosen],
     )
     return m.Day(date=chosen, time_zone=zone, **span, **around, entries=entries)

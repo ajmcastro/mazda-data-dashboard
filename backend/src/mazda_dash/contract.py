@@ -242,6 +242,7 @@ def record(client: TestClient) -> list[dict]:
     for bad in ("x", "2026-02-30", ""):
         rec.get("/api/day", date=bad)
 
+    rec.get("/api/service-log")
     rec.get("/api/codes/unmapped")
     rec.get("/api/maintenance/oil")
     rec.get("/api/status/car-warnings")

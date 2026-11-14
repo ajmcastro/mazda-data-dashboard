@@ -44,6 +44,8 @@ def test_every_api_route_has_a_successful_golden_case(golden):
             )
         ):
             continue
+        if route.path == "/api/service-log" and "POST" in route.methods:
+            continue  # edits a file of the project: the Mac only, tested in test_service_log.py
         pattern = re.compile(
             "^" + re.sub(r"\{\w+\}", "[^/?]+", route.path) + r"(\?.*)?$"
         )

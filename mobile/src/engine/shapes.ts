@@ -39,6 +39,8 @@ export const REFUEL = [
   'payments',
 ]
 export const FUEL_PAYMENT = ['paid_on', 'paid', 'litres']
+export const SERVICE_ENTRY = ['date', 'kind', 'note', 'odometer_km']
+export const SERVICE_SUGGESTION = ['kind', 'reason', 'date', 'odometer_km']
 export const DAY_ENTRY = [
   'kind', 'at', 'until', 'local', 'local_until', 'code', 'title', 'severity', 'n', 'km', 'l_per_100km', 'odometer_km',
   'fuel_level_pct', 'd_fuel_pct', 'tire_min_kpa', 'litres', 'doubtful', 'text', 'ref',

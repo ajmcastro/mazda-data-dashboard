@@ -843,12 +843,27 @@ def fuel_log_text(p: Profile, refuels: list[tuple[datetime, float]]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def service_log_text(p: Profile) -> str:
+    """The demo car's service log: two entries its owner "typed", at fixed days after the data starts. The
+    diagnostic visits and the oil countdown are left for the dashboard to suggest."""
+    first, second = (
+        (p.start + timedelta(days=12)).date(),
+        (p.start + timedelta(days=40)).date(),
+    )
+    return (
+        f"# What was done to the synthetic {p.id} car (the demo's service log).\n"
+        f'- {{date: {first.isoformat()}, kind: tires, note: "Pressures checked and set at the tire shop"}}\n'
+        f'- {{date: {second.isoformat()}, kind: software, note: "Infotainment update at the dealer"}}\n'
+    )
+
+
 def generate(out: Path, seed: int | None = None, profile: Profile = CX5) -> None:
     out.mkdir(parents=True, exist_ok=True)
     (out / "settings.yaml").write_text(settings_text(profile))
     rng = random.Random(profile.seed if seed is None else seed)
     car, status = build_drives(rng, profile)
     (out / "fuel_log.yaml").write_text(fuel_log_text(profile, car.refuels))
+    (out / "service_log.yaml").write_text(service_log_text(profile))
     write_status(out, status, profile)
     write_doors(out, rng, status, profile)
     write_alarms(out, profile)
