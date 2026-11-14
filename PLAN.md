@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my cars (a CX-5, and a CX-60 set up the same way), with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: complete. All planned milestones (M1–M27) are done** (M21–M27: several car models; M28, adapting to a real CX-60 export, is conditional and not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone) and four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags). What is left is under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them. **Planned next, not started: comparing models and periods and the estimated fuel cost (M29–M33), see "Comparing models and periods".**
+**Status: complete. All planned milestones (M1–M44) are done except M28** (adapting to a real CX-60 export: conditional, not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), and the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos). What is left is under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
 
 ## Decisions
 
@@ -44,6 +44,7 @@ backend/                    # uv project (pyproject.toml, uv.lock)
     profile.py              # data profiling (make profile)
   tests/
 frontend/                   # Vite + React + TS (src/api, components, pages): the Mac dashboard
+  src/car3d/                # the car in 3D on Status: pure geometry, camera and labels, the three.js scene, shapes/
 mobile/                     # the offline iPhone app (Vite + React + DuckDB-WASM); reuses frontend/src
   src/engine/               # the Python API in TypeScript
 config/                     # models.yaml; models/<id>/ = model.yaml, alerts.yaml, settings.yaml, codes/*.yaml
@@ -603,7 +604,7 @@ Only when a real export exists; the design of this milestone depends on what it 
 3. **One car per model folder.** Two cars of the same model (two VINs in one folder) are not supported: ingest warns when it finds two VINs. A *vehicle* level under the model would be a separate, later milestone. Confirmed.
 4. **Existing names stay:** the `cx5.*` keys in `localStorage`, the `.cx5pack` extension and the README title are kept (renaming would break saved settings and existing packs); only visible titles become model-aware. Confirmed. *Updated later:* the project's own name, the README title, the page titles and the phone app's name and icon label now say **Mazda Data Dashboard** / **Mazda Data** (the app is no longer a single-car project); the `cx5.*` storage keys and the `.cx5pack` extension still stay.
 
-## Comparing models and periods, and fuel cost (M29–M33, planned)
+## Comparing models and periods, and fuel cost (M29–M34, built)
 
 **Idea.** Pick two car models (say the CX-5 and the CX-60) and see the Trends metrics side by side. The numbers
 already exist: `GET /api/trends/monthly?model=` answers per model since M23, so the first version needs **no new
@@ -781,7 +782,7 @@ Each milestone is implemented only on request, like the earlier ones. Order: M29
 4. **Phone via cached summaries** (M30), not a second engine. Confirmed.
 5. **Order:** M29, then M33 (fuel cost, added afterwards, see below), then M30, M32, M31. The cost milestone goes before the phone one on purpose (see M33).
 
-## More from the CSVs already loaded (M35–M37, planned)
+## More from the CSVs already loaded (M35–M37, built)
 
 ### What the export shows (author's CX-5, Jun–Nov 2026; found by profiling every file in `data/cx5/`)
 No new columns arrived with the latest export; these are things the data already holds that no page shows. All three need **no new ingest**: the signals are in `signal_readings`, `warning_events` and `dtc_snapshot_values`.
@@ -1083,6 +1084,15 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 ## Ideas not built
 
 Email or push notifications; several cars of the same model (a vehicle level under the model, see "Several car models"); parsing Mazda's zip and CSV files on the phone (so the Mac is not needed at all); Android testing on a real device; Windows support without WSL; a published Docker image; the maintenance-reminder signals (`mntsetdist`, `remregdist`), which are not set up in the author's car.
+
+Ideas for the 3D car that were proposed with M38 and not built (each would draw from data the pages already have, on top of `car.ts` and `car3d/`):
+- **A time scrubber:** replay the status snapshots of the period on the car (a slow leak developing on one wheel, the fuel going down).
+- **Who rides, on the seats:** the seats shaded by how often each belt was buckled (the M37 data).
+- **Alerts on the car:** a marker on the part an alert is about, linking to the alert.
+- **A fault map:** control units lit by their faults. It needs the owner to place the units (Mazda does not publish where they sit), in a per-model file, with unplaced ones listed beside the car and never guessed.
+- **A freeze-frame scene:** for one fault, the battery voltage, coolant temperature and speed of its frames at their parts (the M36 data).
+- **Small cars on the All cars cards**, two cars side by side on Compare, and two diagnostic reports as before and after.
+- **A closer likeness:** curved glass, wheel-arch flares and cladding, a real grille; or a view from above to replace the estimated widths.
 
 Ideas around comparing that are not milestones yet (smaller, or they need a decision first):
 - **Code vocabulary across models:** which warning and fault codes appear in both cars and which in one only, as a *hint* for filling in a model's code descriptions ("this code is described for the CX-5; it may or may not mean the same here"). It must stay a suggestion the user copies by hand: descriptions are never shared or borrowed automatically.

@@ -59,6 +59,7 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
 6. **No outside requests from either app**: fonts and everything else are bundled (`@fontsource` packages in
    `frontend/` and `mobile/`); do not add a CDN, an analytics script or a web font link.
 7. **Pages should work in both themes and on a phone**: use the CSS variables, and check the phone width.
+   Something the phone app loads at run time must be in its build output, or it will not work offline.
 8. **Everything is per car model.** Every API route reaches a database through `Con` / `RwCon` (so it takes
    `?model=`; `tests/test_api_models.py` fails when a route does not), every path to a model's data, database
    or configuration comes from `mazda_dash/models.py` (never a hard-coded `../data` or `../db/...`), and every
@@ -76,6 +77,19 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
     good/bad colours only for the same car over time.
 12. **Tests must not depend on your own configuration.** The files in `config/models/<id>/` are the owner's (their
     code descriptions, their fuel prices): tests that need settings pass their own (`ingest(..., settings_path)`).
+
+13. **The 3D car** (`frontend/src/car3d/`, on the Status page). It draws what `frontend/src/car.ts` says about each
+    part and nothing else, so the list and the drawing cannot disagree. `three` stays in the chunk that is loaded with
+    the view: only `scene.ts` and `Car3D.tsx` import it (a test fails otherwise). It renders on a change, never in a
+    loop. Colours come from the CSS variables; red and amber mean "check" and "open", so details such as the tail
+    lights are drawn in neutral tones. No model files and no textures: a car's shape is numbers in `car3d/shapes/`.
+14. **A new car shape.** Take a flat photo of the car's side from far away (zoom in, so the lens distorts less),
+    plus front and rear. Trace the outline as fractions (`p` along the car by the axles, `h` of the height; see
+    `shapes/traced.ts`) into a `Traced` spec like `shapes/cx5.ts`, add its name to `SHAPES` in
+    `shapes/common.ts` **and** in `backend/src/mazda_dash/models.py` and to `BUILDERS` in `geometry.ts`, and set
+    `shape:` in the model's `model.yaml`. The tests that every shape must pass then run on it. **Never commit the
+    photos** (or anything read from a number plate), and do not use a manufacturer's model or drawing. The generic
+    shape is pinned by a fixture and must not change.
 
 ## Pull requests
 

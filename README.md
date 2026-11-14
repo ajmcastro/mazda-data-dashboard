@@ -9,6 +9,9 @@ the phone**.
   tire pressure (and when the car really measured it), the car's own oil-change countdown, warnings, fault
   codes with their freeze frames, the diagnostic-tool report, a month-by-month comparison, and a comparison of
   two cars or of two periods of one car.
+- **The car in 3D**: a schematic of your car you can turn and zoom, with tire pressures, doors, fuel, the oil
+  countdown and the odometer shown next to the part they belong to, and what needs a look marked. On the Mac
+  and on the phone.
 - **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, a low supply voltage in a fault's freeze frame, unusually high fuel
   use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
 - **Several cars**: one folder of exports, one database and one set of code descriptions per Mazda model
@@ -37,15 +40,30 @@ the phone**.
   </tr>
 </table>
 
-The Status page opens with **the car in 3D**: a schematic car you can turn (drag, or the Front / Side / Rear /
-Top buttons) and zoom (Ctrl + scroll, a trackpad pinch, or the + and − buttons), with each figure next to the
-part it belongs to. A part to check is red, an open door, trunk or hood is amber and drawn open, and something
-the car did not report is a dashed outline. Click a part or a label for its details; the *List* switch shows
-the same as a plain list, which is also what you get in a browser that cannot draw 3D. The shape is a schematic
-built from each model's dimensions (the model's own silhouette where one has been drawn, so far the CX-5 sold from
-2026 and the CX-60, otherwise a generic SUV), not the real body.
+The Status page opens with **the car in 3D**, with each figure next to the part it belongs to:
 
-![The car in 3D on the Status page: tire pressures, fuel, oil change and odometer at the parts](docs/screenshots/car-3d.png)
+<table>
+  <tr>
+    <td><img src="docs/screenshots/car-3d.png" alt="The CX-5 in 3D on the Status page: tire pressures, fuel, oil change and odometer at the parts, the rear left wheel marked"></td>
+    <td><img src="docs/screenshots/car-3d-cx60.png" alt="The CX-60 in 3D: its own silhouette, the front left wheel marked"></td>
+  </tr>
+</table>
+
+- **Turn and zoom.** Drag to turn the car, or use the Front / Side / Rear / Top buttons. Zoom with Ctrl + scroll
+  (a trackpad pinch does the same) or the + and − buttons; plain scrolling still scrolls the page. With the
+  keyboard: arrow keys turn, + and − zoom, Home resets the view.
+- **What the colours mean.** A part to check is red (the car's own warning flag for it, a wheel clearly lower
+  than the others, an oil change due soon), an open door, trunk or hood is amber and drawn open, and something
+  the car did not report is a dashed outline. Nothing else is judged: the dashboard invents no limits.
+- **Details.** Click a part or its label for the notes behind the figure (when a tire was measured, the lock
+  code of a door). Closed doors get a label only when you click them.
+- **List.** The *3D | List* switch shows the same parts as a plain list, which is also what you get in a
+  browser that cannot draw 3D.
+- **On the phone** there is no room for labels beside the car, so the parts are numbered pins and the figures
+  are listed under it; a sideways swipe turns the car, an up-and-down swipe scrolls the page.
+- **The shape is a schematic, not the real body.** It is built in code from each model's dimensions. The CX-5
+  sold from 2026 and the CX-60 have their own silhouette, traced by hand from the owner's photos of the two
+  cars (a likeness in flat facets, not a measured model); any other model is drawn as a generic SUV.
 
 With more than one car model loaded, the sidebar has a model selector (here the second demo car, a CX-60), an
 *All cars* page and a *Compare* page (two cars, or two periods of one car):
@@ -138,7 +156,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`�
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
 | **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
-| **Status** | the car in 3D (a schematic car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history |
+| **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history |
 | **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
 
 **Words used here.** A *warning code* is one of the `$XXX` codes in the warnings export (Mazda does not
@@ -291,7 +309,9 @@ Say you have an export for another car (here an MX-30, id `mx30`). Run these fro
    ```
 
    Also accepted: `track_mm`, `wheel_diameter_mm` and `shape` (the outline that is drawn: `generic`, the
-   default, `cx5` or `cx60`; a new model uses the generic one). For the phone the dimensions travel in the data pack,
+   default, `cx5` for the CX-5 sold from 2026, or `cx60`; a new model uses the generic one). Giving another
+   model its own silhouette means adding a small file of numbers to the code: see
+   [CONTRIBUTING](CONTRIBUTING.md). For the phone the dimensions travel in the data pack,
    so make a new pack (`make mobile-pack`) after changing them.
 
    The copied code descriptions start empty on purpose. Set `car_timezone` in the new `settings.yaml` to where
@@ -396,8 +416,10 @@ make model    # recreate the SQL views and reload each model's code descriptions
 
 `make model` is needed whenever the views changed (the dashboard says "no such view" or a page is empty
 until you run it); your data is not touched. If you use the phone app, run `make mobile-pack` and import
-the new pack (the app refuses an older pack with a message saying so). The app itself offers an **Update**
-button when a new version is published.
+the new pack: some things the app draws travel in the pack (the 3D car's dimensions and shape, for example),
+so an older pack can look different from the Mac, and a pack that is too old is refused with a message saying
+so. The app itself offers an **Update** button when a new version is published, and the demo cars refresh by
+themselves when it updates.
 
 ## Use it on your iPhone (offline, with your data on the phone)
 
@@ -431,7 +453,7 @@ make mobile-pack   # writes db/<model>.cx5pack for every model that has data, e.
 (iCloud Drive is good: it keeps the file as your backup).
 
 **4. Install the app.** Open the site address in **Safari**, tap **Share → Add to Home Screen**, and
-open the new "Mazda Data" icon. The first start downloads the app once (about 36 MB). When the **Data**
+open the new "Mazda Data" icon. The first start downloads the app once (about 37 MB). When the **Data**
 screen says **Works offline: yes**, you can switch Wi-Fi off.
 
 **5. Import your data.** On the Data screen tap **Import data pack** and choose the file (repeat for each car model: a selector at the top then switches between them). Or try
@@ -445,7 +467,13 @@ Good to know:
   Keep the pack out of git (`*.cx5pack` is ignored and `make audit` refuses it).
 - **iOS may remove the stored data** after a few weeks without use or when space is low. The app asks
   Safari to keep it and tells you if it was removed; importing the pack file again takes seconds.
-- **Updates.** When a newer version of the app is published, it shows an **Update** button.
+- **Updates.** When a newer version of the app is published, it shows an **Update** button. The demo data is
+  replaced by the new version's at the next start; packs you imported are never touched, so after an update
+  that changes what a pack carries, make a new pack of your own data and import it.
+- **The car in 3D** is on the Status page (under *More*): numbered pins on the car, the figures listed under
+  it, tap a pin or a row for the details. A sideways swipe turns the car; swiping up or down scrolls the page,
+  and the + and − buttons zoom. It works offline like everything else. A car's dimensions and shape come from
+  its data pack.
 - **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of
   the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the
   bottom of the side menu. The choice is remembered per device.
@@ -546,7 +574,8 @@ data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your co
   figures for the Trends page.
 - `backend/src/mazda_dash/pack.py`: exports the database as the phone's data pack.
 - `frontend/`: Vite, React, TypeScript, Recharts. Types are generated from the API's OpenAPI
-  schema.
+  schema. The 3D car (`frontend/src/car3d/`) is drawn with three.js, loaded only when the view is shown; each
+  car's shape is a small file of numbers in `car3d/shapes/` (no model files, no textures).
 - `mobile/`: the same pages as an offline phone app. DuckDB runs in the browser (WebAssembly) on a
   data pack exported by `make mobile-pack`, and a TypeScript port of the API answers the pages;
   contract tests keep it identical to the Python API.
@@ -567,6 +596,10 @@ data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your co
   [data dictionary](docs/data-dictionary.md). Treat this as a curiosity tool, not diagnostics.
 - **The export is a snapshot.** The data comes in files you request (see above); there is no live feed.
   Gaps between exports stay gaps.
+- **The 3D car is a schematic.** Its shape is drawn in code: a likeness for the CX-5 (2026 generation) and the
+  CX-60, a generic SUV for any other model, and never the real body. It shows what the status reports say
+  (tires, doors, trunk, hood, fuel, oil countdown, odometer), not the control units or where a fault is: Mazda
+  does not publish where they sit. The dimensions in `model.yaml` were looked up, not taken from a manual.
 - **The fuel cost is an estimate.** The litres the car reports times the price you enter: not what you paid, and nothing for electricity.
 - **The phone app is a read-only viewer.** It does not read Mazda's files or evaluate alerts; the Mac does
   that and sends a data pack. iOS may delete stored web-app data (you re-import the pack).
@@ -583,6 +616,10 @@ git-ignored too.
 
 The published phone app (GitHub Pages) is static code plus the synthetic demo data: it never receives
 your data, which you import from your own phone's storage.
+
+The two car shapes of the 3D view were traced by hand from the owner's photos of the cars. No photo is in the
+repository, and nothing was read from a number plate: only the outline, as fractions of the car's length and
+height.
 
 If you fork this project, or publish your own copy, run:
 
@@ -615,6 +652,12 @@ data.
   (see [After updating the code](#after-updating-the-code)).
 - **Tire measurement times look wrong** (in the future, or hours old): the time zone in
   `config/models/<id>/settings.yaml` does not match your car; run `make timezone`.
+- **The Status page shows a list instead of the 3D car**: the browser could not draw it (WebGL is switched
+  off or not available; on an iPhone, Lockdown Mode can do that). The list holds the same figures. The
+  *3D | List* switch tries again, and it also remembers when you chose the list yourself.
+- **The 3D car has the wrong proportions, or the driver's door is on the wrong side**: set the car's
+  dimensions and `steering` under `body:` in `config/models/<id>/model.yaml` (see
+  [How to add a model](#how-to-add-a-model)); for the phone, make a new pack afterwards.
 - **After an update the phone app looks different from the Mac for your own car** (for example the 3D car has
   the generic shape): what is drawn can depend on the data pack, and the pack on the phone was made before the
   change. Run `make mobile-pack` and import the new pack. The demo cars refresh by themselves when the app
