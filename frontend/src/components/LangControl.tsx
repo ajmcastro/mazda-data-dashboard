@@ -5,7 +5,7 @@ export function LangControl({ className = '' }: { className?: string }) {
   const [, setLang] = useLang()
   const choice = useLangChoice()
   return (
-    <div className={`units-control ${className}`}>
+    <div className={`units-control lang-control ${className}`}>
       <select aria-label={t('lang.label')} value={choice} onChange={(e) => setLang(e.target.value as LangChoice)}>
         {CHOICES.map((c) => (
           <option key={c} value={c}>

@@ -565,6 +565,8 @@ a.day-step { text-decoration: none; }
   min-width: 0; width: 100%; font: inherit; font-size: 11px; color: var(--text); background: var(--panel-2);
   border: 1px solid var(--line); border-radius: 7px; padding: 4px 4px; color-scheme: inherit;
 }
+/* the language menu is one control: it takes the whole row, so its name is never cut */
+.units-control.lang-control { grid-template-columns: 1fr; }
 .units-control select:focus-visible { outline: 2px solid var(--steel); outline-offset: 1px; }
 .units-panel .units-control { max-width: 420px; gap: 8px; }
 .units-panel .units-control select { font-size: 15px; padding: 6px 8px; }
