@@ -19,6 +19,7 @@ import Garage from './pages/Garage'
 import DataHealth from './pages/DataHealth'
 import DayPage from './pages/Day'
 import ImportPage from './pages/Import'
+import ReportPage from './pages/Report'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
 import Trends from './pages/Trends'
@@ -36,7 +37,7 @@ function Logo() {
 
 // Pages about a period get the date-range bar; alerts and the diagnostic-tool report are not
 // tied to a period.
-const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status', '/health']
+const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status', '/health', '/report']
 
 export default function App() {
   const overview = useOverview()
@@ -87,6 +88,7 @@ export default function App() {
           {nav('/diagnostics', 'Diagnostics')}
           {withData >= 1 && nav('/garage', 'All cars')}
           {nav('/day', 'Day')}
+          {nav('/report', 'Report')}
           {nav('/health', 'Data health')}
           {writable && nav('/import', 'Import')}
         </nav>
@@ -114,6 +116,7 @@ export default function App() {
             <Route path="/day" element={<DayPage />} />
             <Route path="/health" element={<DataHealth />} />
             <Route path="/import" element={<ImportPage />} />
+            <Route path="/report" element={<ReportPage />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>

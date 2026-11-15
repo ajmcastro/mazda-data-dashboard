@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M53 built)
+## More value from the same data (M45–M62; M45–M54 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1292,12 +1292,22 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** backend 18 in `test_import.py` (names and kinds, base names only, a zip with what a Mac adds to it, the VIN of every kind of file, the zip as it arrives, the same download twice, a newer download with the same names, loose files, files that are not exports, one wrong file in a zip, a path that tries to leave the folder, another car's files, a read-only server, another import running, a database held by another program, an empty list) — 432 in all; frontend 7 in `imports.test.ts` (357). Both routes are exempt from the phone's goldens.
 - **Checked by eye:** on a throwaway empty project (never the owner's data): the "no data" message with its link, two files dropped on the page, the summary, a file that is not an export, and the Overview afterwards. This is where the wait for the page's own readers was found and fixed.
 
-### M54 — Report for the mechanic
+### M54 — Report for the mechanic ✅ done
 - **Page:** `/report` (Mac and phone), a print stylesheet and "Print or save as PDF" (the browser's own print: no PDF library): the car (model, VIN shown only if a box is ticked, odometer, the date range), the faults active in the latest read-out and those seen in the period with their freeze-frame summary (M36), the car's own warning flags and episodes, the warning lamps that changed, the tire history and any leak forecast, the latest diagnostic report's headline and what changed since the previous one, the service log, and the open alerts. Each section can be left out. Units follow M45.
 - **No new route:** it composes existing answers (and M46, M47, M50, M51 when they exist), so it works on the phone as it is.
 - **Wording:** the same hedges as the pages ("tends to appear when", "between two reports", "no description yet"); a footer says what the data is and is not.
 - **Tests:** the sections' composition (pure); the print layout checked in the screenshot script (a PDF of the demo car, compared for page count and headings); nothing private in it unless ticked.
 - **Done when:** the demo car's report prints on two or three clean pages in light colours from either app.
+
+**M54 as built.**
+- **Page:** `pages/Report.tsx` at `/report` ("Report" in the Mac's menu, "Report for the workshop" under More on the phone; the period bar applies). **No new route**: it reads ten answers the other pages already use, so the phone needed no engine change.
+- **Composition is pure:** `frontend/src/report.ts`, `buildReport(input, include)` → sections of sentences and tables, in a fixed order: the car (the period, the odometer, the distance and consumption of the period, the oil change ahead; **the VIN only when its box is ticked**, off by default), faults (those of the latest read-out first, with the owner's description or "no description yet"), the car's own warnings, the warning-lamp flags that were ever on, tires (the newest pressures and M51's lines), the newest diagnostic report against the one before, the service log, the open alerts. A section the car has nothing for is left out; faults and alerts always appear and say so when empty; each can be unticked.
+- **Freeze frames:** under the faults, one line per fault from M36's summary (`hintLine`, "Tends to appear when ...", or that nothing stands out), with the number of frames and "a hint, not a pattern" under five, and one sentence that frames say when, not why. Asked per fault, for the first twelve.
+- **Print:** "Print or save as PDF" is the browser's own print. A print stylesheet hides the menu, the tab bar, the period bar and the options, and sets light colours for paper whatever the theme on screen (the page also switches the theme while printing).
+- **Wording:** the pages' own hedges, no judgement added (a test forbids the words), and a footer that says what the report is: what the car reported and when, not a diagnosis; descriptions are the owner's notes.
+- **Changed from the sketch:** the print check is not part of `make screenshots`. It was done once with headless Chrome while building: the demo car's report is **three A4 pages**, with the eight headings and without the menu.
+- **Tests:** frontend 12 in `report.test.ts` (the order, unticked and empty sections, the VIN only when asked, the period, units, faults in order, flags reported as "on" and never as a meaning, lamps, tires, the two diagnostic reports, the log and alerts, no judgement) — 370 in all.
+- **Checked by eye:** the page on the Mac with the demo data and a picture of its print layout. **Not done by eye:** printing from the phone.
 
 ### M55 — Alerts on the car
 - `car.ts` gains `alertPart(alert)`: the part an alert is about (a wheel for the tire rules and flags, the engine for oil, a door for the door flag, the dashboard for the rest), from the rule and its `dedup_key`, never from the text. The 3D view and the list show a marker with the count on that part; clicking opens the Alerts page filtered to it. Acknowledging removes the marker (the same query key as the alert counts).

@@ -13,6 +13,7 @@ import Compare from '@frontend/pages/Compare'
 import Faults from '@frontend/pages/Faults'
 import DataHealth from '@frontend/pages/DataHealth'
 import DayPage from '@frontend/pages/Day'
+import ReportPage from '@frontend/pages/Report'
 import Garage from '@frontend/pages/Garage'
 import OverviewPage from '@frontend/pages/Overview'
 import Status from '@frontend/pages/Status'
@@ -27,7 +28,7 @@ import { useController, useData } from './data'
 import { applyUpdate, usePwa } from './pwa'
 
 // Pages about a period get the date-range bar (same list as the Mac app)
-const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status', '/health']
+const PERIOD_PAGES = ['/', '/trends', '/warnings', '/faults', '/status', '/health', '/report']
 
 function More({ hidden, canCompare, severalCars }: { hidden: readonly string[] | undefined; canCompare: boolean; severalCars: boolean }) {
   const link = (to: string, label: string) => (isPageHidden(to, hidden) ? null : <RangeNavLink to={to}>{label}</RangeNavLink>)
@@ -41,6 +42,7 @@ function More({ hidden, canCompare, severalCars }: { hidden: readonly string[] |
         {canCompare && <RangeNavLink to="/compare">Compare</RangeNavLink>}
         {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">Diagnostics</RangeNavLink>}
         <RangeNavLink to="/day">Day</RangeNavLink>
+        <RangeNavLink to="/report">Report for the workshop</RangeNavLink>
         <RangeNavLink to="/health">Data health</RangeNavLink>
         <NavLink to="/data">Data on this phone</NavLink>
       </nav>
@@ -64,7 +66,7 @@ function Ready() {
   const page = (path: string, element: ReactNode) => (
     <Route path={path} element={isPageHidden(path, hidden) ? <Navigate to={{ pathname: '/', search }} replace /> : element} />
   )
-  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/health', '/day', '/data'].includes(pathname)
+  const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/health', '/day', '/report', '/data'].includes(pathname)
   const [units] = useUnits() // pages are drawn again when the units change
   return (
     <div className="m-shell">
@@ -83,6 +85,7 @@ function Ready() {
             <Route path="/compare" element={<SummaryGate><Compare /></SummaryGate>} />
             <Route path="/garage" element={<SummaryGate><Garage /></SummaryGate>} />
             <Route path="/day" element={<DayPage />} />
+            <Route path="/report" element={<ReportPage />} />
             <Route path="/health" element={<DataHealth />} />
             <Route path="/data" element={<DataScreen />} />
             <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} severalCars={models.filter((m) => m.has_data).length >= 1} />} />

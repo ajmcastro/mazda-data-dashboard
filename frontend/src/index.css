@@ -455,6 +455,32 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* the report for the workshop (M54): a plain page on screen, and the only thing on paper */
+.report-options { display: flex; flex-wrap: wrap; gap: 6px 16px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 0 0 16px; }
+.report-options legend { font-size: 12px; color: var(--muted); padding: 0 6px; }
+.report-page { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 26px; }
+.report-page header h1 { font-size: 22px; margin: 0; }
+.report-page header p { margin: 4px 0 0; font-size: 12px; }
+.report-section { margin-top: 18px; break-inside: avoid; }
+.report-section h2 { font-size: 15px; margin: 0 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
+.report-section p { margin: 4px 0; }
+.report-frames { margin: 8px 0 0; padding-left: 18px; font-size: 13px; }
+.report-page footer { margin-top: 22px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 11px; }
+.report-page footer p { margin: 3px 0; }
+@media print {
+  /* paper is always light, whatever the theme on screen (the page also switches the theme while it prints) */
+  :root, :root[data-theme] { --bg: #fff; --panel: #fff; --panel-2: #f3f3f3; --line: #c9c9c9; --text: #16181c; --muted: #555a63; }
+  .rail, .tabbar, .range-bar, .no-print, .update-prompt { display: none !important; }
+  .shell { display: block; }
+  .main { padding: 0; max-width: none; }
+  body { background: #fff; }
+  .report-page { border: 0; border-radius: 0; padding: 0; background: none; }
+  .report-page table { font-size: 11px; }
+  .report-page .table-wrap { overflow: visible; }
+  .report-page tr { break-inside: avoid; }
+  @page { margin: 14mm; }
+}
+
 /* the import page (M53) */
 .drop-zone { border: 1.5px dashed var(--line); border-radius: 12px; padding: 26px 18px; text-align: center; }
 .drop-zone.over { border-color: var(--accent); background: var(--accent-soft); }
