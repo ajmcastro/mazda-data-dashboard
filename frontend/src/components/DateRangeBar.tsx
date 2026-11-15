@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState } from 'react'
 import { useOverview, useSpan } from '../api/hooks'
 import {
@@ -25,7 +26,8 @@ export function DateRangeBar() {
   const shownTo = to ?? last
   const days = shownFrom && shownTo ? daysInRange(shownFrom, shownTo) : undefined
   const active = matchPreset({ from, to }, first, last)
-  const activeLabel = PRESETS.find((p) => p.id === active)?.label
+  const activePreset = PRESETS.find((p) => p.id === active)
+  const activeLabel = activePreset ? t(`range.${activePreset.id}`) : undefined
 
   const choose = (id: PresetId) => {
     saveRangeChoice(id)
@@ -49,7 +51,7 @@ export function DateRangeBar() {
               checked={active === p.id}
               onChange={() => choose(p.id)}
             />
-            <span>{p.label}</span>
+            <span>{t(`range.${p.id}`)}</span>
           </label>
         ))}
       </fieldset>

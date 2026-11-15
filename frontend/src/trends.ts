@@ -1,6 +1,7 @@
 // Pure logic of the Trends page: which metrics there are, how a month is compared with the
 // previous one, and how the comparison is worded. No React in here, so it can be unit tested.
 
+import { locale } from './i18n'
 import type { MonthMetrics } from './api/types'
 import {
   consumptionDigits, consumptionHigherIsBetter, consumptionLabel, distanceLabel, per100Label, pressureDigits, pressureLabel,
@@ -169,13 +170,13 @@ export function compare(
 /** "2026-05" -> "May 2026" */
 export function monthLabel(month: string): string {
   const [y, m] = month.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' })
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(locale(), { month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
 /** "2026-05" -> "May" */
 export function monthShort(month: string): string {
   const [y, m] = month.split('-').map(Number)
-  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString('en-GB', { month: 'short', timeZone: 'UTC' })
+  return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString(locale(), { month: 'short', timeZone: 'UTC' })
 }
 
 /** Index of the newest month that has a value, or -1. */

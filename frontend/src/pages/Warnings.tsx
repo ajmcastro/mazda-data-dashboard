@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWarningDaily, useWarningEvents, useWarningFrequency } from '../api/hooks'
@@ -71,7 +72,7 @@ export default function Warnings() {
     <>
       <div className="page-head">
         <div>
-          <h1>Warnings</h1>
+          <h1>{t('page.warnings')}</h1>
           <p>Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in <span className="mono">config/models/{id}/codes/warnings.yaml</span>.</p>
         </div>
       </div>

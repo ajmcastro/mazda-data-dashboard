@@ -2,6 +2,7 @@
 // Every time shown is the CAR'S local time (the API converts with the model's car_timezone), never the
 // browser's. A drive and a fill-up are known only as "between two reports" and are worded that way.
 
+import { locale } from './i18n'
 import type { Day, DayEntry } from './api/types'
 import { fmtNum } from './lib'
 import { consumptionLabel, distanceText, fmtConsumption, pressureText } from './units'
@@ -10,14 +11,14 @@ const DAY_MS = 86_400_000
 
 /** "2026-06-27" -> "Saturday, 27 June 2026" (a calendar day: no time zone involved). */
 export function dayTitle(day: string): string {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', {
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString(locale(), {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   })
 }
 
 /** "2026-06-27" -> "27 Jun" */
 export function dayShort(day: string): string {
-  return new Date(`${day}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+  return new Date(`${day}T00:00:00Z`).toLocaleDateString(locale(), { day: 'numeric', month: 'short', timeZone: 'UTC' })
 }
 
 /** The day `n` days from `day` (calendar arithmetic in UTC, so no clock change can shift it). */

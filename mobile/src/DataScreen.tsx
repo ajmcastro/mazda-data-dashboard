@@ -1,4 +1,6 @@
+import { LangControl } from '@frontend/components/LangControl'
 import { UnitsControl } from '@frontend/components/UnitsControl'
+import { t } from '@frontend/i18n'
 import { useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { saveModelChoice } from '@frontend/model'
@@ -77,7 +79,7 @@ export default function DataScreen() {
     <>
       <div className="page-head">
         <div>
-          <h1>Data on this phone</h1>
+          <h1>{t('page.data')}</h1>
           <p>Everything stays on this device: the app never sends your data anywhere.</p>
         </div>
       </div>
@@ -153,6 +155,7 @@ export default function DataScreen() {
         <section className="panel units-panel">
           <div className="panel-head"><h2>Units</h2><span className="hint">how figures are shown on this phone</span></div>
           <UnitsControl />
+          <LangControl />
         </section>
       )}
 

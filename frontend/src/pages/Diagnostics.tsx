@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useDiagCompare, useDiagFrames, useDiagHistory, useDiagReport, useDiagReports } from '../api/hooks'
@@ -76,7 +77,7 @@ export default function Diagnostics() {
     <>
       <div className="page-head">
         <div>
-          <h1>Diagnostics</h1>
+          <h1>{t('page.diagnostics')}</h1>
           <p>
             {r
               ? `Diagnostic tool report from ${fmtDateTime(r.info.taken_at)} at ${fmtDistance(r.info.odometer_km)}`

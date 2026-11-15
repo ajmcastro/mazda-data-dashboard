@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { alertPart, partName } from '../car'
@@ -58,7 +59,7 @@ export default function Alerts() {
     <>
       <div className="page-head">
         <div>
-          <h1>Alerts</h1>
+          <h1>{t('page.alerts')}</h1>
           <p>
             Raised by the rules in <span className="mono">config/models/{id}/alerts.yaml</span> each time you run{' '}
             <span className="mono">make ingest</span>. Acknowledged alerts are not raised again.

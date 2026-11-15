@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useRef, useState } from 'react'
 import { useImportFile, useImports, useWritable } from '../api/hooks'
 import type { ImportSummary } from '../api/types'
@@ -58,7 +59,7 @@ export default function ImportPage() {
     <>
       <div className="page-head">
         <div>
-          <h1>Import</h1>
+          <h1>{t('page.import')}</h1>
           <p>Add a new download from Mazda to {name} without a terminal.</p>
         </div>
       </div>

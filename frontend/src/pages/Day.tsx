@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useDay } from '../api/hooks'
 import { Badge, Panel, QueryState } from '../components/ui'
@@ -23,7 +24,7 @@ export default function DayPage() {
     <>
       <div className="page-head">
         <div>
-          <h1>{day ? dayTitle(day) : 'Day'}</h1>
+          <h1>{day ? dayTitle(day) : t('page.day')}</h1>
           <p>
             Everything the exports say about one day, in the car's own time{d ? ` (${d.time_zone})` : ''}. A drive and a fill-up are
             known only as “between two status reports”.

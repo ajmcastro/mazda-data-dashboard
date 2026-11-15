@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { THEME_LABEL, THEME_ORDER, nextTheme, useTheme, type ThemeChoice } from '../theme'
 
 const ICON_PROPS = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
@@ -30,7 +31,7 @@ export function ThemeToggle() {
       {THEME_ORDER.map((c) => (
         <button key={c} type="button" aria-pressed={choice === c} onClick={() => setChoice(c)} title={`${THEME_LABEL[c]} appearance`}>
           <ThemeIcon choice={c} />
-          {THEME_LABEL[c]}
+          {t(`theme.${c}`)}
         </button>
       ))}
     </div>

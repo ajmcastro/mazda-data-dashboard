@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useGarageOf } from '../api/hooks'
 import type { Garage as GarageCard, ModelBody } from '../api/types'
 import { CarProfileBox } from '../components/CarProfileBox'
@@ -81,7 +82,7 @@ export default function Garage() {
     <>
       <div className="page-head">
         <div>
-          <h1>All cars</h1>
+          <h1>{t('page.garage')}</h1>
           <p>
             The headline figures of every car at a glance. The distance is for the 30 days up to each car&apos;s newest data; alerts,
             faults, the oil countdown and the car&apos;s own warnings are the latest.

@@ -434,6 +434,13 @@ the dates (oil change, end of the year, a tire reaching your pressure limit) as 
 open it to add them to your calendar; nothing is sent anywhere. The oil alert can also fire by date: add
 `days: 30` to `oil_change_due` in `alerts.yaml`.
 
+### Language
+
+The dashboard is in English. A **Portuguese (Portugal) translation has been started**: choose *Português (em curso)*
+in the language menu (the bottom of the Mac's menu; *Data on this phone* in the phone app) and the menus, the page
+titles, the period presets and the dates and numbers switch; the rest of the text is still English. It is never
+chosen for you, and switching back is exact. The choice is per device.
+
 ### Sharing code descriptions
 
 Mazda does not publish what its warning codes mean, so what you learn is worth sharing with another owner of the

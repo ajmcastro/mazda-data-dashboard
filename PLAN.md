@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M61 built)
+## More value from the same data (M45–M62; M45–M61 built, M62 started)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1399,12 +1399,23 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Real data:** the author's CX-5 descriptions export 19 described codes, with nothing private in them (a test checks every model of the repository).
 - **Tests:** backend 20 in `test_codepack.py` (only described codes with a source, nothing about the car, a private value refused, nothing to share, new / same / differs, only named entries added and marked, nothing overwritten unnamed, another model, nine kinds of bad file, replacing in place, the command line, the repository's own descriptions) — 468 in all.
 
-### M62 — A second language
+### M62 — A second language 🚧 started, not finished
 - **Mechanism:** a small catalogue (`frontend/src/i18n/en.ts`, `pt.ts`: typed keys, so a missing translation is a compile error), `t()` and plural helpers, the language chosen per device (`cx5.lang`, Auto follows the browser), numbers and dates through `Intl` in that language. No library, no outside request.
 - **Scope:** every string of both apps, the pure wording modules included (`trends.ts`, `compare.ts`, `car.ts`, `activity.ts` and the rest return keys and values, not English sentences; their tests then check structure, with one test per language for the sentences). Alert texts are written at ingest: they gain a rule key and parameters so the page can word them, with the stored English text as the fallback for old alerts. Code descriptions are the owner's and are never translated.
 - **Why last:** every earlier milestone adds strings; translating once at the end is half the work and catches them all.
 - **Tests:** the two catalogues have the same keys; no English literal left in a component (a source test); the neutral-wording tests (no verdict words) run in both languages.
 - **Done when:** both apps read naturally in Portuguese end to end, and switching back is exact.
+
+**M62 as far as it is built (the mechanism and a first layer; the milestone is NOT done).**
+- **Why it stops here:** both apps hold about 14,000 lines of interface code and well over a thousand phrases, many of them sentences built by the pure wording modules, whose tests assert the English text. Translating them all means changing every one of those modules to return keys and values and rewriting their tests, with Portuguese that reads naturally and keeps every hedge ("between two reports", "at this rate", "tends to appear when"). That is the work the plan describes and it was not possible to do it well in the same pass as M49–M61. What exists is the part everything else will stand on.
+- **Mechanism (done):** `frontend/src/i18n/`: `en.ts` (the typed catalogue: the keys), `pt.ts` (`Record<Key, string>`, so **a missing translation does not compile**), `index.ts` (`t(key, params)` with `{placeholders}`, `getLang` / `setLang` / `useLang`, `locale()`, the choice per device in `localStorage` `cx5.lang`, `<html lang>`). No library, no outside request.
+- **Numbers and dates (done):** every formatter (`fmtNum`, `fmtDate`, `fmtDateTime`, `fmtTick`, `monthLabel`, `dayTitle`, ...) uses `locale()`: `en-GB` or `pt-PT`.
+- **Translated so far (59 keys):** the Mac's menu and the phone's tab bar and More list, the title of every page, the period presets, the appearance labels, the names of the units controls, "page not found". Portuguese of Portugal (a test rejects the Brazilian forms).
+- **Changed from the sketch, on purpose:** **English stays the default and Portuguese is never picked from the browser** ("Auto" is not offered), and the language switch (`components/LangControl.tsx`: the Mac's rail, the phone's Data screen) labels it "Português (em curso)". A half-translated app must be a choice, not a surprise for someone whose browser happens to be in Portuguese.
+- **Both apps** key their `<Routes>` on the language, so pages are drawn again on a switch.
+- **Still to do, in the plan's own order:** (1) the panels' titles, hints, table headers and the remaining text of the components; (2) the pure wording modules (`trends.ts`, `compare.ts`, `car.ts`, `activity.ts`, `occupancy.ts`, `frames.ts`, `health.ts`, `refuels.ts`, `driving.ts`, `day.ts`, `service.ts`, `tires.ts`, `forecast.ts`, `imports.ts`, `report.ts`, `faultmap.ts`, `garage.ts`): each to return keys and values, their tests to check structure, and one test per language for the sentences; (3) alert texts, written at ingest: a rule key and parameters next to the stored English text; (4) the source test that no English literal is left in a component; (5) the neutral-wording tests in both languages; (6) only then offer "Auto" and drop "em curso".
+- **Tests:** frontend 6 in `i18n/i18n.test.ts` (the two catalogues have the same keys and placeholders, Portuguese of Portugal, English unless chosen, placeholders, numbers and dates in the language and **switching back is exact**) — 411 in all.
+- **Checked by eye:** switching to Portuguese and back on the Mac (the menu, the title, the presets, the dates).
 
 ### Risks
 | Risk | Plan |

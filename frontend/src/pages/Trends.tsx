@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useMonthly } from '../api/hooks'
@@ -184,7 +185,7 @@ export default function Trends() {
     <>
       <div className="page-head">
         <div>
-          <h1>Trends</h1>
+          <h1>{t('page.trends')}</h1>
           <p>How each figure changed from month to month. The newest month is in red; the arrow compares it with the month before.</p>
         </div>
         <div className="controls">

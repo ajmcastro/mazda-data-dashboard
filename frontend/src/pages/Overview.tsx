@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState } from 'react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -48,7 +49,7 @@ export default function OverviewPage() {
     <>
       <div className="page-head">
         <div>
-          <h1>Overview</h1>
+          <h1>{t('page.overview')}</h1>
           <p>
             {o
               ? `Data from ${fmtDate(o.data_from)} to ${fmtDate(o.data_to)} · last reading ${fmtAgo(o.data_to)} · ${fmtNum(o.warnings_in_range)} warning events in this period`

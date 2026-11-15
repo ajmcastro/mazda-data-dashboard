@@ -2,6 +2,8 @@ import { useEffect, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview, useWritable } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
+import { LangControl } from './components/LangControl'
+import { t, useLang } from './i18n'
 import { ThemeToggle } from './components/ThemeToggle'
 import { UnitsControl } from './components/UnitsControl'
 import { unitsKey, useUnits } from './units'
@@ -65,6 +67,7 @@ export default function App() {
     />
   )
   const [units] = useUnits()
+  const [lang] = useLang() // the pages are drawn again in the other language
   const writable = useWritable()
   return (
     <div className="shell">
@@ -77,23 +80,24 @@ export default function App() {
           </div>
         </div>
         <ModelSwitcher />
-        <nav className="nav" aria-label="Main">
-          {nav('/', 'Overview')}
-          {nav('/trends', 'Trends')}
-          {comparable >= 1 && nav('/compare', 'Compare')}
-          {nav('/alerts', <>Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
-          {nav('/warnings', 'Warnings')}
-          {nav('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
-          {nav('/status', 'Status')}
-          {nav('/diagnostics', 'Diagnostics')}
-          {withData >= 1 && nav('/garage', 'All cars')}
-          {nav('/day', 'Day')}
-          {nav('/report', 'Report')}
-          {nav('/health', 'Data health')}
-          {writable && nav('/import', 'Import')}
+        <nav className="nav" aria-label={t('nav.main')}>
+          {nav('/', t('nav.overview'))}
+          {nav('/trends', t('nav.trends'))}
+          {comparable >= 1 && nav('/compare', t('nav.compare'))}
+          {nav('/alerts', <>{t('nav.alerts')}{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
+          {nav('/warnings', t('nav.warnings'))}
+          {nav('/faults', <>{t('nav.faults')}{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
+          {nav('/status', t('nav.status'))}
+          {nav('/diagnostics', t('nav.diagnostics'))}
+          {withData >= 1 && nav('/garage', t('nav.garage'))}
+          {nav('/day', t('nav.day'))}
+          {nav('/report', t('nav.report'))}
+          {nav('/health', t('nav.health'))}
+          {writable && nav('/import', t('nav.import'))}
         </nav>
         <div className="rail-foot">
           <UnitsControl />
+          <LangControl />
           <ThemeToggle />
           {o?.vin && <div className="vin">VIN …{o.vin.slice(-6)}</div>}
         </div>
@@ -103,7 +107,7 @@ export default function App() {
         <ModelGate>
           {/* keyed by the model: everything a page remembers (a chosen fault, a flag) belongs to one model */}
           {/* remounted for another car and for other units, so no page keeps a figure of the old ones */}
-          <Routes key={`${id}|${unitsKey(units)}`}>
+          <Routes key={`${id}|${unitsKey(units)}|${lang}`}>
             {page('/', <OverviewPage />)}
             {page('/trends', <Trends />)}
             {page('/compare', <Compare />)}
@@ -117,7 +121,7 @@ export default function App() {
             <Route path="/health" element={<DataHealth />} />
             <Route path="/import" element={<ImportPage />} />
             <Route path="/report" element={<ReportPage />} />
-            <Route path="*" element={<div className="state">Page not found</div>} />
+            <Route path="*" element={<div className="state">{t('page.notFound')}</div>} />
           </Routes>
         </ModelGate>
       </main>

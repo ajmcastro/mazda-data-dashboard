@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useDataHealth } from '../api/hooks'
 import type { DataGap, DataKind, InvalidSignal } from '../api/types'
 import { DataTable, Panel, QueryState, Stat, type Column } from '../components/ui'
@@ -50,7 +51,7 @@ export default function DataHealthPage() {
     <>
       <div className="page-head">
         <div>
-          <h1>Data health</h1>
+          <h1>{t('page.health')}</h1>
           <p>What the exports cover, where the status reports fall silent and what the car flagged as Invalid.</p>
         </div>
       </div>

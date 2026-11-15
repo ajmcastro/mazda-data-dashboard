@@ -1,3 +1,4 @@
+import { t, useLang } from '@frontend/i18n'
 import { useEffect, type ReactNode } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from '@frontend/api/hooks'
@@ -34,17 +35,17 @@ function More({ hidden, canCompare, severalCars }: { hidden: readonly string[] |
   const link = (to: string, label: string) => (isPageHidden(to, hidden) ? null : <RangeNavLink to={to}>{label}</RangeNavLink>)
   return (
     <>
-      <div className="page-head"><h1>More</h1></div>
-      <nav className="more-list" aria-label="More pages">
-        {link('/warnings', 'Warnings')}
-        {link('/status', 'Status')}
-        {severalCars && <RangeNavLink to="/garage">All cars</RangeNavLink>}
-        {canCompare && <RangeNavLink to="/compare">Compare</RangeNavLink>}
-        {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">Diagnostics</RangeNavLink>}
-        <RangeNavLink to="/day">Day</RangeNavLink>
-        <RangeNavLink to="/report">Report for the workshop</RangeNavLink>
-        <RangeNavLink to="/health">Data health</RangeNavLink>
-        <NavLink to="/data">Data on this phone</NavLink>
+      <div className="page-head"><h1>{t('page.more')}</h1></div>
+      <nav className="more-list" aria-label={t('nav.morePages')}>
+        {link('/warnings', t('nav.warnings'))}
+        {link('/status', t('nav.status'))}
+        {severalCars && <RangeNavLink to="/garage">{t('nav.garage')}</RangeNavLink>}
+        {canCompare && <RangeNavLink to="/compare">{t('nav.compare')}</RangeNavLink>}
+        {isPageHidden('/diagnostics', hidden) ? null : <RangeNavLink to="/diagnostics">{t('nav.diagnostics')}</RangeNavLink>}
+        <RangeNavLink to="/day">{t('nav.day')}</RangeNavLink>
+        <RangeNavLink to="/report">{t('nav.reportLong')}</RangeNavLink>
+        <RangeNavLink to="/health">{t('nav.health')}</RangeNavLink>
+        <NavLink to="/data">{t('nav.data')}</NavLink>
       </nav>
     </>
   )
@@ -68,13 +69,14 @@ function Ready() {
   )
   const moreActive = ['/more', '/warnings', '/status', '/diagnostics', '/compare', '/garage', '/health', '/day', '/report', '/data'].includes(pathname)
   const [units] = useUnits() // pages are drawn again when the units change
+  const [lang] = useLang() // ... and when the language does
   return (
     <div className="m-shell">
       <main className="main">
         <div className="m-model"><ModelSwitcher /></div>
         {PERIOD_PAGES.includes(pathname) && <DateRangeBar />}
         <ModelGate>
-          <Routes key={unitsKey(units)}>
+          <Routes key={`${unitsKey(units)}|${lang}`}>
             {page('/', <OverviewPage />)}
             {page('/trends', <Trends />)}
             {page('/alerts', <Alerts />)}
@@ -89,16 +91,16 @@ function Ready() {
             <Route path="/health" element={<DataHealth />} />
             <Route path="/data" element={<DataScreen />} />
             <Route path="/more" element={<More hidden={hidden} canCompare={canCompare} severalCars={models.filter((m) => m.has_data).length >= 1} />} />
-            <Route path="*" element={<div className="state">Page not found</div>} />
+            <Route path="*" element={<div className="state">{t('page.notFound')}</div>} />
           </Routes>
         </ModelGate>
       </main>
-      <nav className="tabbar" aria-label="Main">
-        {tab('/', 'Overview')}
-        {tab('/trends', 'Trends')}
-        {tab('/alerts', <>Alerts{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
-        {tab('/faults', <>Faults{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
-        <NavLink to="/more" className={moreActive ? 'active' : undefined}>More</NavLink>
+      <nav className="tabbar" aria-label={t('nav.main')}>
+        {tab('/', t('nav.overview'))}
+        {tab('/trends', t('nav.trends'))}
+        {tab('/alerts', <>{t('nav.alerts')}{o && o.alerts_new > 0 && <span className="count">{o.alerts_new}</span>}</>)}
+        {tab('/faults', <>{t('nav.faults')}{o && o.active_faults > 0 && <span className="count">{o.active_faults}</span>}</>)}
+        <NavLink to="/more" className={moreActive ? 'active' : undefined}>{t('nav.more')}</NavLink>
         <ThemeCycleButton className="tab-theme" />
       </nav>
     </div>

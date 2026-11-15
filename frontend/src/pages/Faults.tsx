@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useDtcFrequency, useReadouts } from '../api/hooks'
@@ -36,7 +37,7 @@ export default function Faults() {
     <>
       <div className="page-head">
         <div>
-          <h1>Faults</h1>
+          <h1>{t('page.faults')}</h1>
           <p>Diagnostic trouble codes reported by the car's control units. “Active” means the latest read-out still lists it.</p>
         </div>
       </div>

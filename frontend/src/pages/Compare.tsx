@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useState, type ReactElement } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -319,7 +320,7 @@ export default function Compare() {
     <>
       <div className="page-head">
         <div>
-          <h1>Compare</h1>
+          <h1>{t('page.compare')}</h1>
         </div>
         <div className="chips" role="radiogroup" aria-label="What to compare">
           {(['cars', 'periods'] as const).map((m) => (

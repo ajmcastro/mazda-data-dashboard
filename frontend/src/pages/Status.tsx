@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAlarms, useCarWarnings, useOilService, useRefuels, useServiceLog, useTireForecast, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
@@ -83,7 +84,7 @@ export default function Status() {
     <>
       <div className="page-head">
         <div>
-          <h1>Status</h1>
+          <h1>{t('page.status')}</h1>
           <p>The car part by part, fuel, tires, trips and alarm history from the car's remote-status reports.</p>
         </div>
       </div>

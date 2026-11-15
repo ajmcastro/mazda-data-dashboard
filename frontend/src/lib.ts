@@ -1,22 +1,29 @@
 // Formatting helpers. Timestamps come from the API as ISO strings in UTC and render in
 // the browser's local timezone.
 
+import { locale } from './i18n'
 import { distanceText, fmtDistance } from './units'
 import type { CarWarningFlag, LatestStatus, OilService, TireReading, WarningFlag, WarningFlagEpisode } from './api/types'
 
 const num = (digits: number) =>
-  new Intl.NumberFormat('en-GB', { minimumFractionDigits: digits, maximumFractionDigits: digits })
+  new Intl.NumberFormat(locale(), { minimumFractionDigits: digits, maximumFractionDigits: digits })
 
-const formats = [num(0), num(1), num(2)]
+// one set of formatters per language (M62), made when first needed
+const made = new Map<string, Intl.NumberFormat[]>()
+function formatsNow(): Intl.NumberFormat[] {
+  const key = locale()
+  if (!made.has(key)) made.set(key, [num(0), num(1), num(2)])
+  return made.get(key)!
+}
 
 export function fmtNum(v: number | null | undefined, digits = 0, unit = ''): string {
   if (v === null || v === undefined || Number.isNaN(v)) return '—'
-  return formats[digits].format(v) + (unit ? ` ${unit}` : '')
+  return formatsNow()[digits].format(v) + (unit ? ` ${unit}` : '')
 }
 
 export function fmtDate(iso: string | null | undefined): string {
   if (!iso) return '—'
-  return new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString('en-GB', {
+  return new Date(iso.length === 10 ? `${iso}T00:00:00` : iso).toLocaleDateString(locale(), {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -24,12 +31,12 @@ export function fmtDate(iso: string | null | undefined): string {
 }
 
 export function fmtTick(v: number): string {
-  return new Date(v).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+  return new Date(v).toLocaleDateString(locale(), { day: '2-digit', month: 'short' })
 }
 
 export function fmtDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-GB', {
+  return new Date(iso).toLocaleString(locale(), {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -39,7 +46,7 @@ export function fmtDateTime(iso: string | null | undefined): string {
 
 export function fmtDateTimeSec(iso: string | null | undefined): string {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('en-GB', {
+  return new Date(iso).toLocaleString(locale(), {
     day: '2-digit',
     month: 'short',
     hour: '2-digit',
@@ -232,7 +239,7 @@ export function pickReport<T extends { report_id: string }>(
 /** "15 Oct 2026, 09:56 · 5,781 km · file name": how a report is named in lists. */
 export function reportLabel(r: { taken_at?: string | null; odometer_km?: number | null; source_file: string }): string {
   const when = r.taken_at
-    ? new Date(r.taken_at).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+    ? new Date(r.taken_at).toLocaleString(locale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
     : 'unknown date'
   return `${when} · ${fmtDistance(r.odometer_km)} · ${r.source_file}`
 }

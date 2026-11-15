@@ -1,3 +1,4 @@
+import { t } from '../i18n'
 import { useEffect, useState } from 'react'
 import {
   useAlerts, useCarWarnings, useDiagHistory, useDtcFrequency, useForecast, useFrameSummary, useOverview, useServiceLog,
@@ -109,7 +110,7 @@ export default function ReportPage() {
     <div className="report">
       <div className="page-head no-print">
         <div>
-          <h1>Report</h1>
+          <h1>{t('page.report')}</h1>
           <p>A page to print or save as a PDF for the workshop: what the car reported, in the period chosen above.</p>
         </div>
         <div className="controls">
