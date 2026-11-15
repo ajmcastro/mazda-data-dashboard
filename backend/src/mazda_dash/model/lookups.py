@@ -32,7 +32,8 @@ def _described(path: Path, with_severity: bool) -> list[tuple]:
     rows = []
     for key, v in _load(path).items():
         v = v or {}
-        unknown = set(v) - {"title", "severity", "category", "notes"}
+        # `source` (how you know) and `from` (a pack it was imported from, M61) are for people, not for the tables
+        unknown = set(v) - {"title", "severity", "category", "notes", "source", "from"}
         if unknown:
             raise ValueError(f"{path}: {key}: unknown field(s) {sorted(unknown)}")
         severity = v.get("severity", "unknown")

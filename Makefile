@@ -1,4 +1,4 @@
-.PHONY: models migrate-models compat setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
+.PHONY: models migrate-models codes-export codes-import compat setup profile ingest model timezone unmapped screenshots alerts reset-db api web dev types test lint format clean sample-data demo-ingest demo audit mobile-pack mobile-demo-pack mobile-install mobile-dev mobile-build mobile-golden mobile-golden-real mobile-test mobile-typecheck
 
 # ---- car models (PLAN.md M21-M28) ----
 # MODEL=cx60 acts on one model (ids are listed in config/models.yaml). Without it, ingest acts on every model and
@@ -18,6 +18,15 @@ migrate-models:
 	cd backend && uv run python -m mazda_dash.models migrate
 
 # which signals the views read are missing from a model's data, and which of its signals nothing reads yet
+# share what you learned about the codes (only described codes; no VIN, no counts, no dates) ...
+codes-export:
+	cd backend && uv run python -m mazda_dash.codepack export $(if $(MODEL),--model $(MODEL),)
+
+# ... and look at a file someone shared: lists new / same / differs and changes nothing unless you name entries,
+# e.g. `make codes-import MODEL=cx5 FILE=../cx5-codes.yaml ARGS="--add warnings:\$$4E9"` or ARGS=--add-new
+codes-import:
+	cd backend && uv run python -m mazda_dash.codepack import $(if $(MODEL),--model $(MODEL),) --file $(abspath $(FILE)) $(ARGS)
+
 compat:
 	cd backend && for m in $(LOADED); do uv run python -m mazda_dash.compat --model $$m || true; done
 

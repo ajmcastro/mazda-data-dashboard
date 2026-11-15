@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M60 built)
+## More value from the same data (M45–M62; M45–M61 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1385,10 +1385,19 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** frontend 10 in `car3d/profile.test.ts`, run for every shape (as long and as high as the car, inside its box, two wheels on the ground a wheelbase apart, closed outlines, one scale for several cars) — 405 in all.
 - **Checked by eye:** both pages on the Mac with the demo data (the CX-5 and the CX-60 each in its own shape). **Not done by eye:** the phone.
 
-### M61 — Code description packs
+### M61 — Code description packs ✅ done
 - **Export:** `make codes-export MODEL=<id>` and a button on the Unmapped codes panel write `<model>-codes.yaml`: only the entries that have a title, each with `source` (the owner's note of how they know) and the model's name and platform; **no VIN, no counts, no dates**. `make audit` checks an exported file for private values.
 - **Import:** `make codes-import MODEL=<id> FILE=…` and a page: shows, per code, "new", "same as yours" or "differs from yours", and adds only what the owner ticks, marking each added entry `from: <file>` so it can be told from their own. Never automatic, never across models without a warning ("this pack is for a CX-60; you are importing into a CX-5").
 - **Tests:** export leaves untitled codes out; import never overwrites silently; a pack for another model warns; the audit refuses a file with a VIN in it.
+
+**M61 as built.**
+- **Module and commands:** `backend/src/mazda_dash/codepack.py`, `make codes-export [MODEL=<id>]` and `make codes-import MODEL=<id> FILE=<file> [ARGS="--add kind:code ..." | ARGS=--add-new | ARGS="--replace kind:code"]`.
+- **Export** reads the model's description files only (never the data) and writes `<model>-codes.yaml`: `format`, the model's id, name and platform, and per kind (`warnings`, `dtcs`, `ecus`, `failure_types`, `warning_flags`) **only the entries that have a title**, each with a `source` (the entry's own `source`, else its `notes`, else "not stated"). No VIN, no counts, no dates. It **refuses to write** when a description holds anything that looks like a VIN or a value of the model's own exports.
+- **Import** first lists every entry of the pack as `new` (you have no title for it), `same` or `differs` (with yours beside it) and **changes nothing**. Entries are taken in only by name: `--add` / `--add-new` for new ones, `--replace` for ones that differ; a name in the wrong state, or not in the pack, stops the whole import before anything is written. Each entry written is marked `from: <file>`. A pack made for another model says so first. A pack that is malformed, has an unknown kind or field, or holds a VIN-like value is refused.
+- **The description files keep their shape:** `set_entry` replaces only the named code's own lines, in place, or appends; comments and every other entry stay as they were. The loader now accepts the two extra fields (`source`, `from`), which are for people and not loaded into the tables.
+- **Changed from the sketch:** command line only: no button on the Unmapped codes panel and no import page. Choosing entries one by one is a list-and-name task the terminal does well, and a page would have been a third kind of write endpoint for a rare task. `make audit` already covers an exported file left in the project (it checks every file that is not ignored for the private values of `data/`), so no separate audit step was added; the export's own refusal is the first check.
+- **Real data:** the author's CX-5 descriptions export 19 described codes, with nothing private in them (a test checks every model of the repository).
+- **Tests:** backend 20 in `test_codepack.py` (only described codes with a source, nothing about the car, a private value refused, nothing to share, new / same / differs, only named entries added and marked, nothing overwritten unnamed, another model, nine kinds of bad file, replacing in place, the command line, the repository's own descriptions) — 468 in all.
 
 ### M62 — A second language
 - **Mechanism:** a small catalogue (`frontend/src/i18n/en.ts`, `pt.ts`: typed keys, so a missing translation is a compile error), `t()` and plural helpers, the language chosen per device (`cx5.lang`, Auto follows the browser), numbers and dates through `Intl` in that language. No library, no outside request.

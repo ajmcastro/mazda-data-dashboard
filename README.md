@@ -434,6 +434,25 @@ the dates (oil change, end of the year, a tire reaching your pressure limit) as 
 open it to add them to your calendar; nothing is sent anywhere. The oil alert can also fire by date: add
 `days: 30` to `oil_change_due` in `alerts.yaml`.
 
+### Sharing code descriptions
+
+Mazda does not publish what its warning codes mean, so what you learn is worth sharing with another owner of the
+same model. `make codes-export` writes `<model>-codes.yaml` with **only the codes you described**, each with how
+you know (add `source: ...` to an entry; otherwise its notes are used). The file holds nothing about your car: no
+VIN, no counts, no dates, and the export refuses to write it if a description contains something that looks like one.
+
+To look at a file someone shared with you:
+
+```bash
+make codes-import MODEL=cx5 FILE=their-codes.yaml
+```
+
+It lists each code as *new* (you have no description), *same* or *differs*, and changes nothing. Take in what you
+choose by name, for example `ARGS="--add warnings:\$4E9 ecus:ADU"`, `ARGS=--add-new` (every code you have no
+description for) or `ARGS="--replace warnings:\$0F2"` for one that differs from yours. Each entry taken in is marked
+`from: <file>` in your description file so you can tell it from your own; then run `make model`. A file made for
+another model warns first: a code can mean something else on another car.
+
 ### Fault map (optional)
 
 The Faults page can show the car's control units on a plan of the car, lit when the latest read-out lists a fault of
@@ -628,6 +647,7 @@ Run them from the project folder. The first group is what you need to use the da
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
 | `make demo` | the same with the synthetic sample data (`make demo-ingest` only loads it) |
 | `make model` | reload each model's `config/models/<id>/codes/*.yaml` and `settings.yaml` and recreate the SQL views |
+| `make codes-export` / `make codes-import` | share the codes you described, or look at a file another owner shared (see [Sharing code descriptions](#sharing-code-descriptions)) |
 | `make timezone` | check `car_timezone` in `config/models/<id>/settings.yaml` against your data |
 | `make alerts` | evaluate `config/models/<id>/alerts.yaml` only |
 | `make unmapped` | list codes and flags in your data that have no description |
