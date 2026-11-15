@@ -174,6 +174,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Export
+         * @description Take Mazda's download (the zip, or one loose file) for this model: check it, store what is new in the
+         *     model's data folder, load it as `make ingest` does and say what changed (M53). The Mac only; refused in the
+         *     demo, with `MAZDA_READONLY`, for a file that is not an export or is about another car, and while another
+         *     load runs.
+         */
+        post: operations["import_export_api_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Imports
+         * @description The loads made from the dashboard, newest first (M53). The Mac only: the table is not in a pack.
+         */
+        get: operations["imports_api_imports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/service-log": {
         parameters: {
             query?: never;
@@ -1796,6 +1839,56 @@ export interface components {
             writable: boolean;
         };
         /**
+         * ImportSummary
+         * @description What one upload changed: the Mac only (the phone gets packs).
+         */
+        ImportSummary: {
+            /** Imported At */
+            imported_at: string;
+            /** Source */
+            source: string;
+            /** Files */
+            files: components["schemas"]["ImportedFile"][];
+            /** Rows New */
+            rows_new: components["schemas"]["ImportedRows"][];
+            /** Newest Day Before */
+            newest_day_before?: string | null;
+            /** Newest Day After */
+            newest_day_after?: string | null;
+            /** Km Since */
+            km_since?: number | null;
+            /** Faults Appeared */
+            faults_appeared: string[];
+            /** Faults Cleared */
+            faults_cleared: string[];
+            /** New Warning Codes */
+            new_warning_codes: string[];
+            /** New Alerts */
+            new_alerts: string[];
+            /** Open Alerts */
+            open_alerts: number;
+        };
+        /** ImportedFile */
+        ImportedFile: {
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string;
+            /** Status */
+            status: string;
+            /** Saved As */
+            saved_as?: string | null;
+        };
+        /** ImportedRows */
+        ImportedRows: {
+            /** Kind */
+            kind: string;
+            /** Label */
+            label: string;
+            /** Rows */
+            rows: number;
+        };
+        /**
          * InvalidSignal
          * @description A signal the car flagged Invalid at least once (the dashboard never trusts such a reading).
          */
@@ -2848,6 +2941,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Refuels"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_export_api_import_post: {
+        parameters: {
+            query: {
+                name: string;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/octet-stream": string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    imports_api_imports_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportSummary"][];
                 };
             };
             /** @description Validation Error */

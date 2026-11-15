@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview, useRefuels } from '../api/hooks'
+import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview, useRefuels, useImports, useWritable } from '../api/hooks'
 import { AheadPanel } from '../components/AheadPanel'
+import { SEEN_KEY, changedAnything, headline } from '../imports'
 import { lastFillUp } from '../refuels'
 import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
@@ -21,6 +23,23 @@ export default function OverviewPage() {
   const fuel = useFuelMonthly()
   const oil = oilTile(useOilService().data)
   const filled = lastFillUp(useRefuels().data)
+  // the newest load made from the Import page, shown until dismissed (the Mac only)
+  const lastImport = useImports(useWritable()).data?.[0]
+  const [seen, setSeen] = useState(() => {
+    try {
+      return localStorage.getItem(SEEN_KEY)
+    } catch {
+      return null
+    }
+  })
+  const dismiss = (at: string) => {
+    try {
+      localStorage.setItem(SEEN_KEY, at)
+    } catch {
+      /* private mode: dismissed for this visit only */
+    }
+    setSeen(at)
+  }
   const carWarning = carWarningHeadline(useCarWarnings().data?.flags)
   const o = overview.data
   const tireNote = tireMeasuredNote(o?.status)
@@ -42,6 +61,13 @@ export default function OverviewPage() {
         {o && (
           <>
             <div className="alerts">
+              {lastImport && changedAnything(lastImport) && lastImport.imported_at !== seen && (
+                <div className="alert-row ok">
+                  <b>{headline(lastImport)}</b>
+                  <RangeLink to="/import">What changed</RangeLink>
+                  <button type="button" className="when" onClick={() => dismiss(lastImport.imported_at)}>Dismiss</button>
+                </div>
+              )}
               {o.alerts_new > 0 && (
                 <RangeLink to="/alerts" className="alert-row warn">
                   <b>{o.alerts_new} new alert{o.alerts_new > 1 ? 's' : ''}</b>

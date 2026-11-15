@@ -618,6 +618,129 @@
         }
       }
     },
+    "/api/import": {
+      "post": {
+        "summary": "Import Export",
+        "description": "Take Mazda's download (the zip, or one loose file) for this model: check it, store what is new in the\nmodel's data folder, load it as `make ingest` does and say what changed (M53). The Mac only; refused in the\ndemo, with `MAZDA_READONLY`, for a file that is not an export or is about another car, and while another\nload runs.",
+        "operationId": "import_export_api_import_post",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/octet-stream": {
+              "schema": {
+                "type": "string",
+                "contentMediaType": "application/octet-stream",
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/imports": {
+      "get": {
+        "summary": "Imports",
+        "description": "The loads made from the dashboard, newest first (M53). The Mac only: the table is not in a pack.",
+        "operationId": "imports_api_imports_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportSummary"
+                  },
+                  "title": "Response Imports Api Imports Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/service-log": {
       "get": {
         "summary": "Get Service Log",
@@ -6629,6 +6752,168 @@
           "has_data"
         ],
         "title": "Health"
+      },
+      "ImportSummary": {
+        "properties": {
+          "imported_at": {
+            "type": "string",
+            "title": "Imported At"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/ImportedFile"
+            },
+            "type": "array",
+            "title": "Files"
+          },
+          "rows_new": {
+            "items": {
+              "$ref": "#/components/schemas/ImportedRows"
+            },
+            "type": "array",
+            "title": "Rows New"
+          },
+          "newest_day_before": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Day Before"
+          },
+          "newest_day_after": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newest Day After"
+          },
+          "km_since": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Since"
+          },
+          "faults_appeared": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Faults Appeared"
+          },
+          "faults_cleared": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Faults Cleared"
+          },
+          "new_warning_codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "New Warning Codes"
+          },
+          "new_alerts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "New Alerts"
+          },
+          "open_alerts": {
+            "type": "integer",
+            "title": "Open Alerts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "imported_at",
+          "source",
+          "files",
+          "rows_new",
+          "faults_appeared",
+          "faults_cleared",
+          "new_warning_codes",
+          "new_alerts",
+          "open_alerts"
+        ],
+        "title": "ImportSummary",
+        "description": "What one upload changed: the Mac only (the phone gets packs)."
+      },
+      "ImportedFile": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "saved_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Saved As"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "kind",
+          "status"
+        ],
+        "title": "ImportedFile"
+      },
+      "ImportedRows": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "rows": {
+            "type": "integer",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "label",
+          "rows"
+        ],
+        "title": "ImportedRows"
       },
       "InvalidSignal": {
         "properties": {

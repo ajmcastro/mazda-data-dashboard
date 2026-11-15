@@ -11,9 +11,10 @@ from pathlib import Path
 from typing import Literal
 
 import duckdb
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
 
 from ..forecast import FORECAST_SQL as PACE_SQL
+from ..importer import ImportBusy, ImportRefused, import_upload, past_imports
 from ..model.settings import add_service_entry, load_service_log
 from ..models import Model
 from ..tires import FORECAST_SQL, MIN_READINGS, MIN_SPAN_DAYS, WINDOW_DAYS
@@ -306,6 +307,34 @@ def fuel_refuels(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     """Fill-ups in the period (M47): rises of the fuel level between two status snapshots, with the litres
     and an estimated cost when the tank size and a price are set, and what the owner noted paying."""
     return refuels(con, rng)
+
+
+@app.post("/api/import", response_model=m.ImportSummary)
+def import_export(
+    name: str,
+    body: bytes = Body(media_type="application/octet-stream"),
+    model: Model = Selected,
+):
+    """Take Mazda's download (the zip, or one loose file) for this model: check it, store what is new in the
+    model's data folder, load it as `make ingest` does and say what changed (M53). The Mac only; refused in the
+    demo, with `MAZDA_READONLY`, for a file that is not an export or is about another car, and while another
+    load runs."""
+    if not writable():
+        raise HTTPException(
+            403, "This server is read-only (the demo, or MAZDA_READONLY is set)"
+        )
+    try:
+        return import_upload(model, name, body)
+    except ImportRefused as e:
+        raise HTTPException(422, str(e)) from e
+    except ImportBusy as e:
+        raise HTTPException(503, str(e)) from e
+
+
+@app.get("/api/imports", response_model=list[m.ImportSummary])
+def imports(con: duckdb.DuckDBPyConnection = Con):
+    """The loads made from the dashboard, newest first (M53). The Mac only: the table is not in a pack."""
+    return past_imports(con)
 
 
 @app.get("/api/service-log", response_model=m.ServiceLog)

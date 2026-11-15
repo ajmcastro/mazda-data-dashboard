@@ -1,6 +1,6 @@
 import { useEffect, type ReactNode } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { useOverview } from './api/hooks'
+import { useOverview, useWritable } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
 import { ThemeToggle } from './components/ThemeToggle'
 import { UnitsControl } from './components/UnitsControl'
@@ -18,6 +18,7 @@ import Faults from './pages/Faults'
 import Garage from './pages/Garage'
 import DataHealth from './pages/DataHealth'
 import DayPage from './pages/Day'
+import ImportPage from './pages/Import'
 import OverviewPage from './pages/Overview'
 import Status from './pages/Status'
 import Trends from './pages/Trends'
@@ -63,6 +64,7 @@ export default function App() {
     />
   )
   const [units] = useUnits()
+  const writable = useWritable()
   return (
     <div className="shell">
       <aside className="rail">
@@ -86,6 +88,7 @@ export default function App() {
           {withData >= 1 && nav('/garage', 'All cars')}
           {nav('/day', 'Day')}
           {nav('/health', 'Data health')}
+          {writable && nav('/import', 'Import')}
         </nav>
         <div className="rail-foot">
           <UnitsControl />
@@ -110,6 +113,7 @@ export default function App() {
             <Route path="/garage" element={<Garage />} />
             <Route path="/day" element={<DayPage />} />
             <Route path="/health" element={<DataHealth />} />
+            <Route path="/import" element={<ImportPage />} />
             <Route path="*" element={<div className="state">Page not found</div>} />
           </Routes>
         </ModelGate>

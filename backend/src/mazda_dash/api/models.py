@@ -536,6 +536,38 @@ class Refuels(BaseModel):
     unmatched: list[FuelPayment]
 
 
+class ImportedFile(BaseModel):
+    name: str
+    kind: str  # war, dtc-h, dtc-d, dtc-ssr, rts, vis, alt, diag
+    status: str  # added, or "already there" (the same content is in the folder)
+    saved_as: str | None = (
+        None  # the name in the data folder (a short hash is added when the name was taken)
+    )
+
+
+class ImportedRows(BaseModel):
+    kind: str
+    label: str
+    rows: int
+
+
+class ImportSummary(BaseModel):
+    """What one upload changed: the Mac only (the phone gets packs)."""
+
+    imported_at: str
+    source: str
+    files: list[ImportedFile]
+    rows_new: list[ImportedRows]  # only the kinds that gained rows
+    newest_day_before: str | None = None
+    newest_day_after: str | None = None
+    km_since: float | None = None  # the odometer now less before the load
+    faults_appeared: list[str]  # in the latest read-out now, not before
+    faults_cleared: list[str]
+    new_warning_codes: list[str]
+    new_alerts: list[str]  # their titles
+    open_alerts: int
+
+
 class Forecast(BaseModel):
     """What the recent pace says about the oil change and the year's distance. Everything is counted from
     `as_of`, the newest day with data, never from today."""

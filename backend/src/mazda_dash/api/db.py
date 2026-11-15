@@ -26,7 +26,14 @@ def get_con(
             503,
             f"Database {path} not found - run `make ingest MODEL={model.id}` first",
         )
-    con = duckdb.connect(str(path), read_only=True)
+    try:
+        con = duckdb.connect(str(path), read_only=True)
+    except (
+        duckdb.Error
+    ) as e:  # an import from the dashboard is writing it in this very process (M53)
+        raise HTTPException(
+            503, "Database is busy (a load is running) - try again in a moment"
+        ) from e
     try:
         yield con
     finally:
@@ -46,8 +53,8 @@ def get_rw_con(
     try:
         con = duckdb.connect(str(path))
     except (
-        duckdb.IOException
-    ) as e:  # another process (e.g. `make ingest`) holds the write lock
+        duckdb.Error
+    ) as e:  # another process (`make ingest`) or this server's own readers hold it
         raise HTTPException(
             503, "Database is busy (is `make ingest` running?) - try again"
         ) from e

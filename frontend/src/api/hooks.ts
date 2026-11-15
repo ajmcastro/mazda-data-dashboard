@@ -154,6 +154,35 @@ export const useOccupancy = () => {
   })
 }
 
+/** The loads made from the dashboard, newest first (M53; the Mac only). */
+export const useImports = (enabled = true) => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    enabled, // a car with no data yet has no database to ask
+    queryKey: ['imports', model],
+    queryFn: () => unwrap(client.GET('/api/imports', { params: { query: { model } } })),
+    retry: false,
+  })
+}
+
+/** Send one file of Mazda's download to the model on screen (M53; the Mac only). Everything is read again after. */
+export const useImportFile = () => {
+  const queryClient = useQueryClient()
+  const { model } = useRangeQuery()
+  return useMutation({
+    mutationFn: (file: File) =>
+      unwrap(
+        client.POST('/api/import', {
+          params: { query: { name: file.name, model } },
+          body: file as unknown as string, // sent as it is: the route takes the raw bytes
+          bodySerializer: (body) => body as unknown as BodyInit,
+          headers: { 'Content-Type': 'application/octet-stream' },
+        }),
+      ),
+    onSuccess: () => void queryClient.invalidateQueries(),
+  })
+}
+
 /** The oil change and the year's distance at the recent pace (M52). A state counted from the newest data. */
 export const useForecast = () => {
   const { model } = useRangeQuery()

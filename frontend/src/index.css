@@ -455,6 +455,12 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* the import page (M53) */
+.drop-zone { border: 1.5px dashed var(--line); border-radius: 12px; padding: 26px 18px; text-align: center; }
+.drop-zone.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop-zone p { margin: 0 0 10px; }
+.import-result > div { margin-top: 2px; }
+
 /* the service log (M50) */
 .service-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; margin: 0 0 14px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
 .service-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
