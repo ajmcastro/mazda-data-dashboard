@@ -473,6 +473,8 @@ OCCUPANCY_COUNTS = """
     count(*) FILTER (WHERE driver_belt = 1) AS belted_readings,
     count(*) FILTER (WHERE driver_belt = 1 AND passenger_belt = 1) AS passenger_readings,
     count(*) FILTER (WHERE driver_belt = 1 AND (rear_left_belt = 1 OR rear_right_belt = 1)) AS rear_readings,
+    count(*) FILTER (WHERE driver_belt = 1 AND rear_left_belt = 1) AS rear_left_readings,
+    count(*) FILTER (WHERE driver_belt = 1 AND rear_right_belt = 1) AS rear_right_readings,
     count(*) FILTER (WHERE driver_belt = 1 AND coalesce(passenger_belt, 0) = 0
                      AND coalesce(rear_left_belt, 0) = 0 AND coalesce(rear_right_belt, 0) = 0)
         AS driver_only_readings"""

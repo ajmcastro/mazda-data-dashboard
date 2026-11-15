@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M56 built)
+## More value from the same data (M45–M62; M45–M57 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1334,9 +1334,16 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** frontend 5 more in `car.test.ts` (the report asked for in time order, the edges, the door report made by then, an old and a fresh tire reading, what is left out) — 379 in all.
 - **Checked by eye:** the slider on the Mac with the demo data (report 61 of 195, the note, back to the newest). **Not done by eye:** Play, and the phone.
 
-### M57 — Who rides, on the seats
+### M57 — Who rides, on the seats ✅ done
 - A cut-away view (the roof and glass hidden) with four seats, each shaded by the share of the driver-belted snapshots in which its belt was buckled (the M37 answer, extended per seat: `GET /api/status/occupancy` gains `rear_left_readings` and `rear_right_readings`, with its twin and goldens). Hidden for a car that sends no belts; the same hedge as the panel ("snapshots, not trips; belts only").
 - **Tests:** per-seat counts on the CX-60 sample; the CX-5 sample (no belts) shows no button.
+
+**M57 as built.**
+- **Answer:** `GET /api/status/occupancy` gained `rear_left_readings` and `rear_right_readings` (snapshots with the driver belted in which that rear belt was buckled), in Python and in the phone engine, with the goldens re-recorded. An answer from before has no such fields and the seats then read 0.
+- **Drawing, changed from the sketch:** the seats are a **plan view of the cabin** in the Who rides panel (an SVG: the cabin from above, front at the top, four seats, each shaded by its share and labelled with it), not a cut-away of the 3D scene. Hiding the roof and glass of the 3D car and adding seat meshes would have added a second mode to `scene.ts` for a picture a plan view shows more clearly, and it would not have worked where WebGL is missing. `seats(o, steering)` in `frontend/src/occupancy.ts` places the driver on the side the model's `steering` says; "rear left" and "rear right" are the car's own.
+- **Hidden** for a car that sends no belts (the whole panel, as before); the note adds what is not seen (a third row, a child seat, a passenger who does not buckle up).
+- **Tests:** backend, the per-seat counts against the raw rows on the CX-60 sample; frontend 4 more in `occupancy.test.ts` (383 in all); the phone contract (1,087).
+- **Checked by eye:** the CX-60 demo on the Mac (driver the base, front passenger 27%, rear left 13%, rear right 10%); the CX-5 demo shows no seats.
 
 ### M58 — Freeze-frame scene
 - From a fault's detail: "Show on the car" turns the 3D view to that fault: the battery (voltage and charge), the engine (coolant temperature) and the dashboard (speed) labelled with the fault's range and the baseline's (the M36 summary), a part marked only where M36 marks a position. A caption repeats M36's caution. New anchor: the battery (placed generically under the hood; the label says "battery", not where it is).

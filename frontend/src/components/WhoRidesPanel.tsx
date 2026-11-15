@@ -1,10 +1,31 @@
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useOccupancy } from '../api/hooks'
-import { OCCUPANCY_NOTE, monthBars, shares, summaryLine } from '../occupancy'
+import { useCurrentModel } from '../model'
+import { OCCUPANCY_NOTE, SEATS_NOTE, monthBars, seatShade, seats, shares, summaryLine, type Seat } from '../occupancy'
 import { ANIMATE } from '../lib'
 import { Panel, QueryState } from './ui'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
+
+/** The cabin from above, front at the top: four seats, each shaded by how often its belt was buckled (M57). */
+function SeatMap({ list }: { list: Seat[] }) {
+  const [w, h, seat] = [150, 190, 46]
+  const x = (s: Seat) => 22 + s.column * (w - 44 - seat)
+  const y = (s: Seat) => 44 + s.row * 70
+  return (
+    <svg className="seat-map" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Seats from above: ${list.map((s) => `${s.label} ${s.pct ?? 0}%`).join(', ')}`}>
+      <rect x={6} y={6} width={w - 12} height={h - 12} rx={34} className="seat-map-body" />
+      <path d={`M 26 34 Q ${w / 2} 14 ${w - 26} 34`} className="seat-map-glass" />
+      {list.map((s) => (
+        <g key={s.id}>
+          <title>{`${s.label}: belted in ${s.pct ?? 0}% (${s.readings} snapshots)`}</title>
+          <rect x={x(s)} y={y(s)} width={seat} height={seat + 6} rx={9} className="seat-map-seat" style={{ fillOpacity: seatShade(s) }} />
+          <text x={x(s) + seat / 2} y={y(s) + seat / 2 + 8} textAnchor="middle" className="seat-map-pct">{s.pct ?? 0}%</text>
+        </g>
+      ))}
+    </svg>
+  )
+}
 
 /** Who rides, from the seat belts (PLAN.md M37). Hidden when the car does not send the belts. */
 export function WhoRidesPanel() {
@@ -13,6 +34,8 @@ export function WhoRidesPanel() {
   if (o && !o.available) return null
   const bars = monthBars(o)
   const line = summaryLine(o)
+  const steering = useCurrentModel().model?.body?.steering === 'right' ? 'right' : 'left'
+  const seatList = seats(o, steering)
   return (
     <Panel title="Who rides" hint="from the seat belts">
       <QueryState query={occupancy}>
@@ -61,7 +84,20 @@ export function WhoRidesPanel() {
                 </ResponsiveContainer>
               </div>
             </div>
-            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{OCCUPANCY_NOTE}</p>
+            {seatList.length > 0 && (
+              <div className="seat-map-wrap">
+                <SeatMap list={seatList} />
+                <dl className="kv">
+                  {seatList.map((s) => (
+                    <div key={s.id} style={{ display: 'contents' }}>
+                      <dt>{s.label}</dt>
+                      <dd>{s.id === 'driver' ? 'the base' : `${s.pct ?? 0}%`} <span className="muted">({s.readings})</span></dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{OCCUPANCY_NOTE}{seatList.length > 0 ? ` ${SEATS_NOTE}` : ''}</p>
           </>
         )}
       </QueryState>

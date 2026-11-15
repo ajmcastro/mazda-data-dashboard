@@ -57,3 +57,36 @@ export function summaryLine(o: Occupancy | undefined): string | null {
 export const OCCUPANCY_NOTE =
   'Counted over status snapshots with the driver’s belt buckled, not over trips, and from seat belts only: a passenger ' +
   'who does not buckle up is not seen. The front and rear shares can overlap.'
+
+// ------------------------------------------------------------------ the seats (M57)
+
+export type SeatId = 'driver' | 'passenger' | 'rear_left' | 'rear_right'
+
+export interface Seat {
+  id: SeatId
+  label: string
+  /** where it is drawn in a plan view of the car, front at the top: 0 = left column, 1 = right; row 0 = front */
+  column: 0 | 1
+  row: 0 | 1
+  /** share of the snapshots with the driver belted in which this seat's belt was buckled; the driver's is the base */
+  pct: number | null
+  readings: number
+}
+
+/** The four seats with their share. The driver sits on the side the model says (`steering`); the data's "rear left" and "rear right" are the car's own left and right. */
+export function seats(o: Occupancy | undefined, steering: 'left' | 'right' = 'left'): Seat[] {
+  if (!o || !o.available || o.belted_readings === 0) return []
+  const driverColumn = steering === 'right' ? 1 : 0
+  const share = (n: number) => pct(n, o.belted_readings)
+  return [
+    { id: 'driver', label: 'Driver', column: driverColumn, row: 0, pct: 100, readings: o.belted_readings },
+    { id: 'passenger', label: 'Front passenger', column: driverColumn === 0 ? 1 : 0, row: 0, pct: share(o.passenger_readings), readings: o.passenger_readings },
+    { id: 'rear_left', label: 'Rear left', column: 0, row: 1, pct: share(o.rear_left_readings ?? 0), readings: o.rear_left_readings ?? 0 },
+    { id: 'rear_right', label: 'Rear right', column: 1, row: 1, pct: share(o.rear_right_readings ?? 0), readings: o.rear_right_readings ?? 0 },
+  ]
+}
+
+/** How strongly a seat is shaded (0 to 1): its share, with a floor so an empty seat is still drawn. */
+export const seatShade = (s: Pick<Seat, 'pct'>): number => 0.08 + 0.92 * ((s.pct ?? 0) / 100)
+
+export const SEATS_NOTE = 'Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row, a child seat and a passenger who does not buckle up are not seen.'

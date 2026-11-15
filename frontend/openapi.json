@@ -7579,6 +7579,16 @@
             "type": "integer",
             "title": "Rear Readings"
           },
+          "rear_left_readings": {
+            "type": "integer",
+            "title": "Rear Left Readings",
+            "default": 0
+          },
+          "rear_right_readings": {
+            "type": "integer",
+            "title": "Rear Right Readings",
+            "default": 0
+          },
           "driver_only_readings": {
             "type": "integer",
             "title": "Driver Only Readings"

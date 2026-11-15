@@ -60,6 +60,10 @@ def test_the_counts_equal_a_hand_count_of_the_raw_signals(dbs):
     assert o["belted_readings"] == len(belted)
     assert o["passenger_readings"] == len([r for r in belted if r[2] == 1])
     assert o["rear_readings"] == len([r for r in belted if r[3] == 1 or r[4] == 1])
+    # each rear seat on its own (M57); together they are at least the "a rear seat" count
+    assert o["rear_left_readings"] == len([r for r in belted if r[3] == 1])
+    assert o["rear_right_readings"] == len([r for r in belted if r[4] == 1])
+    assert o["rear_left_readings"] + o["rear_right_readings"] >= o["rear_readings"] > 0
     assert o["driver_only_readings"] == len(
         [r for r in belted if not (r[2] or r[3] or r[4])]
     )

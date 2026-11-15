@@ -2063,6 +2063,16 @@ export interface components {
             passenger_readings: number;
             /** Rear Readings */
             rear_readings: number;
+            /**
+             * Rear Left Readings
+             * @default 0
+             */
+            rear_left_readings: number;
+            /**
+             * Rear Right Readings
+             * @default 0
+             */
+            rear_right_readings: number;
             /** Driver Only Readings */
             driver_only_readings: number;
             /** Months */

@@ -485,6 +485,10 @@ class Occupancy(BaseModel):
     )
     passenger_readings: int  # belted readings with the front passenger's belt buckled
     rear_readings: int  # belted readings with a rear belt (left or right) buckled
+    rear_left_readings: int = (
+        0  # belted readings with that rear belt buckled (M57: the seats)
+    )
+    rear_right_readings: int = 0
     driver_only_readings: int  # belted readings with no other belt buckled
     months: list[OccupancyMonth]
 
