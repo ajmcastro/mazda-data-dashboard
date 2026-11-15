@@ -1,0 +1,4 @@
+# What was done to the car (the dashboard's service log). One line per entry:
+#   - {date: 2026-09-14, kind: oil_change, note: "Oil and filter at the dealer", odometer_km: 4310}
+# kind is one of: oil_change, tires, service, software, repair, other. odometer_km is optional. Then run `make model`.
+- {date: 2026-10-15, kind: service, note: "SSR update software to enable OTA comms and solve other issues", odometer_km: 5781}
