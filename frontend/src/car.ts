@@ -178,9 +178,13 @@ export function carState(
   door: DoorPoint | undefined,
   oil: OilService | undefined,
   carWarnings: CarWarnings | undefined,
+  /** notes to add to parts by id (the tire leak forecast, M51): text only, a note never changes a state */
+  extraNotes: Record<string, string> = {},
 ): CarState {
   const flags = new Map((carWarnings?.has_data ? carWarnings.flags : []).map((f) => [f.flag, f]))
-  const parts = [...wheels(overview, flags), ...doors(door), fuel(overview), engine(oil, flags), dash(overview, flags)]
+  const parts = [...wheels(overview, flags), ...doors(door), fuel(overview), engine(oil, flags), dash(overview, flags)].map((p) =>
+    extraNotes[p.id] && p.state !== 'absent' ? { ...p, notes: [...p.notes, extraNotes[p.id]] } : p,
+  )
   return {
     parts,
     hasData: parts.some((p) => p.state !== 'absent'),

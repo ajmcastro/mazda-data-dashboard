@@ -49,6 +49,14 @@ class LowTirePressure(Rule):
     min_kpa: float = Field(200, gt=0)
 
 
+class TireLeakForecast(Rule):
+    """Raised once per wheel when the leak forecast (M51) says it reaches the limit within `days`. Off by
+    default: `low_tire_pressure` and the car's own flag already fire when the pressure IS low."""
+
+    enabled: bool = False
+    days: int = Field(14, ge=1, le=365)
+
+
 class LowBatteryFrame(Rule):
     min_voltage: float = Field(12.0, gt=0)
 
@@ -121,6 +129,7 @@ class Rules(_Strict):
     high_consumption: HighConsumption = HighConsumption()
     low_fuel: LowFuel = LowFuel()
     low_tire_pressure: LowTirePressure = LowTirePressure()
+    tire_leak_forecast: TireLeakForecast = TireLeakForecast()
     low_battery_frame: LowBatteryFrame = LowBatteryFrame()
     data_gap: DataGap = DataGap()
     oil_change_due: OilChangeDue = OilChangeDue()

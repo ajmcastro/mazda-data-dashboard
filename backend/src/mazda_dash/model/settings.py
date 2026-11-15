@@ -287,6 +287,19 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
     if hours <= 0:
         raise ValueError(f"{path}: tire_stale_hours must be a number above 0")
     values["tire_stale_hours"] = f"{hours:g}"
+    # the tire pressure limit of the model's alert rules (alerts.yaml next to the settings; 200 without one),
+    # kept here so the views' readers and the phone's pack have it: the leak forecast (M51) aims at it
+    from ..alerts.config import load_config
+
+    try:
+        alerts = load_config(
+            path.with_name("alerts.yaml") if path is not None else None
+        )
+    except (
+        ValueError
+    ):  # a broken alerts file is reported by `make alerts`, not by loading the settings
+        alerts = load_config(None)
+    values["tire_limit_kpa"] = f"{alerts.rules.low_tire_pressure.min_kpa:g}"
     if prices:
         values["fuel_currency"] = data["fuel_currency"]
     tank = _number(path, data, "tank_litres", 20, 200, "the size of the fuel tank")

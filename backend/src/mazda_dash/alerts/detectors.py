@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import duckdb
 
+from ..tires import FORECAST_SQL
 from .config import AlertsConfig
 from .store import Candidate
 
@@ -220,6 +221,44 @@ def low_fuel(ctx: Context) -> list[Candidate]:
     ]
 
 
+WHEEL_NAMES = {
+    "fl": "front left",
+    "fr": "front right",
+    "rl": "rear left",
+    "rr": "rear right",
+}
+
+
+def tire_leak_forecast(ctx: Context) -> list[Candidate]:
+    """A wheel losing pressure against the other three that reaches the limit within `days` (M51): once per
+    wheel and forecast date's week, so a forecast that keeps moving does not raise an alert a day."""
+    rule = ctx.cfg.rules.tire_leak_forecast
+    limit = ctx.cfg.rules.low_tire_pressure.min_kpa
+    cur = ctx.con.execute(FORECAST_SQL, [limit])
+    names = [d[0] for d in cur.description]
+    out = []
+    for row in cur.fetchall():
+        r = dict(zip(names, row, strict=True))
+        if not r["losing"] or r["days_left"] is None or r["days_left"] > rule.days:
+            continue
+        wheel = WHEEL_NAMES[r["wheel"]]
+        out.append(
+            Candidate(
+                "tire_leak_forecast",
+                f"tire_leak_forecast:{r['wheel']}:{_stamp(r['refilled_at'] or datetime.min)}",
+                rule.severity,
+                f"Tire losing pressure ({wheel}): about {r['days_left']} days to the limit",
+                f"The {wheel} tire is losing about {-r['kpa_per_week']:g} kPa a week against the other three. "
+                f"At this rate it reaches your {limit:g} kPa limit around {r['reaches_limit_on']} "
+                f"(it read {r['current_kpa']:g} kPa; based on {r['measurements']} measurements over "
+                f"{r['span_days']:g} days).",
+                r["last_at"],
+                "/status",
+            )
+        )
+    return out
+
+
 def low_tire_pressure(ctx: Context) -> list[Candidate]:
     rule = ctx.cfg.rules.low_tire_pressure
     # keyed on when the car MEASURED the pressure (v_tire_readings), so one low reading that appears in
@@ -405,6 +444,7 @@ DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "high_consumption": high_consumption,
     "low_fuel": low_fuel,
     "low_tire_pressure": low_tire_pressure,
+    "tire_leak_forecast": tire_leak_forecast,
     "low_battery_frame": low_battery_frame,
     "data_gap": data_gap,
     "oil_change_due": oil_change_due,

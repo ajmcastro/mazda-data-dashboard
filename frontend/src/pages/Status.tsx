@@ -1,10 +1,11 @@
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useCarWarnings, useOilService, useRefuels, useServiceLog, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
+import { useAlarms, useCarWarnings, useOilService, useRefuels, useServiceLog, useTireForecast, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
 import { CarPanel } from '../components/CarPanel'
 import { FillUpsPanel } from '../components/FillUpsPanel'
 import { ServicePanel } from '../components/ServicePanel'
 import { extent, markers } from '../service'
+import { forecastBasis, forecastLines } from '../tires'
 import { WarningLamps } from '../components/WarningLamps'
 import { WhenPanel } from '../components/WhenPanel'
 import { WhoRidesPanel } from '../components/WhoRidesPanel'
@@ -31,6 +32,7 @@ export default function Status() {
   const oil = useOilService()
   const carWarnings = useCarWarnings()
   const tires = useTires()
+  const forecast = useTireForecast().data
   // what the owner noted in the service log, marked on the time charts
   const service = useServiceLog().data?.entries
   // the clear fill-ups of the period, marked on the fuel chart at the report that first showed them
@@ -131,6 +133,10 @@ export default function Status() {
               </LineChart>
             </ResponsiveContainer>
             {tireNote && <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tireNote}</p>}
+            {forecastLines(forecast).map((line) => (
+              <p key={line} style={{ margin: '8px 0 0' }}>{line}</p>
+            ))}
+            {forecast && forecastLines(forecast).length > 0 && <p className="muted note">{forecastBasis(forecast)}</p>}
           </QueryState>
         </Panel>
       </div>

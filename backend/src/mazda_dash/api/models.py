@@ -532,6 +532,35 @@ class Refuels(BaseModel):
     unmatched: list[FuelPayment]
 
 
+class WheelForecast(BaseModel):
+    wheel: str  # fl, fr, rl, rr
+    measurements: int  # in the window, since a refill if there was one
+    span_days: float
+    current_kpa: float | None = None  # the wheel's newest measurement
+    last_at: datetime | None = None
+    refilled_at: datetime | None = None  # the series restarts at a refill
+    enough: bool  # enough measurements over enough days for a rate
+    kpa_per_week: float | None = (
+        None  # against the mean of the other three; negative = losing
+    )
+    losing: bool
+    below_limit: bool  # losing and already at or under the limit
+    days_left: int | None = (
+        None  # to the limit at this rate; None when it is far or not losing
+    )
+    reaches_limit_on: str | None = None  # YYYY-MM-DD
+
+
+class TireForecast(BaseModel):
+    limit_kpa: float  # the low-pressure alert's limit (alerts.yaml)
+    window_days: int
+    min_measurements: int
+    min_span_days: int
+    wheels: list[
+        WheelForecast
+    ]  # always in the order fl, fr, rl, rr; empty without measurements
+
+
 class ServiceEntry(BaseModel):
     date: str  # the car's local day, YYYY-MM-DD
     kind: str  # oil_change, tires, service, software, repair, other

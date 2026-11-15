@@ -2527,6 +2527,55 @@
         }
       }
     },
+    "/api/status/tire-forecast": {
+      "get": {
+        "summary": "Tire Forecast",
+        "description": "Per wheel, whether it is losing pressure against the other three and when it reaches the limit of the\nlow-pressure alert at that rate (M51). A state over the newest measurements, so it ignores the period.",
+        "operationId": "tire_forecast_api_status_tire_forecast_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TireForecast"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/maintenance/oil": {
       "get": {
         "summary": "Maintenance Oil",
@@ -7992,6 +8041,42 @@
         ],
         "title": "StatusPoint"
       },
+      "TireForecast": {
+        "properties": {
+          "limit_kpa": {
+            "type": "number",
+            "title": "Limit Kpa"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "min_measurements": {
+            "type": "integer",
+            "title": "Min Measurements"
+          },
+          "min_span_days": {
+            "type": "integer",
+            "title": "Min Span Days"
+          },
+          "wheels": {
+            "items": {
+              "$ref": "#/components/schemas/WheelForecast"
+            },
+            "type": "array",
+            "title": "Wheels"
+          }
+        },
+        "type": "object",
+        "required": [
+          "limit_kpa",
+          "window_days",
+          "min_measurements",
+          "min_span_days",
+          "wheels"
+        ],
+        "title": "TireForecast"
+      },
       "TireReading": {
         "properties": {
           "reading_at": {
@@ -8656,6 +8741,112 @@
           "items"
         ],
         "title": "WarningPage"
+      },
+      "WheelForecast": {
+        "properties": {
+          "wheel": {
+            "type": "string",
+            "title": "Wheel"
+          },
+          "measurements": {
+            "type": "integer",
+            "title": "Measurements"
+          },
+          "span_days": {
+            "type": "number",
+            "title": "Span Days"
+          },
+          "current_kpa": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Kpa"
+          },
+          "last_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last At"
+          },
+          "refilled_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refilled At"
+          },
+          "enough": {
+            "type": "boolean",
+            "title": "Enough"
+          },
+          "kpa_per_week": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kpa Per Week"
+          },
+          "losing": {
+            "type": "boolean",
+            "title": "Losing"
+          },
+          "below_limit": {
+            "type": "boolean",
+            "title": "Below Limit"
+          },
+          "days_left": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Left"
+          },
+          "reaches_limit_on": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reaches Limit On"
+          }
+        },
+        "type": "object",
+        "required": [
+          "wheel",
+          "measurements",
+          "span_days",
+          "enough",
+          "losing",
+          "below_limit"
+        ],
+        "title": "WheelForecast"
       }
     }
   }

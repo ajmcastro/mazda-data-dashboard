@@ -1,5 +1,6 @@
 import { Component, lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
-import { useCarWarnings, useDoors, useOilService, useOverview } from '../api/hooks'
+import { useCarWarnings, useDoors, useOilService, useOverview, useTireForecast } from '../api/hooks'
+import { notesByPart } from '../tires'
 import {
   CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge,
   type CarState, type CarView, type PartGroup,
@@ -78,11 +79,12 @@ export function CarPanel() {
   const doors = useDoors(1)
   const oil = useOilService()
   const carWarnings = useCarWarnings()
+  const forecast = useTireForecast()
   // the overview and the doors carry the figures; the oil countdown and the flags are extras a car may lack,
   // so the panel does not wait for them and a failure of theirs does not hide the rest
   const query = overview.isError || !doors.isError ? overview : doors
   const pending = overview.isPending || doors.isPending
-  const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data)
+  const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notesByPart(forecast.data))
   // the model's own dimensions and steering side (model.yaml `body:`); none = the generic car
   const modelBody = useCurrentModel().model?.body
   const body = useMemo(() => bodyOfModel(modelBody), [modelBody])

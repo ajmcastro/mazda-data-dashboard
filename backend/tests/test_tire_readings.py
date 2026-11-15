@@ -161,6 +161,7 @@ def test_settings_are_validated(tmp_path):
         "car_timezone": "UTC",
         "tire_stale_hours": "6",
         "refuel_min_points": "15",
+        "tire_limit_kpa": "200",
     }
 
 

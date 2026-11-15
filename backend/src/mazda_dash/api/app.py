@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query
 
 from ..model.settings import add_service_entry, load_service_log
 from ..models import Model
+from ..tires import FORECAST_SQL, MIN_READINGS, MIN_SPAN_DAYS, WINDOW_DAYS
 from . import models as m
 from .dates import DateRange, date_range
 from .day import day
@@ -674,6 +675,24 @@ def acknowledge(alert_id: int, con: duckdb.DuckDBPyConnection = RwCon):
 
 
 # ---------------------------------------------------------------- maintenance
+
+
+@app.get("/api/status/tire-forecast", response_model=m.TireForecast)
+def tire_forecast(con: duckdb.DuckDBPyConnection = Con):
+    """Per wheel, whether it is losing pressure against the other three and when it reaches the limit of the
+    low-pressure alert at that rate (M51). A state over the newest measurements, so it ignores the period."""
+    limit = one(
+        con,
+        "SELECT coalesce(try_cast(max(value) FILTER (WHERE key = 'tire_limit_kpa') AS DOUBLE), 200) AS v "
+        "FROM ref_settings",
+    )["v"]
+    return m.TireForecast(
+        limit_kpa=limit,
+        window_days=WINDOW_DAYS,
+        min_measurements=MIN_READINGS,
+        min_span_days=MIN_SPAN_DAYS,
+        wheels=rows(con, FORECAST_SQL, [limit]),
+    )
 
 
 @app.get("/api/maintenance/oil", response_model=m.OilService)

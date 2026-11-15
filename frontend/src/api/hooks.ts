@@ -154,6 +154,15 @@ export const useOccupancy = () => {
   })
 }
 
+/** Per wheel, whether it is losing pressure against the others and when it reaches the limit (M51). A state. */
+export const useTireForecast = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['tire-forecast', model],
+    queryFn: () => unwrap(client.GET('/api/status/tire-forecast', { params: { query: { model } } })),
+  })
+}
+
 /** The service log: what the owner noted and what the data hints at (M50). A state: no period. */
 export const useServiceLog = () => {
   const { model } = useRangeQuery()

@@ -584,6 +584,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status/tire-forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tire Forecast
+         * @description Per wheel, whether it is losing pressure against the other three and when it reaches the limit of the
+         *     low-pressure alert at that rate (M51). A state over the newest measurements, so it ignores the period.
+         */
+        get: operations["tire_forecast_api_status_tire_forecast_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/maintenance/oil": {
         parameters: {
             query?: never;
@@ -2186,6 +2207,19 @@ export interface components {
             /** Tire Rr Kpa */
             tire_rr_kpa?: number | null;
         };
+        /** TireForecast */
+        TireForecast: {
+            /** Limit Kpa */
+            limit_kpa: number;
+            /** Window Days */
+            window_days: number;
+            /** Min Measurements */
+            min_measurements: number;
+            /** Min Span Days */
+            min_span_days: number;
+            /** Wheels */
+            wheels: components["schemas"]["WheelForecast"][];
+        };
         /**
          * TireReading
          * @description One tire-pressure MEASUREMENT (snapshots that repeat it are folded into it).
@@ -2426,6 +2460,33 @@ export interface components {
             total: number;
             /** Items */
             items: components["schemas"]["WarningEvent"][];
+        };
+        /** WheelForecast */
+        WheelForecast: {
+            /** Wheel */
+            wheel: string;
+            /** Measurements */
+            measurements: number;
+            /** Span Days */
+            span_days: number;
+            /** Current Kpa */
+            current_kpa?: number | null;
+            /** Last At */
+            last_at?: string | null;
+            /** Refilled At */
+            refilled_at?: string | null;
+            /** Enough */
+            enough: boolean;
+            /** Kpa Per Week */
+            kpa_per_week?: number | null;
+            /** Losing */
+            losing: boolean;
+            /** Below Limit */
+            below_limit: boolean;
+            /** Days Left */
+            days_left?: number | null;
+            /** Reaches Limit On */
+            reaches_limit_on?: string | null;
         };
     };
     responses: never;
@@ -3533,6 +3594,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Alert"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tire_forecast_api_status_tire_forecast_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TireForecast"];
                 };
             };
             /** @description Validation Error */

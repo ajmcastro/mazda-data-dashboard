@@ -39,6 +39,10 @@ export const REFUEL = [
   'payments',
 ]
 export const FUEL_PAYMENT = ['paid_on', 'paid', 'litres']
+export const WHEEL_FORECAST = [
+  'wheel', 'measurements', 'span_days', 'current_kpa', 'last_at', 'refilled_at', 'enough', 'kpa_per_week', 'losing',
+  'below_limit', 'days_left', 'reaches_limit_on',
+]
 export const SERVICE_ENTRY = ['date', 'kind', 'note', 'odometer_km']
 export const SERVICE_SUGGESTION = ['kind', 'reason', 'date', 'odometer_km']
 export const DAY_ENTRY = [
