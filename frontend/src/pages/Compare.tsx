@@ -17,6 +17,7 @@ import {
 } from '../compare'
 import { Panel } from '../components/ui'
 import { ANIMATE, fmtNum, isPageHidden, shortModelName } from '../lib'
+import { CarProfileBox } from '../components/CarProfileBox'
 import { useCurrentModel } from '../model'
 import ComparePeriods from './ComparePeriods'
 import { METRICS, currencyOf, digitsFor, metricValue, monthLabel, monthShort, unitFor, unitLabel, type MetricDef } from '../trends'
@@ -254,6 +255,19 @@ function CarsCompare() {
         <div className="state error" role="alert">{error.message}</div>
       ) : (
         <>
+          {a && b && (
+            <div className="car-profile-pair">
+              {[a, b].map((car) => (
+                <figure key={car.id}>
+                  <CarProfileBox body={car.body} others={[a.body, b.body]} name={car.name} />
+                  <figcaption className="muted">
+                    {shortModelName(car.name)}
+                    {car.body?.length_mm ? ` · ${(car.body.length_mm / 1000).toFixed(2)} m long` : ''}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          )}
           <div className="alert-row" style={{ marginBottom: 14 }}>
             <b>{describeBasis(aligned, basis, includePartial)}</b>
             <span className="muted">

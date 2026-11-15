@@ -1,5 +1,6 @@
 import { useGarageOf } from '../api/hooks'
-import type { Garage as GarageCard } from '../api/types'
+import type { Garage as GarageCard, ModelBody } from '../api/types'
+import { CarProfileBox } from '../components/CarProfileBox'
 import { Panel } from '../components/ui'
 import { FUEL_CAUTION, alertsLabel, costBlock, faultsLabel, fuelBlock, oilLine, staleNote } from '../garage'
 import { oilWhen } from '../forecast'
@@ -7,7 +8,7 @@ import { fmtAgo, fmtDate, fmtNum } from '../lib'
 import { distanceLabel, fmtDistance } from '../units'
 import { useCurrentModel, useSwitchModel } from '../model'
 
-type Car = { id: string; name: string; platform?: string | null }
+type Car = { id: string; name: string; platform?: string | null; body?: ModelBody | null }
 
 function Figure({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -40,6 +41,7 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
         <div className="state">{query.isError ? (query.error as Error).message : 'No data for this car yet.'}</div>
       ) : (
         <>
+          <CarProfileBox body={car.body} name={car.name} />
           <div className="garage-badges">
             <span className={`badge ${g.alerts_new > 0 ? 'warning' : 'info'}`}>{alertsLabel(g.alerts_new)}</span>
             <span className={`badge ${g.active_faults > 0 ? 'critical' : 'info'}`}>{faultsLabel(g.active_faults)}</span>

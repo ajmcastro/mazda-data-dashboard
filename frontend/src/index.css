@@ -455,6 +455,19 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* a car's flat side view on other pages (M60): neutral tones, never a state colour */
+.car-profile-box { height: 74px; margin: 2px 0 10px; }
+.car-profile { width: 100%; height: 100%; display: block; }
+.car-profile-body { fill: var(--panel-2); stroke: var(--muted); stroke-width: 0.02; stroke-linejoin: round; }
+.car-profile-glass { fill: color-mix(in srgb, var(--steel) 28%, transparent); stroke: var(--muted); stroke-width: 0.015; stroke-linejoin: round; }
+.car-profile-tire { fill: var(--bg); stroke: var(--muted); stroke-width: 0.02; }
+.car-profile-rim { fill: var(--panel-2); stroke: var(--muted); stroke-width: 0.012; }
+.car-profile-ground { stroke: var(--line); stroke-width: 0.012; }
+.car-profile-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
+.car-profile-pair .car-profile-box { height: 96px; }
+.car-profile-pair figcaption { font-size: 12px; text-align: center; }
+.car-profile-pair figure { margin: 0; }
+
 /* the fault map (M59): the car from above with the units the owner placed */
 .fault-map { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
 .fault-map-car { width: 150px; height: 300px; flex: none; }

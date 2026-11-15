@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M59 built)
+## More value from the same data (M45–M62; M45–M60 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1372,9 +1372,18 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** backend 15 in `test_layout.py` (no file, a zone and a position, every mistake, the models route and the pack, a broken file, **the repository places nothing**) — 448 in all; frontend 8 in `faultmap.test.ts` (placed only, unplaced listed with its line, past and active, positions kept inside the car, a zone spread, an unknown zone, the zones equal to the backend's, the wording) — 395 in all.
 - **Checked by eye:** on the Mac with the demo data and a temporary `layout.yaml` (three units), which was deleted afterwards. **Not done by eye:** the phone.
 
-### M60 — Cars elsewhere
+### M60 — Cars elsewhere ✅ done
 - A small, slowly turnable car (static under reduced motion) on each All cars card with its alert markers; on Compare, the two cars side by side to the same scale (the two-cars view) and, on Diagnostics, two reports as before and after once M59 exists. One shared scene per page (several WebGL contexts are a known limit on phones): the cards draw into one canvas.
 - **Tests:** the shared-canvas layout (pure); the pages without WebGL fall back to what they show today.
+
+**M60 as built.**
+- **Changed from the sketch: flat side views, not small 3D scenes.** The sketch's own worry was several WebGL contexts on one page (a known limit on phones) and it proposed one shared canvas. A flat drawing needs none: `car3d/profile.ts` (pure) turns the same outline the 3D view extrudes (the model's own traced shape, its glass and its wheels) into SVG paths, nose to the left, standing on a ground line. It works without WebGL, costs nothing while idle, and any number fit on a page. What is lost is turning the car, which the Status page keeps.
+- **All cars:** each card shows its car's side view in that model's shape (`components/CarProfileBox.tsx`). The card's own badges already carry the alerts, faults and car warnings; the drawing adds no marker of its own.
+- **Compare (two cars):** the two cars side by side **at one scale** (`sharedBox`: the box of the longer and the higher car, so a shorter car is drawn shorter), each with its name and length.
+- **Kept in the lazy chunk:** the outlines are loaded with `lazy()` when a drawing is shown (`car3d/CarProfile.tsx`), never in the first chunk; three.js is not needed for them and still loads only with the 3D view.
+- **Not built:** the before-and-after of two diagnostic reports on the fault map (the sketch tied it to M59's 3D blocks, which became a plan view).
+- **Tests:** frontend 10 in `car3d/profile.test.ts`, run for every shape (as long and as high as the car, inside its box, two wheels on the ground a wheelbase apart, closed outlines, one scale for several cars) — 405 in all.
+- **Checked by eye:** both pages on the Mac with the demo data (the CX-5 and the CX-60 each in its own shape). **Not done by eye:** the phone.
 
 ### M61 — Code description packs
 - **Export:** `make codes-export MODEL=<id>` and a button on the Unmapped codes panel write `<model>-codes.yaml`: only the entries that have a title, each with `source` (the owner's note of how they know) and the model's name and platform; **no VIN, no counts, no dates**. `make audit` checks an exported file for private values.
