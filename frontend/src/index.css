@@ -455,6 +455,11 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* the time scrubber under the car (M56) */
+.car-scrub { display: flex; align-items: center; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.car-scrub input[type='range'] { flex: 1 1 180px; min-width: 0; accent-color: var(--accent); }
+.car-scrub-at { font-size: 12px; white-space: nowrap; }
+
 /* alerts on the car (M55): a count on the part's label, amber like the alert badges elsewhere */
 .car3d-alerts { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--amber); color: var(--bg); font: 600 10px/16px var(--mono); text-align: center; }
 .car3d-alerts.inline { position: static; display: inline-block; margin-left: 6px; }

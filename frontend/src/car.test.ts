@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { CarWarningFlag, CarWarnings, DoorPoint, LatestStatus, OilService, Overview } from './api/types'
+import type { CarWarningFlag, CarWarnings, DoorPoint, LatestStatus, OilService, Overview, StatusPoint, TireReading } from './api/types'
 import { fmtNum } from './lib'
-import { ALERT_PART, CAR_NOTES, alertCounts, alertPart, alertsText, carHeadline, partName, carState, carView, parseCarView, listedParts, stateBadge, type CarState, type PartId } from './car'
+import { ALERT_PART, CAR_NOTES, SCRUB_NOTE, carStateAt, reportText, alertCounts, alertPart, alertsText, carHeadline, partName, carState, carView, parseCarView, listedParts, stateBadge, type CarState, type PartId } from './car'
 
 const AT = '2026-07-01T08:00:00Z'
 
@@ -279,5 +279,67 @@ describe('alerts on the car (M55)', () => {
     expect(partName('wheel_rl')).toBe('Rear left wheel')
     expect(partName('dash')).toBe('Dashboard')
     expect([partName('nope'), partName(null), partName('')]).toEqual([null, null, null])
+  })
+})
+
+describe('the car at an earlier report (M56)', () => {
+  const report = (at: string, over: Partial<StatusPoint> = {}): StatusPoint => ({
+    created_at: at, odometer_km: 1000, fuel_level_pct: 50, range_km: 400, tire_fl_kpa: 240, tire_fr_kpa: 240, tire_rl_kpa: 240, tire_rr_kpa: 240, ...over,
+  }) as StatusPoint
+  const doorAt = (at: string, over: Partial<DoorPoint> = {}): DoorPoint => ({ created_at: at, door_driver: 0, door_passenger: 0, door_rear_left: 0, door_rear_right: 0, trunk: 0, hood: 0, invalid_signals: 0, ...over }) as DoorPoint
+  const reports = [
+    report('2026-06-01T08:00:00Z', { fuel_level_pct: 80 }),
+    report('2026-06-03T18:00:00Z', { fuel_level_pct: 20, tire_rl_kpa: 200 }),
+    report('2026-06-02T12:00:00Z', { fuel_level_pct: 60, odometer_km: 1100 }), // out of order on purpose
+  ]
+  const part = (c: CarState, id: PartId) => c.parts.find((p) => p.id === id)!
+
+  it('shows the report asked for, in time order, with its place among them', () => {
+    const second = carStateAt(1, reports, [], [])
+    expect([second.index, second.total, second.at]).toEqual([2, 3, '2026-06-02T12:00:00Z'])
+    expect(part(second.car, 'fuel').value).toContain('60')
+    expect(part(second.car, 'dash').value).toContain(fmtNum(1100))
+    const last = carStateAt(2, reports, [], [])
+    expect(part(last.car, 'fuel').value).toContain('20')
+    expect(part(last.car, 'wheel_rl').state).toBe('attention') // 40 kPa under the others, by the same rule
+    expect(reportText(second)).toBe('report 2 of 3')
+  })
+  it('stays inside the reports there are', () => {
+    expect(carStateAt(-5, reports, [], []).index).toBe(1)
+    expect(carStateAt(99, reports, [], []).index).toBe(3)
+    expect(carStateAt(1.4, reports, [], []).index).toBe(2)
+    const none = carStateAt(0, [], [], [])
+    expect([none.index, none.total, none.at, none.car.hasData]).toEqual([0, 0, null, false])
+    expect(carStateAt(0, undefined, undefined, undefined).total).toBe(0)
+  })
+  it('uses the newest door report made by then, never a later one', () => {
+    const doors = [doorAt('2026-06-01T07:00:00Z'), doorAt('2026-06-02T11:00:00Z', { trunk: 1 }), doorAt('2026-06-03T19:00:00Z', { hood: 1 })]
+    expect(part(carStateAt(0, reports, doors, []).car, 'trunk').state).toBe('ok')
+    expect(part(carStateAt(1, reports, doors, []).car, 'trunk').state).toBe('open') // the door report an hour older
+    const last = carStateAt(2, reports, doors, []).car
+    expect(part(last, 'trunk').state).toBe('open')
+    expect(part(last, 'hood').state).toBe('ok') // opened an hour AFTER this report
+    // before any door report: the doors are not known yet
+    expect(part(carStateAt(0, reports, [doorAt('2026-06-05T00:00:00Z')], []).car, 'trunk').state).toBe('absent')
+  })
+  it('keeps an old tire reading marked old, and a fresh one fresh', () => {
+    const reading = {
+      reading_at: '2026-06-02T11:50:00Z', time_known: true, first_snapshot_at: '2026-06-02T12:00:00Z', last_snapshot_at: '2026-06-03T18:00:00Z',
+      snapshots: 2, age_minutes: 10, last_age_minutes: 1810, stale: true,
+    } as TireReading
+    const fresh = part(carStateAt(1, reports, [], [reading]).car, 'wheel_fl')
+    expect(fresh.old).toBe(false)
+    expect(fresh.notes.join(' ')).toContain('measured')
+    const old = part(carStateAt(2, reports, [], [reading]).car, 'wheel_fl')
+    expect(old.old).toBe(true)
+    expect(old.notes.join(' ')).toContain('old reading')
+    // a report no reading covers: the time of measurement is unknown, never invented
+    expect(part(carStateAt(0, reports, [], [reading]).car, 'wheel_fl').notes).toContain('measurement time unknown')
+  })
+  it('leaves out the states of the newest data and says so', () => {
+    const car = carStateAt(2, reports, [], []).car
+    expect(part(car, 'engine').state).toBe('absent')
+    expect(car.parts.every((p) => p.alerts === undefined)).toBe(true)
+    expect(SCRUB_NOTE).toContain('are not shown here')
   })
 })

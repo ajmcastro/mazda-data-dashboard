@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M55 built)
+## More value from the same data (M45–M62; M45–M56 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1322,9 +1322,17 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** frontend 4 more in `car.test.ts` (each rule's part, exhaustive against the backend, counts and markers without a change of state, part names) — 374 in all; backend unchanged in number, the goldens re-recorded with the key (1,087).
 - **Checked by eye:** the markers on the 3D car and the filtered Alerts page on the Mac with the demo data. **Not done by eye:** the phone.
 
-### M56 — Time scrubber
+### M56 — Time scrubber ✅ done
 - A slider under the 3D car over the selected period: `carState` is fed the snapshot at that time (`/api/status/timeline`, `/api/doors/timeline` and `/api/status/tires`, already period endpoints) instead of the newest, with the time and "report 37 of 212" shown. Play and pause (off with reduced motion: the slider only), and step by snapshot with the arrow keys when the slider has focus. The flags and the oil countdown, which are states, are greyed while scrubbing, and the panel says so.
 - **Tests:** `carStateAt` (pure): the snapshot at or before a time, a door reading older than the status one, the edges of the period; no new route.
+
+**M56 as built.**
+- **Logic:** `carStateAt(index, status, doors, tires)` in `frontend/src/car.ts` (pure): status report number `index` of the period, in time order, gives the fuel, odometer and tires; the newest door report made **by then** gives the doors, trunk and hood (never a later one; none yet = not shown); the tire measurement whose run of snapshots contains the report gives the time it was measured, so a reading the car kept showing is still marked old. It builds the same `carState` the panel always used, so the rules (the lowest wheel, an Invalid value is unknown) are the same.
+- **Left out while looking back, and said so:** the car's own warning flags, the oil countdown, the leak forecast's notes and the alert markers are states of the newest data, not of a past report. The engine part is therefore not shown and a sentence under the slider explains it.
+- **UI:** under the car in `CarPanel` (both the 3D view and the list, Mac and phone): a slider over the reports of the selected period, "report 61 of 195 · 09 Apr, 09:03" (also in the panel's corner), **Play / Pause** (one report every 0.45 s, stopping at the newest; hidden with reduced motion, where the slider alone remains) and "Newest". The slider is a native range input, so the arrow keys step by report when it has focus.
+- **No new route:** it reads `/api/status/timeline` and `/api/status/tires` (already loaded by the Status page) and `/api/doors/timeline` with a high limit, asked only once the slider leaves the newest report.
+- **Tests:** frontend 5 more in `car.test.ts` (the report asked for in time order, the edges, the door report made by then, an old and a fresh tire reading, what is left out) — 379 in all.
+- **Checked by eye:** the slider on the Mac with the demo data (report 61 of 195, the note, back to the newest). **Not done by eye:** Play, and the phone.
 
 ### M57 — Who rides, on the seats
 - A cut-away view (the roof and glass hidden) with four seats, each shaded by the share of the driver-belted snapshots in which its belt was buckled (the M37 answer, extended per seat: `GET /api/status/occupancy` gains `rear_left_readings` and `rear_right_readings`, with its twin and goldens). Hidden for a car that sends no belts; the same hedge as the panel ("snapshots, not trips; belts only").

@@ -4,7 +4,7 @@
 // value is "open", a value the car flagged Invalid (null here) stays "unknown", and no pressure or fuel limit is
 // invented (a wheel is marked only by the car's own flag or the "clearly the lowest" rule of the tire drawing).
 
-import type { CarWarningFlag, CarWarnings, DoorPoint, OilService, Overview } from './api/types'
+import type { CarWarningFlag, CarWarnings, DoorPoint, OilService, Overview, StatusPoint, TireReading } from './api/types'
 import { fmtAge, fmtDateTime, fmtNum, OIL_SOON_KM } from './lib'
 import { distanceText, fmtDistance, fmtPressure, pressureText } from './units'
 
@@ -292,3 +292,83 @@ const PART_NAMES: Record<PartId, string> = {
 }
 /** A part's name from its id (for the Alerts page's filter); null for something that is not a part. */
 export const partName = (id: string | null | undefined): string | null => (id && id in PART_NAMES ? PART_NAMES[id as PartId] : null)
+
+// ------------------------------------------------------------ the car at an earlier report (M56)
+
+export interface CarAt {
+  car: CarState
+  /** the report shown, counted from 1, and how many there are */
+  index: number
+  total: number
+  /** when that report was made (ISO, UTC); null without reports */
+  at: string | null
+}
+
+const byTime = <T,>(items: readonly T[] | undefined, time: (item: T) => string): T[] =>
+  [...(items ?? [])].sort((a, b) => Date.parse(time(a)) - Date.parse(time(b)))
+
+/** The last item made at or before `at` (ms); undefined when there is none yet. */
+function lastBefore<T>(sorted: readonly T[], time: (item: T) => string, at: number): T | undefined {
+  let found: T | undefined
+  for (const item of sorted) {
+    if (Date.parse(time(item)) > at) break
+    found = item
+  }
+  return found
+}
+
+/**
+ * The car as status report number `index` (0-based, in time order) showed it: that report's fuel, odometer
+ * and tires, the newest door report made by then, and the tire measurement that report repeated (so an old
+ * reading is still marked old). The car's own warning flags and the oil countdown are STATES of the newest
+ * data and are left out: the panel says so while looking back. `index` is clamped to the reports there are.
+ */
+export function carStateAt(
+  index: number,
+  status: readonly StatusPoint[] | undefined,
+  doorPoints: readonly DoorPoint[] | undefined,
+  tires: readonly TireReading[] | undefined,
+): CarAt {
+  const reports = byTime(status, (p) => p.created_at)
+  if (reports.length === 0) return { car: carState(undefined, undefined, undefined, undefined), index: 0, total: 0, at: null }
+  const i = Math.min(Math.max(Math.round(index), 0), reports.length - 1)
+  const report = reports[i]
+  const at = Date.parse(report.created_at)
+  const door = lastBefore(byTime(doorPoints, (p) => p.created_at), (p) => p.created_at, at)
+  // the measurement this report showed: the one whose run of snapshots contains the report
+  const reading = (tires ?? []).find((t) => Date.parse(t.first_snapshot_at) <= at && at <= Date.parse(t.last_snapshot_at))
+  const measured = reading?.time_known ? reading.reading_at : null
+  const age = measured ? (at - Date.parse(measured)) / 60_000 : null
+  const overview = {
+    odometer_km: report.odometer_km ?? null,
+    odometer_at: report.created_at,
+    status: {
+      at: report.created_at,
+      fuel_level_pct: report.fuel_level_pct ?? null,
+      range_km: report.range_km ?? null,
+      tire_fl_kpa: report.tire_fl_kpa ?? null,
+      tire_fr_kpa: report.tire_fr_kpa ?? null,
+      tire_rl_kpa: report.tire_rl_kpa ?? null,
+      tire_rr_kpa: report.tire_rr_kpa ?? null,
+      tire_measured_at: measured,
+      tire_age_minutes: age,
+      tire_stale: reading && age !== null ? oldBy(reading, age) : null,
+    },
+  } as unknown as Overview
+  return { car: carState(overview, door, undefined, undefined), index: i + 1, total: reports.length, at: report.created_at }
+}
+
+/**
+ * Whether a measurement was already an old one at a report made `ageMinutes` after it. The data marks a
+ * reading stale by its LAST snapshot; an earlier report of the same reading is old once it is six hours past
+ * the measurement (the default `tire_stale_hours`) or is that last snapshot itself.
+ */
+function oldBy(reading: TireReading, ageMinutes: number): boolean {
+  return reading.stale === true && ageMinutes >= Math.min(reading.last_age_minutes ?? Infinity, 360)
+}
+
+/** "report 37 of 212" */
+export const reportText = (a: Pick<CarAt, 'index' | 'total'>): string => `report ${fmtNum(a.index)} of ${fmtNum(a.total)}`
+
+export const SCRUB_NOTE =
+  "Looking back: each step is one status report. The car's own warning flags, the oil countdown and the alert markers are states of the newest data, so they are not shown here."

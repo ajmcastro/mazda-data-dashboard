@@ -113,9 +113,10 @@ export const useStatusTimeline = () => {
   })
 }
 
-export const useDoors = (limit = 50) => {
+export const useDoors = (limit = 50, enabled = true) => {
   const range = useRangeQuery()
   return useQuery({
+    enabled,
     queryKey: ['doors', limit, range],
     queryFn: () =>
       unwrap(client.GET('/api/doors/timeline', { params: { query: { limit, ...range } } })),

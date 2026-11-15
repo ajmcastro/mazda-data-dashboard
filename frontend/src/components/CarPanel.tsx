@@ -1,10 +1,12 @@
-import { Component, lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
-import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useTireForecast } from '../api/hooks'
+import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires } from '../api/hooks'
 import { PartAlerts } from './PartAlerts'
 import { notesByPart } from '../tires'
-import { CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge, type CarState, type CarView, type PartGroup, alertCounts } from '../car'
+import {
+  CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge, type CarState, type CarView, type PartGroup, alertCounts, SCRUB_NOTE, carStateAt, reportText,
+} from '../car'
 import { bodyOfModel } from '../car3d/shapes/common' // not geometry.ts: the outlines belong in the 3D chunk
-import { fmtDateTime } from '../lib'
+import { ANIMATE, fmtDateTime } from '../lib'
 import { useCurrentModel } from '../model'
 import { Badge, Panel, QueryState } from './ui'
 
@@ -84,7 +86,31 @@ export function CarPanel() {
   // so the panel does not wait for them and a failure of theirs does not hide the rest
   const query = overview.isError || !doors.isError ? overview : doors
   const pending = overview.isPending || doors.isPending
-  const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notesByPart(forecast.data), alertCounts(openAlerts.data))
+  const newest = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notesByPart(forecast.data), alertCounts(openAlerts.data))
+  // the time scrubber (M56): the reports of the period, one step each; null = the newest, as the panel always showed
+  const reports = useStatusTimeline().data
+  const total = reports?.length ?? 0
+  const [step, setStep] = useState<number | null>(null)
+  const [playing, setPlaying] = useState(false)
+  const looking = step !== null && step < total - 1
+  const doorHistory = useDoors(5000, looking || playing)
+  const tireHistory = useTires()
+  const back = looking ? carStateAt(step, reports, doorHistory.data, tireHistory.data) : null
+  const car = back ? back.car : newest
+  useEffect(() => {
+    if (!playing) return
+    const timer = setInterval(() => {
+      setStep((now) => {
+        const next = (now ?? 0) + 1
+        if (next >= total - 1) {
+          setPlaying(false)
+          return null // back at the newest report
+        }
+        return next
+      })
+    }, 450)
+    return () => clearInterval(timer)
+  }, [playing, total])
   // the model's own dimensions and steering side (model.yaml `body:`); none = the generic car
   const modelBody = useCurrentModel().model?.body
   const body = useMemo(() => bodyOfModel(modelBody), [modelBody])
@@ -106,7 +132,7 @@ export function CarPanel() {
   }
   const list = <CarList car={car} />
   return (
-    <Panel title="The car" hint={car.asOf ? `as of ${fmtDateTime(car.asOf)}` : 'part by part'}>
+    <Panel title="The car" hint={back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : car.asOf ? `as of ${fmtDateTime(car.asOf)}` : 'part by part'}>
       <QueryState query={{ isPending: pending, isError: query.isError, error: query.error }}>
         <div className="car-top">
           <p>{carHeadline(car)}</p>
@@ -129,6 +155,39 @@ export function CarPanel() {
             ) : (
               list
             )}
+            {total > 1 && (
+              <div className="car-scrub">
+                {ANIMATE && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!playing && !looking) setStep(0) // from the newest: start at the first report
+                      setPlaying(!playing)
+                    }}
+                    aria-label={playing ? 'Pause' : 'Play through the reports of the period'}
+                  >
+                    {playing ? 'Pause' : 'Play'}
+                  </button>
+                )}
+                <input
+                  type="range"
+                  min={0}
+                  max={total - 1}
+                  step={1}
+                  value={step ?? total - 1}
+                  onChange={(e) => {
+                    setPlaying(false)
+                    const next = Number(e.target.value)
+                    setStep(next >= total - 1 ? null : next)
+                  }}
+                  aria-label="Status report shown, from the first of the period to the newest"
+                  aria-valuetext={back ? `${reportText(back)}, ${fmtDateTime(back.at)}` : 'the newest report'}
+                />
+                <span className="mono muted car-scrub-at">{back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : 'newest'}</span>
+                {looking && <button type="button" onClick={() => { setPlaying(false); setStep(null) }}>Newest</button>}
+              </div>
+            )}
+            {looking && <p className="muted note">{SCRUB_NOTE}</p>}
             <ul className="car-notes muted">
               {CAR_NOTES.map((n) => (
                 <li key={n}>{n}</li>
