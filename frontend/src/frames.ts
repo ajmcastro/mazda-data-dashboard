@@ -2,6 +2,7 @@
 // It is a hint ("tends to appear when ..."), never a cause: the frames are few and several faults can share
 // the same frame, so every figure comes with its number of frames.
 
+import { carState, type CarState } from './car'
 import type { FaultFrameSummary, FrameSignalSummary } from './api/types'
 import { fmtNum } from './lib'
 
@@ -50,4 +51,48 @@ export function cautionNote(s: Pick<FaultFrameSummary, 'frames' | 'baseline_fram
     'Faults recorded at the same moment share one frame and count separately. This describes the car when a fault was ' +
     'recorded, not what caused it.'
   )
+}
+
+// ------------------------------------------------------------ the fault on the car (M58)
+
+/** Which part of the car each freeze-frame signal is shown on. The battery has no part of its own: it is
+ *  drawn where the hood is and LABELLED "Battery" (the drawing does not say where a battery sits). */
+export const FRAME_PART: Record<string, 'hood' | 'engine' | 'dash'> = {
+  Main_ECU_Voltage_Supply: 'hood',
+  ECU_Power_Voltage: 'hood',
+  SOC_StateOfCharge: 'hood',
+  Engine_Coolant_Temperature: 'engine',
+  Vehicle_Speed: 'dash',
+}
+const FRAME_PART_NAME = { hood: 'Battery', engine: 'Engine', dash: 'Dashboard' } as const
+
+/**
+ * A fault's freeze frames as a car to draw: three parts carry what the frames recorded (the fault's range as the
+ * figure, the other faults' frames as a note), every other part is absent. A part is marked ONLY where the
+ * summary marks a position (among the lowest or highest tenth of the other faults' frames); nothing is marked
+ * for a signal without one, however odd its value looks.
+ */
+export function frameCar(s: FaultFrameSummary | undefined): CarState {
+  const parts = carState(undefined, undefined, undefined, undefined).parts.map((p) => ({ ...p, state: 'absent' as const, notes: [] as string[] }))
+  if (!s) return { parts, hasData: false, asOf: null }
+  const out = parts.map((p) => {
+    if (p.id !== 'hood' && p.id !== 'engine' && p.id !== 'dash') return p
+    const signals = s.signals.filter((x) => FRAME_PART[x.signal] === p.id && x.min !== null && x.min !== undefined)
+    if (signals.length === 0) return p
+    const marked = signals.some((x) => x.position)
+    return {
+      ...p,
+      name: FRAME_PART_NAME[p.id],
+      group: 'other' as const,
+      state: marked ? ('attention' as const) : ('ok' as const),
+      value: faultRange(signals[0]),
+      notes: signals.flatMap((x) => [
+        `${x.label}: ${faultRange(x)} in this fault's frames; ${baselineRange(x)} in the other faults' frames`,
+        ...(x.position ? [`${lower(x.label)}: ${POSITION_TEXT[x.position]}`] : []),
+      ]),
+      at: null,
+      old: false,
+    }
+  })
+  return { parts: out, hasData: out.some((p) => p.state !== 'absent'), asOf: null }
 }

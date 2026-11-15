@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M57 built)
+## More value from the same data (M45–M62; M45–M58 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1345,9 +1345,16 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** backend, the per-seat counts against the raw rows on the CX-60 sample; frontend 4 more in `occupancy.test.ts` (383 in all); the phone contract (1,087).
 - **Checked by eye:** the CX-60 demo on the Mac (driver the base, front passenger 27%, rear left 13%, rear right 10%); the CX-5 demo shows no seats.
 
-### M58 — Freeze-frame scene
+### M58 — Freeze-frame scene ✅ done
 - From a fault's detail: "Show on the car" turns the 3D view to that fault: the battery (voltage and charge), the engine (coolant temperature) and the dashboard (speed) labelled with the fault's range and the baseline's (the M36 summary), a part marked only where M36 marks a position. A caption repeats M36's caution. New anchor: the battery (placed generically under the hood; the label says "battery", not where it is).
 - **Tests:** the mapping of M36's signals to parts; fewer than five frames shows the caution; no position, no mark.
+
+**M58 as built.**
+- **Logic:** `frameCar(summary)` in `frontend/src/frames.ts` (pure) turns M36's summary into a car to draw: the battery (both supply voltages and the charge), the engine (coolant temperature) and the dashboard (speed) carry the fault's range as their figure and, as notes, each signal's range against the other faults' frames; every other part is absent. **A part is marked only where the summary marks a position**; a value that merely looks odd is shown, not marked. `FRAME_PART` maps the signals to parts and a test reads `FRAME_SUMMARY_SIGNALS` in `api/app.py`, so a new signal needs a part.
+- **The battery, changed from the sketch:** no new anchor. It is drawn **at the hood** and labelled "Battery", and the caption says the drawing does not say where the battery sits. A new part id would have meant a new anchor in every shape, the generic one included, whose numbers are pinned.
+- **UI:** "Show on the car" under the table of the fault's "In the freeze frames" panel (Faults page, Mac and phone) opens the 3D car with those three parts; the caption repeats that it shows and does not judge, and M36's caution (few frames, shared frames, "not what caused it") stays right above. `components/Car3DBox.tsx` is the 3D view for pages other than Status: lazy (three.js stays in its chunk), with a fallback while loading and where 3D is not possible.
+- **Tests:** frontend 4 more in `frames.test.ts` (the parts, marks only with a position, nothing without frames, every backend signal mapped, the caution) — 387 in all.
+- **Checked by eye:** a fault of the demo CX-5 on the Mac (Dashboard marked for low speed, Battery and Engine labelled). A hook-order mistake found there was fixed. **Not done by eye:** the phone.
 
 ### M59 — Fault map
 - **The owner places the units:** `config/models/<id>/layout.yaml`: for each ECU name the data has, a position as fractions of the car (along, across, up) or a zone (`engine bay | dashboard | under front seats | rear | roof`), with `source:` free text. Validated against the ECUs in `ref_ecus`; an ECU without a place is listed beside the car as "not placed", never guessed. A page helper lists the unplaced units with the lines to paste.
