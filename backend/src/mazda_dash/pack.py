@@ -218,6 +218,8 @@ def model_info(model: Model | None) -> dict:
         "hidden_pages": list(model.hidden_pages),
         # optional (no format change): a pack without it is drawn as the generic car
         "body": model.body.as_dict() if model.body else None,
+        # optional too (M59): the control units the owner placed; a pack without it has an empty fault map
+        "layout": [u.as_dict() for u in model.layout],
     }
 
 

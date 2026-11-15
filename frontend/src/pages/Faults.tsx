@@ -3,6 +3,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useDtcFrequency, useReadouts } from '../api/hooks'
 import type { DtcFrequency } from '../api/types'
 import { FaultDetail } from '../components/FaultDetail'
+import { FaultMap } from '../components/FaultMap'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
@@ -14,6 +15,9 @@ export default function Faults() {
   const readouts = useReadouts()
   const [selected, setSelected] = useState<string | undefined>()
   const sel = freq.data?.find((f) => key(f) === selected)
+  // the fault map (M59): a unit picked there shows only its codes in the table
+  const [unit, setUnit] = useState<string | null>(null)
+  const shown = (freq.data ?? []).filter((f) => !unit || f.ecu === unit)
 
   const columns: Column<DtcFrequency>[] = [
     {
@@ -37,10 +41,14 @@ export default function Faults() {
         </div>
       </div>
 
+      <div style={{ marginBottom: 14 }}>
+        <FaultMap faults={freq.data} selected={unit} onSelect={setUnit} />
+      </div>
+
       <div className="grid split">
-        <Panel title="Trouble codes" hint="click a row for history and freeze-frame data">
+        <Panel title="Trouble codes" hint={unit ? <button type="button" onClick={() => setUnit(null)}>Only {unit}: show all</button> : 'click a row for history and freeze-frame data'}>
           <QueryState query={freq}>
-            <DataTable rows={freq.data ?? []} columns={columns} rowKey={key} selected={selected} onSelect={(f) => setSelected(selected === key(f) ? undefined : key(f))} />
+            <DataTable rows={shown} columns={columns} rowKey={key} selected={selected} onSelect={(f) => setSelected(selected === key(f) ? undefined : key(f))} />
           </QueryState>
         </Panel>
 

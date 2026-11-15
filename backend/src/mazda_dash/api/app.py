@@ -88,6 +88,7 @@ def list_models():
                 default=model is reg.default,
                 hidden_pages=list(model.hidden_pages),
                 body=m.ModelBody(**model.body.as_dict()) if model.body else None,
+                layout=[m.ModelUnit(**u.as_dict()) for u in model.layout],
                 has_data=path.exists(),
                 **_span(path),
             )

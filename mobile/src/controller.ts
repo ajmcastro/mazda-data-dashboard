@@ -173,6 +173,7 @@ export class DataController {
       default: p.manifest.model.id === current,
       hidden_pages: p.manifest.model.hidden_pages,
       body: p.manifest.model.body ?? null, // a pack made before M41 has none: the generic car is drawn
+      layout: p.manifest.model.layout ?? [], // a pack made before M59 has none: nothing is placed
       has_data: true,
       first_day: p.manifest.first_data_day,
       last_day: p.manifest.last_data_day,

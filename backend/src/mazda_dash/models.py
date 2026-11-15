@@ -70,6 +70,79 @@ class Body:
         return {k: getattr(self, k) for k in (*BODY_MM, "steering", "shape")}
 
 
+# layout.yaml (M59): where the car's control units are, as the OWNER knows it. A zone, or a position as
+# fractions of the car (along from the front, across from the left, up from the ground). Never guessed.
+ZONES = ("engine bay", "dashboard", "under front seats", "rear", "roof")
+
+
+@dataclass(frozen=True)
+class Unit:
+    ecu: str
+    zone: str | None = None
+    at: tuple[float, float, float] | None = None
+    source: str | None = None
+
+    def as_dict(self) -> dict:
+        return {
+            "ecu": self.ecu,
+            "zone": self.zone,
+            "at": list(self.at) if self.at else None,
+            "source": self.source,
+        }
+
+
+def load_layout(path: Path) -> tuple[Unit, ...]:
+    """The units the owner placed, from ``layout.yaml`` next to ``model.yaml`` (none without the file)."""
+    if not path.exists():
+        return ()
+    data = yaml.safe_load(path.read_text())
+    if data is None:
+        return ()
+    example = 'units: {ECM: {zone: engine bay, source: "workshop manual"}}'
+    if (
+        not isinstance(data, dict)
+        or set(data) != {"units"}
+        or not isinstance(data["units"], dict)
+    ):
+        raise ModelConfigError(
+            f"{path}: expected `units:` with one entry per control unit, e.g. {example}"
+        )
+    units = []
+    for ecu, place in data["units"].items():
+        where = f"{path}: unit {ecu!r}"
+        if not isinstance(ecu, str) or not ecu.strip():
+            raise ModelConfigError(
+                f"{path}: a unit's name must be text (the ECU name the data uses)"
+            )
+        if not isinstance(place, dict) or set(place) - {"zone", "at", "source"}:
+            raise ModelConfigError(f"{where} may have `zone` or `at`, and `source`")
+        zone, at, source = place.get("zone"), place.get("at"), place.get("source")
+        if (zone is None) == (at is None):
+            raise ModelConfigError(
+                f"{where} needs either `zone` or `at`, not both and not neither"
+            )
+        if zone is not None and zone not in ZONES:
+            raise ModelConfigError(f"{where}: zone must be one of {', '.join(ZONES)}")
+        if at is not None:
+            ok = isinstance(at, list) and len(at) == 3
+            ok = ok and all(
+                not isinstance(v, bool) and isinstance(v, int | float) and 0 <= v <= 1
+                for v in at
+            )
+            if not ok:
+                raise ModelConfigError(
+                    f"{where}: at must be three fractions between 0 and 1: along from the front, across from "
+                    "the left, up from the ground"
+                )
+            at = (float(at[0]), float(at[1]), float(at[2]))
+        if source is not None and not isinstance(source, str):
+            raise ModelConfigError(
+                f"{where}: source must be text (how you know where it is)"
+            )
+        units.append(Unit(ecu.strip(), zone, at, source))
+    return tuple(units)
+
+
 def _load_body(path: Path, data: object) -> Body | None:
     if data is None:
         return None
@@ -116,6 +189,9 @@ class Model:
     db_path: Path
     config_dir: Path
     body: Body | None = None
+    layout: tuple[
+        Unit, ...
+    ] = ()  # layout.yaml: the control units the owner placed (M59)
     legacy: tuple[str, ...] = ()  # what is still in the single-car layout: "data", "db"
     db_prefix: str = ""  # MAZDA_DB_PREFIX: the demo keeps its databases apart from yours (demo-cx5.duckdb)
 
@@ -236,6 +312,7 @@ def _load_model(root: Path, model_id: str) -> Model:
         db_path=db_path,
         config_dir=config_dir,
         body=body,
+        layout=load_layout(config_dir / "layout.yaml"),
         legacy=tuple(legacy),
         db_prefix=prefix,
     )

@@ -157,7 +157,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`â
 | **Compare** (also on the phone, under *More*) | **two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar |
 | **Alerts** | what the alert rules raised; acknowledge them one by one or all at once; the car on the Status page marks the parts that have open alerts, and a click shows only those |
 | **Warnings** | warning events per day, how often each code appears, and the events behind each code |
-| **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them |
+| **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them; a **fault map** shows the control units you placed on a plan of the car, lit by their faults (see [Fault map](#fault-map-optional)) |
 | **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history; the **fill-ups** the fuel level shows (when, how much, the distance and consumption since the one before, an estimated cost and, if you keep a fuel log, what you paid: see [Fill-ups](#fill-ups-optional)); and the **service log**: what you noted was done to the car, marked on the fuel, tire and oil charts (see [Service log](#service-log-optional)); and, for a wheel that is losing pressure against the other three, **how fast and when it reaches your limit at that rate**; a **slider under the car** steps back through the status reports of the period (or plays them), showing the car as each report had it |
 | **Day** (also on the phone, under *More*) | one day at a glance, in the car's own time: the stretches driven, each status report with what changed, doors, the warning codes of the day, fault read-outs, alarm reports, a fill-up, a diagnostic report and the alerts about that day, in order, each linking to its page; arrows step to the previous and next day that has anything. Also opened by clicking a day on the Warnings chart or a fill-up's date |
 | **Import** (the Mac only) | drop a new download from Mazda on the page: it is checked, stored in the model's data folder, loaded, and summarised (new rows, the newest day, distance since the last load, faults that appeared or left, new warning codes, new alerts) |
@@ -433,6 +433,22 @@ The panel then shows the distance so far this year and the projection against th
 the dates (oil change, end of the year, a tire reaching your pressure limit) as an `.ics` file made in the page:
 open it to add them to your calendar; nothing is sent anywhere. The oil alert can also fire by date: add
 `days: 30` to `oil_change_due` in `alerts.yaml`.
+
+### Fault map (optional)
+
+The Faults page can show the car's control units on a plan of the car, lit when the latest read-out lists a fault of
+theirs. **You place the units**: Mazda's export says which unit reported a fault, not where the unit is, and the
+dashboard never guesses. Until you place one, each unit with faults is listed as "not placed", with the line to add.
+
+Create `config/models/<id>/layout.yaml` with what you know (from a dealer or the workshop manual):
+
+```yaml
+units:
+  BCM: {zone: dashboard, source: "workshop manual"}        # a zone: engine bay, dashboard, under front seats, rear, roof
+  ECM: {at: [0.12, 0.35, 0.4], source: "seen at the dealer"} # or a position: along from the front, across from the left, up
+```
+
+Restart the dashboard to see it (no `make ingest` needed); the phone shows it after a new pack.
 
 ### Service log (optional)
 

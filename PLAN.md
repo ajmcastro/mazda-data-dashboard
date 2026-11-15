@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M58 built)
+## More value from the same data (M45–M62; M45–M59 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1356,11 +1356,21 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** frontend 4 more in `frames.test.ts` (the parts, marks only with a position, nothing without frames, every backend signal mapped, the caution) — 387 in all.
 - **Checked by eye:** a fault of the demo CX-5 on the Mac (Dashboard marked for low speed, Battery and Engine labelled). A hook-order mistake found there was fixed. **Not done by eye:** the phone.
 
-### M59 — Fault map
+### M59 — Fault map ✅ done
 - **The owner places the units:** `config/models/<id>/layout.yaml`: for each ECU name the data has, a position as fractions of the car (along, across, up) or a zone (`engine bay | dashboard | under front seats | rear | roof`), with `source:` free text. Validated against the ECUs in `ref_ecus`; an ECU without a place is listed beside the car as "not placed", never guessed. A page helper lists the unplaced units with the lines to paste.
 - **View:** the placed units as small blocks inside a see-through body, lit by their active faults and dimmed for past ones; clicking opens that unit's faults. Carried in `GET /api/models` and the pack like `body`.
 - **Tests:** validation; unplaced units are listed and not drawn; a unit the data no longer has is ignored with a note.
 - **Needs from the owner:** where the four units of the CX-5 are (a dealer or the workshop manual), or the decision to use zones only.
+
+**M59 as built.** (Built while the owner was away: **no unit of either car is placed**. The repository ships no `layout.yaml`, so the map lists every unit that has faults as "not placed" until the owner adds one; a test keeps it that way.)
+- **File:** `config/models/<id>/layout.yaml`: `units:` with, per ECU name the data uses, either `zone:` (`engine bay | dashboard | under front seats | rear | roof`) or `at: [along, across, up]` as fractions of the car, and an optional `source:`. Validated by `load_layout` in `models.py` (a typo or a unit with both or neither fails loudly and names the file) as `Model.layout`.
+- **Carried like `body`:** `GET /api/models` → `ModelInfo.layout`; the pack manifest's `model.layout` (optional, **no pack format change**: a pack from before has none and the phone shows nothing placed). The file is read when the server starts a request for the models, so a change needs no ingest; the phone needs a new pack.
+- **Not validated against the data's ECUs** (the registry has no database): a placed unit the data has no fault for is drawn quiet; a unit with faults and no place is listed. A zone the app does not know is not drawn.
+- **View, changed from the sketch:** a **plan view of the car** (an SVG, front at the top, the zones as dashed lines) in a "Fault map" panel at the top of the Faults page, Mac and phone, not blocks inside a see-through 3D body: the placements are zones or rough fractions, which a plan view shows honestly and a 3D body would make look exact. Units of one zone are spread across the car so they can be told apart. **Lit** = a fault in the latest read-out; **dashed** = faults seen in the period but not listed now; **plain** = none. Clicking a unit (on the car or in the list, placed or not) shows only its codes in the table below.
+- **Helper:** under "Not placed", the lines to paste into `layout.yaml` for each unit, with a placeholder zone and source for the owner to correct.
+- **Left for later:** two diagnostic reports as before and after on the map (M60 mentions it).
+- **Tests:** backend 15 in `test_layout.py` (no file, a zone and a position, every mistake, the models route and the pack, a broken file, **the repository places nothing**) — 448 in all; frontend 8 in `faultmap.test.ts` (placed only, unplaced listed with its line, past and active, positions kept inside the car, a zone spread, an unknown zone, the zones equal to the backend's, the wording) — 395 in all.
+- **Checked by eye:** on the Mac with the demo data and a temporary `layout.yaml` (three units), which was deleted afterwards. **Not done by eye:** the phone.
 
 ### M60 — Cars elsewhere
 - A small, slowly turnable car (static under reduced motion) on each All cars card with its alert markers; on Compare, the two cars side by side to the same scale (the two-cars view) and, on Diagnostics, two reports as before and after once M59 exists. One shared scene per page (several WebGL contexts are a known limit on phones): the cards draw into one canvas.

@@ -7208,6 +7208,14 @@
               }
             ]
           },
+          "layout": {
+            "items": {
+              "$ref": "#/components/schemas/ModelUnit"
+            },
+            "type": "array",
+            "title": "Layout",
+            "default": []
+          },
           "has_data": {
             "type": "boolean",
             "title": "Has Data"
@@ -7245,6 +7253,56 @@
           "has_data"
         ],
         "title": "ModelInfo"
+      },
+      "ModelUnit": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          },
+          "at": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "At"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu"
+        ],
+        "title": "ModelUnit",
+        "description": "A control unit the owner placed in `layout.yaml`: a zone, or a position as fractions of the car."
       },
       "MonthMetrics": {
         "properties": {

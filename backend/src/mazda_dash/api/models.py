@@ -29,6 +29,17 @@ class ModelBody(BaseModel):
     )
 
 
+class ModelUnit(BaseModel):
+    """A control unit the owner placed in `layout.yaml`: a zone, or a position as fractions of the car."""
+
+    ecu: str
+    zone: str | None = None  # engine bay, dashboard, under front seats, rear, roof
+    at: list[float] | None = (
+        None  # along from the front, across from the left, up from the ground (0 to 1)
+    )
+    source: str | None = None  # how the owner knows
+
+
 class ModelInfo(BaseModel):
     id: str
     name: str
@@ -36,6 +47,7 @@ class ModelInfo(BaseModel):
     default: bool
     hidden_pages: list[str] = []
     body: ModelBody | None = None
+    layout: list[ModelUnit] = []
     has_data: bool
     first_day: date | None = None
     last_day: date | None = None

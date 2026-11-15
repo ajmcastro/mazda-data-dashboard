@@ -293,6 +293,7 @@ def test_the_manifest_names_the_car_model(tmp_path):
         "platform": None,
         "hidden_pages": [],
         "body": registry.get("cx60").body.as_dict(),
+        "layout": [u.as_dict() for u in registry.get("cx60").layout],
     }
     assert manifest["model"]["body"]["steering"] in ("left", "right")
     assert plain_body(tmp_path) is None

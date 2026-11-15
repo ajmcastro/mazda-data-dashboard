@@ -1975,12 +1975,31 @@ export interface components {
              */
             hidden_pages: string[];
             body?: components["schemas"]["ModelBody"] | null;
+            /**
+             * Layout
+             * @default []
+             */
+            layout: components["schemas"]["ModelUnit"][];
             /** Has Data */
             has_data: boolean;
             /** First Day */
             first_day?: string | null;
             /** Last Day */
             last_day?: string | null;
+        };
+        /**
+         * ModelUnit
+         * @description A control unit the owner placed in `layout.yaml`: a zone, or a position as fractions of the car.
+         */
+        ModelUnit: {
+            /** Ecu */
+            ecu: string;
+            /** Zone */
+            zone?: string | null;
+            /** At */
+            at?: number[] | null;
+            /** Source */
+            source?: string | null;
         };
         /**
          * MonthMetrics

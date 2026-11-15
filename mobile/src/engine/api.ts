@@ -21,7 +21,7 @@ import { drivingPattern } from './driving'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
 import { tireForecast } from './tires'
-import type { PackBody } from './pack'
+import type { PackBody, PackUnit } from './pack'
 import { trendsMonthly } from './trends'
 import { unmapped, warningDaily, warningEvents, warningFrequency } from './warnings'
 
@@ -38,6 +38,7 @@ export interface ModelInfo {
   default: boolean
   hidden_pages: string[]
   body: PackBody | null
+  layout?: PackUnit[]
   has_data: boolean
   first_day: string | null
   last_day: string | null

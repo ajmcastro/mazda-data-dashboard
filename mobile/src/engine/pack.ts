@@ -14,6 +14,16 @@ export interface PackModel {
   hidden_pages: string[]
   /** The car's dimensions for the 3D drawing (`body:` in its model.yaml); absent in packs made before M41. */
   body?: PackBody | null
+  /** the control units the owner placed (M59); absent in a pack made before */
+  layout?: PackUnit[]
+}
+
+/** A control unit the owner placed (`layout.yaml`): a zone, or fractions of the car. */
+export interface PackUnit {
+  ecu: string
+  zone: string | null
+  at: number[] | null
+  source: string | null
 }
 
 export interface PackBody {

@@ -455,6 +455,24 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* the fault map (M59): the car from above with the units the owner placed */
+.fault-map { display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start; }
+.fault-map-car { width: 150px; height: 300px; flex: none; }
+.fault-map-zone { stroke: var(--line); stroke-dasharray: 3 4; }
+.fault-map-unit { cursor: pointer; }
+.fault-map-unit rect { fill: var(--panel); stroke: var(--muted); }
+.fault-map-unit text { font: 600 9px var(--mono); fill: var(--muted); }
+.fault-map-unit.past rect { stroke: var(--accent); stroke-dasharray: 3 2; }
+.fault-map-unit.past text { fill: var(--text); }
+.fault-map-unit.active rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1.5; }
+.fault-map-unit.active text { fill: var(--accent); }
+.fault-map-unit.selected rect { stroke-width: 2.5; }
+.fault-map-unit:focus-visible { outline: 2px solid var(--steel); }
+.fault-map-side { flex: 1 1 260px; min-width: 0; }
+.fault-map-list { list-style: none; margin: 0 0 10px; padding: 0; }
+.fault-map-list li { margin: 5px 0; }
+.fault-map-yaml { font: 12px var(--mono); background: var(--panel-2); border-radius: 8px; padding: 8px 10px; margin: 6px 0 0; overflow-x: auto; }
+
 /* who rides, on the seats (M57): the cabin from above */
 .seat-map-wrap { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin-top: 12px; }
 .seat-map { width: 150px; height: 190px; flex: none; }
