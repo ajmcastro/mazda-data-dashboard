@@ -126,6 +126,12 @@ await shoot('warning-lamps.png', '/status', async (p) => {
   await sleep(1500)
 })
 await shoot('diagnostics.png', '/diagnostics')
+// the newer pages: what is ahead, how the car is driven, one day, the report for the workshop, the data's health
+await shoot('looking-ahead.png', '/', (p) => scrollToHeading(p, 'Looking ahead'))
+await shoot('driving.png', '/trends', (p) => scrollToHeading(p, 'How the car is driven'))
+await shoot('day.png', '/day?day=2026-06-27')
+await shoot('report.png', '/report')
+await shoot('data-health.png', '/health')
 await shoot('compare.png', '/compare')
 await mac.close()
 
@@ -140,7 +146,23 @@ await mac60.goto('http://localhost:5173/status?model=cx60', { waitUntil: 'networ
 await car3d(mac60, 'car-3d-cx60.png')
 await mac60.screenshot({ path: path.join(out, 'car-3d-cx60.png') })
 console.log('wrote car-3d-cx60.png')
+// who rides, from the seat belts: only the second demo model sends them
+await mac60.goto('http://localhost:5173/status?model=cx60', { waitUntil: 'networkidle0' })
+await sleep(800)
+await scrollToHeading(mac60, 'Who rides')
+await sleep(800)
+await mac60.screenshot({ path: path.join(out, 'who-rides-cx60.png') })
+console.log('wrote who-rides-cx60.png')
 await mac60.close()
+
+// the same dashboard in Portuguese (the language is a choice per device, kept in the browser)
+const pt = await newPage(1280, 860, 1.5)
+await pt.evaluateOnNewDocument(() => localStorage.setItem('cx5.lang', 'pt'))
+await pt.goto('http://localhost:5173/', { waitUntil: 'networkidle0' })
+await sleep(1100)
+await pt.screenshot({ path: path.join(out, 'overview-pt.png') })
+console.log('wrote overview-pt.png')
+await pt.close()
 
 // all the cars at a glance (clock on 1 August 2026: the CX-5's data is then a month old and says so)
 const garage = await newPage(1280, 860, 1.5, 'dark', [2026, 7])

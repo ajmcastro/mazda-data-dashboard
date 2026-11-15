@@ -76,8 +76,9 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
     is an amount. Compare says "higher" and "lower" between two cars, never "better" or "worse", and uses the
     good/bad colours only for the same car over time.
 12. **Tests must not depend on your own configuration.** The files in `config/models/<id>/` are the owner's (their
-    code descriptions, their fuel prices): tests that need settings pass their own (`ingest(..., settings_path)`).
-
+    code descriptions, their fuel prices, their service log): tests that need settings pass their own
+    (`ingest(..., settings_path)`), and a test that writes (the import, the service log) builds a temporary root and
+    sets `MAZDA_ROOT`. Never import test files into a real `data/` folder.
 13. **The 3D car** (`frontend/src/car3d/`, on the Status page). It draws what `frontend/src/car.ts` says about each
     part and nothing else, so the list and the drawing cannot disagree. `three` stays in the chunk that is loaded with
     the view: only `scene.ts` and `Car3D.tsx` import it (a test fails otherwise). It renders on a change, never in a
@@ -90,13 +91,23 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
     `shape:` in the model's `model.yaml`. The tests that every shape must pass then run on it. **Never commit the
     photos** (or anything read from a number plate), and do not use a manufacturer's model or drawing. The generic
     shape is pinned by a fixture and must not change.
-
 15. **Text is in two languages.** Anything a reader sees goes through `tr('English text', { values })` (or `trn` for a
     count, `msg` for a constant that is shown later with `tr(value)`), from `frontend/src/i18n`, and gets its Portuguese
     (Portugal) in `frontend/src/i18n/pt/<area>.ts`, with the same `{placeholders}`. Menu entries and page titles have a key
     in `i18n/en.ts` and `pt.ts` instead. A test reads the source and fails for a phrase with no Portuguese, and for text
     typed straight into the markup. A new alert rule also needs its sentences in `frontend/src/alerttext.ts`. Not fluent
     in Portuguese? Say so in the pull request and leave your best attempt: it will be reviewed.
+16. **Units are converted only where they are shown.** The API, the database, the alert rules and all the maths stay
+    in kPa, l/100 km and km; a page or component formats through `frontend/src/units.ts` and never spells out a unit
+    itself (a test fails otherwise).
+17. **Estimates are worded as estimates, and nothing passes a verdict.** A forecast says "at this rate", a fill-up or
+    a drive is "between two status reports", a pattern in freeze frames "tends to appear when", never a cause. Each
+    wording module has a test that forbids verdict words, in both languages; a new one should have the same.
+18. **What the owner knows is never invented.** The repository ships no `layout.yaml` (where control units sit), no
+    code titles that are not known, and no limits the car did not report or the owner did not set.
+19. **A new alert rule** needs its model in `alerts/config.py`, a detector and a test, a row in the README's Alerts
+    table, the part of the car it is about in `ALERT_PART` (`frontend/src/car.ts`), and its sentences and name in
+    `frontend/src/alerttext.ts`; tests read the detectors' list and fail when one of those two is missing.
 
 ## Pull requests
 

@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my cars (a CX-5, and a CX-60 set up the same way), with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: complete. All planned milestones (M1–M44) are done except M28** (adapting to a real CX-60 export: conditional, not started): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), and the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos). **Built after that: eighteen further milestones, M45–M62 (see "More value from the same data"), all done; M28 stays on hold until there is a real CX-60 export.** Other ideas are under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
+**Status: complete. Every planned milestone (M1–M62) is done except M28** (adapting to a real CX-60 export: on hold until there is one): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos), and eighteen milestones of "more value from the same data" (M45–M62: units, data health, fill-ups, the driving pattern, the day page, a service log, the tire leak and maintenance forecasts, import from the dashboard, a report for the workshop, six follow-ups of the 3D car, code description packs, and Portuguese as a second language). Other ideas are under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
 
 ## Decisions
 
@@ -34,7 +34,10 @@ backend/                    # uv project (pyproject.toml, uv.lock)
     ingest/                 # per-file parsers -> DuckDB tables
     model/                  # code lookups, settings, SQL views (views.sql)
     alerts/                 # rule engine, store, optional desktop notification
-    api/                    # FastAPI app, model selection, date range, monthly trends
+    api/                    # FastAPI app, model selection, date range, monthly trends, one file per later page (day, driving, health, refuels, service)
+    tires.py, forecast.py   # the tire leak and looking-ahead estimates (one SQL each, shared by the API and the alert rules)
+    importer.py             # import from the dashboard (POST /api/import)
+    codepack.py             # make codes-export / codes-import
     pack.py                 # data pack export for the phone app
     contract.py             # records the Python API's answers for the phone app's contract tests
     timezone_check.py       # make timezone
@@ -44,10 +47,13 @@ backend/                    # uv project (pyproject.toml, uv.lock)
     profile.py              # data profiling (make profile)
   tests/
 frontend/                   # Vite + React + TS (src/api, components, pages): the Mac dashboard
+  src/*.ts                  # the pure, tested logic and wording of each page (trends, compare, car, day, report, ...)
+  src/i18n/                 # the two languages: the typed menu catalogue, tr() and the Portuguese phrases (pt/)
   src/car3d/                # the car in 3D on Status: pure geometry, camera and labels, the three.js scene, shapes/
 mobile/                     # the offline iPhone app (Vite + React + DuckDB-WASM); reuses frontend/src
   src/engine/               # the Python API in TypeScript
-config/                     # models.yaml; models/<id>/ = model.yaml, alerts.yaml, settings.yaml, codes/*.yaml
+config/                     # models.yaml; models/<id>/ = model.yaml, alerts.yaml, settings.yaml, codes/*.yaml,
+                            #   and the owner's optional fuel_log.yaml, service_log.yaml, layout.yaml
 data/<id>/                  # private raw exports, one folder per model (gitignored)
 db/                         # <id>.duckdb databases and <id>.cx5pack data packs (gitignored)
 sample_data/<id>/           # synthetic data per model (committed)
@@ -58,7 +64,7 @@ Makefile  README.md  CONTRIBUTING.md  PLAN.md  CLAUDE.md  LICENSE
 
 ## Makefile targets
 
-The README has a one-line description of each: `setup`, `models`, `migrate-models`, `compat`, `ingest`, `alerts`, `model`, `timezone`, `unmapped`, `api`, `web`, `dev`, `demo-ingest`, `demo`, `sample-data`, `types`, `test`, `lint`, `format`, `profile`, `audit`, `reset-db`, `clean`, `screenshots`, and for the phone app `mobile-install`, `mobile-pack`, `mobile-demo-pack`, `mobile-dev`, `mobile-build`, `mobile-typecheck`, `mobile-golden`, `mobile-golden-real`, `mobile-test`.
+The README has a one-line description of each: `setup`, `models`, `migrate-models`, `compat`, `codes-export`, `codes-import`, `ingest`, `alerts`, `model`, `timezone`, `unmapped`, `api`, `web`, `dev`, `demo-ingest`, `demo`, `sample-data`, `types`, `test`, `lint`, `format`, `profile`, `audit`, `reset-db`, `clean`, `screenshots`, and for the phone app `mobile-install`, `mobile-pack`, `mobile-demo-pack`, `mobile-dev`, `mobile-build`, `mobile-typecheck`, `mobile-golden`, `mobile-golden-real`, `mobile-test`.
 
 ## Milestones
 
@@ -91,6 +97,17 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M32 | All cars at a glance ✅ | a card per car (odometer, last 30 days, fuel, oil, alerts, faults, car warnings, stale-data note), Mac and phone, alert counts in the model selector |
 | M31 | Compare two periods of one car ✅ | the Compare page with "this period against that one" (last 30 days against the 30 before, this month against a year ago, before and after a date, or two periods you pick), tones only for the same car |
 | M34 | Fuel and cost on All cars ✅ | litres and average l/100 km, total and average cost on each All cars card, for the same 30 days as the distance; estimates, cost only with a fuel price |
+| M35–M37 | More from the CSVs already loaded ✅ | when the car is used (by hour and weekday), what a fault's freeze frames have in common, who rides (from the seat belts) |
+| M38–M41 | The car in 3D ✅ | the car part by part as a list and as a 3D schematic on Status, on the Mac and the phone, with each model's dimensions |
+| M42–M44 | A recognisable car in 3D ✅ | shapes by name; the CX-60 and the 2026 CX-5 traced from the owner's photos |
+| M45–M46 | Units, data health ✅ | kPa / bar / psi, l/100 km / km/l / mpg, km / miles per device; a page on what the exports cover |
+| M47–M49 | Fill-ups, driving pattern, one day ✅ | the refuel log with what was paid, stretches by length, the Day page |
+| M50–M52 | Service log, tire leak forecast, looking ahead ✅ | the owner's notes on the charts, a wheel's rate of loss and date, oil-change dates, yearly distance, a calendar file |
+| M53–M54 | Import from the dashboard, report for the workshop ✅ | drop Mazda's download on a page; a printable page for the mechanic |
+| M55–M60 | The 3D car, further ✅ | alerts on the parts, a time slider, the seats, a fault's frames on the car, the fault map, side views on All cars and Compare |
+| M61–M62 | Code description packs, a second language ✅ | share descriptions as a file; both apps in Portuguese (Portugal) as well as English |
+
+M28 (a real CX-60 export) is the only milestone not built; it has no row because there is nothing to show yet.
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 

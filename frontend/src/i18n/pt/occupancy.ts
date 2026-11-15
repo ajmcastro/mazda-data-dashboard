@@ -8,5 +8,5 @@ export const OCCUPANCY: Record<string, string> = {
   'Front passenger': 'Passageiro da frente',
   'Rear left': 'Traseiro esquerdo',
   'Rear right': 'Traseiro direito',
-  'Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row, a child seat and a passenger who does not buckle up are not seen.': 'Cada lugar é sombreado pela frequência com que o seu cinto estava apertado nos relatórios com o condutor de cinto. Uma terceira fila, uma cadeira de criança e um passageiro que não aperta o cinto não são vistos.',
+  'Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row and a child seat are not seen either.': 'Cada lugar é sombreado pela frequência com que o seu cinto estava apertado nos relatórios com o condutor de cinto. Uma terceira fila e uma cadeira de criança também não são vistas.',
 }

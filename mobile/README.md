@@ -4,6 +4,10 @@ The Mazda Data Dashboard as an offline web app for an iPhone: the same pages as 
 (`../frontend/src`, shared through the `@frontend` alias), running on the data stored **on the
 phone**. No server, no account, and no request to any host but its own. The Mac app is untouched.
 
+It is a read-only viewer: it has every page of the Mac dashboard except **Import**, and it shows the service log
+without the form that adds to it (both write files on the Mac). What you keep in files on the Mac (fuel log, service
+log, fault-map placements, the 3D car's dimensions) reaches the phone inside the data pack.
+
 How it works (details and measurements in `../PLAN.md`):
 
 - `make mobile-pack` on the Mac exports each car model's database as `db/<model>.cx5pack` (for example `db/cx5.cx5pack`; the manifest names the model) (Parquet tables in a zip,
@@ -24,7 +28,9 @@ make mobile-build          # production build into mobile/dist (includes the ser
 make mobile-test           # contract + app tests
 ```
 
-Open the app, tap **Load demo data**, or **Import data pack** and choose a `.cx5pack`.
+Open the app, tap **Load demo data**, or **Import data pack** and choose a `.cx5pack`. The app is in English and
+Portuguese (Portugal): *More → Data on this phone → Units and language*; its own text uses the shared
+`@frontend/i18n` (see [CONTRIBUTING.md](../CONTRIBUTING.md), rule 15).
 On a phone, AirDrop the pack to Files first. `HOST=1` exposes only the demo data; never serve a
 real pack over the network.
 
@@ -38,7 +44,8 @@ real pack over the network.
 | `src/storage.ts` | IndexedDB: packs (keyed by model) and acknowledgements (prefixed by model) |
 | `src/engine-browser.ts` | DuckDB-WASM in a Web Worker (one query at a time) |
 | `src/SummaryGate.tsx` | the pages about several cars (Compare, All cars): prepares the cached figures of the stored cars first |
-| `src/DataScreen.tsx` | import, demo (both demo cars), pack information per model, delete one or all |
+| `src/DataScreen.tsx` | import, demo (both demo cars), pack information per model, units and language, delete one or all |
+| `src/messages.ts` | what the controller and the pack reader say, worded in the reader's language (they stay English and UI-free themselves) |
 | `src/engine/` | the Python API in TypeScript (`api.ts` routes, one file per area, `pack.ts` loader) |
 | `test/` | contract tests (replay the Python API's answers), controller and engine tests |
 
@@ -57,7 +64,7 @@ the path of the first difference.
 ## Installing and offline use
 
 A production build is an installable web app: on an iPhone open the hosted address in Safari, Share,
-**Add to Home Screen**. It saves itself on the phone (about 36 MB, once; the Data screen says
+**Add to Home Screen**. It saves itself on the phone (about 37 MB, once; the Data screen says
 "Works offline: yes" when it is done) and then opens with no connection. When a newer build is
 published the app offers an **Update** button. Service workers need `https://` (or `localhost`), so
 this works on the hosted site and on `localhost` in the iOS Simulator, not from

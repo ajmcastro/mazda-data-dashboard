@@ -89,4 +89,4 @@ export function seats(o: Occupancy | undefined, steering: 'left' | 'right' = 'le
 /** How strongly a seat is shaded (0 to 1): its share, with a floor so an empty seat is still drawn. */
 export const seatShade = (s: Pick<Seat, 'pct'>): number => 0.08 + 0.92 * ((s.pct ?? 0) / 100)
 
-export const SEATS_NOTE = msg('Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row, a child seat and a passenger who does not buckle up are not seen.')
+export const SEATS_NOTE = msg('Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row and a child seat are not seen either.')

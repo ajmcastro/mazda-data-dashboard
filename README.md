@@ -9,13 +9,22 @@ the phone**.
   tire pressure (and when the car really measured it), the car's own oil-change countdown, warnings, fault
   codes with their freeze frames, the diagnostic-tool report, a month-by-month comparison, and a comparison of
   two cars or of two periods of one car.
+- **Understand the car day to day**: the fill-ups the fuel level shows, how the car is driven (short and long
+  stretches), everything that happened on one day, your own service log marked on the charts, and whether your
+  data has gaps.
+- **Look ahead**: the next oil change as dates at your recent pace, the year's distance against a limit you
+  set, a tire that is slowly losing pressure, and a calendar file of those dates.
 - **The car in 3D**: a schematic of your car you can turn and zoom, with tire pressures, doors, fuel, the oil
-  countdown and the odometer shown next to the part they belong to, and what needs a look marked. On the Mac
-  and on the phone.
-- **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, a low supply voltage in a fault's freeze frame, unusually high fuel
-  use, a slow tire leak, an oil change coming up, the warning flags the car raises itself, and a stale export.
-- **Your units**: tire pressure in kPa, bar or psi, fuel consumption in l/100 km, km/l or mpg, distance in km
-  or miles; chosen once per device.
+  countdown and the odometer shown next to the part they belong to, what needs a look marked, and a slider to
+  step back through the period. On the Mac and on the phone.
+- **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, a low supply voltage in
+  a fault's freeze frame, unusually high fuel use, low tire pressure or a slow leak, an oil change coming up,
+  the warning flags the car raises itself, and a stale export.
+- **Take it to the workshop**: a one-page report to print or save as a PDF, with the faults, what surrounded
+  them and the car's state.
+- **Add data without a terminal**: drop Mazda's download on the *Import* page and see what changed.
+- **Your units and your language**: tire pressure in kPa, bar or psi, fuel consumption in l/100 km, km/l or
+  mpg, distance in km or miles; English or Portuguese (Portugal). Chosen once per device.
 - **Several cars**: one folder of exports, one database and one set of code descriptions per Mazda model
   (the CX-5, and a CX-60 set up the same way), a model selector, an *All cars* overview and a *Compare* page,
   on the Mac and on the phone.
@@ -39,6 +48,24 @@ the phone**.
   <tr>
     <td><img src="docs/screenshots/faults.png" alt="Fault explorer with freeze frames"></td>
     <td><img src="docs/screenshots/diagnostics.png" alt="Diagnostic tool report"></td>
+  </tr>
+</table>
+
+The newer pages: what is ahead, how the car is driven, one day at a glance, the report for the workshop, and how
+far the data can be trusted.
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/looking-ahead.png" alt="Looking ahead on the Overview: the oil change as two dates at the recent pace, the year's distance against a limit, a tire losing pressure, and the calendar file"></td>
+    <td><img src="docs/screenshots/driving.png" alt="How the car is driven, on Trends: stretches of driving by length with distance, fuel and consumption, and by month"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/day.png" alt="The Day page: one day's warnings, an alert, a drive, a status report and a fill-up, in order, in the car's own time"></td>
+    <td><img src="docs/screenshots/report.png" alt="The report for the workshop: sections to include, the car and its faults, ready to print or save as a PDF"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/data-health.png" alt="Data health: days with a status report, the longest silence, invalid readings, and what each export file covers"></td>
+    <td><img src="docs/screenshots/who-rides-cx60.png" alt="Who rides, on the second demo car: the share of status reports with each seat belt buckled, and the seats seen from above"></td>
   </tr>
 </table>
 
@@ -97,6 +124,16 @@ With more than one car model loaded, the sidebar has a model selector (here the 
 > data (see [docs/data-dictionary.md](docs/data-dictionary.md)). It is a curiosity tool, not a
 > substitute for a mechanic.
 
+## Contents
+
+- [Try it in two minutes (no data needed)](#try-it-in-two-minutes-no-data-needed)
+- [What is in the dashboard](#what-is-in-the-dashboard): the pages, the words used, units, language, periods
+- [Use your own data](#use-your-own-data): getting it from Mazda, loading it, car models, and the optional
+  settings (time zone, fuel cost, fill-ups, looking ahead, service log, fault map, sharing code descriptions)
+- [Use it on your iPhone](#use-it-on-your-iphone-offline-with-your-data-on-the-phone)
+- [Alerts](#alerts) · [Commands](#commands) · [How it works](#how-it-works) · [Limitations](#limitations)
+- [Privacy](#privacy) · [Troubleshooting](#troubleshooting) · [Development](#development)
+
 ## Try it in two minutes (no data needed)
 
 ### 1. Install the tools
@@ -149,45 +186,58 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`�
 
 ## What is in the dashboard
 
+The pages, in the order of the Mac's menu. On the phone, Overview, Trends, Alerts and Faults are tabs and the rest
+are under *More*.
+
 | Page | What it shows |
 |---|---|
-| **Overview** | odometer, distance, fuel economy (with the estimated cost per 100 km when a fuel price is set), fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises; and **looking ahead**: the oil change as two dates at your recent pace, the year's distance against an optional limit, any tire losing pressure, and a calendar file of those dates |
-| **Trends** | every month compared with the one before, including the estimated fuel cost when a fuel price is set (see below); and **how the car is driven**: the stretches of driving by length (under 5 km, 5–20, 20–100, over 100) with the distance, fuel and consumption of each, by month too, and a sentence when a month's consumption and its share of short stretches moved together |
-| **All cars** (also on the phone, under *More*) | one card per car model with data: the odometer, the last 30 days, the **fuel used and its cost** over those days (litres, l/100 km, total and per 100 km: estimates, and the cost only when a fuel price is set), fuel level, the car's own next-oil-change countdown, new alerts, faults still listed, the car's own warnings that are on, and a note when its newest reading is more than a week old. The model selector also shows each car's new alerts; each card shows the car's side view in its own shape |
-| **Compare** (also on the phone, under *More*) | **two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar |
-| **Alerts** | what the alert rules raised; acknowledge them one by one or all at once; the car on the Status page marks the parts that have open alerts, and a click shows only those |
-| **Warnings** | warning events per day, how often each code appears, and the events behind each code |
-| **Faults** | trouble codes (active or cleared), their history, freeze-frame data and what else happened around them; a **fault map** shows the control units you placed on a plan of the car, lit by their faults (see [Fault map](#fault-map-optional)) |
-| **Status** | **the car in 3D** (a schematic of the car you can turn and zoom, with each wheel's pressure, doors, trunk and hood, fuel, the oil countdown and the odometer next to the part, what needs a look marked; or the same as a list; numbered pins on the phone), the car's own warning flags (all clear, or which is on since when), the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it), the oil-change countdown, fuel and range, when the car is used (days with activity by hour and weekday, counted per day), who rides (from the seat belts, when the car sends them), tire pressure per wheel plotted at the time the car **measured** it (old measurements are marked), recent trips and the alarm history; the **fill-ups** the fuel level shows (when, how much, the distance and consumption since the one before, an estimated cost and, if you keep a fuel log, what you paid: see [Fill-ups](#fill-ups-optional)); and the **service log**: what you noted was done to the car, marked on the fuel, tire and oil charts (see [Service log](#service-log-optional)); and, for a wheel that is losing pressure against the other three, **how fast and when it reaches your limit at that rate**; a **slider under the car** steps back through the status reports of the period (or plays them), showing the car as each report had it |
-| **Day** (also on the phone, under *More*) | one day at a glance, in the car's own time: the stretches driven, each status report with what changed, doors, the warning codes of the day, fault read-outs, alarm reports, a fill-up, a diagnostic report and the alerts about that day, in order, each linking to its page; arrows step to the previous and next day that has anything. Also opened by clicking a day on the Warnings chart or a fill-up's date |
-| **Import** (the Mac only) | drop a new download from Mazda on the page: it is checked, stored in the model's data folder, loaded, and summarised (new rows, the newest day, distance since the last load, faults that appeared or left, new warning codes, new alerts) |
-| **Report** (also on the phone, under *More*) | one page to print or save as a PDF for the workshop, for the period you chose: the car, its faults with what their freeze frames show, the car's own warnings, the warning-lamp flags that changed, tires, the newest diagnostic report against the one before, your service log and the open alerts. Untick what you do not want; the VIN is left out unless you tick it |
-| **Data health** (also on the phone, under *More*) | how far to trust the rest: what each kind of export file covers (first and last record, how many, on how many days), how many days have a status report, the silences between status reports of two days or more, and the signals the car itself flagged as Invalid (those readings are never used). It describes the exports, not the car |
-| **Diagnostics** | the diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next |
+| **Overview** | Odometer, distance, fuel economy (with the estimated cost per 100 km when a fuel price is set), fuel level and the last fill-up, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and what needs attention: new alerts, faults still listed, any warning flag the car itself raises. **Looking ahead**: the oil change as two dates at your recent pace, the year's distance against an optional limit, any tire losing pressure, and a calendar file of those dates (see [Looking ahead](#looking-ahead-optional-limit)). |
+| **Trends** | Every month compared with the one before, including the estimated fuel cost when a fuel price is set. **How the car is driven**: the stretches of driving by length (under 5 km, 5–20, 20–100, over 100) with the distance, fuel and consumption of each, by month too, and a sentence when a month's consumption and its share of short stretches moved together. |
+| **Compare** | **Two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar. |
+| **Alerts** | What the alert rules raised; acknowledge them one by one or all at once. The car on the Status page marks the parts that have open alerts, and a click on a marker shows only those. |
+| **Warnings** | Warning events per day, how often each code appears, and the events behind each code. Click a day on the chart to open that day. |
+| **Faults** | Trouble codes (active or cleared), their history, freeze-frame data, what else happened around them, and **Show on the car** for what a fault's freeze frames have in common. A **fault map** shows the control units you placed on a plan of the car, lit by their faults (see [Fault map](#fault-map-optional)). |
+| **Status** | **The car in 3D** (or the same as a list; numbered pins on the phone), with a **slider** that steps back through the status reports of the period or plays them. Then, each in its own panel: fuel level and range; tire pressure per wheel at the time the car **measured** it, and for a wheel losing pressure against the other three, how fast and when it reaches your limit at that rate; the **fill-ups** (see [Fill-ups](#fill-ups-optional)); the **service log** (see [Service log](#service-log-optional)); the car's own warning flags; the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it); when the car is used (by hour and weekday); who rides (from the seat belts, when the car sends them); the oil-change countdown; recent trips and the alarm history. |
+| **Diagnostics** | The diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next. |
+| **All cars** | One card per car model with data: its side view, the odometer, the last 30 days, the **fuel used and its cost** over those days (estimates; the cost only when a fuel price is set), fuel level, the car's own next-oil-change countdown, new alerts, faults still listed, the car's own warnings that are on, and a note when its newest reading is more than a week old. |
+| **Day** | One day at a glance, in the car's own time: the stretches driven, each status report with what changed, doors, the warning codes of the day, fault read-outs, alarm reports, a fill-up, a service-log entry, a diagnostic report and the alerts about that day, in order, each linking to its page. Arrows step to the previous and next day that has anything. |
+| **Report** | One page to print or save as a PDF for the workshop, for the period you chose: the car, its faults with what their freeze frames show, the car's own warnings, the warning-lamp flags that changed, tires, the newest diagnostic report against the one before, your service log and the open alerts. Untick what you do not want; the VIN is left out unless you tick it. |
+| **Data health** | How far to trust the rest: what each kind of export file covers (first and last record, how many, on how many days), how many days have a status report, the silences between status reports of two days or more, and the signals the car itself flagged as Invalid (those readings are never used). It describes the exports, not the car. |
+| **Import** (the Mac only) | Drop a new download from Mazda on the page: it is checked, stored in the model's data folder, loaded, and summarised (new rows, the newest day, distance since the last load, faults that appeared or left, new warning codes, new alerts). See [Adding newer data later](#adding-newer-data-later). |
 
 **Words used here.** A *warning code* is one of the `$XXX` codes in the warnings export (Mazda does not
 publish their meaning). A *fault* (DTC) is a trouble code stored by one of the car's control units (ECUs),
-with *freeze-frame* data captured when it appeared. A *snapshot* or *reading* is one status report the car
-sent. The *car's own warnings* are nine on/off flags it raises itself (tire pressure per wheel, tire
+with *freeze-frame* data captured when it appeared. A *snapshot*, *reading* or *status report* is one
+report of its state the car sent. A *stretch* is the driving between two status reports in a row (the car does
+not report single trips, so a stretch can be part of a trip or several short ones). A *fill-up* is a rise of the
+fuel level between two status reports. The *car's own warnings* are nine on/off flags it raises itself (tire pressure per wheel, tire
 pressure system, oil level, seat belt, door). The *warning lamps* are 128 further bit flags that look like
 dashboard lamps; almost all never change, and what they mean is unknown, so the dashboard shows the few
 that do change and what happens around them. A *data pack* (`.cx5pack`) is your database exported for the
 phone app.
 
 **Units.** The three small lists at the bottom of the side menu (on the phone: *More → Data on this phone →
-Units*) choose how figures are shown on this device: tire pressure in kPa, bar or psi; fuel consumption in
+Units and language*) choose how figures are shown on this device: tire pressure in kPa, bar or psi; fuel consumption in
 l/100 km, km/l, mpg (UK) or mpg (US); distance in km or miles (speeds and costs per distance follow). The data
 itself does not change, and neither do the alert rules, which stay in kPa and km. With km/l or mpg a higher
 figure means less fuel, so the green and red on Trends and Compare follow that. Two things keep the data's
 units: the text of an alert (it is written when the data is loaded) and the raw values of a diagnostic report.
 
-**Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults, Status and Data health
-pages limits everything to a *from – to* range of days (UTC, both included). Use the quick
+**Language.** Both apps are in **English and Portuguese (Portugal)**. The language menu (under the units on the
+Mac; *More → Data on this phone* on the phone) offers *Auto*, *English* and *Português*: Auto follows your browser
+(Portuguese when it asks for Portuguese before English, English otherwise). The choice is per device, and numbers
+and dates follow it. What you wrote yourself stays as you wrote it (code descriptions, service notes), and so do
+the car's own names (control units, signals) and the figures inside an alert.
+
+![The Overview in Portuguese](docs/screenshots/overview-pt.png)
+
+**Looking at a period.** The bar at the top of the Overview, Trends, Warnings, Faults, Status, Report and Data
+health pages limits everything to a *from – to* range of days (UTC, both included). Use the quick
 buttons (Last week, Last 2 weeks, Last 30 / 60 / 90 days, All time) or type your own dates. Quick
 ranges count back from your **newest data**, not from today, so they still make sense when your
 last export is a few weeks old, and your last quick choice is remembered in the browser. The
 range is kept in the address, so you can bookmark it (a link with dates always wins over the
-remembered choice), and it follows you from page to page. (*All cars* and *Compare* do not use it: they look at each car's own newest data or whole history.) Things that describe a *state* ignore
+remembered choice), and it follows you from page to page. (*All cars* and *Compare* do not use it: they look at each car's own newest data or whole history; *Day* shows the day you pick.) Things that describe a *state* ignore
 the range: the faults still active in the latest read-out, the alerts list, the car's own
 warning flags, the warning-lamp flags, the oil-change countdown and the diagnostic-tool report.
 
@@ -262,7 +312,10 @@ Things to know:
 
 2. `make ingest`: loads everything into `db/<id>.duckdb` (safe to re-run whenever you get a
    newer export) and evaluates the alert rules.
-3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`).
+3. `make dev`: starts the API (`:8000`) and the dashboard (`:5173`). Open <http://localhost:5173>.
+
+Once the dashboard runs you no longer need the terminal for new downloads: the **Import** page takes Mazda's zip
+(see [Adding newer data later](#adding-newer-data-later)).
 
 Run `make unmapped` to see warning and fault codes (and warning-lamp flags) that have no description
 yet, then add what you learn to `config/models/<id>/codes/*.yaml` (for the CX-5, `config/models/cx5/codes/`) and run `make model`.
@@ -276,7 +329,7 @@ Each model has its own:
 |---|---|
 | raw exports | `data/<id>/` (git-ignored) |
 | database | `db/<id>.duckdb` (git-ignored) |
-| configuration | `config/models/<id>/`: `model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml` |
+| configuration | `config/models/<id>/`: `model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`, and the optional files you keep yourself: `fuel_log.yaml`, `service_log.yaml`, `layout.yaml` |
 | phone data pack | `db/<id>.cx5pack` (git-ignored, holds the VIN) |
 | synthetic demo data | `sample_data/<id>/` (committed) |
 
@@ -434,14 +487,6 @@ the dates (oil change, end of the year, a tire reaching your pressure limit) as 
 open it to add them to your calendar; nothing is sent anywhere. The oil alert can also fire by date: add
 `days: 30` to `oil_change_due` in `alerts.yaml`.
 
-### Language
-
-Both apps are in **English and Portuguese (Portugal)**. The language menu (the bottom of the Mac's menu; *Data on
-this phone* in the phone app) offers *Auto*, *English* and *Português*: Auto follows your browser (Portuguese when
-it asks for Portuguese before English, English otherwise). The choice is per device, and numbers and dates follow
-it. What you wrote yourself stays as you wrote it (code descriptions, service notes), and so do the car's own names
-(control units, signals) and the figures inside an alert.
-
 ### Sharing code descriptions
 
 Mazda does not publish what its warning codes mean, so what you learn is worth sharing with another owner of the
@@ -498,9 +543,15 @@ diagnostic report. These are **suggestions, never entries**: nothing is added un
 
 ### Adding newer data later
 
-**Without a terminal:** with the dashboard running (`make dev`), open **Import** in the menu and drop Mazda's zip, or its files, on the page. It checks that they are Mazda's export files and belong to the car on screen, copies them into that model's data folder, loads them and shows what changed. A car with no data yet shows a link to the same page. (Not in the demo, and not with `MAZDA_READONLY=1`.) Or do it by hand:
+You can keep adding exports as you receive them; history is never lost. There are two ways.
 
-You can keep adding exports as you receive them; history is never lost.
+**From the dashboard.** With the dashboard running (`make dev`), open **Import** in the menu and drop Mazda's zip,
+or its files, on the page. It checks that they are Mazda's export files and belong to the car on screen, copies
+them into that model's data folder, loads them and shows what changed; the Overview then shows a short note of it
+until you dismiss it. A car with no data yet shows a link to the same page. Import is not available in the demo or
+with `MAZDA_READONLY=1`, and not in the phone app.
+
+**By hand.**
 
 1. Put the new files in `data/cx5/`. Replacing the old files with the new ones is fine, and so is
    keeping both. Only the top level of that folder is read, so moving older exports into
@@ -596,12 +647,14 @@ Good to know:
   it, tap a pin or a row for the details. A sideways swipe turns the car; swiping up or down scrolls the page,
   and the + and − buttons zoom. It works offline like everything else. A car's dimensions and shape come from
   its data pack.
-- **Units.** On the Data screen: pressure, fuel consumption and distance, as on the Mac. The choice is per
-  device.
+- **Units and language.** On the Data screen: pressure, fuel consumption and distance, and English or
+  Portuguese, as on the Mac. The choices are per device.
+- **What the phone does not have:** the Import page and the service log's *Add an entry* (both write files on
+  the Mac). Your fuel log, service log and fault-map placements reach the phone inside a new data pack.
 - **Dark or light.** The app follows the iPhone's Appearance setting. The button at the right end of
   the tab bar overrides it: tap to go Auto → Dark → Light. The Mac dashboard has the same switch at the
   bottom of the side menu. The choice is remembered per device.
-- **Compare and All cars** (under *More*, with two cars stored): the phone holds one car in memory at a time, so the
+- **Compare and All cars** (under *More*): the phone holds one car in memory at a time, so the
   first time you open one of them it loads each car once to prepare its figures (a few seconds, with a message), and
   keeps them for next time. Replacing a pack refreshes that car's figures.
 - Alerts are not re-evaluated on the phone (they come from `make ingest` on the Mac); you can
@@ -623,21 +676,23 @@ each alert is raised once, and an acknowledged alert is never raised again. The 
 |---|---|
 | new fault | a trouble code is reported for the first time |
 | recurring fault | a fault is still listed in the latest read-out and has been reported repeatedly |
+| low voltage in a freeze frame | a fault's freeze frame recorded a supply voltage below a threshold (12 V): worth a look at the battery, a hint and not a diagnosis |
 | new warning code | a warning code appears that was never seen before |
 | warning spike | one warning code has an unusually busy day |
-| tire leak forecast (off by default) | a wheel is losing pressure against the other three and reaches your low-pressure limit within `days` (14) at that rate |
 | burglar alarm | the alarm status is above normal |
 | high consumption | a stretch of driving uses far more fuel than your average |
 | low fuel | the latest fuel reading is below a threshold |
 | low tire pressure | a tire measurement is below a threshold (check your door-jamb sticker and set it); counted by when the car measured it, so a repeated reading is one alert |
+| tire leak forecast (off by default) | a wheel is losing pressure against the other three and reaches your low-pressure limit within `days` (14) at that rate |
+| oil change due | the car's own oil-change countdown is at or below 1,000 km (it counts in steps of 1,000 km or more); with `days: 30` also when your recent pace puts the oil change within that many days |
 | car warning flag | one of the car's own warning flags (tire pressure per wheel, tire pressure system, oil level, seat belt, door) is on; once per run, severity settable per flag |
 | new warning-lamp flag | one of the car's 128 warning-lamp bit flags is set for the first time (almost all never change, so a first set is news) |
-| oil change due | the car's own oil-change countdown is at or below 1,000 km (it counts in steps of 1,000 km or more) |
 | no new data | the newest data is more than a few days old |
 
 Each rule can be switched off and every threshold changed in the file (a typo is reported with a
 clear error). Event rules only look at the most recent `lookback_days` of data, so the first run
-does not flood you with history.
+does not flood you with history. An alert's text is written when the data is loaded, in the data's units
+(kPa, km); the dashboard shows it in your language.
 
 For a macOS notification when new alerts appear, set `notifications: desktop: true` in the same
 file (or run `cd backend && uv run python -m mazda_dash.alerts --notify`).
@@ -649,16 +704,16 @@ Run them from the project folder. The first group is what you need to use the da
 | Command | What it does |
 |---|---|
 | `make setup` | install backend and frontend dependencies |
-| `make compat` | per model: which signals the dashboard reads are missing from your data, and which of your signals nothing reads yet |
-| `make models`, `make migrate-models` | show the car models and where their files are; move a single-car install into the model folders |
-| `make ingest` | load `data/` into `db/<id>.duckdb`, rebuild the views, evaluate alerts |
+| `make demo` | run the dashboard on the synthetic sample data (`make demo-ingest` only loads it) |
+| `make ingest` | load `data/<id>/` into `db/<id>.duckdb`, rebuild the views, evaluate alerts |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
-| `make demo` | the same with the synthetic sample data (`make demo-ingest` only loads it) |
-| `make model` | reload each model's `config/models/<id>/codes/*.yaml` and `settings.yaml` and recreate the SQL views |
-| `make codes-export` / `make codes-import` | share the codes you described, or look at a file another owner shared (see [Sharing code descriptions](#sharing-code-descriptions)) |
+| `make model` | reload each model's configuration (`codes/*.yaml`, `settings.yaml`, the fuel and service logs) and recreate the SQL views |
+| `make unmapped` | list codes and flags in your data that have no description |
 | `make timezone` | check `car_timezone` in `config/models/<id>/settings.yaml` against your data |
 | `make alerts` | evaluate `config/models/<id>/alerts.yaml` only |
-| `make unmapped` | list codes and flags in your data that have no description |
+| `make models`, `make migrate-models` | show the car models and where their files are; move a single-car install into the model folders |
+| `make compat` | per model: which signals the dashboard reads are missing from your data, and which of your signals nothing reads yet |
+| `make codes-export` / `make codes-import` | share the codes you described, or look at a file another owner shared (see [Sharing code descriptions](#sharing-code-descriptions)) |
 | `make mobile-pack` | export each model's database as `db/<model>.cx5pack` for the phone app |
 | `make mobile-dev` | run the phone app on this computer (with the demo data bundled) |
 | `make audit` | check for private values before publishing (see [Privacy](#privacy)) |
@@ -693,20 +748,24 @@ data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your co
 - `backend/src/mazda_dash/ingest`: parsers for each file kind (idempotent; sentinel values such
   as `2147483647` become NULL).
 - `backend/src/mazda_dash/models.py`: the car-model registry (where each model's data, database and configuration are).
-- `backend/src/mazda_dash/model`: lookup tables from `config/models/<id>/codes/`, the settings (and fuel prices), and the SQL views the
-  API and alerts read ([view catalogue](docs/data-dictionary.md)).
+- `backend/src/mazda_dash/model`: lookup tables from `config/models/<id>/codes/`, the settings (fuel prices, your
+  fuel and service logs) and the SQL views the API and alerts read ([view catalogue](docs/data-dictionary.md)).
 - `backend/src/mazda_dash/alerts`: one detector per rule; each alert is raised once.
-- `backend/src/mazda_dash/api`: read-only JSON API (plus acknowledging alerts) and the monthly
-  figures for the Trends page.
-- `backend/src/mazda_dash/pack.py`: exports the database as the phone's data pack.
+- `backend/src/mazda_dash/api`: the JSON API. It only reads, with three exceptions that never leave your machine:
+  acknowledging an alert, adding a service-log entry, and importing a download (`importer.py`).
+- `backend/src/mazda_dash/tires.py`, `forecast.py`: the tire leak and the looking-ahead estimates, shared by the
+  API and the alert rules. `codepack.py`: sharing code descriptions. `pack.py`: the phone's data pack.
 - `frontend/`: Vite, React, TypeScript, Recharts. Types are generated from the API's OpenAPI
-  schema. The 3D car (`frontend/src/car3d/`) is drawn with three.js, loaded only when the view is shown; each
-  car's shape is a small file of numbers in `car3d/shapes/` (no model files, no textures).
+  schema. The wording of every sentence the pages show lives in small tested modules next to the pages, and
+  `frontend/src/i18n/` holds the two languages. The 3D car (`frontend/src/car3d/`) is drawn with three.js, loaded
+  only when the view is shown; each car's shape is a small file of numbers in `car3d/shapes/` (no model files, no
+  textures).
 - `mobile/`: the same pages as an offline phone app. DuckDB runs in the browser (WebAssembly) on a
   data pack exported by `make mobile-pack`, and a TypeScript port of the API answers the pages;
-  contract tests keep it identical to the Python API.
-- `config/`: `models.yaml` (the list of car models) and, per model in `config/models/<id>/`, your settings
-  (`settings.yaml`), the alert rules (`alerts.yaml`) and your descriptions of codes and flags (`codes/*.yaml`).
+  contract tests keep it identical to the Python API. See [mobile/README.md](mobile/README.md).
+- `config/`: `models.yaml` (the list of car models) and, per model in `config/models/<id>/`, what is yours:
+  `model.yaml`, your settings (`settings.yaml`), the alert rules (`alerts.yaml`), your descriptions of codes and
+  flags (`codes/*.yaml`) and, if you keep them, `fuel_log.yaml`, `service_log.yaml` and `layout.yaml`.
   `sample_data/`: the synthetic exports (and demo settings), one folder per model. `docs/`: the data dictionary
   and screenshots. `data/` and `db/` (git-ignored) hold your files and databases.
 
@@ -724,11 +783,19 @@ data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your co
   Gaps between exports stay gaps.
 - **The 3D car is a schematic.** Its shape is drawn in code: a likeness for the CX-5 (2026 generation) and the
   CX-60, a generic SUV for any other model, and never the real body. It shows what the status reports say
-  (tires, doors, trunk, hood, fuel, oil countdown, odometer), not the control units or where a fault is: Mazda
-  does not publish where they sit. The dimensions in `model.yaml` were looked up, not taken from a manual.
+  (tires, doors, trunk, hood, fuel, oil countdown, odometer). Mazda does not publish where the control units
+  sit, so the [fault map](#fault-map-optional) shows only the units you place yourself. The dimensions in
+  `model.yaml` were looked up, not taken from a manual.
 - **The fuel cost is an estimate.** The litres the car reports times the price you enter: not what you paid, and nothing for electricity.
-- **The phone app is a read-only viewer.** It does not read Mazda's files or evaluate alerts; the Mac does
-  that and sends a data pack. iOS may delete stored web-app data (you re-import the pack).
+- **Forecasts are your recent pace carried forward.** The oil-change dates, the year's distance and a tire reaching
+  its limit say "at this rate", are counted from your newest data, and change as you drive more or less.
+- **A fill-up and a drive are known only as "between two status reports".** The car reports its state now and
+  then, not each trip, so times and litres are approximate and say so.
+- **The phone app is a read-only viewer.** It does not read Mazda's files, evaluate alerts, import a download or
+  add to the service log; the Mac does that and sends a data pack. iOS may delete stored web-app data (you
+  re-import the pack).
+- **Two languages.** English and Portuguese (Portugal). Alert texts are stored in English and worded again on
+  screen; your own descriptions and notes are never translated.
 - Tested with one real export (a CX-5, Europe, 2026) plus the synthetic data (which includes a second,
   deliberately different model). Other models, markets or firmware may differ (`make compat` shows what); issues and sample files without personal data are welcome.
 
@@ -742,6 +809,11 @@ git-ignored too.
 
 The published phone app (GitHub Pages) is static code plus the synthetic demo data: it never receives
 your data, which you import from your own phone's storage.
+
+The things that write or produce a file all stay on your machine: the **Import** page sends Mazda's download to
+the API on your own computer, which stores it in `data/<id>/`; the **calendar file** is made in the page; the
+**report** is printed by your browser and leaves the VIN out unless you tick it; and `make codes-export` writes
+only descriptions, never a VIN, a count or a date (the file it writes, `<model>-codes.yaml`, is git-ignored).
 
 The two car shapes of the 3D view were traced by hand from the owner's photos of the cars. No photo is in the
 repository, and nothing was read from a number plate: only the outline, as fractions of the car's length and
@@ -771,6 +843,12 @@ data.
   in `data/<id>/` and run `make ingest MODEL=<id>`. (The address `?model=<id>` shows where to put the files.)
 - **The cost figures are missing**: no fuel price is set for that car; see [Fuel cost](#fuel-cost-optional).
 - **Fill-ups show "points" instead of litres**: `tank_litres` is not set for that car; see [Fill-ups](#fill-ups-optional).
+- **There is no Import entry in the menu, or no "Add an entry" in the service log**: the server is read-only.
+  That is always so in the demo and in the phone app, and with `MAZDA_READONLY=1`; use `make dev` on your own data.
+- **The dashboard is in the wrong language**: the language menu is on *Auto*, which follows your browser. Pick
+  *English* or *Português* (under the units at the bottom of the menu; on the phone, *More → Data on this phone*).
+- **The fault map lists every unit as "not placed"**: nothing is placed until you say where a unit is; see
+  [Fault map](#fault-map-optional).
 - **Port 8000 or 5173 already in use**: stop the other program using it, then run `make dev`
   again.
 - **`npm install` fails**: use `make setup`; `frontend/.npmrc` sets the option this project's
@@ -805,7 +883,8 @@ make mobile-test   # phone app: contract tests against the Python API, types
 CI (GitHub Actions) runs the same checks plus a format check and production builds, verifies that the
 generated types and sample data are up to date, replays the Python API's answers against the phone app's
 engine, and runs the privacy audit. The phone app is published by `.github/workflows/pages.yml`.
-When you change an API endpoint, change its twin in `mobile/src/engine/` in the same commit.
+When you change an API endpoint, change its twin in `mobile/src/engine/` in the same commit. Text a reader sees
+goes through the translation functions and needs its Portuguese (a test fails otherwise).
 
 Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md). [CLAUDE.md](CLAUDE.md) is a tour of the
 code (written for coding assistants, useful for people too).
