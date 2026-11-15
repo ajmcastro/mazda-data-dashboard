@@ -3644,6 +3644,17 @@
             "type": "integer",
             "title": "Alert Id"
           },
+          "dedup_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dedup Key"
+          },
           "rule": {
             "type": "string",
             "title": "Rule"

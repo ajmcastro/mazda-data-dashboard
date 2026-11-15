@@ -1,10 +1,8 @@
 import { Component, lazy, Suspense, useMemo, useState, type ReactNode } from 'react'
-import { useCarWarnings, useDoors, useOilService, useOverview, useTireForecast } from '../api/hooks'
+import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useTireForecast } from '../api/hooks'
+import { PartAlerts } from './PartAlerts'
 import { notesByPart } from '../tires'
-import {
-  CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge,
-  type CarState, type CarView, type PartGroup,
-} from '../car'
+import { CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge, type CarState, type CarView, type PartGroup, alertCounts } from '../car'
 import { bodyOfModel } from '../car3d/shapes/common' // not geometry.ts: the outlines belong in the 3D chunk
 import { fmtDateTime } from '../lib'
 import { useCurrentModel } from '../model'
@@ -60,6 +58,7 @@ export function CarList({ car }: { car: CarState }) {
                       {badge && <Badge kind={badge.kind}>{badge.text}</Badge>} {p.value}
                     </span>
                   </div>
+                  <PartAlerts part={p} />
                   {p.notes.map((n) => (
                     <div key={n} className="car-part-note">{n}</div>
                   ))}
@@ -80,11 +79,12 @@ export function CarPanel() {
   const oil = useOilService()
   const carWarnings = useCarWarnings()
   const forecast = useTireForecast()
+  const openAlerts = useAlerts('new') // acknowledging one reads them again, and its marker goes
   // the overview and the doors carry the figures; the oil countdown and the flags are extras a car may lack,
   // so the panel does not wait for them and a failure of theirs does not hide the rest
   const query = overview.isError || !doors.isError ? overview : doors
   const pending = overview.isPending || doors.isPending
-  const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notesByPart(forecast.data))
+  const car = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notesByPart(forecast.data), alertCounts(openAlerts.data))
   // the model's own dimensions and steering side (model.yaml `body:`); none = the generic car
   const modelBody = useCurrentModel().model?.body
   const body = useMemo(() => bodyOfModel(modelBody), [modelBody])

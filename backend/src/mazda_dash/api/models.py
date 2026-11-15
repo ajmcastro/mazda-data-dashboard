@@ -315,6 +315,9 @@ class UnmappedCode(BaseModel):
 
 class Alert(BaseModel):
     alert_id: int
+    dedup_key: str | None = (
+        None  # the rule's own key (a wheel, a flag, a code): what the alert is about (M55)
+    )
     rule: str
     severity: str
     title: str

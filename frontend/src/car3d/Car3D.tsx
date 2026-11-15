@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CarState, PartId } from '../car'
-import { stateBadge } from '../car'
+import { alertsText, stateBadge } from '../car'
+import { PartAlerts } from '../components/PartAlerts'
 import { Badge } from '../components/ui'
 import { ANIMATE, fmtDateTime } from '../lib'
 import { carGeometry, type Body } from './geometry'
@@ -236,6 +237,7 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
             >
               <span className="car3d-label-name">{text.name}</span>
               <span className="car3d-label-value">{text.value}</span>
+              {part.alerts ? <span className="car3d-alerts" title={alertsText(part.alerts)}>{part.alerts}</span> : null}
             </button>
           )
         })}
@@ -284,11 +286,13 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
               <li key={pin.id} className={`car-part ${part.state}${open ? ' selected' : ''}`}>
                 <button type="button" className="car3d-pin-row" aria-expanded={open} onClick={() => toggle(pin.id)}>
                   <span className={`car3d-pin-n ${part.state}`}>{pin.n}</span>
+                  {part.alerts ? <span className="car3d-alerts inline" title={alertsText(part.alerts)}>{part.alerts}</span> : null}
                   <span className="car-part-name">{part.name}</span>
                   <span className="car-part-value">
                     {badge && <Badge kind={badge.kind}>{badge.text}</Badge>} {part.value}
                   </span>
                 </button>
+                {open && <PartAlerts part={part} />}
                 {open && part.notes.map((n) => (
                   <div key={n} className="car-part-note">{n}</div>
                 ))}
@@ -306,6 +310,7 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
                   {pickedBadge && <Badge kind={pickedBadge.kind}>{pickedBadge.text}</Badge>} {picked.value}
                 </span>
               </div>
+              <PartAlerts part={picked} />
               {picked.notes.map((n) => (
                 <div key={n} className="car-part-note">{n}</div>
               ))}

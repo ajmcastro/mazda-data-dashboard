@@ -455,6 +455,11 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
 
+/* alerts on the car (M55): a count on the part's label, amber like the alert badges elsewhere */
+.car3d-alerts { position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--amber); color: var(--bg); font: 600 10px/16px var(--mono); text-align: center; }
+.car3d-alerts.inline { position: static; display: inline-block; margin-left: 6px; }
+.car-part-alerts { color: var(--amber); }
+
 /* the report for the workshop (M54): a plain page on screen, and the only thing on paper */
 .report-options { display: flex; flex-wrap: wrap; gap: 6px 16px; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; margin: 0 0 16px; }
 .report-options legend { font-size: 12px; color: var(--muted); padding: 0 6px; }

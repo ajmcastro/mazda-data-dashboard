@@ -971,6 +971,8 @@ export interface components {
         Alert: {
             /** Alert Id */
             alert_id: number;
+            /** Dedup Key */
+            dedup_key?: string | null;
             /** Rule */
             rule: string;
             /** Severity */

@@ -31,6 +31,8 @@ export interface Part {
   at: string | null
   /** The figure is an old one the car kept showing (stale tire measurement). */
   old: boolean
+  /** Open alerts that are about this part (M55); 0 when none, or when the caller gave no alerts. */
+  alerts?: number
 }
 
 export interface CarState {
@@ -180,11 +182,13 @@ export function carState(
   carWarnings: CarWarnings | undefined,
   /** notes to add to parts by id (the tire leak forecast, M51): text only, a note never changes a state */
   extraNotes: Record<string, string> = {},
+  /** open alerts by part (M55, `alertCounts`): a marker with the count, which never changes a state either */
+  alertsBy: Partial<Record<PartId, number>> = {},
 ): CarState {
   const flags = new Map((carWarnings?.has_data ? carWarnings.flags : []).map((f) => [f.flag, f]))
   const parts = [...wheels(overview, flags), ...doors(door), fuel(overview), engine(oil, flags), dash(overview, flags)].map((p) =>
     extraNotes[p.id] && p.state !== 'absent' ? { ...p, notes: [...p.notes, extraNotes[p.id]] } : p,
-  )
+  ).map((p) => (alertsBy[p.id] && p.state !== 'absent' ? { ...p, alerts: alertsBy[p.id] } : p))
   return {
     parts,
     hasData: parts.some((p) => p.state !== 'absent'),
@@ -232,3 +236,59 @@ export const parseCarView = (value: unknown): CarView => (value === 'list' ? 'li
 export function carView(choice: CarView, failed: string | null): CarView {
   return choice === '3d' && !failed ? '3d' : 'list'
 }
+
+// ------------------------------------------------------------ alerts on the car (M55)
+
+const WHEEL_BY_NAME: Record<string, PartId> = { 'front left': 'wheel_fl', 'front right': 'wheel_fr', 'rear left': 'wheel_rl', 'rear right': 'wheel_rr' }
+const WHEEL_BY_CODE: Record<string, PartId> = { fl: 'wheel_fl', fr: 'wheel_fr', rl: 'wheel_rl', rr: 'wheel_rr' }
+const WHEEL_BY_FLAG: Record<string, PartId> = Object.fromEntries(WHEELS.map((w) => [w.flag, w.id]))
+
+/**
+ * The part each alert rule is about, from the rule and its `dedup_key` (never from the alert's text): a wheel
+ * for the tire rules and the car's tire flags, the engine for oil, the fuel tank for fuel, the dashboard for
+ * what the car tells the driver or a workshop reads out, and `null` for what is not about the car at all.
+ * **Every rule of `alerts/detectors.py` needs an entry** (a test reads that file).
+ */
+export const ALERT_PART: Record<string, (key: string[]) => PartId | null> = {
+  low_tire_pressure: (k) => WHEEL_BY_NAME[k[1]] ?? 'dash',
+  tire_leak_forecast: (k) => WHEEL_BY_CODE[k[1]] ?? 'dash',
+  car_warning_flag: (k) => WHEEL_BY_FLAG[k[1]] ?? (k[1] === OIL_FLAG ? 'engine' : 'dash'),
+  oil_change_due: () => 'engine',
+  low_fuel: () => 'fuel',
+  high_consumption: () => 'fuel',
+  new_warning_flag: () => 'dash',
+  new_warning_code: () => 'dash',
+  warning_spike: () => 'dash',
+  new_dtc: () => 'dash',
+  recurring_dtc: () => 'dash',
+  low_battery_frame: () => 'dash',
+  burglar_alarm: () => 'dash',
+  data_gap: () => null, // about the exports, not the car
+}
+
+/** The part an alert is about; null for a rule that is not about the car, or one this app does not know. */
+export function alertPart(alert: { rule: string; dedup_key?: string | null }): PartId | null {
+  const of = ALERT_PART[alert.rule]
+  return of ? of((alert.dedup_key ?? '').split(':')) : null
+}
+
+/** How many of these alerts are about each part (pass the open ones). */
+export function alertCounts(alerts: readonly { rule: string; dedup_key?: string | null }[] | undefined): Partial<Record<PartId, number>> {
+  const out: Partial<Record<PartId, number>> = {}
+  for (const a of alerts ?? []) {
+    const part = alertPart(a)
+    if (part) out[part] = (out[part] ?? 0) + 1
+  }
+  return out
+}
+
+/** "2 open alerts" */
+export const alertsText = (n: number): string => `${n} open alert${n === 1 ? '' : 's'}`
+
+const PART_NAMES: Record<PartId, string> = {
+  wheel_fl: 'Front left wheel', wheel_fr: 'Front right wheel', wheel_rl: 'Rear left wheel', wheel_rr: 'Rear right wheel',
+  door_driver: 'Driver door', door_passenger: 'Passenger door', door_rear_left: 'Rear left door', door_rear_right: 'Rear right door',
+  trunk: 'Trunk', hood: 'Hood', fuel: 'Fuel tank', engine: 'Engine', dash: 'Dashboard',
+}
+/** A part's name from its id (for the Alerts page's filter); null for something that is not a part. */
+export const partName = (id: string | null | undefined): string | null => (id && id in PART_NAMES ? PART_NAMES[id as PartId] : null)

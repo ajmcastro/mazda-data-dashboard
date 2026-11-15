@@ -658,7 +658,7 @@ def unmapped(con: duckdb.DuckDBPyConnection = Con):
     )
 
 
-ALERT_COLS = "alert_id, rule, severity, title, detail, link, occurred_at, created_at, status, acknowledged_at"
+ALERT_COLS = "alert_id, dedup_key, rule, severity, title, detail, link, occurred_at, created_at, status, acknowledged_at"
 
 
 @app.get("/api/alerts", response_model=list[m.Alert])

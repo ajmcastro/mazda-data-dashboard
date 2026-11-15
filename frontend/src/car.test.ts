@@ -1,7 +1,8 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { CarWarningFlag, CarWarnings, DoorPoint, LatestStatus, OilService, Overview } from './api/types'
 import { fmtNum } from './lib'
-import { CAR_NOTES, carHeadline, carState, carView, parseCarView, listedParts, stateBadge, type CarState, type PartId } from './car'
+import { ALERT_PART, CAR_NOTES, alertCounts, alertPart, alertsText, carHeadline, partName, carState, carView, parseCarView, listedParts, stateBadge, type CarState, type PartId } from './car'
 
 const AT = '2026-07-01T08:00:00Z'
 
@@ -230,5 +231,53 @@ describe('how the panel is shown', () => {
     expect(carView('3d', null)).toBe('3d')
     expect(carView('3d', 'no WebGL')).toBe('list')
     expect(carView('list', null)).toBe('list')
+  })
+})
+
+describe('alerts on the car (M55)', () => {
+  const a = (rule: string, dedup_key: string) => ({ rule, dedup_key })
+  it('puts each alert on the part its rule and key are about, never by its text', () => {
+    expect(alertPart(a('low_tire_pressure', 'low_tire_pressure:rear left:2026-06-27'))).toBe('wheel_rl')
+    expect(alertPart(a('low_tire_pressure', 'low_tire_pressure:front right:2026-06-27'))).toBe('wheel_fr')
+    expect(alertPart(a('tire_leak_forecast', 'tire_leak_forecast:fl:00010101T000000'))).toBe('wheel_fl')
+    expect(alertPart(a('car_warning_flag', 'car_warning_flag:rrtyrepresswarn:20260620T112100'))).toBe('wheel_rr')
+    expect(alertPart(a('car_warning_flag', 'car_warning_flag:oillevelwarning:20260620T112100'))).toBe('engine')
+    expect(alertPart(a('car_warning_flag', 'car_warning_flag:dropnwrn:20260620T112100'))).toBe('dash') // which door is not said
+    expect(alertPart(a('car_warning_flag', 'car_warning_flag:tpmssystemflt:20260620T112100'))).toBe('dash')
+    expect(alertPart(a('oil_change_due', 'oil_change_due:20260301T000000'))).toBe('engine')
+    expect(alertPart(a('low_fuel', 'low_fuel:2026-06-01'))).toBe('fuel')
+    expect(alertPart(a('new_dtc', 'new_dtc:BCM:U0198:00'))).toBe('dash')
+    expect(alertPart(a('data_gap', 'data_gap:2026-10-15'))).toBeNull()
+    expect(alertPart(a('a_rule_of_tomorrow', 'x'))).toBeNull()
+    expect(alertPart({ rule: 'low_tire_pressure' })).toBe('dash') // an alert without its key still shows somewhere
+  })
+  it('has a part, or a deliberate none, for every rule the backend has', () => {
+    const source = readFileSync(new URL('../../backend/src/mazda_dash/alerts/detectors.py', import.meta.url), 'utf8')
+    const block = source.slice(source.indexOf('DETECTORS: dict'))
+    const rules = [...block.slice(0, block.indexOf('}')).matchAll(/"([a-z_]+)":/g)].map((m) => m[1])
+    expect(rules.length).toBeGreaterThan(10)
+    expect(Object.keys(ALERT_PART).sort()).toEqual([...rules].sort())
+  })
+  it('counts the open alerts per part and marks the part without changing its state', () => {
+    const open = [a('low_tire_pressure', 'low_tire_pressure:rear left:2026-06-27'), a('low_tire_pressure', 'low_tire_pressure:rear left:2026-06-29'),
+      a('oil_change_due', 'oil_change_due:x'), a('data_gap', 'data_gap:x')]
+    expect(alertCounts(open)).toEqual({ wheel_rl: 2, engine: 1 })
+    expect(alertCounts(undefined)).toEqual({})
+    const overview = { status: { at: '2026-11-10T13:50:00Z', tire_fl_kpa: 240, tire_fr_kpa: 240, tire_rl_kpa: 235, tire_rr_kpa: 240 } } as never
+    const plain = carState(overview, undefined, undefined, undefined)
+    const marked = carState(overview, undefined, undefined, undefined, {}, alertCounts(open))
+    const wheel = (c: typeof plain) => c.parts.find((p) => p.id === 'wheel_rl')!
+    expect(wheel(marked).alerts).toBe(2)
+    expect(wheel(marked).state).toBe(wheel(plain).state)
+    expect(wheel(plain).alerts).toBeUndefined()
+    // the engine is not sent by this car (no oil answer): an absent part gets no marker
+    expect(marked.parts.find((p) => p.id === 'engine')!.alerts).toBeUndefined()
+    expect(alertsText(1)).toBe('1 open alert')
+    expect(alertsText(3)).toBe('3 open alerts')
+  })
+  it('names a part for the Alerts page and refuses anything else', () => {
+    expect(partName('wheel_rl')).toBe('Rear left wheel')
+    expect(partName('dash')).toBe('Dashboard')
+    expect([partName('nope'), partName(null), partName('')]).toEqual([null, null, null])
   })
 })

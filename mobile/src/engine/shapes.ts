@@ -73,7 +73,7 @@ export const READOUT = ['transaction_id', 'event_at', 'odometer_km', 'faults', '
 export const SNAPSHOT_SIGNAL = ['transaction_id', 'record_number', 'snapshot_at', 'odometer_km', 'signal', 'value', 'value_num']
 export const UNMAPPED_CODE = ['kind', 'code', 'occurrences']
 export const ALERT = [
-  'alert_id', 'rule', 'severity', 'title', 'detail', 'link', 'occurred_at', 'created_at', 'status', 'acknowledged_at',
+  'alert_id', 'dedup_key', 'rule', 'severity', 'title', 'detail', 'link', 'occurred_at', 'created_at', 'status', 'acknowledged_at',
 ]
 export const DIAG_REPORT_INFO = ['report_id', 'source_file', 'vin', 'taken_at', 'odometer_km', 'values', 'dtcs', 'obd_tests']
 export const DIAG_SUMMARY = [

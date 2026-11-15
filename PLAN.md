@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M54 built)
+## More value from the same data (M45–M62; M45–M55 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1309,9 +1309,18 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** frontend 12 in `report.test.ts` (the order, unticked and empty sections, the VIN only when asked, the period, units, faults in order, flags reported as "on" and never as a meaning, lamps, tires, the two diagnostic reports, the log and alerts, no judgement) — 370 in all.
 - **Checked by eye:** the page on the Mac with the demo data and a picture of its print layout. **Not done by eye:** printing from the phone.
 
-### M55 — Alerts on the car
+### M55 — Alerts on the car ✅ done
 - `car.ts` gains `alertPart(alert)`: the part an alert is about (a wheel for the tire rules and flags, the engine for oil, a door for the door flag, the dashboard for the rest), from the rule and its `dedup_key`, never from the text. The 3D view and the list show a marker with the count on that part; clicking opens the Alerts page filtered to it. Acknowledging removes the marker (the same query key as the alert counts).
 - **Tests:** every rule maps to a part or to none; acknowledged alerts leave no marker; the mapping is exhaustive (a new rule without an entry fails a test).
+
+**M55 as built.**
+- **Mapping:** `ALERT_PART` and `alertPart(alert)` in `frontend/src/car.ts`, from the rule and its `dedup_key`, never from the text: a wheel for `low_tire_pressure`, `tire_leak_forecast` and the car's four tire flags; the engine for `oil_change_due` and the oil-level flag; **the fuel tank for `low_fuel` and `high_consumption`** (added to the sketch: the part exists); the dashboard for the rest (new faults and warning codes, spikes, lamp flags, the battery frame, the alarm, and the door-open flag, which does not say which door); **none for `data_gap`**, which is about the exports. A test reads `alerts/detectors.py` and fails when a rule has no entry.
+- **API:** an alert now carries its `dedup_key` (`Alert` model, the phone's `ALERT` shape, goldens), the only backend change.
+- **Markers:** `carState` takes the open alerts' counts per part (`alertCounts`) and puts `alerts` on the part without touching its state. The list and the 3D view's detail show "2 open alerts →", a link to the Alerts page filtered to that part (`?part=`); the 3D labels and pins carry the count. A part the car does not send gets no marker.
+- **Alerts page:** `?part=<id>` shows only the alerts about that part, says which, and offers "Show all"; "Acknowledge all" is hidden while filtered so it cannot acknowledge what is not on screen.
+- **Acknowledging** reads the open alerts again (the same query the counts use), so a marker goes as its alerts are acknowledged.
+- **Tests:** frontend 4 more in `car.test.ts` (each rule's part, exhaustive against the backend, counts and markers without a change of state, part names) — 374 in all; backend unchanged in number, the goldens re-recorded with the key (1,087).
+- **Checked by eye:** the markers on the 3D car and the filtered Alerts page on the Mac with the demo data. **Not done by eye:** the phone.
 
 ### M56 — Time scrubber
 - A slider under the 3D car over the selected period: `carState` is fed the snapshot at that time (`/api/status/timeline`, `/api/doors/timeline` and `/api/status/tires`, already period endpoints) instead of the newest, with the time and "report 37 of 212" shown. Play and pause (off with reduced motion: the slider only), and step by snapshot with the arrow keys when the slider has focus. The flags and the oil countdown, which are states, are greyed while scrubbing, and the panel says so.

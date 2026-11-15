@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { alertPart, partName } from '../car'
 import { useAcknowledge, useAcknowledgeAll, useAlerts } from '../api/hooks'
 import type { Alert } from '../api/types'
 import { RangeLink } from '../components/RangeLink'
@@ -41,7 +43,16 @@ export default function Alerts() {
   const alerts = useAlerts(tab)
   const ack = useAcknowledge()
   const ackAll = useAcknowledgeAll()
-  const list = alerts.data ?? []
+  // ?part= (from a marker on the car, M55): only the alerts that are about that part
+  const [params, setParams] = useSearchParams()
+  const part = partName(params.get('part')) ? params.get('part') : null
+  const list = (alerts.data ?? []).filter((a) => !part || alertPart(a) === part)
+  const showAll = () =>
+    setParams((p) => {
+      const next = new URLSearchParams(p)
+      next.delete('part')
+      return next
+    })
 
   return (
     <>
@@ -58,13 +69,20 @@ export default function Alerts() {
             </p>
           )}
         </div>
-        {tab === 'new' && list.length > 1 && (
+        {tab === 'new' && list.length > 1 && !part && (
           <button onClick={() => ackAll.mutate()} disabled={ackAll.isPending}>
             Acknowledge all
           </button>
         )}
       </div>
 
+      {part && (
+        <div className="alert-row" style={{ marginBottom: 14 }}>
+          <b>About: {partName(part)}</b>
+          <span className="muted">only the alerts that are about this part of the car</span>
+          <button type="button" className="when" onClick={showAll}>Show all</button>
+        </div>
+      )}
       <div className="chips" role="tablist" style={{ marginBottom: 14 }}>
         {(['new', 'acknowledged'] as const).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} className={`chip ${tab === t ? 'on' : ''}`} onClick={() => setTab(t)}>
@@ -82,7 +100,7 @@ export default function Alerts() {
       <QueryState query={alerts}>
         {list.length === 0 ? (
           <Panel>
-            <div className="state">{tab === 'new' ? 'All clear: no unacknowledged alerts.' : 'Nothing acknowledged yet.'}</div>
+            <div className="state">{part ? `No ${tab === 'new' ? 'open' : 'acknowledged'} alert about this part.` : tab === 'new' ? 'All clear: no unacknowledged alerts.' : 'Nothing acknowledged yet.'}</div>
           </Panel>
         ) : (
           <div className="stack">
