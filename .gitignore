@@ -21,3 +21,6 @@ db/
 mobile/spike-results/
 *.tsbuildinfo
 mobile/contract/
+
+# Code description packs made by `make codes-export` (meant for sharing, not for the repository)
+*-codes.yaml
