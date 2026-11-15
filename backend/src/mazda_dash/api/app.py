@@ -13,6 +13,7 @@ from typing import Literal
 import duckdb
 from fastapi import Depends, FastAPI, HTTPException, Query
 
+from ..forecast import FORECAST_SQL as PACE_SQL
 from ..model.settings import add_service_entry, load_service_log
 from ..models import Model
 from ..tires import FORECAST_SQL, MIN_READINGS, MIN_SPAN_DAYS, WINDOW_DAYS
@@ -136,6 +137,7 @@ def garage(con: duckdb.DuckDBPyConnection = Con):
     ov = overview(DateRange(first, span.last_day), con)
     oil = maintenance_oil(con)
     flags = car_warnings(con)
+    ahead = forecast(con)
     return m.Garage(
         has_data=True,
         vin=ov.vin,
@@ -150,6 +152,8 @@ def garage(con: duckdb.DuckDBPyConnection = Con):
         range_km=ov.status.range_km,
         oil_remaining_km=oil.remaining_km,
         oil_read_at=oil.read_at,
+        oil_date_first=ahead.oil_date_first,
+        oil_date_last=ahead.oil_date_last,
         alerts_new=ov.alerts_new,
         active_faults=ov.active_faults,
         car_warnings_on=[f.label for f in flags.flags if f.is_on],
@@ -675,6 +679,14 @@ def acknowledge(alert_id: int, con: duckdb.DuckDBPyConnection = RwCon):
 
 
 # ---------------------------------------------------------------- maintenance
+
+
+@app.get("/api/forecast", response_model=m.Forecast)
+def forecast(con: duckdb.DuckDBPyConnection = Con):
+    """The oil change as two dates and the year's distance against a limit, from the recent pace (M52). A
+    state counted from the newest day with data, so it ignores the period."""
+    found = one(con, PACE_SQL)
+    return m.Forecast(has_data=bool(found), **found)
 
 
 @app.get("/api/status/tire-forecast", response_model=m.TireForecast)

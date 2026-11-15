@@ -3,6 +3,7 @@ import type { Handler } from './context'
 import { addDays, DateRange } from './dates'
 import { Query, pick } from './http'
 import { carWarnings } from './carwarnings'
+import { forecast } from './forecast'
 import { maintenanceOil } from './maintenance'
 import { pyRound } from './pyround'
 import { GARAGE } from './shapes'
@@ -36,6 +37,7 @@ export const garage: Handler = async (ctx) => {
   const range = new DateRange(first, s.last_day)
   const ov = (await overview({ ...ctx, q: new Query(new URLSearchParams()), range: () => range })) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
   const oil = (await maintenanceOil(ctx)) as Record<string, any> // eslint-disable-line @typescript-eslint/no-explicit-any
+  const ahead = (await forecast(ctx)) as { oil_date_first: string | null; oil_date_last: string | null }
   const flags = (await carWarnings(ctx)) as { flags: { label: string; is_on: boolean }[] }
   return pick(
     {
@@ -52,6 +54,8 @@ export const garage: Handler = async (ctx) => {
       range_km: ov.status?.range_km ?? null,
       oil_remaining_km: oil.remaining_km,
       oil_read_at: oil.read_at,
+      oil_date_first: ahead.oil_date_first,
+      oil_date_last: ahead.oil_date_last,
       alerts_new: ov.alerts_new,
       active_faults: ov.active_faults,
       car_warnings_on: flags.flags.filter((f) => f.is_on).map((f) => f.label),

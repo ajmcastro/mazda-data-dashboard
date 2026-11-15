@@ -584,6 +584,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Forecast
+         * @description The oil change as two dates and the year's distance against a limit, from the recent pace (M52). A
+         *     state counted from the newest day with data, so it ignores the period.
+         */
+        get: operations["forecast_api_forecast_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/status/tire-forecast": {
         parameters: {
             query?: never;
@@ -1561,6 +1582,49 @@ export interface components {
             /** Share Off */
             share_off?: number | null;
         };
+        /**
+         * Forecast
+         * @description What the recent pace says about the oil change and the year's distance. Everything is counted from
+         *     `as_of`, the newest day with data, never from today.
+         */
+        Forecast: {
+            /** Has Data */
+            has_data: boolean;
+            /** As Of */
+            as_of?: string | null;
+            /** Odometer Km */
+            odometer_km?: number | null;
+            /** Km Per Day 30D */
+            km_per_day_30d?: number | null;
+            /** Km Per Day 90D */
+            km_per_day_90d?: number | null;
+            /** Km Per Year */
+            km_per_year?: number | null;
+            /** Oil Left Km */
+            oil_left_km?: number | null;
+            /** Oil Days First */
+            oil_days_first?: number | null;
+            /** Oil Days Last */
+            oil_days_last?: number | null;
+            /** Oil Date First */
+            oil_date_first?: string | null;
+            /** Oil Date Last */
+            oil_date_last?: string | null;
+            /** Mileage Limit Km */
+            mileage_limit_km?: number | null;
+            /** Year Start */
+            year_start?: string | null;
+            /** Year End */
+            year_end?: string | null;
+            /** Year Km */
+            year_km?: number | null;
+            /** Year Counted From */
+            year_counted_from?: string | null;
+            /** Year Projected Km */
+            year_projected_km?: number | null;
+            /** Year Over Km */
+            year_over_km?: number | null;
+        };
         /** FrameSignal */
         FrameSignal: {
             /** Signal */
@@ -1692,6 +1756,10 @@ export interface components {
             oil_remaining_km?: number | null;
             /** Oil Read At */
             oil_read_at?: string | null;
+            /** Oil Date First */
+            oil_date_first?: string | null;
+            /** Oil Date Last */
+            oil_date_last?: string | null;
             /**
              * Alerts New
              * @default 0
@@ -3594,6 +3662,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Alert"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forecast_api_forecast_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Forecast"];
                 };
             };
             /** @description Validation Error */

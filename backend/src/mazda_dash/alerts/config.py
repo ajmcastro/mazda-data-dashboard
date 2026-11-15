@@ -68,6 +68,8 @@ class DataGap(Rule):
 
 class OilChangeDue(Rule):
     below_km: float = Field(1000, gt=0)
+    # also raise when the forecast (M52) puts the oil change within this many days at the recent pace
+    days: int | None = Field(None, ge=1, le=365)
 
 
 # The flags of v_car_warning_readings (a test keeps this list and the view in step).

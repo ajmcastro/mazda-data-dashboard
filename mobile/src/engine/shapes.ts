@@ -39,6 +39,11 @@ export const REFUEL = [
   'payments',
 ]
 export const FUEL_PAYMENT = ['paid_on', 'paid', 'litres']
+export const FORECAST = [
+  'as_of', 'odometer_km', 'km_per_day_30d', 'km_per_day_90d', 'km_per_year', 'oil_left_km', 'oil_days_first', 'oil_days_last',
+  'oil_date_first', 'oil_date_last', 'mileage_limit_km', 'year_start', 'year_end', 'year_km', 'year_counted_from',
+  'year_projected_km', 'year_over_km',
+]
 export const WHEEL_FORECAST = [
   'wheel', 'measurements', 'span_days', 'current_kpa', 'last_at', 'refilled_at', 'enough', 'kpa_per_week', 'losing',
   'below_limit', 'days_left', 'reaches_limit_on',
@@ -92,7 +97,7 @@ export const MONTH_METRICS = [
 ]
 export const GARAGE = [
   'has_data', 'vin', 'odometer_km', 'odometer_at', 'last_reading_at', 'from_day', 'to_day', 'km_last_30_days',
-  'fuel_l_30d', 'l_per_100km_30d', 'fuel_cost_30d', 'cost_per_100km_30d', 'currency', 'fuel_level_pct', 'range_km', 'oil_remaining_km', 'oil_read_at', 'alerts_new', 'active_faults', 'car_warnings_on',
+  'fuel_l_30d', 'l_per_100km_30d', 'fuel_cost_30d', 'cost_per_100km_30d', 'currency', 'fuel_level_pct', 'range_km', 'oil_remaining_km', 'oil_read_at', 'oil_date_first', 'oil_date_last', 'alerts_new', 'active_faults', 'car_warnings_on',
 ]
 export const OIL_STEP = ['read_at', 'odometer_km', 'remaining_km', 'serviced']
 export const CAR_WARNING_FLAG = ['flag', 'label', 'is_on', 'value', 'last_read_at', 'readings', 'episodes', 'since']

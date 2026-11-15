@@ -16,6 +16,7 @@ import { frameSummary } from './framesummary'
 import { occupancy } from './occupancy'
 import { dataHealth } from './datahealth'
 import { day } from './day'
+import { forecast } from './forecast'
 import { drivingPattern } from './driving'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
@@ -91,6 +92,7 @@ export class Api {
     add('GET', '/api/fuel/refuels', refuels)
     add('GET', '/api/service-log', serviceLog)
     add('GET', '/api/status/tire-forecast', tireForecast)
+    add('GET', '/api/forecast', forecast)
     add('GET', '/api/day', day)
     add('GET', '/api/trips/pattern', drivingPattern)
     add('GET', '/api/trips/segments', tripSegments)

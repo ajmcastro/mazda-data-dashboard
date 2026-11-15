@@ -2,6 +2,7 @@ import { useGarageOf } from '../api/hooks'
 import type { Garage as GarageCard } from '../api/types'
 import { Panel } from '../components/ui'
 import { FUEL_CAUTION, alertsLabel, costBlock, faultsLabel, fuelBlock, oilLine, staleNote } from '../garage'
+import { oilWhen } from '../forecast'
 import { fmtAgo, fmtDate, fmtNum } from '../lib'
 import { distanceLabel, fmtDistance } from '../units'
 import { useCurrentModel, useSwitchModel } from '../model'
@@ -59,7 +60,7 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
             {fuel && <Figure label="Fuel used, last 30 days" value={fuel.value} sub={fuel.sub} />}
             {cost && <Figure label="Fuel cost, last 30 days" value={cost.value} sub={cost.sub} />}
             <Figure label="Fuel level" value={`${fmtNum(g.fuel_level_pct)} %`} sub={g.range_km != null ? `range ≈ ${fmtDistance(g.range_km, 0, false)} ${distanceLabel()}` : undefined} />
-            <Figure label="Next oil change" value={oilLine(g)} sub={g.oil_read_at ? `as reported ${fmtDate(g.oil_read_at)}` : undefined} />
+            <Figure label="Next oil change" value={oilLine(g)} sub={oilWhen(g) ?? (g.oil_read_at ? `as reported ${fmtDate(g.oil_read_at)}` : undefined)} />
             <Figure label="Last reading" value={fmtAgo(g.last_reading_at)} />
           </div>
           <button type="button" onClick={open}>

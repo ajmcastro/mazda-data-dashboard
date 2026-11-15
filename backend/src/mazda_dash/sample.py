@@ -62,6 +62,7 @@ class Profile:
     tank_l: float = 56.0
     base_l100: float = 6.8
     leak_wheel: int = 2  # which tire loses pressure: FL, FR, RL, RR
+    mileage_limit_km: int = 0  # a yearly distance limit in the demo settings (0: none)
     diag_offset_hours: int = 0  # the diagnostic tool's clock
     oil: bool = True  # does the car send the oil-change countdown?
     belts: bool = False  # does the car send the seatbelt signals (who rides)?
@@ -97,6 +98,7 @@ CX5 = Profile(
     vin="SAMPLEVIN00000001",
     start=datetime(2026, 3, 1),
     end=datetime(2026, 6, 30),
+    mileage_limit_km=15000,
     ecus=("BCM", "ECM", "ADU", "DCM", "IC", "EPS", "DSC", "CGW"),
     # Invented codes: the ids only mimic the format of the real ones.
     warning_codes=(
@@ -807,6 +809,10 @@ def settings_text(p: Profile) -> str:
         f"fuel_currency: {p.fuel_currency}",
         f"tank_litres: {p.tank_l:g}",
     ]
+    if p.mileage_limit_km:  # a year that starts with the data, so the demo shows a projection against a limit
+        lines.append(
+            f"mileage: {{limit_km_per_year: {p.mileage_limit_km}, start_date: {p.start.date().isoformat()}}}"
+        )
     if len(p.fuel_prices) == 1:
         lines.append(f"fuel_price_per_l: {p.fuel_prices[0][1]}")
     else:

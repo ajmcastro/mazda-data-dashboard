@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import duckdb
 
+from ..forecast import FORECAST_SQL as PACE_SQL
 from ..tires import FORECAST_SQL
 from .config import AlertsConfig
 from .store import Candidate
@@ -343,9 +344,34 @@ def oil_change_due(ctx: Context) -> list[Candidate]:
         """SELECT read_at, remaining_km, odometer_km, interval_started_at FROM v_oil_readings
            ORDER BY read_at DESC LIMIT 1"""
     ).fetchone()
-    if not row or row[1] > rule.below_km:
+    if not row:
         return []
+    soon = None  # the forecast's earlier date, when the rule asks for a warning by days
+    if row[1] > rule.below_km:
+        if rule.days is None:
+            return []
+        cur = ctx.con.execute(PACE_SQL)
+        names = [d[0] for d in cur.description]
+        ahead = cur.fetchone()
+        found = dict(zip(names, ahead, strict=True)) if ahead else {}
+        if found.get("oil_days_first") is None or found["oil_days_first"] > rule.days:
+            return []
+        soon = found
     at, remaining, odo, started = row
+    if soon:
+        return [
+            Candidate(
+                "oil_change_due",
+                f"oil_change_due:{_stamp(started)}",
+                rule.severity,
+                f"Oil change in about {soon['oil_days_first']} days at your recent pace",
+                f"About {soon['oil_left_km']:,.0f} km are left on the car's countdown. At the pace of the last "
+                f"30 and 90 days that is between {soon['oil_date_first']} and {soon['oil_date_last']}, counted "
+                f"from {soon['as_of']}. The countdown moves in steps of 1,000 km or more.",
+                at,
+                "/status",
+            )
+        ]
     return [
         Candidate(
             "oil_change_due",

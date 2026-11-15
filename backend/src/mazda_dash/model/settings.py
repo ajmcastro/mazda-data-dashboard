@@ -19,6 +19,9 @@ FUEL_KEYS = {"fuel_currency", "fuel_prices", "fuel_price_per_l"}
 # shows points), and a rise of the level counts as a fill-up from this many points on
 REFUEL_KEYS = {"tank_litres", "refuel_min_points"}
 REFUEL_MIN_POINTS = 15.0
+# the yearly distance (M52): `mileage: {limit_km_per_year: 15000, start_date: 2026-03-03}` (a lease or
+# warranty year); optional, without it only the yearly pace is shown
+MILEAGE_KEY = "mileage"
 CURRENCY = re.compile(r"[A-Z]{3}")
 SINGLE_PRICE_FROM = date(1970, 1, 1)  # a lone fuel_price_per_l applies to all the data
 
@@ -250,6 +253,37 @@ def add_service_entry(path: Path, day, kind, note, odometer) -> bool:
     return True
 
 
+def _mileage(path: Path | None, raw: object) -> dict[str, str]:
+    """The yearly distance limit and the day its year starts, checked; nothing without the setting."""
+    if raw is None:
+        return {}
+    example = "mileage: {limit_km_per_year: 15000, start_date: 2026-03-03}"
+    if not isinstance(raw, dict) or set(raw) != {"limit_km_per_year", "start_date"}:
+        raise ValueError(
+            f"{path}: mileage must have `limit_km_per_year` and `start_date`, e.g. {example}"
+        )
+    limit, start = raw["limit_km_per_year"], raw["start_date"]
+    if (
+        isinstance(limit, bool)
+        or not isinstance(limit, int | float)
+        or not 1000 <= limit <= 200_000
+    ):
+        raise ValueError(
+            f"{path}: mileage.limit_km_per_year must be a number of kilometres (1,000 to 200,000)"
+        )
+    try:
+        start = start if isinstance(start, date) else date.fromisoformat(str(start))
+    except ValueError as e:
+        raise ValueError(
+            f"{path}: mileage.start_date must be a date such as 2026-03-03"
+        ) from e
+    if start.month == 2 and start.day == 29:
+        raise ValueError(
+            f"{path}: mileage.start_date cannot be 29 February (use 28 February or 1 March)"
+        )
+    return {"mileage_limit_km": f"{limit:g}", "mileage_start": start.isoformat()}
+
+
 def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str, str]:
     """Create ``ref_settings`` and ``ref_fuel_prices`` from the file (defaults for what is missing) and
     return the settings."""
@@ -258,7 +292,7 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
         data = yaml.safe_load(path.read_text()) or {}
         if not isinstance(data, dict):
             raise TypeError(f"{path}: expected a mapping of setting -> value")
-    known = {*DEFAULTS, *FUEL_KEYS, *REFUEL_KEYS}
+    known = {*DEFAULTS, *FUEL_KEYS, *REFUEL_KEYS, MILEAGE_KEY}
     unknown = set(data) - known
     if unknown:
         raise ValueError(
@@ -302,6 +336,7 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
     values["tire_limit_kpa"] = f"{alerts.rules.low_tire_pressure.min_kpa:g}"
     if prices:
         values["fuel_currency"] = data["fuel_currency"]
+    values |= _mileage(path, data.get(MILEAGE_KEY))
     tank = _number(path, data, "tank_litres", 20, 200, "the size of the fuel tank")
     if tank is not None:
         values["tank_litres"] = f"{tank:g}"

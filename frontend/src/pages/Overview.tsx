@@ -2,6 +2,7 @@ import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
 import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview, useRefuels } from '../api/hooks'
+import { AheadPanel } from '../components/AheadPanel'
 import { lastFillUp } from '../refuels'
 import { RangeLink } from '../components/RangeLink'
 import { Odometer } from '../components/Odometer'
@@ -116,6 +117,10 @@ export default function OverviewPage() {
           </>
         )}
       </QueryState>
+
+      <div style={{ marginTop: 14 }}>
+        <AheadPanel />
+      </div>
 
       <div className="grid split" style={{ marginTop: 14 }}>
         <Panel title="Distance" hint="odometer, daily maximum">

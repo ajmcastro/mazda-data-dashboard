@@ -63,6 +63,10 @@ class Garage(BaseModel):
     currency: str | None = None  # of the cost figures
     oil_remaining_km: float | None = None
     oil_read_at: datetime | None = None
+    oil_date_first: str | None = (
+        None  # the forecast's two dates (M52); None without a countdown or a pace
+    )
+    oil_date_last: str | None = None
     alerts_new: int = 0
     active_faults: int = 0
     car_warnings_on: list[
@@ -530,6 +534,38 @@ class Refuels(BaseModel):
     paid_fill_ups: int
     refuels: list[Refuel]  # newest first
     unmatched: list[FuelPayment]
+
+
+class Forecast(BaseModel):
+    """What the recent pace says about the oil change and the year's distance. Everything is counted from
+    `as_of`, the newest day with data, never from today."""
+
+    has_data: bool
+    as_of: str | None = None  # the car's local day, YYYY-MM-DD
+    odometer_km: float | None = None
+    km_per_day_30d: float | None = (
+        None  # None: the readings span less than half the window
+    )
+    km_per_day_90d: float | None = None
+    km_per_year: int | None = (
+        None  # the 90-day pace (the 30-day one without it) over a year, to 100 km
+    )
+    oil_left_km: float | None = (
+        None  # the car's countdown less what was driven since; None: not sent
+    )
+    oil_days_first: int | None = None  # at the faster of the two paces
+    oil_days_last: int | None = None
+    oil_date_first: str | None = None
+    oil_date_last: str | None = None
+    mileage_limit_km: float | None = None  # settings.yaml `mileage`
+    year_start: str | None = None  # the year that contains `as_of`
+    year_end: str | None = None
+    year_km: float | None = None  # so far this year
+    year_counted_from: str | None = (
+        None  # when the data starts over a week into the year
+    )
+    year_projected_km: int | None = None  # at the pace, by `year_end`, to 100 km
+    year_over_km: int | None = None  # projected less the limit (negative: under)
 
 
 class WheelForecast(BaseModel):

@@ -1072,7 +1072,7 @@ The same two steps for the CX-5 as `shapes/cx5.ts`, once there are photos of tha
 2. The body keeps the theme's colour rather than the car's real grey.
 3. M42 then M43 for the CX-60 now; the CX-5 waits for its photos (M44).
 
-## More value from the same data (M45–M62; M45–M51 built)
+## More value from the same data (M45–M62; M45–M52 built)
 
 ### Goal
 Eighteen milestones that make the dashboard more useful day to day without any new data source: understand the car better (fill-ups, driving pattern, one day at a glance), plan ahead (leak and maintenance forecasts, a service log), make it easier to use (units, import from the dashboard, a report for the mechanic, a data health page), take the 3D car further, share code descriptions, and offer a second language. They came from a review of the finished project on 14 Nov 2026; the owner chose all of them. **M28 (a real CX-60 export) stays on hold** until that data exists and is not part of this plan. Email or push notifications stay under "Ideas not built".
@@ -1242,7 +1242,7 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **When there is a forecast:** 8 measurements over 10 days; "losing" from 1 kPa a week; the date is when the wheel's own newest pressure reaches the limit at that rate, given when it is within a year; a wheel already at or under the limit says so instead.
 - **The limit** is `low_tire_pressure.min_kpa` of the model's `alerts.yaml`. `load_settings` now copies it into `ref_settings` as `tire_limit_kpa` (200 without an alerts file) so the pack carries it; an older pack has no such key and the phone falls back to 200.
 - **Route:** `GET /api/status/tire-forecast` (a state): the limit, the window and the minimums, and the four wheels (measurements, span, newest pressure, refill, rate per week, losing, below the limit, days left, date).
-- **Alert:** `tire_leak_forecast` (off by default; `days: 14`), once per wheel and refill, with the rate, the date and the basis in its text. Listed, commented as off, in both models' `alerts.yaml`.
+- **Alert:** `tire_leak_forecast` (off by default; `days: 14`), once per wheel and refill, with the rate, the date and the basis in its text. Listed, as off, in the CX-5's `alerts.yaml`.
 - **UI:** a line per wheel that is losing pressure under the tire chart on Status, then one sentence on what is compared and what it needs; the same as a note on that wheel in the car view (`carState` takes notes by part: a note never changes a part's state). Wording in `frontend/src/tires.ts`; a wheel that is not losing pressure says nothing.
 - **Changed from the sketch:** no dashed projection on the chart (the chart's time axis ends at the newest data; extending it for a line that is "at this rate" would give the estimate more weight than it has).
 - **Demo:** the leaking wheel of each sample car is found and no other (rear left on the CX-5, front left on the CX-60), at about 15 and 14 kPa a week over the 30-day window (the generator leaks about 20 a week over the last three); both are already under 200 kPa, so the line says that instead of a date.
@@ -1250,7 +1250,7 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Tests:** backend 11 in `test_tire_forecast.py` (a steady leak with its date, weather moving all four, one odd reading, a refill, too little data, only the last 30 days, already under the limit, a slow and a far leak, the model's own limit, the alert off by default and once per wheel, both sample cars) — 398 in all; frontend 8 in `tires.test.ts` (340); the phone contract replays the route on both cars (1,085).
 - **Checked by eye:** the line under the tire chart on the Mac with the demo data. **Not done by eye:** the phone.
 
-### M52 — Maintenance and mileage forecast
+### M52 — Maintenance and mileage forecast ✅ done
 - **Oil change date:** the car's countdown (M17) gives the distance left; the recent distance per day (the last 30 and 90 days, both shown) turns it into a date range ("in about 9 to 12 weeks, around mid-March"). Withheld for a car that does not send the countdown or with too little recent driving.
 - **Yearly distance:** `mileage:` in `settings.yaml`: `{limit_km_per_year, start_date}` (a lease or warranty year). The Overview gets "11,200 km so far this year; at the last 90 days' pace about 17,400 km by 3 March, 2,400 over the limit" and Trends a line against the limit. Without the setting, only the yearly pace is shown.
 - **Route:** `GET /api/forecast` (state); the All cars card gains the oil date (raise `SUMMARY_VERSION`).
@@ -1258,6 +1258,21 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 - **Alert:** the existing `oil_change_due` gains an optional `days` trigger next to its distance.
 - **Tests:** the two paces; no countdown; a year that wraps; the limit; the calendar file's format; engine against Python and the summary cache.
 - **Done when:** the real car shows a date for its oil change and the demo CX-60, which sends no countdown, shows none.
+
+**M52 as built.**
+- **One SQL, shared:** `backend/src/mazda_dash/forecast.py` (`FORECAST_SQL`, no parameter) and the same text in `mobile/src/engine/forecast.ts`; the route, the All cars card and the oil alert all read it. **Everything is counted from the newest day with data**, never from today.
+- **Pace:** kilometres a day over the last 30 and the last 90 days, from the odometer (the newest reading against the first reading inside the window); given only when the readings span at least half the window.
+- **Oil change:** the car's countdown less what was driven since it was read, divided by each pace: the earlier and the later date. No date under 1 km a day or beyond two years; nothing at all for a car without the countdown.
+- **The year:** `mileage: {limit_km_per_year, start_date}` in `settings.yaml` (validated; stored as `mileage_limit_km` and `mileage_start` in `ref_settings`, so the pack carries them). The year is the one from the **anniversary** of the start date that contains the newest day; the distance so far is the odometer now less the first reading on or after that anniversary (when the data starts more than a week into the year the answer says from when it counts); the projection adds the 90-day pace (the 30-day one without it) for the days left, rounded to 100 km. Without the setting only the yearly pace is given.
+- **Route:** `GET /api/forecast` (a state). `GET /api/garage` gained `oil_date_first` / `oil_date_last` (`SUMMARY_VERSION` is 4).
+- **Alert:** `oil_change_due` takes an optional `days`: it then also fires when the earlier date is within that many days, once per service interval as before.
+- **UI:** a "Looking ahead" panel on the Overview (`components/AheadPanel.tsx`): the oil change, the year, the tire lines of M51, and one sentence on what the dates stand on; the All cars card shows the oil dates under its countdown. Wording in `frontend/src/forecast.ts`.
+- **Calendar, changed from the sketch:** the file is made **in the page** ("Calendar file" on the panel: `calendarEvents` + `icsFile`, an RFC 5545 file of all-day events with stable ids, so importing it again replaces the events), the same on the Mac and the phone, with nothing sent anywhere. There is no `GET /api/forecast.ics`: a calendar subscribed to a server on this Mac would only update while `make dev` runs, and two generators (Python and TypeScript) would have to be kept equal for it.
+- **Also changed:** no line against the limit on Trends (the sentence on the Overview says it; Trends shows months that happened).
+- **Demo:** the CX-5 sample settings have a 15,000 km year starting with the data, so the demo shows the projection against a limit; the CX-60 has no limit and sends no countdown, so it shows only its yearly pace.
+- **Real data (the owner's CX-5, counted from 10 Nov 2026):** 37.9 km a day over the last 30 days and 40.4 over the last 90, about 14,800 km a year; 7,000 km left on the countdown, so the oil change falls between 3 and 14 May 2027 at that pace. No yearly limit is set (the setting is a commented line in both models' `settings.yaml`).
+- **Tests:** backend 16 in `test_forecast.py` (the two paces and dates, distance since the countdown was read, no countdown, a parked car, too little data, the year against the limit, a year that began before the data, a start date still ahead, the setting's mistakes, the card, the alert by days, both sample cars) — 414 in all; frontend 10 in `forecast.test.ts`, the calendar file included (350); the phone contract (1,087).
+- **Checked by eye:** the panel and the All cars card on the Mac with the demo data. **Not done by eye:** the phone, and opening the calendar file in a calendar app (its format is checked by the tests).
 
 ### M53 — Import from the dashboard
 - **Upload:** `POST /api/import?model=` on the local API takes Mazda's download (the zip as it arrives, or the loose CSV and text files), checks every name against the kinds the ingest knows, refuses anything else, writes into `data/<id>/` (never outside it; names are sanitised; an existing file with the same content is skipped) and runs the same `ingest()` and alerts as `make ingest`. It only listens where the API does (localhost) and is refused when a `MAZDA_READONLY` setting is on.

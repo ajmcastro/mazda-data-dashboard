@@ -151,7 +151,7 @@ you are looking at the demo by the sidebar footer, which shows a made-up VIN (`�
 
 | Page | What it shows |
 |---|---|
-| **Overview** | odometer, distance, fuel economy (with the estimated cost per 100 km when a fuel price is set), fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises |
+| **Overview** | odometer, distance, fuel economy (with the estimated cost per 100 km when a fuel price is set), fuel level, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and the alerts that need attention, including any warning flag the car itself raises; and **looking ahead**: the oil change as two dates at your recent pace, the year's distance against an optional limit, any tire losing pressure, and a calendar file of those dates |
 | **Trends** | every month compared with the one before, including the estimated fuel cost when a fuel price is set (see below); and **how the car is driven**: the stretches of driving by length (under 5 km, 5–20, 20–100, over 100) with the distance, fuel and consumption of each, by month too, and a sentence when a month's consumption and its share of short stretches moved together |
 | **All cars** (also on the phone, under *More*) | one card per car model with data: the odometer, the last 30 days, the **fuel used and its cost** over those days (litres, l/100 km, total and per 100 km: estimates, and the cost only when a fuel price is set), fuel level, the car's own next-oil-change countdown, new alerts, faults still listed, the car's own warnings that are on, and a note when its newest reading is more than a week old. The model selector also shows each car's new alerts |
 | **Compare** (also on the phone, under *More*) | **two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar |
@@ -413,6 +413,24 @@ To see **what you really paid** next to the estimate, keep a file `fuel_log.yaml
 A payment is matched to the fill-up seen around its date; one that matches none is listed under the table. Then run
 `make model` (and, for the phone, `make mobile-pack` and import the new pack). The two amounts are never mixed: the
 total says how many fill-ups the paid amount covers.
+
+### Looking ahead (optional limit)
+
+The Overview's *Looking ahead* panel turns the recent driving into dates: the **oil change** (the car's own countdown
+divided by the distance you drove a day over the last 30 and the last 90 days: two dates), and the **distance a
+year**. Everything is counted from the newest day in your data, not from today, and the panel says so. A car that
+sends no oil countdown gets no oil date.
+
+For a lease or warranty year, add your limit to the model's `settings.yaml` and run `make model`:
+
+```yaml
+mileage: {limit_km_per_year: 15000, start_date: 2026-03-03}
+```
+
+The panel then shows the distance so far this year and the projection against the limit. **Calendar file** downloads
+the dates (oil change, end of the year, a tire reaching your pressure limit) as an `.ics` file made in the page:
+open it to add them to your calendar; nothing is sent anywhere. The oil alert can also fire by date: add
+`days: 30` to `oil_change_due` in `alerts.yaml`.
 
 ### Service log (optional)
 
