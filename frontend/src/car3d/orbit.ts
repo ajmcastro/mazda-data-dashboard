@@ -2,6 +2,7 @@
 // `azimuth` turns around the vertical axis (0 = straight in front of the car, a quarter turn = its right side),
 // `polar` is the angle down from straight above, `distance` is how far away.
 
+import { msg } from '../i18n'
 import type { Vec3 } from './geometry'
 
 export interface Orbit {
@@ -43,10 +44,10 @@ export function cameraPosition(o: Orbit, target: Vec3): Vec3 {
 export type ViewId = 'front' | 'side' | 'rear' | 'top'
 
 export const VIEWS: { id: ViewId; label: string }[] = [
-  { id: 'front', label: 'Front' },
-  { id: 'side', label: 'Side' },
-  { id: 'rear', label: 'Rear' },
-  { id: 'top', label: 'Top' },
+  { id: 'front', label: msg('Front') },
+  { id: 'side', label: msg('Side') },
+  { id: 'rear', label: msg('Rear') },
+  { id: 'top', label: msg('Top') },
 ]
 
 /** The fixed views. "Front" is the three-quarter view from the front left the panel opens with. */

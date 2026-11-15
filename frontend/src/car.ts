@@ -4,6 +4,7 @@
 // value is "open", a value the car flagged Invalid (null here) stays "unknown", and no pressure or fuel limit is
 // invented (a wheel is marked only by the car's own flag or the "clearly the lowest" rule of the tire drawing).
 
+import { msg, tr, trn } from './i18n'
 import type { CarWarningFlag, CarWarnings, DoorPoint, OilService, Overview, StatusPoint, TireReading } from './api/types'
 import { fmtAge, fmtDateTime, fmtNum, OIL_SOON_KM } from './lib'
 import { distanceText, fmtDistance, fmtPressure, pressureText } from './units'
@@ -25,6 +26,8 @@ export interface Part {
   state: PartState
   /** The figure shown next to the part, e.g. "230 kPa", "closed", "62 %". */
   value: string
+  /** The shorter name and figure for a 3D label, when the full ones do not fit (set here so no language is parsed back). */
+  short?: { name: string; value: string }
   /** Further lines of the label, most important first. */
   notes: string[]
   /** When the car reported it (ISO, UTC), when known. */
@@ -49,25 +52,25 @@ export interface CarState {
 export const LOWEST_SPREAD_KPA = 20
 
 export const CAR_NOTES = [
-  'A door value of 0 is assumed to mean closed; any other value is shown as open with the raw value.',
-  'Lock codes are shown raw: their meaning is not documented.',
-  'Fuel, tires, doors and the odometer are the newest in the selected period; the warning flags and the oil countdown are the car\'s latest.',
+  msg('A door value of 0 is assumed to mean closed; any other value is shown as open with the raw value.'),
+  msg('Lock codes are shown raw: their meaning is not documented.'),
+  msg("Fuel, tires, doors and the odometer are the newest in the selected period; the warning flags and the oil countdown are the car's latest."),
 ] as const
 
-const WHEELS: { id: PartId; name: string; key: 'tire_fl_kpa' | 'tire_fr_kpa' | 'tire_rl_kpa' | 'tire_rr_kpa'; flag: string }[] = [
-  { id: 'wheel_fl', name: 'Front left wheel', key: 'tire_fl_kpa', flag: 'fltyrepresswarn' },
-  { id: 'wheel_fr', name: 'Front right wheel', key: 'tire_fr_kpa', flag: 'frtyrepresswarn' },
-  { id: 'wheel_rl', name: 'Rear left wheel', key: 'tire_rl_kpa', flag: 'rltyrepresswarn' },
-  { id: 'wheel_rr', name: 'Rear right wheel', key: 'tire_rr_kpa', flag: 'rrtyrepresswarn' },
+const WHEELS: { id: PartId; name: string; short: string; key: 'tire_fl_kpa' | 'tire_fr_kpa' | 'tire_rl_kpa' | 'tire_rr_kpa'; flag: string }[] = [
+  { id: 'wheel_fl', name: msg('Front left wheel'), short: msg('Front left'), key: 'tire_fl_kpa', flag: 'fltyrepresswarn' },
+  { id: 'wheel_fr', name: msg('Front right wheel'), short: msg('Front right'), key: 'tire_fr_kpa', flag: 'frtyrepresswarn' },
+  { id: 'wheel_rl', name: msg('Rear left wheel'), short: msg('Rear left'), key: 'tire_rl_kpa', flag: 'rltyrepresswarn' },
+  { id: 'wheel_rr', name: msg('Rear right wheel'), short: msg('Rear right'), key: 'tire_rr_kpa', flag: 'rrtyrepresswarn' },
 ]
 
 const DOORS: { id: PartId; name: string; key: 'door_driver' | 'door_passenger' | 'door_rear_left' | 'door_rear_right' | 'trunk' | 'hood'; lock?: 'lock_driver' | 'lock_passenger' }[] = [
-  { id: 'door_driver', name: 'Driver door', key: 'door_driver', lock: 'lock_driver' },
-  { id: 'door_passenger', name: 'Passenger door', key: 'door_passenger', lock: 'lock_passenger' },
-  { id: 'door_rear_left', name: 'Rear left door', key: 'door_rear_left' },
-  { id: 'door_rear_right', name: 'Rear right door', key: 'door_rear_right' },
-  { id: 'trunk', name: 'Trunk', key: 'trunk' },
-  { id: 'hood', name: 'Hood', key: 'hood' },
+  { id: 'door_driver', name: msg('Driver door'), key: 'door_driver', lock: 'lock_driver' },
+  { id: 'door_passenger', name: msg('Passenger door'), key: 'door_passenger', lock: 'lock_passenger' },
+  { id: 'door_rear_left', name: msg('Rear left door'), key: 'door_rear_left' },
+  { id: 'door_rear_right', name: msg('Rear right door'), key: 'door_rear_right' },
+  { id: 'trunk', name: msg('Trunk'), key: 'trunk' },
+  { id: 'hood', name: msg('Hood'), key: 'hood' },
 ]
 
 /** The car's flags that belong to one part; every other flag that is on is listed at the dashboard. */
@@ -90,23 +93,23 @@ function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Pa
     let state: PartState = !sends ? 'absent' : num(v) ? 'ok' : 'unknown'
     if (flag?.is_on) {
       state = 'attention'
-      notes.push(`the car's tire flag is on (raw ${fmtNum(flag.value)})`)
+      notes.push(tr("the car's tire flag is on (raw {value})", { value: fmtNum(flag.value) }))
     }
     if (num(v) && v === lowest && spread >= LOWEST_SPREAD_KPA) {
       state = 'attention'
-      notes.push(`lowest of the four, ${pressureText(spread)} under the highest`)
+      notes.push(tr('lowest of the four, {spread} under the highest', { spread: pressureText(spread) }))
     }
     const old = num(v) && s?.tire_stale === true
     if (num(v) && s?.tire_measured_at) {
       notes.push(
         old
-          ? `old reading: measured ${fmtDateTime(s.tire_measured_at)}, ${fmtAge(s.tire_age_minutes)} before this snapshot`
-          : `measured ${fmtDateTime(s.tire_measured_at)}`,
+          ? tr('old reading: measured {at}, {age} before this snapshot', { at: fmtDateTime(s.tire_measured_at), age: fmtAge(s.tire_age_minutes) })
+          : tr('measured {at}', { at: fmtDateTime(s.tire_measured_at) }),
       )
-    } else if (num(v)) notes.push('measurement time unknown')
+    } else if (num(v)) notes.push(tr('measurement time unknown'))
     return {
-      id: w.id, name: w.name, group: 'wheels', state, old,
-      value: num(v) ? fmtPressure(v) : state === 'absent' ? 'not sent' : 'unknown',
+      id: w.id, name: tr(w.name), short: { name: tr(w.short), value: num(v) ? fmtPressure(v) : state === 'absent' ? tr('not sent') : tr('unknown') }, group: 'wheels', state, old,
+      value: num(v) ? fmtPressure(v) : state === 'absent' ? tr('not sent') : tr('unknown'),
       notes,
       at: num(v) ? (s?.tire_measured_at ?? s?.at ?? null) : (flag?.last_read_at ?? null),
     }
@@ -115,14 +118,14 @@ function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Pa
 
 function doors(d: DoorPoint | undefined): Part[] {
   return DOORS.map((def) => {
-    if (!d) return { id: def.id, name: def.name, group: 'doors', state: 'absent', value: 'not sent', notes: [], at: null, old: false }
+    if (!d) return { id: def.id, name: tr(def.name), group: 'doors', state: 'absent', value: tr('not sent'), notes: [], at: null, old: false }
     const v = d[def.key]
     const notes: string[] = []
-    if (def.lock && num(d[def.lock])) notes.push(`lock code ${fmtNum(d[def.lock])}`)
+    if (def.lock && num(d[def.lock])) notes.push(tr('lock code {code}', { code: fmtNum(d[def.lock]) }))
     return {
-      id: def.id, name: def.name, group: 'doors', old: false, at: d.created_at, notes,
+      id: def.id, name: tr(def.name), group: 'doors', old: false, at: d.created_at, notes,
       state: !num(v) ? 'unknown' : v === 0 ? 'ok' : 'open',
-      value: !num(v) ? 'unknown' : v === 0 ? 'closed' : `open (raw ${fmtNum(v)})`,
+      value: !num(v) ? tr('unknown') : v === 0 ? tr('closed') : tr('open (raw {value})', { value: fmtNum(v) }),
     }
   })
 }
@@ -130,11 +133,11 @@ function doors(d: DoorPoint | undefined): Part[] {
 function fuel(o: Overview | undefined): Part {
   const s = o?.status
   const level = s?.fuel_level_pct
-  const notes = num(s?.range_km) ? [`range ${fmtDistance(s.range_km)}`] : []
+  const notes = num(s?.range_km) ? [tr('range {distance}', { distance: fmtDistance(s.range_km) })] : []
   return {
-    id: 'fuel', name: 'Fuel tank', group: 'other', old: false, notes, at: num(level) ? (s?.at ?? null) : null,
+    id: 'fuel', name: tr('Fuel tank'), group: 'other', old: false, notes, at: num(level) ? (s?.at ?? null) : null,
     state: num(level) ? 'ok' : 'absent',
-    value: num(level) ? `${fmtNum(level)} %` : 'not sent',
+    value: num(level) ? `${fmtNum(level)} %` : tr('not sent'),
   }
 }
 
@@ -145,19 +148,20 @@ function engine(oil: OilService | undefined, flags: Map<string, CarWarningFlag>)
   let state: PartState = num(km) || flag ? 'ok' : 'absent'
   if (flag?.is_on) {
     state = 'attention'
-    notes.push(`the car's oil level flag is on (raw ${fmtNum(flag.value)})`)
+    notes.push(tr("the car's oil level flag is on (raw {value})", { value: fmtNum(flag.value) }))
   }
   if (num(km)) {
     if (km <= OIL_SOON_KM) {
       state = 'attention'
-      notes.push('oil change due soon')
+      notes.push(tr('oil change due soon'))
     }
-    notes.push("the car's own countdown, in steps of 1,000 km or more")
-    if (num(oil?.km_since_reading) && oil.km_since_reading >= 50) notes.push(`${distanceText(oil.km_since_reading)} driven since`)
+    notes.push(tr("the car's own countdown, in steps of 1,000 km or more"))
+    if (num(oil?.km_since_reading) && oil.km_since_reading >= 50) notes.push(tr('{distance} driven since', { distance: distanceText(oil.km_since_reading) }))
   }
   return {
-    id: 'engine', name: 'Engine', group: 'other', state, old: false, notes,
-    value: num(km) ? `${distanceText(km)} to oil change` : flag ? (flag.is_on ? 'oil level flag on' : 'oil level flag clear') : 'not sent',
+    id: 'engine', name: tr('Engine'), group: 'other', state, old: false, notes,
+    short: num(km) ? { name: tr('Oil change in'), value: distanceText(km) } : flag ? { name: tr('Oil level flag'), value: flag.is_on ? tr('on') : tr('clear') } : undefined,
+    value: num(km) ? tr('{distance} to oil change', { distance: distanceText(km) }) : flag ? (flag.is_on ? tr('oil level flag on') : tr('oil level flag clear')) : tr('not sent'),
     at: num(km) ? (oil?.read_at ?? null) : (flag?.last_read_at ?? null),
   }
 }
@@ -166,10 +170,10 @@ function dash(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Part
   const on = [...flags.values()].filter((f) => f.is_on && !PART_FLAGS.has(f.flag))
   const km = o?.odometer_km
   return {
-    id: 'dash', name: 'Dashboard', group: 'other', old: false,
+    id: 'dash', name: tr('Dashboard'), group: 'other', old: false,
     state: on.length ? 'attention' : num(km) ? 'ok' : 'absent',
-    value: num(km) ? fmtDistance(km) : on.length ? 'warning on' : 'not sent',
-    notes: on.map((f) => `flag on: ${f.label} (raw ${fmtNum(f.value)})`),
+    value: num(km) ? fmtDistance(km) : on.length ? tr('warning on') : tr('not sent'),
+    notes: on.map((f) => tr('flag on: {label} (raw {value})', { label: tr(f.label), value: fmtNum(f.value) })),
     at: num(km) ? (o?.odometer_at ?? null) : (on[0]?.last_read_at ?? null),
   }
 }
@@ -203,25 +207,25 @@ export function listedParts(car: CarState, group: PartGroup): Part[] {
 
 /** The word on a part's badge; null for a part with nothing to remark (an unknown part says so as its value). */
 export function stateBadge(p: Part): { kind: 'critical' | 'warning'; text: string } | null {
-  if (p.state === 'attention') return { kind: 'critical', text: 'check' }
-  if (p.state === 'open') return { kind: 'warning', text: 'open' }
-  if (p.old) return { kind: 'warning', text: 'old reading' }
+  if (p.state === 'attention') return { kind: 'critical', text: tr('check') }
+  if (p.state === 'open') return { kind: 'warning', text: tr('open') }
+  if (p.old) return { kind: 'warning', text: tr('old reading') }
   return null
 }
 
 /** One sentence above the list. */
 export function carHeadline(car: CarState): string {
-  if (!car.hasData) return 'No status report in this period.'
+  if (!car.hasData) return tr('No status report in this period.')
   const shown = car.parts.filter((p) => p.state !== 'absent')
   const attention = shown.filter((p) => p.state === 'attention')
   const open = shown.filter((p) => p.state === 'open')
   const unknown = shown.filter((p) => p.state === 'unknown')
   const names = (ps: Part[]) => ps.map((p) => p.name.toLowerCase()).join(', ')
   const said: string[] = []
-  if (attention.length) said.push(`To check: ${names(attention)}.`)
-  if (open.length) said.push(`Open: ${names(open)}.`)
-  if (unknown.length) said.push(`Unknown: ${names(unknown)}.`)
-  return said.length ? said.join(' ') : 'Nothing to remark in the latest reports.'
+  if (attention.length) said.push(tr('To check: {parts}.', { parts: names(attention) }))
+  if (open.length) said.push(tr('Open: {parts}.', { parts: names(open) }))
+  if (unknown.length) said.push(tr('Unknown: {parts}.', { parts: names(unknown) }))
+  return said.length ? said.join(' ') : tr('Nothing to remark in the latest reports.')
 }
 
 // ---- how the panel is shown ----
@@ -283,15 +287,15 @@ export function alertCounts(alerts: readonly { rule: string; dedup_key?: string 
 }
 
 /** "2 open alerts" */
-export const alertsText = (n: number): string => `${n} open alert${n === 1 ? '' : 's'}`
+export const alertsText = (n: number): string => trn('{n} open alert', '{n} open alerts', n)
 
 const PART_NAMES: Record<PartId, string> = {
-  wheel_fl: 'Front left wheel', wheel_fr: 'Front right wheel', wheel_rl: 'Rear left wheel', wheel_rr: 'Rear right wheel',
-  door_driver: 'Driver door', door_passenger: 'Passenger door', door_rear_left: 'Rear left door', door_rear_right: 'Rear right door',
-  trunk: 'Trunk', hood: 'Hood', fuel: 'Fuel tank', engine: 'Engine', dash: 'Dashboard',
+  wheel_fl: msg('Front left wheel'), wheel_fr: msg('Front right wheel'), wheel_rl: msg('Rear left wheel'), wheel_rr: msg('Rear right wheel'),
+  door_driver: msg('Driver door'), door_passenger: msg('Passenger door'), door_rear_left: msg('Rear left door'), door_rear_right: msg('Rear right door'),
+  trunk: msg('Trunk'), hood: msg('Hood'), fuel: msg('Fuel tank'), engine: msg('Engine'), dash: msg('Dashboard'),
 }
 /** A part's name from its id (for the Alerts page's filter); null for something that is not a part. */
-export const partName = (id: string | null | undefined): string | null => (id && id in PART_NAMES ? PART_NAMES[id as PartId] : null)
+export const partName = (id: string | null | undefined): string | null => (id && id in PART_NAMES ? tr(PART_NAMES[id as PartId]) : null)
 
 // ------------------------------------------------------------ the car at an earlier report (M56)
 
@@ -368,7 +372,8 @@ function oldBy(reading: TireReading, ageMinutes: number): boolean {
 }
 
 /** "report 37 of 212" */
-export const reportText = (a: Pick<CarAt, 'index' | 'total'>): string => `report ${fmtNum(a.index)} of ${fmtNum(a.total)}`
+export const reportText = (a: Pick<CarAt, 'index' | 'total'>): string => tr('report {n} of {total}', { n: fmtNum(a.index), total: fmtNum(a.total) })
 
-export const SCRUB_NOTE =
-  "Looking back: each step is one status report. The car's own warning flags, the oil countdown and the alert markers are states of the newest data, so they are not shown here."
+export const SCRUB_NOTE = msg(
+  "Looking back: each step is one status report. The car's own warning flags, the oil countdown and the alert markers are states of the newest data, so they are not shown here.",
+)

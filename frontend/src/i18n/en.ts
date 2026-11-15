@@ -1,10 +1,10 @@
 // The English catalogue (PLAN.md M62): the source of truth for the keys. A phrase may hold {placeholders}.
-// Only what has a key here is translated; everything else in the apps is still plain English.
+// These are the menus, page titles and controls; every other phrase goes through `tr()` (see index.ts).
 
 export const en = {
   'lang.name': 'English',
   'lang.label': 'Language',
-  'lang.partial': 'in progress: menus, page titles and dates',
+  'lang.auto': 'Auto',
 
   'nav.overview': 'Overview',
   'nav.trends': 'Trends',

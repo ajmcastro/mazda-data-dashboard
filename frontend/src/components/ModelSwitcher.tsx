@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useQueries } from '@tanstack/react-query'
 import { garageQuery } from '../api/hooks'
 import { optionLabel } from '../garage'
@@ -17,7 +18,7 @@ export function ModelSwitcher() {
   if (listed.length < 2) return null
   return (
     <label className="model-switch">
-      <span className="sr-only">Car model</span>
+      <span className="sr-only">{tr('Car model')}</span>
       <select value={model?.id ?? listed[0]!.id} onChange={(e) => switchTo(e.target.value)}>
         {listed.map((m, i) => (
           <option key={m.id} value={m.id}>

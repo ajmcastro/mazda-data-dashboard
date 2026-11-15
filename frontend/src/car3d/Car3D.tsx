@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CarState, PartId } from '../car'
 import { alertsText, stateBadge } from '../car'
@@ -92,9 +93,9 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
     let scene: CarScene
     try {
       if (!webglAvailable()) throw new Error('no WebGL') // asked first: three.js logs an error when it finds out itself
-      scene = new CarScene(canvas, geometry, () => failRef.current('The 3D view was interrupted by the browser.'))
+      scene = new CarScene(canvas, geometry, () => failRef.current(tr('The 3D view was interrupted by the browser.')))
     } catch {
-      failRef.current('This browser cannot draw the 3D view (WebGL is not available).')
+      failRef.current(tr('This browser cannot draw the 3D view (WebGL is not available).'))
       return
     }
     sceneRef.current = scene
@@ -204,7 +205,7 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
           ref={canvasRef}
           tabIndex={0}
           role="img"
-          aria-label="The car in 3D. Arrow keys turn it, plus and minus zoom, Home resets the view. The figures are the labels that follow."
+          aria-label={tr('The car in 3D. Arrow keys turn it, plus and minus zoom, Home resets the view. The figures are the labels that follow.')}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
@@ -261,17 +262,17 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
       </div>
 
       <div className="car3d-bar">
-        <div className="theme-toggle" role="group" aria-label="View">
+        <div className="theme-toggle" role="group" aria-label={tr('View')}>
           {VIEWS.map((v) => (
-            <button key={v.id} type="button" onClick={() => view(v.id)}>{v.label}</button>
+            <button key={v.id} type="button" onClick={() => view(v.id)}>{tr(v.label)}</button>
           ))}
         </div>
-        <div className="theme-toggle" role="group" aria-label="Zoom">
-          <button type="button" onClick={() => zoom(1 / 0.8)} aria-label="Zoom out">−</button>
-          <button type="button" onClick={() => zoom(0.8)} aria-label="Zoom in">+</button>
+        <div className="theme-toggle" role="group" aria-label={tr('Zoom')}>
+          <button type="button" onClick={() => zoom(1 / 0.8)} aria-label={tr('Zoom out')}>−</button>
+          <button type="button" onClick={() => zoom(0.8)} aria-label={tr('Zoom in')}>+</button>
         </div>
         <span className="muted car3d-hint">
-          {compact ? 'Drag sideways to turn · schematic shape, not the real body' : 'Drag to turn · Ctrl + scroll to zoom · schematic shape, not the real body'}
+          {compact ? tr('Drag sideways to turn · schematic shape, not the real body') : tr('Drag to turn · Ctrl + scroll to zoom · schematic shape, not the real body')}
         </span>
       </div>
 
@@ -317,7 +318,7 @@ export default function Car3D({ car, body, onFail }: { car: CarState; body?: Par
               {picked.at && picked.group !== 'wheels' && <div className="car-part-note">reported {fmtDateTime(picked.at)}</div>}
             </>
           ) : (
-            <span className="muted">Click a part of the car, or a label, to see its details here.</span>
+            <span className="muted">{tr('Click a part of the car, or a label, to see its details here.')}</span>
           )}
         </div>
       )}

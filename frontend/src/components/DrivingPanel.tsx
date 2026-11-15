@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useDrivingPattern } from '../api/hooks'
 import type { DrivingBandTotal } from '../api/types'
 import { bandLabel, describeMix, drivingNotes, headline, mixChanges, pct, share, shortShare, unclassifiedNote } from '../driving'
@@ -13,7 +14,7 @@ export function DrivingPanel() {
   const changes = d ? mixChanges(d.months) : []
   const note = unclassifiedNote(d)
   return (
-    <Panel title="How the car is driven" hint="stretches of driving between two status reports, by length">
+    <Panel title={tr('How the car is driven')} hint={tr('stretches of driving between two status reports, by length')}>
       <QueryState query={query}>
         {d && (
           <>
@@ -24,13 +25,13 @@ export function DrivingPanel() {
                   <table>
                     <thead>
                       <tr>
-                        <th>Length</th>
-                        <th className="num">Stretches</th>
-                        <th className="num">Distance</th>
-                        <th>Share of the distance</th>
-                        <th className="num">Fuel</th>
+                        <th>{tr('Length')}</th>
+                        <th className="num">{tr('Stretches')}</th>
+                        <th className="num">{tr('Distance')}</th>
+                        <th>{tr('Share of the distance')}</th>
+                        <th className="num">{tr('Fuel')}</th>
                         <th className="num">{consumptionLabel()}</th>
-                        <th className="num">Average speed</th>
+                        <th className="num">{tr('Average speed')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -56,7 +57,7 @@ export function DrivingPanel() {
                         )
                       })}
                       <tr>
-                        <td><b>All in a band</b></td>
+                        <td><b>{tr('All in a band')}</b></td>
                         <td className="num">{fmtNum(d.stretches)}</td>
                         <td className="num">{fmtDistance(d.km)}</td>
                         <td />
@@ -71,19 +72,19 @@ export function DrivingPanel() {
 
                 {d.months.length > 1 && (
                   <>
-                    <h3 className="sub-head" style={{ margin: '18px 0 8px' }}>By month</h3>
+                    <h3 className="sub-head" style={{ margin: '18px 0 8px' }}>{tr('By month')}</h3>
                     <div className="table-wrap">
                       <table>
                         <thead>
                           <tr>
-                            <th>Month</th>
-                            <th className="num">Stretches</th>
-                            <th className="num">Distance</th>
+                            <th>{tr('Month')}</th>
+                            <th className="num">{tr('Stretches')}</th>
+                            <th className="num">{tr('Distance')}</th>
                             <th className="num">{consumptionLabel()}</th>
                             {d.bands.map((b) => (
                               <th key={b.band} className="num">{bandLabel(b)}</th>
                             ))}
-                            <th className="num">Short, of the distance</th>
+                            <th className="num">{tr('Short, of the distance')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -106,7 +107,7 @@ export function DrivingPanel() {
                       </table>
                     </div>
                     <p className="muted note">
-                      The columns by length are each month's share of the distance; “short” adds the first two.
+                      {tr("The columns by length are each month's share of the distance; “short” adds the first two.")}
                     </p>
                     {changes.map((c) => (
                       <p key={c.month} style={{ margin: '10px 0 0' }}>{describeMix(c)}</p>

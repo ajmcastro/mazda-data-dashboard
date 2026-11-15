@@ -1,3 +1,5 @@
+import { codeTitle } from '../alerttext'
+import { tr } from '../i18n'
 import { useMemo, useState } from 'react'
 import { useDtcEvents, useFaultContext, useFreezeFrames } from '../api/hooks'
 import type { DtcEvent, DtcFrequency, FreezeFrame } from '../api/types'
@@ -6,11 +8,11 @@ import { fmtDistance } from '../units'
 import { FrameSummary } from './FrameSummary'
 import { Badge, DataTable, Panel, QueryState, type Column } from './ui'
 
-const yesNo = (v: boolean | null | undefined) => (v === null || v === undefined ? '—' : v ? 'yes' : 'no')
+const yesNo = (v: boolean | null | undefined) => (v === null || v === undefined ? '—' : v ? tr('yes') : tr('no'))
 
 // A DTC can have several stored records (frames); the record number and the seconds tell them apart.
 const frameLabel = (f: FreezeFrame) =>
-  `record ${f.record_number} · ${f.snapshot_at ? fmtDateTimeSec(f.snapshot_at) : 'unknown time'} · reported ${f.times_reported}×`
+  `${tr('record {n}', { n: f.record_number ?? '' })} · ${f.snapshot_at ? fmtDateTimeSec(f.snapshot_at) : tr('unknown time')} · ${tr('reported {n}×', { n: f.times_reported })}`
 
 /** Signals whose value is not the same in every frame: the interesting part when comparing. */
 function differingSignals(frames: FreezeFrame[]): string[] {
@@ -42,10 +44,10 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
   }, [ctx])
 
   const evCols: Column<DtcEvent>[] = [
-    { key: 'at', header: 'Read-out', render: (e) => fmtDateTime(e.event_at) },
-    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtDistance(e.odometer_km) },
-    { key: 'conf', header: 'Confirmed', render: (e) => yesNo(e.confirmed) },
-    { key: 'pend', header: 'Pending', render: (e) => yesNo(e.pending) },
+    { key: 'at', header: tr('Read-out'), render: (e) => fmtDateTime(e.event_at) },
+    { key: 'odo', header: tr('Odometer'), num: true, render: (e) => fmtDistance(e.odometer_km) },
+    { key: 'conf', header: tr('Confirmed'), render: (e) => yesNo(e.confirmed) },
+    { key: 'pend', header: tr('Pending'), render: (e) => yesNo(e.pending) },
   ]
 
   return (
@@ -54,7 +56,7 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
         <FrameSummary fault={fault} />
       </div>
       <div className="grid cols-2" style={{ marginTop: 14 }}>
-        <Panel title={`${fault.ecu} · ${fault.dtc_code}:${fault.failure_type}`} hint="click a read-out to see what surrounded it">
+        <Panel title={`${fault.ecu} · ${fault.dtc_code}:${fault.failure_type}`} hint={tr('click a read-out to see what surrounded it')}>
           <QueryState query={events}>
             <DataTable
               rows={events.data ?? []}
@@ -67,10 +69,10 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
         </Panel>
 
         <Panel
-          title="Freeze frame"
+          title={tr('Freeze frame')}
           hint={
             list.length > 1 ? (
-              <select aria-label="Freeze frame" value={frameIdx} onChange={(e) => setFrameIdx(Number(e.target.value))}>
+              <select aria-label={tr('Freeze frame')} value={frameIdx} onChange={(e) => setFrameIdx(Number(e.target.value))}>
                 {list.map((f, i) => (
                   <option key={f.frame_id} value={i}>{frameLabel(f)}</option>
                 ))}
@@ -78,13 +80,13 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
             ) : frame ? (
               frameLabel(frame)
             ) : (
-              'none stored'
+              tr('none stored')
             )
           }
         >
           <QueryState query={frames}>
             {!frame ? (
-              <div className="state">The car stored no freeze frame for this code</div>
+              <div className="state">{tr('The car stored no freeze frame for this code')}</div>
             ) : (
               <dl className="kv">
                 {frame.signals.map((s) => (
@@ -100,15 +102,15 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
       </div>
 
       {list.length > 1 && varying.length > 0 && (
-        <Panel title="What changed between frames" hint={`${list.length} frames, signals that differ`}>
+        <Panel title={tr('What changed between frames')} hint={tr('{n} frames, signals that differ', { n: list.length })}>
           <div className="table-wrap">
             <table className="matrix">
               <thead>
                 <tr>
-                  <th>Signal</th>
+                  <th>{tr('Signal')}</th>
                   {list.map((f) => (
                     <th key={f.frame_id} className="num" title={frameLabel(f)}>
-                      rec {f.record_number}
+                      {tr('rec {n}', { n: f.record_number ?? '' })}
                     </th>
                   ))}
                 </tr>
@@ -131,46 +133,46 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
       )}
 
       {tx && (
-        <Panel title="Around this fault" hint={ctx ? `${fmtDateTime(ctx.event_at)} · ±${ctx.window_hours} h` : undefined}>
+        <Panel title={tr('Around this fault')} hint={ctx ? `${fmtDateTime(ctx.event_at)} · ±${ctx.window_hours} h` : undefined}>
           <QueryState query={context}>
             {ctx && (
               <div className="grid cols-3">
                 <div>
-                  <h3 className="sub-h">Warnings nearby</h3>
+                  <h3 className="sub-h">{tr('Warnings nearby')}</h3>
                   {warningCounts.length === 0 ? (
-                    <div className="muted">none in the window</div>
+                    <div className="muted">{tr('none in the window')}</div>
                   ) : (
                     <div className="chips">
                       {warningCounts.map(([code, c]) => (
-                        <span key={code} className="chip" title={c.title}>{code} ×{c.n}</span>
+                        <span key={code} className="chip" title={codeTitle(c.title)}>{code} ×{c.n}</span>
                       ))}
                     </div>
                   )}
                 </div>
                 <div>
-                  <h3 className="sub-h">Other faults in the same read-out</h3>
+                  <h3 className="sub-h">{tr('Other faults in the same read-out')}</h3>
                   <div className="chips">
                     {ctx.other_faults.map((f) => (
-                      <span key={f.ecu + f.dtc_code} className="chip" title={f.title}>{f.ecu} {f.dtc_code}</span>
+                      <span key={f.ecu + f.dtc_code} className="chip" title={codeTitle(f.title)}>{f.ecu} {f.dtc_code}</span>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <h3 className="sub-h">Car status</h3>
+                  <h3 className="sub-h">{tr('Car status')}</h3>
                   {ctx.status ? (
                     <dl className="kv">
-                      <dt>Snapshot</dt>
-                      <dd>{fmtNum(ctx.status_offset_minutes)} min away</dd>
-                      <dt>Fuel</dt>
+                      <dt>{tr('Snapshot')}</dt>
+                      <dd>{tr('{n} min away', { n: fmtNum(ctx.status_offset_minutes) })}</dd>
+                      <dt>{tr('Fuel')}</dt>
                       <dd>{fmtNum(ctx.status.fuel_level_pct, 0, '%')}</dd>
-                      <dt>Odometer</dt>
+                      <dt>{tr('Odometer')}</dt>
                       <dd>{fmtDistance(ctx.status.odometer_km)}</dd>
-                      <dt>Engine state</dt>
+                      <dt>{tr('Engine state')}</dt>
                       <dd>{fmtNum(ctx.status.engine_state)}</dd>
                     </dl>
                   ) : (
                     <div className="muted">
-                      <Badge kind="dim">no snapshot</Badge> within 3 h
+                      <Badge kind="dim">{tr('no snapshot')}</Badge> {tr('within 3 h')}
                     </div>
                   )}
                 </div>

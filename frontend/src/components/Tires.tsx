@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { fmtPressure, pressureLabel } from '../units'
 
 type Props = { fl?: number | null; fr?: number | null; rl?: number | null; rr?: number | null }
@@ -18,14 +19,14 @@ export function Tires({ fl, fr, rl, rr }: Props) {
   )
   return (
     <div className="tires">
-      <svg viewBox="0 0 200 250" role="img" aria-label={`Tire pressures in ${pressureLabel()}`}>
+      <svg viewBox="0 0 200 250" role="img" aria-label={tr('Tire pressures in {unit}', { unit: pressureLabel() })}>
         <rect x="52" y="14" width="96" height="222" rx="38" fill="none" stroke="var(--line)" strokeWidth="2" />
         <rect x="64" y="64" width="72" height="56" rx="10" fill="none" stroke="var(--line)" strokeWidth="1.5" />
         <rect x="64" y="132" width="72" height="62" rx="10" fill="none" stroke="var(--line)" strokeWidth="1.5" />
-        {tire(14, 34, fl, 'Front left')}
-        {tire(156, 34, fr, 'Front right')}
-        {tire(14, 158, rl, 'Rear left')}
-        {tire(156, 158, rr, 'Rear right')}
+        {tire(14, 34, fl, tr('Front left'))}
+        {tire(156, 34, fr, tr('Front right'))}
+        {tire(14, 158, rl, tr('Rear left'))}
+        {tire(156, 158, rr, tr('Rear right'))}
         <text x="100" y="246" textAnchor="middle" fontFamily="var(--mono)" fontSize="10" fill="var(--muted)">{pressureLabel()}</text>
       </svg>
     </div>

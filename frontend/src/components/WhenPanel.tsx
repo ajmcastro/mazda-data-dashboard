@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useActivityPattern } from '../api/hooks'
 import { ACTIVITY_NOTE, hourBars, hourLabel, summaryLine, weekdayBars } from '../activity'
@@ -15,16 +16,16 @@ export function WhenPanel() {
   const line = summaryLine(hours, days)
 
   return (
-    <Panel title="When the car is used" hint={pattern.data ? `car time · ${pattern.data.time_zone}` : undefined}>
+    <Panel title={tr('When the car is used')} hint={pattern.data ? `${tr('car time')} · ${pattern.data.time_zone}` : undefined}>
       <QueryState query={pattern}>
         {hours.length === 0 ? (
-          <p className="muted">No warnings or drives in this period.</p>
+          <p className="muted">{tr('No warnings or drives in this period.')}</p>
         ) : (
           <>
             {line && <p style={{ margin: '0 0 10px' }}>{line}</p>}
             <div className="grid cols-2">
               <div>
-                <div className="sub-h">DAYS WITH ACTIVITY, BY HOUR</div>
+                <div className="sub-h">{tr('DAYS WITH ACTIVITY, BY HOUR')}</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={hours} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <XAxis dataKey="label" interval={2} tickLine={false} axisLine={false} {...axis} />
@@ -37,9 +38,9 @@ export function WhenPanel() {
                         return (
                           <div className="chart-tip">
                             <div className="t">{hourLabel(d.hour)}</div>
-                            <div className="row"><span>Days</span><span>{d.days}{d.few ? ' (few days)' : ''}</span></div>
-                            <div className="row"><span>Different warnings</span><span>{d.codes}</span></div>
-                            <div className="row"><span>Distance seen</span><span>{fmtDistance(d.km)}</span></div>
+                            <div className="row"><span>{tr('Days')}</span><span>{d.days}{d.few ? ` (${tr('few days')})` : ''}</span></div>
+                            <div className="row"><span>{tr('Different warnings')}</span><span>{d.codes}</span></div>
+                            <div className="row"><span>{tr('Distance seen')}</span><span>{fmtDistance(d.km)}</span></div>
                           </div>
                         )
                       }}
@@ -53,7 +54,7 @@ export function WhenPanel() {
                 </ResponsiveContainer>
               </div>
               <div>
-                <div className="sub-h">SHARE OF EACH WEEKDAY WITH ACTIVITY</div>
+                <div className="sub-h">{tr('SHARE OF EACH WEEKDAY WITH ACTIVITY')}</div>
                 <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={days} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <XAxis dataKey="short" tickLine={false} axisLine={false} {...axis} />
@@ -66,8 +67,8 @@ export function WhenPanel() {
                         return (
                           <div className="chart-tip">
                             <div className="t">{d.name}</div>
-                            <div className="row"><span>Days with activity</span><span>{d.activeDays} of {d.calendarDays}{d.few ? ' (few days)' : ''}</span></div>
-                            <div className="row"><span>Distance seen per day</span><span>{fmtDistance(d.kmPerDay, 1)}</span></div>
+                            <div className="row"><span>{tr('Days with activity')}</span><span>{tr('{a} of {b}', { a: d.activeDays, b: d.calendarDays })}{d.few ? ` (${tr('few days')})` : ''}</span></div>
+                            <div className="row"><span>{tr('Distance seen per day')}</span><span>{fmtDistance(d.kmPerDay, 1)}</span></div>
                           </div>
                         )
                       }}
@@ -81,7 +82,7 @@ export function WhenPanel() {
                 </ResponsiveContainer>
               </div>
             </div>
-            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{ACTIVITY_NOTE}</p>
+            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tr(ACTIVITY_NOTE)}</p>
           </>
         )}
       </QueryState>

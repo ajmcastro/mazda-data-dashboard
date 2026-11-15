@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { DataHealth } from './api/types'
 import { HEALTH_NOTE, KINDS, coverageBar, coverageLine, gapLength, gapsNote, invalidLine, kindLabel, share, usualLine } from './health'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
+import { tr } from './i18n'
 
 const h = (over: Partial<DataHealth> = {}): DataHealth => ({
   has_data: true, range_from: '2026-06-12', range_to: '2026-11-10', days_in_range: 152, snapshots: 240, days_with_status: 63,
@@ -89,6 +91,11 @@ describe('the sentences', () => {
   it('never pass a verdict on the car', () => {
     const all = [coverageLine(h()), usualLine(h()), gapsNote(h()), invalidLine(h()), HEALTH_NOTE].join(' ')
     expect(all).not.toMatch(/\b(fault|broken|problem|bad|good|healthy|unhealthy|wrong|defect)/i)
+    const portuguese = inPortuguese(() => [coverageLine(h()), usualLine(h()), gapsNote(h()), invalidLine(h()), tr(HEALTH_NOTE)].join(' '))
+    expect(portuguese).not.toBe(all)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(/avaria|problema/i)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
     expect(HEALTH_NOTE).toContain('not about the car')
   })
 })

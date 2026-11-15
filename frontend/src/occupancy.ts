@@ -3,6 +3,7 @@
 // snapshot while parked does not count as "driving alone". These are snapshots, not trips, and the front and
 // rear shares can overlap, so they do not add up to 100 %.
 
+import { msg, tr } from './i18n'
 import type { Occupancy } from './api/types'
 
 /** A month with fewer belted snapshots than this is marked: a share of a handful is not a trend. */
@@ -21,9 +22,9 @@ export interface Share {
 export function shares(o: Occupancy | undefined): Share[] {
   if (!o || !o.available) return []
   return [
-    { key: 'driver_only', label: 'Driver only', readings: o.driver_only_readings, pct: pct(o.driver_only_readings, o.belted_readings) },
-    { key: 'passenger', label: 'Front passenger belted', readings: o.passenger_readings, pct: pct(o.passenger_readings, o.belted_readings) },
-    { key: 'rear', label: 'A rear seat belted', readings: o.rear_readings, pct: pct(o.rear_readings, o.belted_readings) },
+    { key: 'driver_only', label: tr('Driver only'), readings: o.driver_only_readings, pct: pct(o.driver_only_readings, o.belted_readings) },
+    { key: 'passenger', label: tr('Front passenger belted'), readings: o.passenger_readings, pct: pct(o.passenger_readings, o.belted_readings) },
+    { key: 'rear', label: tr('A rear seat belted'), readings: o.rear_readings, pct: pct(o.rear_readings, o.belted_readings) },
   ]
 }
 
@@ -51,12 +52,11 @@ export function summaryLine(o: Occupancy | undefined): string | null {
   if (!o || !o.available || o.belted_readings === 0) return null
   const driver = pct(o.driver_only_readings, o.belted_readings)
   const front = pct(o.passenger_readings, o.belted_readings)
-  return `In ${o.belted_readings} status snapshots with the driver’s belt buckled: driver only in ${driver}%, a front passenger belted in ${front}%.`
+  return tr('In {n} status snapshots with the driver’s belt buckled: driver only in {driver}%, a front passenger belted in {front}%.', { n: o.belted_readings, driver: String(driver), front: String(front) })
 }
 
 export const OCCUPANCY_NOTE =
-  'Counted over status snapshots with the driver’s belt buckled, not over trips, and from seat belts only: a passenger ' +
-  'who does not buckle up is not seen. The front and rear shares can overlap.'
+  msg('Counted over status snapshots with the driver’s belt buckled, not over trips, and from seat belts only: a passenger who does not buckle up is not seen. The front and rear shares can overlap.')
 
 // ------------------------------------------------------------------ the seats (M57)
 
@@ -79,14 +79,14 @@ export function seats(o: Occupancy | undefined, steering: 'left' | 'right' = 'le
   const driverColumn = steering === 'right' ? 1 : 0
   const share = (n: number) => pct(n, o.belted_readings)
   return [
-    { id: 'driver', label: 'Driver', column: driverColumn, row: 0, pct: 100, readings: o.belted_readings },
-    { id: 'passenger', label: 'Front passenger', column: driverColumn === 0 ? 1 : 0, row: 0, pct: share(o.passenger_readings), readings: o.passenger_readings },
-    { id: 'rear_left', label: 'Rear left', column: 0, row: 1, pct: share(o.rear_left_readings ?? 0), readings: o.rear_left_readings ?? 0 },
-    { id: 'rear_right', label: 'Rear right', column: 1, row: 1, pct: share(o.rear_right_readings ?? 0), readings: o.rear_right_readings ?? 0 },
+    { id: 'driver', label: tr('Driver'), column: driverColumn, row: 0, pct: 100, readings: o.belted_readings },
+    { id: 'passenger', label: tr('Front passenger'), column: driverColumn === 0 ? 1 : 0, row: 0, pct: share(o.passenger_readings), readings: o.passenger_readings },
+    { id: 'rear_left', label: tr('Rear left'), column: 0, row: 1, pct: share(o.rear_left_readings ?? 0), readings: o.rear_left_readings ?? 0 },
+    { id: 'rear_right', label: tr('Rear right'), column: 1, row: 1, pct: share(o.rear_right_readings ?? 0), readings: o.rear_right_readings ?? 0 },
   ]
 }
 
 /** How strongly a seat is shaded (0 to 1): its share, with a floor so an empty seat is still drawn. */
 export const seatShade = (s: Pick<Seat, 'pct'>): number => 0.08 + 0.92 * ((s.pct ?? 0) / 100)
 
-export const SEATS_NOTE = 'Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row, a child seat and a passenger who does not buckle up are not seen.'
+export const SEATS_NOTE = msg('Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row, a child seat and a passenger who does not buckle up are not seen.')

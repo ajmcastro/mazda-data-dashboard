@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useForecast, useTireForecast } from '../api/hooks'
 import { aheadBasis, calendarEvents, icsFile, oilAhead, yearAhead } from '../forecast'
 import { useCurrentModel } from '../model'
@@ -27,14 +28,14 @@ export function AheadPanel() {
   const events = calendarEvents({ id, name }, forecast, tires)
   return (
     <Panel
-      title="Looking ahead"
+      title={tr('Looking ahead')}
       hint={
         events.length > 0 ? (
           <button type="button" onClick={() => save(`${id}-forecast.ics`, icsFile(events, new Date()), 'text/calendar')}>
-            Calendar file ({events.length})
+            {tr('Calendar file ({n})', { n: events.length })}
           </button>
         ) : (
-          'at your recent pace'
+          tr('at your recent pace')
         )
       }
     >
@@ -44,7 +45,7 @@ export function AheadPanel() {
       <p className="muted note">
         {aheadBasis(forecast)}
         {forecast.mileage_limit_km == null && (
-          <> For a yearly limit (a lease or warranty year) add <span className="mono">mileage: {'{'}limit_km_per_year: 15000, start_date: 2026-03-03{'}'}</span> to{' '}
+          <> {tr('For a yearly limit (a lease or warranty year) add')} <span className="mono">mileage: {'{'}limit_km_per_year: 15000, start_date: 2026-03-03{'}'}</span> {tr('to')}{' '}
           <span className="mono">config/models/{id}/settings.yaml</span>.</>
         )}
       </p>

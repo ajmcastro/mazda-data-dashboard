@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useDtcFrequency, useReadouts } from '../api/hooks'
@@ -22,15 +22,15 @@ export default function Faults() {
 
   const columns: Column<DtcFrequency>[] = [
     {
-      key: 'state', header: 'State', sort: (f) => Number(f.active_in_latest_readout),
-      render: (f) => f.active_in_latest_readout ? <Badge kind="critical">active</Badge> : <Badge kind="ok">cleared</Badge>,
+      key: 'state', header: tr('State'), sort: (f) => Number(f.active_in_latest_readout),
+      render: (f) => f.active_in_latest_readout ? <Badge kind="critical">{tr('active')}</Badge> : <Badge kind="ok">{tr('cleared')}</Badge>,
     },
-    { key: 'ecu', header: 'ECU', sort: (f) => f.ecu, render: (f) => <span title={f.ecu_title ?? ''}>{f.ecu}</span> },
-    { key: 'code', header: 'DTC', sort: (f) => f.dtc_code, render: (f) => <span className="mono">{f.dtc_code}:{f.failure_type}</span> },
-    { key: 'title', header: 'Meaning', sort: (f) => f.title, render: (f) => <span className={f.title.startsWith('Unknown') ? 'muted' : ''}>{f.title.startsWith('Unknown') ? 'not described yet' : f.title}</span> },
-    { key: 'sev', header: 'Severity', render: (f) => <Badge kind={SEVERITY_BADGE[f.severity] ?? 'dim'}>{f.severity}</Badge> },
-    { key: 'n', header: 'Seen', num: true, sort: (f) => f.readouts, render: (f) => fmtNum(f.readouts) },
-    { key: 'last', header: 'Last', sort: (f) => f.last_seen, render: (f) => fmtTick(Date.parse(f.last_seen)) },
+    { key: 'ecu', header: tr('ECU'), sort: (f) => f.ecu, render: (f) => <span title={f.ecu_title ?? ''}>{f.ecu}</span> },
+    { key: 'code', header: tr('DTC'), sort: (f) => f.dtc_code, render: (f) => <span className="mono">{f.dtc_code}:{f.failure_type}</span> },
+    { key: 'title', header: tr('Meaning'), sort: (f) => f.title, render: (f) => <span className={f.title.startsWith('Unknown') ? 'muted' : ''}>{f.title.startsWith('Unknown') ? tr('not described yet') : f.title}</span> },
+    { key: 'sev', header: tr('Severity'), render: (f) => <Badge kind={SEVERITY_BADGE[f.severity] ?? 'dim'}>{tr(f.severity)}</Badge> },
+    { key: 'n', header: tr('Seen'), num: true, sort: (f) => f.readouts, render: (f) => fmtNum(f.readouts) },
+    { key: 'last', header: tr('Last'), sort: (f) => f.last_seen, render: (f) => fmtTick(Date.parse(f.last_seen)) },
   ]
 
   return (
@@ -38,7 +38,7 @@ export default function Faults() {
       <div className="page-head">
         <div>
           <h1>{t('page.faults')}</h1>
-          <p>Diagnostic trouble codes reported by the car's control units. “Active” means the latest read-out still lists it.</p>
+          <p>{tr('Diagnostic trouble codes reported by the car\'s control units. “Active” means the latest read-out still lists it.')}</p>
         </div>
       </div>
 
@@ -47,13 +47,13 @@ export default function Faults() {
       </div>
 
       <div className="grid split">
-        <Panel title="Trouble codes" hint={unit ? <button type="button" onClick={() => setUnit(null)}>Only {unit}: show all</button> : 'click a row for history and freeze-frame data'}>
+        <Panel title={tr('Trouble codes')} hint={unit ? <button type="button" onClick={() => setUnit(null)}>{tr('Only {unit}: show all', { unit })}</button> : tr('click a row for history and freeze-frame data')}>
           <QueryState query={freq}>
             <DataTable rows={shown} columns={columns} rowKey={key} selected={selected} onSelect={(f) => setSelected(selected === key(f) ? undefined : key(f))} />
           </QueryState>
         </Panel>
 
-        <Panel title="Read-outs" hint="faults and failed reads per diagnostic read-out">
+        <Panel title={tr('Read-outs')} hint={tr('faults and failed reads per diagnostic read-out')}>
           <QueryState query={readouts}>
             <ResponsiveContainer width="100%" height={240}>
               <BarChart margin={{ right: 18, top: 5 }} data={[...(readouts.data ?? [])].reverse().map((r) => ({ t: ts(r.event_at), faults: r.faults, 'read errors': r.read_errors }))}>

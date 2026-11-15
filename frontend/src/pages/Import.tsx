@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { useRef, useState } from 'react'
 import { useImportFile, useImports, useWritable } from '../api/hooks'
 import type { ImportSummary } from '../api/types'
@@ -40,14 +40,14 @@ export default function ImportPage() {
     const done: Result[] = []
     for (const file of list) {
       if (!looksImportable(file.name)) {
-        done.push({ name: file.name, error: "This is not one of Mazda's export files (the zip, the CSV files or the diagnostic report)." })
+        done.push({ name: file.name, error: tr("This is not one of Mazda's export files (the zip, the CSV files or the diagnostic report).") })
         continue
       }
       setBusy(file.name)
       try {
         done.push({ name: file.name, summary: await send.mutateAsync(file) })
       } catch (e) {
-        done.push({ name: file.name, error: e instanceof Error ? e.message : 'The import failed.' })
+        done.push({ name: file.name, error: e instanceof Error ? e.message : tr('The import failed.') })
       }
       setResults([...done])
     }
@@ -60,18 +60,18 @@ export default function ImportPage() {
       <div className="page-head">
         <div>
           <h1>{t('page.import')}</h1>
-          <p>Add a new download from Mazda to {name} without a terminal.</p>
+          <p>{tr('Add a new download from Mazda to {name} without a terminal.', { name })}</p>
         </div>
       </div>
       {!writable ? (
         <Panel>
           <div className="state">
-            This server is read-only (the demo, or <span className="mono">MAZDA_READONLY</span> is set), so nothing can be imported here. Put the files in{' '}
-            <span className="mono">data/{id}/</span> and run <span className="mono">make ingest</span>.
+            {tr('This server is read-only (the demo, or')} <span className="mono">MAZDA_READONLY</span> {tr('is set), so nothing can be imported here. Put the files in')}{' '}
+            <span className="mono">data/{id}/</span> {tr('and run')} <span className="mono">make ingest</span>.
           </div>
         </Panel>
       ) : (
-        <Panel title={`Files for ${name}`} hint={`stored in data/${id}/`}>
+        <Panel title={tr('Files for {name}', { name })} hint={tr('stored in data/{model}/', { model: id })}>
           <div
             className={`drop-zone${over ? ' over' : ''}`}
             onDragOver={(e) => {
@@ -85,8 +85,8 @@ export default function ImportPage() {
               if (!busy) void take(e.dataTransfer.files)
             }}
           >
-            <p>{busy ? `Loading ${busy} …` : 'Drop the zip from Mazda here, or its export files.'}</p>
-            <button type="button" disabled={busy !== null} onClick={() => input.current?.click()}>Choose files</button>
+            <p>{busy ? tr('Loading {file} …', { file: busy }) : tr('Drop the zip from Mazda here, or its export files.')}</p>
+            <button type="button" disabled={busy !== null} onClick={() => input.current?.click()}>{tr('Choose files')}</button>
             <input
               ref={input}
               type="file"
@@ -106,21 +106,21 @@ export default function ImportPage() {
           ))}
           {results.some((r) => r.summary) && (
             <p className="note">
-              See it on the <RangeLink to="/">Overview</RangeLink> and the <RangeLink to="/alerts">Alerts</RangeLink>. The period at the top of a page may still end at the old newest day.
+              {tr('See it on the')} <RangeLink to="/">{tr('Overview')}</RangeLink> {tr('and the')} <RangeLink to="/alerts">{tr('Alerts')}</RangeLink>{tr('. The period at the top of a page may still end at the old newest day.')}
             </p>
           )}
           <ul className="car-notes muted">
             {IMPORT_NOTES.map((n) => (
-              <li key={n}>{n}</li>
+              <li key={n}>{tr(n)}</li>
             ))}
-            <li>If these files are for another car, pick that car's model in the menu first: the files go to the model on screen.</li>
+            <li>{tr('If these files are for another car, pick that car\'s model in the menu first: the files go to the model on screen.')}</li>
           </ul>
         </Panel>
       )}
       {hasData && <div style={{ marginTop: 14 }}>
-        <Panel title="Earlier imports" hint="made from this page">
+        <Panel title={tr('Earlier imports')} hint={tr('made from this page')}>
           <QueryState query={past}>
-            {past.data && past.data.length === 0 && <p className="muted" style={{ margin: 0 }}>None yet. Loads made with <span className="mono">make ingest</span> are not listed here.</p>}
+            {past.data && past.data.length === 0 && <p className="muted" style={{ margin: 0 }}>{tr('None yet. Loads made with')} <span className="mono">make ingest</span> {tr('are not listed here.')}</p>}
             {past.data?.map((s) => (
               <div key={s.imported_at + s.source} style={{ padding: '8px 0', borderBottom: '1px solid var(--line)' }}>
                 <Summary s={s} />

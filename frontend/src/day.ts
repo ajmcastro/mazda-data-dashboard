@@ -2,8 +2,9 @@
 // Every time shown is the CAR'S local time (the API converts with the model's car_timezone), never the
 // browser's. A drive and a fill-up are known only as "between two reports" and are worded that way.
 
-import { locale } from './i18n'
+import { locale, msg, tr, trn } from './i18n'
 import type { Day, DayEntry } from './api/types'
+import { alertDetail, alertTitle, codeTitle } from './alerttext'
 import { fmtNum } from './lib'
 import { consumptionLabel, distanceText, fmtConsumption, pressureText } from './units'
 
@@ -38,15 +39,22 @@ export function timeOn(local: string | null | undefined, day: string): string {
 
 /** "12:06", "12:06 – 12:15" or, for what is only known between two reports, "between 26 Jun 18:29 and 12:30". */
 export function when(e: DayEntry, day: string): string {
-  if (e.kind === 'service') return 'that day'
-  if (e.kind === 'drive' || e.kind === 'fill_up') return `between ${timeOn(e.local, day)} and ${timeOn(e.local_until, day)}`
+  if (e.kind === 'service') return tr('that day')
+  if (e.kind === 'drive' || e.kind === 'fill_up') return tr('between {a} and {b}', { a: timeOn(e.local, day), b: timeOn(e.local_until, day) })
   if (e.local_until && e.local_until !== e.local) return `${timeOn(e.local, day)} – ${timeOn(e.local_until, day)}`
   return timeOn(e.local, day)
 }
 
 /** The time an entry is placed at on the page (a drive and a fill-up: when they were seen). */
 export const placedAt = (e: DayEntry, day: string): string =>
-  e.kind === 'service' ? 'that day' : timeOn(e.kind === 'drive' || e.kind === 'fill_up' ? e.local_until : e.local, day)
+  e.kind === 'service' ? tr('that day') : timeOn(e.kind === 'drive' || e.kind === 'fill_up' ? e.local_until : e.local, day)
+
+/** What is open comes from the server as English names; an alarm's raw codes as "status N, reason N". */
+export const OPEN_NAMES = [msg('driver door'), msg('passenger door'), msg('rear left door'), msg('rear right door'), msg('trunk'), msg('hood'), msg('entry')]
+const alarmText = (text: string): string => {
+  const m = /^status (\S+), reason (\S+)$/.exec(text)
+  return m ? tr('status {status}, reason {reason}', { status: m[1], reason: m[2] }) : text
+}
 
 const signed = (v: number) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmtNum(Math.abs(v), 1)}`
 const has = (v: number | null | undefined): v is number => v !== null && v !== undefined
@@ -64,57 +72,57 @@ export function describe(e: DayEntry): Line {
   switch (e.kind) {
     case 'drive':
       return {
-        title: `Drove ${distanceText(e.km, 1)}`,
-        detail: has(e.l_per_100km) ? `${fmtConsumption(e.l_per_100km, 1)} ${consumptionLabel()}, between two status reports` : 'between two status reports',
+        title: tr('Drove {distance}', { distance: distanceText(e.km, 1) }),
+        detail: has(e.l_per_100km) ? `${fmtConsumption(e.l_per_100km, 1)} ${consumptionLabel()}, ${tr('between two status reports')}` : tr('between two status reports'),
         to: '/trends',
       }
     case 'status': {
       const parts: string[] = []
-      if (has(e.odometer_km)) parts.push(`odometer ${distanceText(e.odometer_km)}`)
+      if (has(e.odometer_km)) parts.push(tr('odometer {distance}', { distance: distanceText(e.odometer_km) }))
       if (has(e.fuel_level_pct)) {
-        parts.push(`fuel ${fmtNum(e.fuel_level_pct)} %${has(e.d_fuel_pct) && e.d_fuel_pct !== 0 ? ` (${signed(e.d_fuel_pct)})` : ''}`)
+        parts.push(`${tr('fuel {n} %', { n: fmtNum(e.fuel_level_pct) })}${has(e.d_fuel_pct) && e.d_fuel_pct !== 0 ? ` (${signed(e.d_fuel_pct)})` : ''}`)
       }
-      if (has(e.tire_min_kpa)) parts.push(`lowest tire ${pressureText(e.tire_min_kpa)}`)
-      return { title: 'Status report', detail: parts.join(' · ') || null, to: '/status' }
+      if (has(e.tire_min_kpa)) parts.push(tr('lowest tire {pressure}', { pressure: pressureText(e.tire_min_kpa) }))
+      return { title: tr('Status report'), detail: parts.join(' · ') || null, to: '/status' }
     }
     case 'doors':
-      return { title: e.text ? `Open: ${e.text}` : 'Everything closed again', detail: null, to: '/status' }
+      return { title: e.text ? tr('Open: {what}', { what: e.text.split(', ').map((x) => tr(x)).join(', ') }) : tr('Everything closed again'), detail: null, to: '/status' }
     case 'warning':
       return {
-        title: `Warning ${e.code}${has(e.n) && e.n > 1 ? ` × ${fmtNum(e.n)}` : ''}`,
-        detail: e.title ?? null,
+        title: `${tr('Warning {code}', { code: e.code ?? '' })}${has(e.n) && e.n > 1 ? ` × ${fmtNum(e.n)}` : ''}`,
+        detail: e.title ? codeTitle(e.title) : null,
         to: '/warnings',
         params: e.code ? { code: e.code } : undefined,
       }
     case 'readout':
       return {
-        title: `Fault read-out: ${has(e.n) && e.n > 0 ? `${fmtNum(e.n)} fault${e.n === 1 ? '' : 's'}` : 'no faults'}`,
+        title: tr('Fault read-out: {what}', { what: has(e.n) && e.n > 0 ? trn('{n} fault', '{n} faults', e.n, { n: fmtNum(e.n) }) : tr('no faults') }),
         detail: e.text ?? null,
         to: '/faults',
       }
     case 'alarm':
-      return { title: 'Alarm report', detail: e.text ?? null, to: '/status' }
+      return { title: tr('Alarm report'), detail: e.text ? alarmText(e.text) : null, to: '/status' }
     case 'fill_up':
       return {
-        title: `Fill-up: ${has(e.litres) ? `about ${fmtNum(e.litres, 1)} l` : has(e.d_fuel_pct) ? `${fmtNum(e.d_fuel_pct)} points` : 'seen'}${e.doubtful ? ' (doubtful)' : ''}`,
-        detail: has(e.fuel_level_pct) ? `fuel level ${fmtNum(e.fuel_level_pct)} % after it, between two status reports` : 'between two status reports',
+        title: `${tr('Fill-up: {what}', { what: has(e.litres) ? tr('about {n} l', { n: fmtNum(e.litres, 1) }) : has(e.d_fuel_pct) ? tr('{n} points', { n: fmtNum(e.d_fuel_pct) }) : tr('seen') })}${e.doubtful ? ` (${tr('doubtful')})` : ''}`,
+        detail: has(e.fuel_level_pct) ? tr('fuel level {n} % after it, between two status reports', { n: fmtNum(e.fuel_level_pct) }) : tr('between two status reports'),
         to: '/status',
       }
     case 'diag':
       return {
-        title: 'Diagnostic report',
-        detail: has(e.odometer_km) ? `odometer ${distanceText(e.odometer_km)}` : null,
+        title: tr('Diagnostic report'),
+        detail: has(e.odometer_km) ? tr('odometer {distance}', { distance: distanceText(e.odometer_km) }) : null,
         to: '/diagnostics',
         params: e.ref ? { report: e.ref } : undefined,
       }
     case 'service':
       return {
-        title: `Service log: ${(e.code ?? 'entry').replace('_', ' ')}`,
-        detail: [e.text, has(e.odometer_km) ? `odometer ${distanceText(e.odometer_km)}` : null].filter(Boolean).join(' · ') || null,
+        title: tr('Service log: {kind}', { kind: tr((e.code ?? 'entry').replace('_', ' ')) }),
+        detail: [e.text, has(e.odometer_km) ? tr('odometer {distance}', { distance: distanceText(e.odometer_km) }) : null].filter(Boolean).join(' · ') || null,
         to: '/status',
       }
     case 'alert':
-      return { title: `Alert: ${e.title ?? e.code ?? ''}`.trim(), detail: e.text ?? null, to: '/alerts' }
+      return { title: tr('Alert: {title}', { title: e.title ? alertTitle(e.title) : (e.code ?? '') }).trim(), detail: e.text ? alertDetail(e.text) : null, to: '/alerts' }
     default:
       return { title: e.kind, detail: e.text ?? null, to: null }
   }
@@ -126,28 +134,28 @@ export function summary(d: Day | undefined): string | null {
   const of = (kind: string) => d.entries.filter((e) => e.kind === kind)
   const said: string[] = []
   const drives = of('drive')
-  if (drives.length > 0) said.push(`${distanceText(drives.reduce((s, e) => s + (e.km ?? 0), 0), 1)} driven`)
+  if (drives.length > 0) said.push(tr('{distance} driven', { distance: distanceText(drives.reduce((s, e) => s + (e.km ?? 0), 0), 1) }))
   const warnings = of('warning')
   if (warnings.length > 0) {
     const events = warnings.reduce((s, e) => s + (e.n ?? 0), 0)
-    said.push(`${fmtNum(events)} warning event${events === 1 ? '' : 's'} (${fmtNum(warnings.length)} code${warnings.length === 1 ? '' : 's'})`)
+    said.push(`${trn('{n} warning event', '{n} warning events', events, { n: fmtNum(events) })} (${trn('{n} code', '{n} codes', warnings.length, { n: fmtNum(warnings.length) })})`)
   }
   const count = (kind: string, one: string, many: string) => {
     const n = of(kind).length
-    if (n > 0) said.push(`${fmtNum(n)} ${n === 1 ? one : many}`)
+    if (n > 0) said.push(trn(one, many, n, { n: fmtNum(n) }))
   }
-  count('status', 'status report', 'status reports')
-  count('fill_up', 'fill-up', 'fill-ups')
-  count('readout', 'fault read-out', 'fault read-outs')
-  count('diag', 'diagnostic report', 'diagnostic reports')
-  count('alarm', 'alarm report', 'alarm reports')
-  count('alert', 'alert', 'alerts')
-  count('service', 'service-log entry', 'service-log entries')
+  count('status', msg('{n} status report'), msg('{n} status reports'))
+  count('fill_up', msg('{n} fill-up'), msg('{n} fill-ups'))
+  count('readout', msg('{n} fault read-out'), msg('{n} fault read-outs'))
+  count('diag', msg('{n} diagnostic report'), msg('{n} diagnostic reports'))
+  count('alarm', msg('{n} alarm report'), msg('{n} alarm reports'))
+  count('alert', msg('{n} alert'), msg('{n} alerts'))
+  count('service', msg('{n} service-log entry'), msg('{n} service-log entries'))
   return said.join(' · ')
 }
 
 /** The label of each kind, for the mark next to an entry. */
 export const KIND_LABEL: Record<string, string> = {
-  drive: 'drive', status: 'status', doors: 'doors', warning: 'warning', readout: 'faults', alarm: 'alarm',
-  fill_up: 'fuel', diag: 'diagnostic', alert: 'alert', service: 'service',
+  drive: msg('drive'), status: msg('status'), doors: msg('doors'), warning: msg('warning'), readout: msg('faults'), alarm: msg('alarm'),
+  fill_up: msg('fuel'), diag: msg('diagnostic'), alert: msg('alert'), service: msg('service'),
 }

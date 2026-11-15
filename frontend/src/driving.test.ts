@@ -5,6 +5,7 @@ import {
   unclassifiedNote,
 } from './driving'
 import { DEFAULT_UNITS, setUnits } from './units'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
 
 afterEach(() => setUnits(DEFAULT_UNITS))
 
@@ -118,6 +119,11 @@ describe('the wording', () => {
     const oct = month('2026-10', 6.9, [12, 40, 6.0], [14, 160, 7.6], [0, 0, null], [1, 300, 6.4])
     const text = [headline(pattern()), unclassifiedNote(pattern()), describeMix(mixChanges([sep, oct])[0]), ...drivingNotes(20)].join(' ')
     expect(text).not.toMatch(/\b(bad|good|better|worse|should|too many|too much|waste|wasteful|because|caused by|explains)\b/i)
+    const portuguese = inPortuguese(() => [headline(pattern()), unclassifiedNote(pattern()), describeMix(mixChanges([sep, oct])[0]), ...drivingNotes(20)].join(' '))
+    expect(portuguese).not.toBe(text)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(/explica|demasiad/i)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
     expect(text).toContain('between two status reports')
     expect(text).toContain('not what caused what')
   })

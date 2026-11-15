@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { FUEL_CAUTION, STALE_AFTER_DAYS, alertsLabel, costBlock, dataAgeDays, faultsLabel, fuelBlock, oilLine, optionLabel, staleNote } from './garage'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
+import { tr } from './i18n'
 
 const now = Date.parse('2026-07-10T12:00:00Z')
 
@@ -67,6 +69,11 @@ describe('fuel and cost of the 30 days', () => {
     expect(FUEL_CAUTION).toMatch(/not what you paid/)
     expect(FUEL_CAUTION).toMatch(/plug-in hybrid/)
     expect(FUEL_CAUTION).not.toMatch(/better|worse/i)
+    const portuguese = inPortuguese(() => tr(FUEL_CAUTION))
+    expect(portuguese).not.toBe(FUEL_CAUTION)
+    expect(portuguese).toMatch(/estimativas/)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
   })
 })
 

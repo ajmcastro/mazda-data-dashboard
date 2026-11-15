@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr, trn } from '../i18n'
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useAlarms, useCarWarnings, useOilService, useRefuels, useServiceLog, useTireForecast, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
@@ -12,7 +12,7 @@ import { WhenPanel } from '../components/WhenPanel'
 import { WhoRidesPanel } from '../components/WhoRidesPanel'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, tireReadingsNote, ts } from '../lib'
-import { consumptionLabel, distanceLabel, fmtConsumption, fmtDistance, pressureLabel, toDistance, toPressure, getUnits } from '../units'
+import { consumptionLabel, distanceLabel, fmtConsumption, distanceText, fmtDistance, pressureLabel, toDistance, toPressure, getUnits } from '../units'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 const tipLabel = (v: number | string) => fmtDateTime(new Date(Number(v)).toISOString())
@@ -62,37 +62,37 @@ export default function Status() {
   const tireNote = tireReadingsNote(tires.data)
 
   const tripCols: Column<TripSegment>[] = [
-    { key: 'end', header: 'Ended', sort: (t) => t.end_at, render: (t) => fmtDateTime(t.end_at) },
-    { key: 'km', header: 'Distance', num: true, sort: (t) => t.km, render: (t) => fmtDistance(t.km, 1) },
-    { key: 'fuel', header: 'Fuel', num: true, sort: (t) => t.fuel_l, render: (t) => fmtNum(Math.max(0, t.fuel_l), 2, 'l') },
+    { key: 'end', header: tr('Ended'), sort: (t) => t.end_at, render: (t) => fmtDateTime(t.end_at) },
+    { key: 'km', header: tr('Distance'), num: true, sort: (t) => t.km, render: (t) => fmtDistance(t.km, 1) },
+    { key: 'fuel', header: tr('Fuel'), num: true, sort: (t) => t.fuel_l, render: (t) => fmtNum(Math.max(0, t.fuel_l), 2, 'l') },
     { key: 'cons', header: consumptionLabel(), num: true, sort: (t) => t.l_per_100km ?? -1, render: (t) => fmtConsumption(t.l_per_100km, 1) },
-    { key: 'gap', header: 'Gap', num: true, render: (t) => fmtNum(t.gap_hours, 1, 'h') },
+    { key: 'gap', header: tr('Gap'), num: true, render: (t) => fmtNum(t.gap_hours, 1, 'h') },
   ]
   const episodeCols: Column<CarWarningEpisode>[] = [
-    { key: 'flag', header: 'Warning', render: (e) => e.label },
-    { key: 'from', header: 'From', sort: (e) => e.started_at, render: (e) => fmtDateTime(e.started_at) },
-    { key: 'to', header: 'Until', render: (e) => (e.ongoing ? 'still on' : fmtDateTime(e.last_on_at)) },
-    { key: 'n', header: 'Readings', num: true, render: (e) => fmtNum(e.readings) },
-    { key: 'v', header: 'Raw value', num: true, render: (e) => fmtNum(e.max_value) },
+    { key: 'flag', header: tr('Warning'), render: (e) => tr(e.label) },
+    { key: 'from', header: tr('From'), sort: (e) => e.started_at, render: (e) => fmtDateTime(e.started_at) },
+    { key: 'to', header: tr('Until'), render: (e) => (e.ongoing ? tr('still on') : fmtDateTime(e.last_on_at)) },
+    { key: 'n', header: tr('Readings'), num: true, render: (e) => fmtNum(e.readings) },
+    { key: 'v', header: tr('Raw value'), num: true, render: (e) => fmtNum(e.max_value) },
   ]
   const alarmCols: Column<AlarmEvent>[] = [
-    { key: 'at', header: 'When', render: (a) => fmtDateTime(a.created_at) },
-    { key: 'st', header: 'Burglar status', num: true, render: (a) => fmtNum(a.burglar_status) },
-    { key: 'rs', header: 'Reason', num: true, render: (a) => fmtNum(a.alarm_reason) },
+    { key: 'at', header: tr('When'), render: (a) => fmtDateTime(a.created_at) },
+    { key: 'st', header: tr('Burglar status'), num: true, render: (a) => fmtNum(a.burglar_status) },
+    { key: 'rs', header: tr('Reason'), num: true, render: (a) => fmtNum(a.alarm_reason) },
   ]
   return (
     <>
       <div className="page-head">
         <div>
           <h1>{t('page.status')}</h1>
-          <p>The car part by part, fuel, tires, trips and alarm history from the car's remote-status reports.</p>
+          <p>{tr('The car part by part, fuel, tires, trips and alarm history from the car\'s remote-status reports.')}</p>
         </div>
       </div>
 
       <CarPanel />
 
       <div className="grid cols-2" style={{ marginTop: 14 }}>
-        <Panel title="Fuel level and range" hint={`gauge % and estimated ${distanceLabel()}; dashed lines are fill-ups, solid ones the service log`}>
+        <Panel title={tr('Fuel level and range')} hint={tr('gauge % and estimated {unit}; dashed lines are fill-ups, solid ones the service log', { unit: distanceLabel() })}>
           <QueryState query={status}>
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={points}>
@@ -108,14 +108,14 @@ export default function Status() {
                 {markers(service, ...extent(points)).map((m) => (
                   <ReferenceLine key={`s${m.t}${m.label}`} yAxisId="l" x={m.t} stroke="var(--steel)" label={{ value: m.label, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted)' }} />
                 ))}
-                <Line isAnimationActive={ANIMATE} yAxisId="l" name="fuel %" dataKey="fuel %" stroke="var(--teal)" dot={false} strokeWidth={2} connectNulls />
-                <Line isAnimationActive={ANIMATE} yAxisId="r" name={`range ${distanceLabel()}`} dataKey="range" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
+                <Line isAnimationActive={ANIMATE} yAxisId="l" name={tr('fuel %')} dataKey="fuel %" stroke="var(--teal)" dot={false} strokeWidth={2} connectNulls />
+                <Line isAnimationActive={ANIMATE} yAxisId="r" name={tr('range {unit}', { unit: distanceLabel() })} dataKey="range" stroke="var(--steel)" dot={false} strokeWidth={1.5} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           </QueryState>
         </Panel>
 
-        <Panel title="Tire pressure" hint={`${pressureLabel()} per wheel, at the time measured`}>
+        <Panel title={tr('Tire pressure')} hint={tr('{unit} per wheel, at the time measured', { unit: pressureLabel() })}>
           <QueryState query={tires}>
             <ResponsiveContainer width="100%" height={230}>
               <LineChart data={tirePoints}>
@@ -127,10 +127,10 @@ export default function Status() {
                 {markers(service, ...extent(tirePoints)).map((m) => (
                   <ReferenceLine key={`s${m.t}${m.label}`} x={m.t} stroke="var(--steel)" label={{ value: m.label, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted)' }} />
                 ))}
-                <Line isAnimationActive={ANIMATE} name="front left" dataKey="FL" stroke="var(--accent)" dot={false} connectNulls />
-                <Line isAnimationActive={ANIMATE} name="front right" dataKey="FR" stroke="var(--amber)" dot={false} connectNulls />
-                <Line isAnimationActive={ANIMATE} name="rear left" dataKey="RL" stroke="var(--teal)" dot={false} connectNulls />
-                <Line isAnimationActive={ANIMATE} name="rear right" dataKey="RR" stroke="var(--steel)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name={tr('front left')} dataKey="FL" stroke="var(--accent)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name={tr('front right')} dataKey="FR" stroke="var(--amber)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name={tr('rear left')} dataKey="RL" stroke="var(--teal)" dot={false} connectNulls />
+                <Line isAnimationActive={ANIMATE} name={tr('rear right')} dataKey="RR" stroke="var(--steel)" dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
             {tireNote && <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tireNote}</p>}
@@ -150,38 +150,37 @@ export default function Status() {
       </div>
 
       {carWarnings.data?.has_data && (
-        <Panel title="Car warnings" hint="the car's own warning flags">
+        <Panel title={tr('Car warnings')} hint={tr('the car\'s own warning flags')}>
           <p style={{ margin: '0 0 10px' }}>
             {carWarnings.data.all_clear ? (
-              <Badge kind="ok">all clear</Badge>
+              <Badge kind="ok">{tr('all clear')}</Badge>
             ) : (
-              <Badge kind="critical">warning on</Badge>
+              <Badge kind="critical">{tr('warning on')}</Badge>
             )}{' '}
             <span className="muted">
               {carWarnings.data.all_clear
-                ? `None of the ${carWarnings.data.flags.length} flags is on in the latest readings.`
-                : 'The car itself reports the flags marked ON below.'}
+                ? tr('None of the {n} flags is on in the latest readings.', { n: carWarnings.data.flags.length })
+                : tr('The car itself reports the flags marked ON below.')}
             </span>
           </p>
           <dl className="kv">
             {carWarnings.data.flags.map((f) => (
               <div key={f.flag} style={{ display: 'contents' }}>
-                <dt>{f.label}</dt>
+                <dt>{tr(f.label)}</dt>
                 <dd style={f.is_on ? { color: 'var(--accent)' } : undefined}>
-                  {f.is_on ? `ON since ${fmtDate(f.since)} (raw ${fmtNum(f.value)})` : 'clear'}
+                  {f.is_on ? tr('ON since {date} (raw {value})', { date: fmtDate(f.since), value: fmtNum(f.value) }) : tr('clear')}
                 </dd>
               </div>
             ))}
           </dl>
           {carWarnings.data.episodes.length > 0 && (
             <div style={{ marginTop: 14 }}>
-              <div className="sub-h">EVERY TIME A FLAG WAS ON</div>
+              <div className="sub-h">{tr('EVERY TIME A FLAG WAS ON')}</div>
               <DataTable rows={carWarnings.data.episodes} columns={episodeCols} rowKey={(e) => `${e.flag}${e.started_at}`} />
             </div>
           )}
           <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>
-            These are flags the car sends. Mazda does not publish what a non-zero value means, so any value other than 0 is
-            treated as a warning.
+            {tr('These are flags the car sends. Mazda does not publish what a non-zero value means, so any value other than 0 is treated as a warning.')}
           </p>
         </Panel>
       )}
@@ -193,7 +192,7 @@ export default function Status() {
       <WhoRidesPanel />
 
       {oil.data?.has_data && (
-        <Panel title="Oil change countdown" hint={`${distanceLabel()} left until the next oil change, as the car reports it`}>
+        <Panel title={tr('Oil change countdown')} hint={tr('{unit} left until the next oil change, as the car reports it', { unit: distanceLabel() })}>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={oilPoints(oil.data)} margin={{ right: 18, top: 5 }}>
               <CartesianGrid vertical={false} />
@@ -203,23 +202,23 @@ export default function Status() {
               {markers(service, ...extent(oilPoints(oil.data))).map((m) => (
                 <ReferenceLine key={`s${m.t}${m.label}`} x={m.t} stroke="var(--steel)" label={{ value: m.label, position: 'insideTopRight', fontSize: 10, fill: 'var(--muted)' }} />
               ))}
-              <Line isAnimationActive={ANIMATE} type="stepAfter" name={`${distanceLabel()} left`} dataKey="km" stroke="var(--amber)" strokeWidth={2} dot={{ r: 3 }} />
+              <Line isAnimationActive={ANIMATE} type="stepAfter" name={tr('{unit} left', { unit: distanceLabel() })} dataKey="km" stroke="var(--amber)" strokeWidth={2} dot={{ r: 3 }} />
             </LineChart>
           </ResponsiveContainer>
           <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>
-            This is the car's own countdown, not a calculation. It moves in steps of 1,000 km or more, and a jump
-            up means the oil was changed ({oil.data.intervals} service interval{oil.data.intervals === 1 ? '' : 's'} in the data).
+            {tr("This is the car's own countdown, not a calculation. It moves in steps of {step} or more, and a jump up means the oil was changed.", { step: distanceText(1000) })}{' '}
+            {trn('{n} service interval in the data.', '{n} service intervals in the data.', oil.data.intervals)}
           </p>
         </Panel>
       )}
 
       <div className="grid split" style={{ marginTop: 14 }}>
-        <Panel title="Recent trips" hint="between status snapshots">
+        <Panel title={tr('Recent trips')} hint={tr('between status snapshots')}>
           <QueryState query={trips}>
             <DataTable rows={trips.data ?? []} columns={tripCols} rowKey={(t) => t.end_at} />
           </QueryState>
         </Panel>
-        <Panel title="Alarm history">
+        <Panel title={tr('Alarm history')}>
           <QueryState query={alarms}>
             <DataTable rows={alarms.data ?? []} columns={alarmCols} rowKey={(a) => a.created_at} />
           </QueryState>

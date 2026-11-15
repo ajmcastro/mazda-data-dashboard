@@ -2,16 +2,17 @@
 // Pure: no React. A unit is drawn only where `layout.yaml` puts it; a unit with faults and no place is listed
 // as "not placed" with the line to add, never guessed onto the car.
 
+import { msg, tr, trn } from './i18n'
 import type { DtcFrequency, ModelUnit } from './api/types'
 
 /** The zones a unit can be put in, with their place in a plan view of the car (fractions: along from the
  *  front, across from the left). Keep equal to ZONES in backend/src/mazda_dash/models.py (a test reads it). */
 export const ZONES: Record<string, { along: number; across: number; label: string }> = {
-  'engine bay': { along: 0.13, across: 0.5, label: 'Engine bay' },
-  dashboard: { along: 0.31, across: 0.5, label: 'Dashboard' },
-  'under front seats': { along: 0.47, across: 0.5, label: 'Under the front seats' },
-  roof: { along: 0.62, across: 0.5, label: 'Roof' },
-  rear: { along: 0.87, across: 0.5, label: 'Rear' },
+  'engine bay': { along: 0.13, across: 0.5, label: msg('Engine bay') },
+  dashboard: { along: 0.31, across: 0.5, label: msg('Dashboard') },
+  'under front seats': { along: 0.47, across: 0.5, label: msg('Under the front seats') },
+  roof: { along: 0.62, across: 0.5, label: msg('Roof') },
+  rear: { along: 0.87, across: 0.5, label: msg('Rear') },
 }
 
 export type UnitState = 'active' | 'past' | 'quiet'
@@ -67,13 +68,13 @@ export function faultMap(layout: readonly ModelUnit[] | undefined, faults: reado
     let where: string
     if (u.at && u.at.length >= 2) {
       ;[along, across] = [clamp(u.at[0]), clamp(u.at[1])]
-      where = 'placed by position'
+      where = tr('placed by position')
     } else if (u.zone && ZONES[u.zone]) {
       const mates = inZone.get(u.zone)!
       const i = mates.indexOf(u.ecu)
       along = ZONES[u.zone].along
       across = mates.length === 1 ? 0.5 : 0.22 + (0.56 * i) / (mates.length - 1)
-      where = ZONES[u.zone].label
+      where = tr(ZONES[u.zone].label)
     } else continue // a zone this app does not know: not drawn rather than drawn somewhere
     units.push({
       ecu: u.ecu, title: seen?.title ?? null, along, across, where, source: u.source ?? null,
@@ -91,14 +92,14 @@ export function faultMap(layout: readonly ModelUnit[] | undefined, faults: reado
 /** "2 active, 1 past", "1 past fault", "no fault in this period" */
 export function faultsText(u: { active: number; past: number }): string {
   const parts: string[] = []
-  if (u.active) parts.push(`${u.active} active`)
-  if (u.past) parts.push(`${u.past} past`)
-  if (parts.length === 0) return 'no fault in this period'
-  return `${parts.join(', ')} fault${u.active + u.past === 1 ? '' : 's'}`
+  if (u.active) parts.push(tr('{n} active', { n: u.active }))
+  if (u.past) parts.push(tr('{n} past', { n: u.past }))
+  if (parts.length === 0) return tr('no fault in this period')
+  return trn('{what} fault', '{what} faults', u.active + u.past, { what: parts.join(', ') })
 }
 
 export const FAULT_MAP_NOTES = [
-  'A unit is drawn only where you placed it in layout.yaml. Nothing is guessed: a unit without a place is listed, not drawn.',
-  'A zone is an area of the car, not a spot: units in the same zone are spread across it so they can be told apart.',
-  'Lit: a fault in the latest read-out. Dim: faults seen in the period but not listed now.',
+  msg('A unit is drawn only where you placed it in layout.yaml. Nothing is guessed: a unit without a place is listed, not drawn.'),
+  msg('A zone is an area of the car, not a spot: units in the same zone are spread across it so they can be told apart.'),
+  msg('Lit: a fault in the latest read-out. Dim: faults seen in the period but not listed now.'),
 ] as const

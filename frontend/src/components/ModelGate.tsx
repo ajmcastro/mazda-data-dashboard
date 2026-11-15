@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useLocation } from 'react-router-dom'
 import { useWritable } from '../api/hooks'
 import { RangeLink } from './RangeLink'
@@ -13,7 +14,7 @@ export function ModelGate({ children }: { children: ReactNode }) {
   if (notFound) {
     return (
       <div className="state error">
-        <p>Unknown model <code>{requested}</code>. Choose one:</p>
+        <p>{tr('Unknown model')} <code>{requested}</code>{tr('. Choose one:')}</p>
         <p>
           {models.map((m) => (
             <button key={m.id} className="chip" onClick={() => switchTo(m.id)}>{m.name}</button>
@@ -29,7 +30,7 @@ export function ModelGate({ children }: { children: ReactNode }) {
       <div className="state">
         No data for {model.name} yet: put its exports in <code>data/{model.id}/</code> and run{' '}
         <code>make ingest MODEL={model.id}</code>
-        {writable ? <>, or <RangeLink to="/import">import them here</RangeLink>.</> : '.'}
+        {writable ? <>{tr(', or')} <RangeLink to="/import">{tr('import them here')}</RangeLink>.</> : '.'}
       </div>
     )
   }

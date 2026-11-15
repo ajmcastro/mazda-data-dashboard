@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { REPORT_FOOTER, SECTION_IDS, SECTION_TITLE, buildReport, isEmpty, periodText, type ReportInput, type SectionId } from './report'
 import { fmtDate, fmtNum } from './lib'
 import { DEFAULT_UNITS, setUnits } from './units'
+import { PT_VERDICT, inPortuguese } from './i18n/testing'
+import { tr } from './i18n'
 
 afterEach(() => setUnits(DEFAULT_UNITS))
 
@@ -137,6 +139,10 @@ describe('the rest', () => {
   it('adds no judgement of its own and says what the report is', () => {
     const all = text(full({ alerts: [] })) + REPORT_FOOTER.join(' ')
     expect(all).not.toMatch(/\b(serious|dangerous|urgent|faulty|broken|you should|must be|needs? (to be )?(replac|repair))/i)
+    const portuguese = inPortuguese(() => text(full({ alerts: [] })) + REPORT_FOOTER.map((line) => tr(line)).join(' '))
+    expect(portuguese).not.toBe(all)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).toContain('não é um diagnóstico')
     expect(REPORT_FOOTER.join(' ')).toContain('it is not a diagnosis')
     expect(REPORT_FOOTER.join(' ')).toContain('Mazda does not publish them')
   })

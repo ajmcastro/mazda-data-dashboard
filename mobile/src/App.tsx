@@ -1,4 +1,4 @@
-import { t, useLang } from '@frontend/i18n'
+import { t, tr, useLang } from '@frontend/i18n'
 import { useEffect, type ReactNode } from 'react'
 import { Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview } from '@frontend/api/hooks'
@@ -112,8 +112,8 @@ function UpdateBanner() {
   if (!updateReady) return null
   return (
     <div className="update-banner" role="status">
-      A new version of the app is ready.
-      <button type="button" className="button primary" onClick={applyUpdate}>Update</button>
+      {tr('A new version of the app is ready.')}
+      <button type="button" className="button primary" onClick={applyUpdate}>{tr('Update')}</button>
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { carState } from './car'
 import { fmtDate } from './lib'
 import { forecastBasis, forecastLines, notesByPart, wheelLine, wheelNote } from './tires'
 import { DEFAULT_UNITS, setUnits } from './units'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
 
 afterEach(() => setUnits(DEFAULT_UNITS))
 
@@ -60,6 +61,12 @@ describe('the forecast as a whole', () => {
     expect(text).toContain('8 measurements over 10 days')
     expect(text).toContain('at this rate')
     expect(text).not.toMatch(/\b(will|puncture|unsafe|danger|must)\b/i)
+    const portuguese = inPortuguese(() => [forecastBasis(d), ...forecastLines(d)].join(' '))
+    expect(portuguese).not.toBe(text)
+    expect(portuguese).toContain('a este ritmo')
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(/furo|vai chegar|inseguro/i)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
   })
   it('puts a note on the wheel in the car view without changing its state', () => {
     expect(notesByPart(d)).toEqual({ wheel_rl: `losing about 4.0 kPa a week against the other three; 200 kPa around ${fmtDate('2026-12-12')} at this rate` })

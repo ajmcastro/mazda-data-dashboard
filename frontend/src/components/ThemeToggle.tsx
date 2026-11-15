@@ -1,5 +1,5 @@
-import { t } from '../i18n'
-import { THEME_LABEL, THEME_ORDER, nextTheme, useTheme, type ThemeChoice } from '../theme'
+import { t, tr } from '../i18n'
+import { THEME_ORDER, nextTheme, useTheme, type ThemeChoice } from '../theme'
 
 const ICON_PROPS = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true } as const
 
@@ -27,9 +27,9 @@ export function ThemeIcon({ choice }: { choice: ThemeChoice }) {
 export function ThemeToggle() {
   const [choice, setChoice] = useTheme()
   return (
-    <div className="theme-toggle" role="group" aria-label="Appearance">
+    <div className="theme-toggle" role="group" aria-label={tr('Appearance')}>
       {THEME_ORDER.map((c) => (
-        <button key={c} type="button" aria-pressed={choice === c} onClick={() => setChoice(c)} title={`${THEME_LABEL[c]} appearance`}>
+        <button key={c} type="button" aria-pressed={choice === c} onClick={() => setChoice(c)} title={tr('{theme} appearance', { theme: t(`theme.${c}`) })}>
           <ThemeIcon choice={c} />
           {t(`theme.${c}`)}
         </button>
@@ -47,11 +47,11 @@ export function ThemeCycleButton({ className }: { className?: string }) {
       type="button"
       className={className}
       onClick={() => setChoice(next)}
-      aria-label={`Appearance: ${THEME_LABEL[choice]}. Tap for ${THEME_LABEL[next]}.`}
-      title={`Appearance: ${THEME_LABEL[choice]}`}
+      aria-label={tr('Appearance: {now}. Tap for {next}.', { now: t(`theme.${choice}`), next: t(`theme.${next}`) })}
+      title={tr('Appearance: {now}', { now: t(`theme.${choice}`) })}
     >
       <ThemeIcon choice={choice} />
-      <span>{THEME_LABEL[choice]}</span>
+      <span>{t(`theme.${choice}`)}</span>
     </button>
   )
 }

@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr, trn } from '../i18n'
 import { useEffect, useState } from 'react'
 import {
   useAlerts, useCarWarnings, useDiagHistory, useDtcFrequency, useForecast, useFrameSummary, useOverview, useServiceLog,
@@ -17,9 +17,9 @@ function FrameLine({ ecu, code }: { ecu: string; code: string }) {
   const hint = hintLine(s)
   return (
     <li>
-      <b>{code}</b> ({ecu}): {hint ?? 'Nothing stands out in its freeze frames against the other faults.'}{' '}
+      <b>{code}</b> ({ecu}): {hint ?? tr('Nothing stands out in its freeze frames against the other faults.')}{' '}
       <span className="muted">
-        {s.frames} frame{s.frames === 1 ? '' : 's'}{s.frames < FEW_FRAMES ? ': a hint, not a pattern' : ''}.
+        {trn('{n} frame', '{n} frames', s.frames)}{s.frames < FEW_FRAMES ? tr(': a hint, not a pattern') : ''}.
       </span>
     </li>
   )
@@ -52,7 +52,7 @@ function SectionView({ s }: { s: Section }) {
           {s.faults.slice(0, 12).map((f) => (
             <FrameLine key={`${f.ecu}|${f.dtc_code}`} ecu={f.ecu} code={f.dtc_code} />
           ))}
-          <li className="muted">Freeze frames describe the car at the moment a fault was recorded, set against the frames of its other faults; they do not say what caused it.</li>
+          <li className="muted">{tr('Freeze frames describe the car at the moment a fault was recorded, set against the frames of its other faults; they do not say what caused it.')}</li>
         </ul>
       )}
     </section>
@@ -111,34 +111,34 @@ export default function ReportPage() {
       <div className="page-head no-print">
         <div>
           <h1>{t('page.report')}</h1>
-          <p>A page to print or save as a PDF for the workshop: what the car reported, in the period chosen above.</p>
+          <p>{tr('A page to print or save as a PDF for the workshop: what the car reported, in the period chosen above.')}</p>
         </div>
         <div className="controls">
-          <button type="button" onClick={() => window.print()}>Print or save as PDF</button>
+          <button type="button" onClick={() => window.print()}>{tr('Print or save as PDF')}</button>
         </div>
       </div>
       <fieldset className="report-options no-print">
-        <legend>What to include</legend>
+        <legend>{tr('What to include')}</legend>
         {SECTION_IDS.map((id) => (
           <label key={id} className="toggle">
-            <input type="checkbox" checked={include.has(id)} onChange={() => toggle(id)} /> {SECTION_TITLE[id]}
+            <input type="checkbox" checked={include.has(id)} onChange={() => toggle(id)} /> {tr(SECTION_TITLE[id])}
           </label>
         ))}
         <label className="toggle">
-          <input type="checkbox" checked={showVin} onChange={(e) => setShowVin(e.target.checked)} /> Show the VIN
+          <input type="checkbox" checked={showVin} onChange={(e) => setShowVin(e.target.checked)} /> {tr('Show the VIN')}
         </label>
       </fieldset>
       <article className="report-page">
         <header>
-          <h1>{car.name}: report for the workshop</h1>
-          <p className="muted">Made on {fmtDate(new Date().toISOString())}</p>
+          <h1>{tr('{name}: report for the workshop', { name: car.name })}</h1>
+          <p className="muted">{tr('Made on {date}', { date: fmtDate(new Date().toISOString()) })}</p>
         </header>
         {sections.map((s) => (
           <SectionView key={s.id} s={s} />
         ))}
         <footer className="muted">
           {REPORT_FOOTER.map((line) => (
-            <p key={line}>{line}</p>
+            <p key={line}>{tr(line)}</p>
           ))}
         </footer>
       </article>

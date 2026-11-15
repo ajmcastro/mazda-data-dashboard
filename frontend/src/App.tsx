@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useOverview, useWritable } from './api/hooks'
 import { DateRangeBar } from './components/DateRangeBar'
 import { LangControl } from './components/LangControl'
-import { t, useLang } from './i18n'
+import { t, tr, useLang } from './i18n'
 import { ThemeToggle } from './components/ThemeToggle'
 import { UnitsControl } from './components/UnitsControl'
 import { unitsKey, useUnits } from './units'
@@ -76,7 +76,7 @@ export default function App() {
           <Logo />
           <div>
             {shortModelName(name)}
-            <small>TELEMETRY</small>
+            <small>{tr('TELEMETRY')}</small>
           </div>
         </div>
         <ModelSwitcher />

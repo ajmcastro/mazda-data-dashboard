@@ -18,6 +18,7 @@ import {
   type Series,
 } from './compare'
 import { METRICS } from './trends'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
 
 const def = (key: string) => METRICS.find((m) => m.key === key)!
 const row = (month: string, extra: Partial<MonthMetrics> = {}): MonthMetrics => ({
@@ -155,6 +156,10 @@ describe('wording', () => {
     for (const d of METRICS) {
       const text = describeDifference(d, names, compareMetric(d, aligned, true, 'overlap'), true)
       expect(text).not.toMatch(/better|worse|improv|regress|good|bad/i)
+      const portuguese = inPortuguese(() => describeDifference(d, names, compareMetric(d, aligned, true, 'overlap'), true))
+      expect(portuguese).not.toBe(text)
+      expect(portuguese).not.toMatch(PT_VERDICT)
+      expect(portuguese).not.toMatch(ENGLISH_LEFT)
     }
   })
   it('says so when there is nothing to compare', () => {

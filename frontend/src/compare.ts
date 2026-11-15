@@ -3,6 +3,7 @@
 // so it can be unit tested. It works on `Series` (a label and monthly rows), not on models, so
 // comparing two periods of one car can reuse it later.
 
+import { msg, tr, trn } from './i18n'
 import type { MonthMetrics } from './api/types'
 import { addDays, fmtDate, fmtNum } from './lib'
 import { digitsFor, monthLabel, polarityOf, rawValue, shown, toneFor, unitFor, type MetricDef, type MetricKey, type Tone } from './trends'
@@ -16,9 +17,9 @@ export type Currencies = { a: string | null; b: string | null }
 export type Level = 'comparable' | 'caution' | 'no'
 
 export const LEVEL_LABEL: Record<Level, string> = {
-  comparable: 'comparable',
-  caution: 'compare with care',
-  no: 'not comparable',
+  comparable: msg('comparable'),
+  caution: msg('compare with care'),
+  no: msg('not comparable'),
 }
 
 /**
@@ -27,49 +28,49 @@ export const LEVEL_LABEL: Record<Level, string> = {
  * across two models, so every metric says which it is and why.
  */
 export const COMPARABILITY: Record<MetricKey, { level: Level; why: string }> = {
-  distance_km: { level: 'comparable', why: 'It describes how the car is used, not how it reports.' },
+  distance_km: { level: 'comparable', why: msg('It describes how the car is used, not how it reports.') },
   l_per_100km: {
     level: 'caution',
-    why: 'Only like for like: a plug-in hybrid’s figure hides the electric part, and different fuels differ.',
+    why: msg('Only like for like: a plug-in hybrid’s figure hides the electric part, and different fuels differ.'),
   },
   fuel_l_est: {
     level: 'caution',
-    why: 'Distance × consumption, so the same caution as the fuel consumption applies.',
+    why: msg('Distance × consumption, so the same caution as the fuel consumption applies.'),
   },
-  days_driven: { level: 'comparable', why: 'It describes how the car is used.' },
-  drives: { level: 'comparable', why: 'It describes how the car is used.' },
-  driving_hours: { level: 'comparable', why: 'It describes how the car is used.' },
-  avg_speed_kmh: { level: 'comparable', why: 'It describes how the car is used.' },
+  days_driven: { level: 'comparable', why: msg('It describes how the car is used.') },
+  drives: { level: 'comparable', why: msg('It describes how the car is used.') },
+  driving_hours: { level: 'comparable', why: msg('It describes how the car is used.') },
+  avg_speed_kmh: { level: 'comparable', why: msg('It describes how the car is used.') },
   warning_events: {
     level: 'caution',
-    why: 'Warning codes, and how often a platform logs them, differ between models.',
+    why: msg('Warning codes, and how often a platform logs them, differ between models.'),
   },
   warning_codes: {
     level: 'no',
-    why: 'Each model has its own set of codes: the counts are different vocabularies.',
+    why: msg('Each model has its own set of codes: the counts are different vocabularies.'),
   },
   fault_readouts: {
     level: 'caution',
-    why: 'What a platform lists as a fault, and how often it reads them out, differs between models.',
+    why: msg('What a platform lists as a fault, and how often it reads them out, differs between models.'),
   },
   distinct_faults: {
     level: 'caution',
-    why: 'Trouble codes and what counts as a fault differ between models.',
+    why: msg('Trouble codes and what counts as a fault differ between models.'),
   },
   new_faults: {
     level: 'caution',
-    why: 'Trouble codes and what counts as a fault differ between models.',
+    why: msg('Trouble codes and what counts as a fault differ between models.'),
   },
   cost_per_100km: {
     level: 'caution',
-    why: 'An estimate from the fuel price entered for each car: different prices and fuels make different costs, and the currencies must match.',
+    why: msg('An estimate from the fuel price entered for each car: different prices and fuels make different costs, and the currencies must match.'),
   },
   fuel_cost_est: {
     level: 'caution',
-    why: 'An estimate from the fuel price entered for each car, so the same caution applies, and the currencies must match.',
+    why: msg('An estimate from the fuel price entered for each car, so the same caution applies, and the currencies must match.'),
   },
-  tire_avg_kpa: { level: 'caution', why: 'The recommended tire pressure differs from car to car.' },
-  tire_min_kpa: { level: 'caution', why: 'The recommended tire pressure differs from car to car.' },
+  tire_avg_kpa: { level: 'caution', why: msg('The recommended tire pressure differs from car to car.') },
+  tire_min_kpa: { level: 'caution', why: msg('The recommended tire pressure differs from car to car.') },
 }
 
 export type Basis = 'overlap' | 'all'
@@ -168,8 +169,8 @@ export function compareMetric(
     // amounts in two currencies cannot be set against each other without an exchange rate this page does not have
     const reason =
       currencies.a === null || currencies.b === null
-        ? 'no fuel price is set for one of the cars'
-        : `the cost is in ${currencies.a} for one car and ${currencies.b} for the other`
+        ? tr('no fuel price is set for one of the cars')
+        : tr('the cost is in {a} for one car and {b} for the other', { a: currencies.a ?? '', b: currencies.b ?? '' })
     return { kind: 'not-comparable', reason, a, b, ...empty, months }
   }
   return { kind: 'ok', a, b, ...difference(a.value, b.value), months }
@@ -184,7 +185,7 @@ function difference(a: number, b: number): { delta: number; pct: number | null; 
 }
 
 const figure = (def: MetricDef, v: number | null, perDay: boolean, currency: string | null) =>
-  v === null ? 'no data' : `${fmtNum(v, digitsFor(def, perDay))} ${unitFor(def, perDay, currency)}`
+  v === null ? tr('no data') : `${fmtNum(v, digitsFor(def, perDay))} ${unitFor(def, perDay, currency)}`
 
 /**
  * The difference in plain words, neutral on purpose: a different car is not an improvement or a
@@ -199,32 +200,40 @@ export function describeDifference(
 ): string {
   switch (c.kind) {
     case 'none':
-      return 'no data for either car in these months'
+      return tr('no data for either car in these months')
     case 'one-sided':
-      return `${c.a.value === null ? names.a : names.b} has no data for this in these months`
+      return tr('{car} has no data for this in these months', { car: c.a.value === null ? names.a : names.b })
     case 'not-comparable':
-      return `not compared: ${c.reason ?? COMPARABILITY[def.key].why.toLowerCase()}`
+      return tr('not compared: {why}', { why: c.reason ? tr(c.reason) : tr(COMPARABILITY[def.key].why).toLowerCase() })
     case 'ok': {
-      const both = `(${figure(def, c.b.value, perDay, currency)} against ${figure(def, c.a.value, perDay, currency)})`
-      if (c.direction === 'flat') return `${names.b} and ${names.a} are about the same ${both}`
-      if (c.pct === null) return `${names.a} has none; ${names.b} has ${figure(def, c.b.value, perDay, currency)}`
-      return `${names.b} is ${Math.abs(c.pct).toFixed(1)}% ${c.direction === 'up' ? 'higher' : 'lower'} than ${names.a} ${both}`
+      const both = `(${tr('{b} against {a}', { b: figure(def, c.b.value, perDay, currency), a: figure(def, c.a.value, perDay, currency) })})`
+      if (c.direction === 'flat') return tr('{b} and {a} are about the same {both}', { a: names.a, b: names.b, both })
+      if (c.pct === null) return tr('{a} has none; {b} has {figure}', { a: names.a, b: names.b, figure: figure(def, c.b.value, perDay, currency) })
+      return c.direction === 'up'
+        ? tr('{b} is {pct}% higher than {a} {both}', { a: names.a, b: names.b, pct: Math.abs(c.pct).toFixed(1), both })
+        : tr('{b} is {pct}% lower than {a} {both}', { a: names.a, b: names.b, pct: Math.abs(c.pct).toFixed(1), both })
     }
   }
 }
 
 /** Which months the page compares, for the line under the title. */
 export function describeBasis(aligned: AlignedMonth[], basis: Basis, includePartial: boolean): string {
-  const complete = includePartial ? '' : 'complete '
   if (aligned.length === 0) {
-    return basis === 'overlap'
-      ? `There is no month for which both cars have ${complete}data. Show all data to see each car on its own.`
-      : 'There is no data to show.'
+    if (basis !== 'overlap') return tr('There is no data to show.')
+    return includePartial
+      ? tr('There is no month for which both cars have data. Show all data to see each car on its own.')
+      : tr('There is no month for which both cars have complete data. Show all data to see each car on its own.')
   }
   const n = aligned.length
   const span = n === 1 ? monthLabel(aligned[0].month) : `${monthLabel(aligned[0].month)} – ${monthLabel(aligned[n - 1].month)}`
-  const what = basis === 'overlap' ? 'in common' : 'in all'
-  return `${n} ${complete}month${n === 1 ? '' : 's'} ${what} (${span})`
+  if (basis === 'overlap') {
+    return includePartial
+      ? trn('{n} month in common ({span})', '{n} months in common ({span})', n, { span })
+      : trn('{n} complete month in common ({span})', '{n} complete months in common ({span})', n, { span })
+  }
+  return includePartial
+    ? trn('{n} month in all ({span})', '{n} months in all ({span})', n, { span })
+    : trn('{n} complete month in all ({span})', '{n} complete months in all ({span})', n, { span })
 }
 
 type Choice = { id: string }
@@ -248,8 +257,8 @@ export function pickPair<T extends Choice>(
 
 /** What a period (any window of days) can and cannot be built from: the monthly rows inside it. */
 export const PERIOD_UNAVAILABLE: Partial<Record<MetricKey, string>> = {
-  warning_codes: 'the number of different warning codes in a period cannot be added up from months',
-  distinct_faults: 'the number of different faults in a period cannot be added up from months',
+  warning_codes: msg('the number of different warning codes in a period cannot be added up from months'),
+  distinct_faults: msg('the number of different faults in a period cannot be added up from months'),
 }
 
 /**
@@ -322,13 +331,13 @@ export function periodPresets(first: string, last: string, around?: string): Per
   const thisMonth: Period = { from: monthStart(last), to: last }
   const previousEnd = previousMonthEnd(last)
   const list = [
-    make('last30', 'Last 30 days against the 30 before', { from: addDays(last, -59), to: addDays(last, -30) }, { from: addDays(last, -29), to: last }),
-    make('month', 'This month against the month before', { from: monthStart(previousEnd), to: previousEnd }, thisMonth),
-    make('year', 'This month against a year ago', { from: yearAgo(thisMonth.from), to: yearAgo(thisMonth.to) }, thisMonth),
+    make('last30', msg('Last 30 days against the 30 before'), { from: addDays(last, -59), to: addDays(last, -30) }, { from: addDays(last, -29), to: last }),
+    make('month', msg('This month against the month before'), { from: monthStart(previousEnd), to: previousEnd }, thisMonth),
+    make('year', msg('This month against a year ago'), { from: yearAgo(thisMonth.from), to: yearAgo(thisMonth.to) }, thisMonth),
   ]
   if (around) {
     const after = addDays(around, 29)
-    list.push(make('around', 'Before and after a date', { from: addDays(around, -30), to: addDays(around, -1) }, { from: around, to: after > last ? last : after }))
+    list.push(make('around', msg('Before and after a date'), { from: addDays(around, -30), to: addDays(around, -1) }, { from: around, to: after > last ? last : after }))
   }
   return list
 }
@@ -336,10 +345,10 @@ export function periodPresets(first: string, last: string, around?: string): Per
 /** What is wrong with two periods (nothing: an empty list). */
 export function validatePeriods(a: Period, b: Period, first: string, last: string): string[] {
   const problems: string[] = []
-  for (const [name, p] of [['The first period', a], ['The second period', b]] as const) {
-    if (p.from > p.to) problems.push(`${name} ends before it starts.`)
-    else if (!overlaps(p, first, last)) problems.push(`${name} has no data (the data runs from ${fmtDate(first)} to ${fmtDate(last)}).`)
+  for (const [name, p] of [[tr('The first period'), a], [tr('The second period'), b]] as const) {
+    if (p.from > p.to) problems.push(tr('{period} ends before it starts.', { period: name }))
+    else if (!overlaps(p, first, last)) problems.push(tr('{period} has no data (the data runs from {from} to {to}).', { period: name, from: fmtDate(first), to: fmtDate(last) }))
   }
-  if (a.from <= b.to && b.from <= a.to && a.from <= a.to && b.from <= b.to) problems.push('The two periods overlap.')
+  if (a.from <= b.to && b.from <= a.to && a.from <= a.to && b.from <= b.to) problems.push(tr('The two periods overlap.'))
   return problems
 }

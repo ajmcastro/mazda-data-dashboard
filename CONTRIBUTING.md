@@ -91,6 +91,13 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
     photos** (or anything read from a number plate), and do not use a manufacturer's model or drawing. The generic
     shape is pinned by a fixture and must not change.
 
+15. **Text is in two languages.** Anything a reader sees goes through `tr('English text', { values })` (or `trn` for a
+    count, `msg` for a constant that is shown later with `tr(value)`), from `frontend/src/i18n`, and gets its Portuguese
+    (Portugal) in `frontend/src/i18n/pt/<area>.ts`, with the same `{placeholders}`. Menu entries and page titles have a key
+    in `i18n/en.ts` and `pt.ts` instead. A test reads the source and fails for a phrase with no Portuguese, and for text
+    typed straight into the markup. A new alert rule also needs its sentences in `frontend/src/alerttext.ts`. Not fluent
+    in Portuguese? Say so in the pull request and leave your best attempt: it will be reviewed.
+
 ## Pull requests
 
 Keep them focused, say what changed and why, and run the checks above. The milestone history in

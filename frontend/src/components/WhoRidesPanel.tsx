@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useOccupancy } from '../api/hooks'
 import { useCurrentModel } from '../model'
@@ -13,12 +14,12 @@ function SeatMap({ list }: { list: Seat[] }) {
   const x = (s: Seat) => 22 + s.column * (w - 44 - seat)
   const y = (s: Seat) => 44 + s.row * 70
   return (
-    <svg className="seat-map" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`Seats from above: ${list.map((s) => `${s.label} ${s.pct ?? 0}%`).join(', ')}`}>
+    <svg className="seat-map" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={tr('Seats from above: {list}', { list: list.map((s) => `${s.label} ${s.pct ?? 0}%`).join(', ') })}>
       <rect x={6} y={6} width={w - 12} height={h - 12} rx={34} className="seat-map-body" />
       <path d={`M 26 34 Q ${w / 2} 14 ${w - 26} 34`} className="seat-map-glass" />
       {list.map((s) => (
         <g key={s.id}>
-          <title>{`${s.label}: belted in ${s.pct ?? 0}% (${s.readings} snapshots)`}</title>
+          <title>{tr('{seat}: belted in {pct}% ({n} snapshots)', { seat: s.label, pct: s.pct ?? 0, n: s.readings })}</title>
           <rect x={x(s)} y={y(s)} width={seat} height={seat + 6} rx={9} className="seat-map-seat" style={{ fillOpacity: seatShade(s) }} />
           <text x={x(s) + seat / 2} y={y(s) + seat / 2 + 8} textAnchor="middle" className="seat-map-pct">{s.pct ?? 0}%</text>
         </g>
@@ -31,20 +32,20 @@ function SeatMap({ list }: { list: Seat[] }) {
 export function WhoRidesPanel() {
   const occupancy = useOccupancy()
   const o = occupancy.data
+  const steering = useCurrentModel().model?.body?.steering === 'right' ? 'right' : 'left'
   if (o && !o.available) return null
   const bars = monthBars(o)
   const line = summaryLine(o)
-  const steering = useCurrentModel().model?.body?.steering === 'right' ? 'right' : 'left'
   const seatList = seats(o, steering)
   return (
-    <Panel title="Who rides" hint="from the seat belts">
+    <Panel title={tr('Who rides')} hint={tr('from the seat belts')}>
       <QueryState query={occupancy}>
         {o && (
           <>
             {line && <p style={{ margin: '0 0 10px' }}>{line}</p>}
             <div className="grid cols-2">
               <div>
-                <div className="sub-h">SHARE OF SNAPSHOTS WITH THE DRIVER BELTED</div>
+                <div className="sub-h">{tr('SHARE OF SNAPSHOTS WITH THE DRIVER BELTED')}</div>
                 <dl className="kv">
                   {shares(o).map((s) => (
                     <div key={s.key} style={{ display: 'contents' }}>
@@ -55,7 +56,7 @@ export function WhoRidesPanel() {
                 </dl>
               </div>
               <div>
-                <div className="sub-h">FRONT PASSENGER BELTED, BY MONTH</div>
+                <div className="sub-h">{tr('FRONT PASSENGER BELTED, BY MONTH')}</div>
                 <ResponsiveContainer width="100%" height={150}>
                   <BarChart data={bars} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <XAxis dataKey="month" tickFormatter={(m: string) => m.slice(5)} tickLine={false} axisLine={false} {...axis} />
@@ -68,9 +69,9 @@ export function WhoRidesPanel() {
                         return (
                           <div className="chart-tip">
                             <div className="t">{d.month}</div>
-                            <div className="row"><span>Front passenger</span><span>{d.passengerPct ?? '—'}%</span></div>
-                            <div className="row"><span>A rear seat</span><span>{d.rearPct ?? '—'}%</span></div>
-                            <div className="row"><span>Snapshots</span><span>{d.belted}{d.few ? ' (few)' : ''}</span></div>
+                            <div className="row"><span>{tr('Front passenger')}</span><span>{d.passengerPct ?? '—'}%</span></div>
+                            <div className="row"><span>{tr('A rear seat')}</span><span>{d.rearPct ?? '—'}%</span></div>
+                            <div className="row"><span>{tr('Snapshots')}</span><span>{d.belted}{d.few ? ` (${tr('few')})` : ''}</span></div>
                           </div>
                         )
                       }}
@@ -91,13 +92,13 @@ export function WhoRidesPanel() {
                   {seatList.map((s) => (
                     <div key={s.id} style={{ display: 'contents' }}>
                       <dt>{s.label}</dt>
-                      <dd>{s.id === 'driver' ? 'the base' : `${s.pct ?? 0}%`} <span className="muted">({s.readings})</span></dd>
+                      <dd>{s.id === 'driver' ? tr('the base') : `${s.pct ?? 0}%`} <span className="muted">({s.readings})</span></dd>
                     </div>
                   ))}
                 </dl>
               </div>
             )}
-            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{OCCUPANCY_NOTE}{seatList.length > 0 ? ` ${SEATS_NOTE}` : ''}</p>
+            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tr(OCCUPANCY_NOTE)}{seatList.length > 0 ? ` ${tr(SEATS_NOTE)}` : ''}</p>
           </>
         )}
       </QueryState>

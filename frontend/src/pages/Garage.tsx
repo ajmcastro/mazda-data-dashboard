@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { useGarageOf } from '../api/hooks'
 import type { Garage as GarageCard, ModelBody } from '../api/types'
 import { CarProfileBox } from '../components/CarProfileBox'
@@ -39,7 +39,7 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
       {query.isPending ? (
         <div className="skeleton" aria-busy="true" />
       ) : !g || !g.has_data ? (
-        <div className="state">{query.isError ? (query.error as Error).message : 'No data for this car yet.'}</div>
+        <div className="state">{query.isError ? (query.error as Error).message : tr('No data for this car yet.')}</div>
       ) : (
         <>
           <CarProfileBox body={car.body} name={car.name} />
@@ -47,27 +47,27 @@ function Card({ car, shown }: { car: Car; shown: boolean }) {
             <span className={`badge ${g.alerts_new > 0 ? 'warning' : 'info'}`}>{alertsLabel(g.alerts_new)}</span>
             <span className={`badge ${g.active_faults > 0 ? 'critical' : 'info'}`}>{faultsLabel(g.active_faults)}</span>
             {g.car_warnings_on.map((label) => (
-              <span key={label} className="badge critical" title="One of the car's own warning flags is on">
-                car warning: {label}
+              <span key={label} className="badge critical" title={tr('One of the car\'s own warning flags is on')}>
+                {tr('car warning: {label}', { label: tr(label) })}
               </span>
             ))}
           </div>
           {stale && <div className="caveat garage-stale">{stale}</div>}
           <div className="garage-figures">
-            <Figure label="Odometer" value={`${fmtDistance(g.odometer_km, 0, false)} ${distanceLabel()}`} sub={g.odometer_at ? `as of ${fmtDate(g.odometer_at)}` : undefined} />
+            <Figure label={tr('Odometer')} value={`${fmtDistance(g.odometer_km, 0, false)} ${distanceLabel()}`} sub={g.odometer_at ? tr('as of {at}', { at: fmtDate(g.odometer_at) }) : undefined} />
             <Figure
-              label="Last 30 days"
+              label={tr('Last 30 days')}
               value={`${fmtDistance(g.km_last_30_days, 0, false)} ${distanceLabel()}`}
               sub={g.from_day && g.to_day ? `${fmtDate(g.from_day)} – ${fmtDate(g.to_day)}` : undefined}
             />
-            {fuel && <Figure label="Fuel used, last 30 days" value={fuel.value} sub={fuel.sub} />}
-            {cost && <Figure label="Fuel cost, last 30 days" value={cost.value} sub={cost.sub} />}
-            <Figure label="Fuel level" value={`${fmtNum(g.fuel_level_pct)} %`} sub={g.range_km != null ? `range ≈ ${fmtDistance(g.range_km, 0, false)} ${distanceLabel()}` : undefined} />
-            <Figure label="Next oil change" value={oilLine(g)} sub={oilWhen(g) ?? (g.oil_read_at ? `as reported ${fmtDate(g.oil_read_at)}` : undefined)} />
-            <Figure label="Last reading" value={fmtAgo(g.last_reading_at)} />
+            {fuel && <Figure label={tr('Fuel used, last 30 days')} value={fuel.value} sub={fuel.sub} />}
+            {cost && <Figure label={tr('Fuel cost, last 30 days')} value={cost.value} sub={cost.sub} />}
+            <Figure label={tr('Fuel level')} value={`${fmtNum(g.fuel_level_pct)} %`} sub={g.range_km != null ? tr('range ≈ {n} {unit}', { n: fmtDistance(g.range_km, 0, false), unit: distanceLabel() }) : undefined} />
+            <Figure label={tr('Next oil change')} value={oilLine(g)} sub={oilWhen(g) ?? (g.oil_read_at ? tr('as reported {date}', { date: fmtDate(g.oil_read_at) }) : undefined)} />
+            <Figure label={tr('Last reading')} value={fmtAgo(g.last_reading_at)} />
           </div>
           <button type="button" onClick={open}>
-            {shown ? 'Open the overview' : `Show ${car.name}`}
+            {shown ? tr('Open the overview') : tr('Show {car}', { car: car.name })}
           </button>
         </>
       )}
@@ -84,15 +84,14 @@ export default function Garage() {
         <div>
           <h1>{t('page.garage')}</h1>
           <p>
-            The headline figures of every car at a glance. The distance is for the 30 days up to each car&apos;s newest data; alerts,
-            faults, the oil countdown and the car&apos;s own warnings are the latest.
+            {tr("The headline figures of every car at a glance. The distance is for the 30 days up to each car's newest data; alerts, faults, the oil countdown and the car's own warnings are the latest.")}
           </p>
-          <p className="muted garage-caution">{FUEL_CAUTION}</p>
+          <p className="muted garage-caution">{tr(FUEL_CAUTION)}</p>
         </div>
       </div>
       {cars.length === 0 ? (
         <Panel>
-          <div className="state">No car has data yet.</div>
+          <div className="state">{tr('No car has data yet.')}</div>
         </Panel>
       ) : (
         <div className="cards">

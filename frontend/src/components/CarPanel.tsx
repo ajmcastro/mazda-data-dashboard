@@ -1,3 +1,4 @@
+import { msg, tr } from '../i18n'
 import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires } from '../api/hooks'
 import { PartAlerts } from './PartAlerts'
@@ -28,7 +29,7 @@ class Guard extends Component<{ onError: (why: string) => void; children: ReactN
     return { broken: true }
   }
   componentDidCatch() {
-    this.props.onError('The 3D view could not be loaded.')
+    this.props.onError(tr('The 3D view could not be loaded.'))
   }
   render() {
     return this.state.broken ? null : this.props.children
@@ -36,9 +37,9 @@ class Guard extends Component<{ onError: (why: string) => void; children: ReactN
 }
 
 const GROUPS: { group: PartGroup; title: string }[] = [
-  { group: 'wheels', title: 'WHEELS' },
-  { group: 'doors', title: 'DOORS, TRUNK AND HOOD' },
-  { group: 'other', title: 'FUEL, ENGINE AND DASHBOARD' },
+  { group: 'wheels', title: msg('WHEELS') },
+  { group: 'doors', title: msg('DOORS, TRUNK AND HOOD') },
+  { group: 'other', title: msg('FUEL, ENGINE AND DASHBOARD') },
 ]
 
 /** The parts as a list: the panel of M38, and the fallback and text equivalent of the 3D view (PLAN.md M39). */
@@ -48,7 +49,7 @@ export function CarList({ car }: { car: CarState }) {
     <div className="car-groups">
       {groups.map((g) => (
         <div key={g.group}>
-          <div className="sub-h">{g.title}</div>
+          <div className="sub-h">{tr(g.title)}</div>
           <ul className="car-list">
             {g.parts.map((p) => {
               const badge = stateBadge(p)
@@ -132,20 +133,20 @@ export function CarPanel() {
   }
   const list = <CarList car={car} />
   return (
-    <Panel title="The car" hint={back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : car.asOf ? `as of ${fmtDateTime(car.asOf)}` : 'part by part'}>
+    <Panel title={tr('The car')} hint={back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : car.asOf ? tr('as of {at}', { at: fmtDateTime(car.asOf) }) : tr('part by part')}>
       <QueryState query={{ isPending: pending, isError: query.isError, error: query.error }}>
         <div className="car-top">
           <p>{carHeadline(car)}</p>
           {car.hasData && (
-            <div className="theme-toggle" role="group" aria-label="How the car is shown">
+            <div className="theme-toggle" role="group" aria-label={tr('How the car is shown')}>
               <button type="button" aria-pressed={view === '3d'} onClick={() => choose('3d')}>3D</button>
-              <button type="button" aria-pressed={view === 'list'} onClick={() => choose('list')}>List</button>
+              <button type="button" aria-pressed={view === 'list'} onClick={() => choose('list')}>{tr('List')}</button>
             </div>
           )}
         </div>
         {car.hasData && (
           <>
-            {failed && choice === '3d' && <p className="muted car-failed">{failed} Showing the list instead.</p>}
+            {failed && choice === '3d' && <p className="muted car-failed">{failed} {tr('Showing the list instead.')}</p>}
             {view === '3d' ? (
               <Guard key={attempt} onError={setFailed}>
                 <Suspense fallback={list}>
@@ -164,9 +165,9 @@ export function CarPanel() {
                       if (!playing && !looking) setStep(0) // from the newest: start at the first report
                       setPlaying(!playing)
                     }}
-                    aria-label={playing ? 'Pause' : 'Play through the reports of the period'}
+                    aria-label={playing ? tr('Pause') : tr('Play through the reports of the period')}
                   >
-                    {playing ? 'Pause' : 'Play'}
+                    {playing ? tr('Pause') : tr('Play')}
                   </button>
                 )}
                 <input
@@ -180,17 +181,17 @@ export function CarPanel() {
                     const next = Number(e.target.value)
                     setStep(next >= total - 1 ? null : next)
                   }}
-                  aria-label="Status report shown, from the first of the period to the newest"
-                  aria-valuetext={back ? `${reportText(back)}, ${fmtDateTime(back.at)}` : 'the newest report'}
+                  aria-label={tr('Status report shown, from the first of the period to the newest')}
+                  aria-valuetext={back ? `${reportText(back)}, ${fmtDateTime(back.at)}` : tr('the newest report')}
                 />
-                <span className="mono muted car-scrub-at">{back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : 'newest'}</span>
-                {looking && <button type="button" onClick={() => { setPlaying(false); setStep(null) }}>Newest</button>}
+                <span className="mono muted car-scrub-at">{back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : tr('newest')}</span>
+                {looking && <button type="button" onClick={() => { setPlaying(false); setStep(null) }}>{tr('Newest')}</button>}
               </div>
             )}
-            {looking && <p className="muted note">{SCRUB_NOTE}</p>}
+            {looking && <p className="muted note">{tr(SCRUB_NOTE)}</p>}
             <ul className="car-notes muted">
               {CAR_NOTES.map((n) => (
-                <li key={n}>{n}</li>
+                <li key={n}>{tr(n)}</li>
               ))}
             </ul>
           </>

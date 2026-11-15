@@ -3,6 +3,8 @@ import type { ImportSummary } from './api/types'
 import { IMPORT_NOTES, changeLines, changedAnything, filesLine, headline, looksImportable } from './imports'
 import { fmtDate, fmtNum } from './lib'
 import { DEFAULT_UNITS, setUnits } from './units'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
+import { tr } from './i18n'
 
 afterEach(() => setUnits(DEFAULT_UNITS))
 
@@ -66,6 +68,10 @@ describe('one load in words', () => {
   it('reports and never interprets', () => {
     const text = [...changeLines(s()), ...IMPORT_NOTES].join(' ')
     expect(text).not.toMatch(/\b(serious|dangerous|urgent|you should|must)\b/i)
+    const portuguese = inPortuguese(() => [...changeLines(s()), ...IMPORT_NOTES.map((note) => tr(note))].join(' '))
+    expect(portuguese).not.toBe(text)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
     expect(text).toContain('Nothing leaves this computer')
   })
 })

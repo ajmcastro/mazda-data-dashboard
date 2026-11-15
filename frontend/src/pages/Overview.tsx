@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr, trn } from '../i18n'
 import { useState } from 'react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
@@ -52,8 +52,8 @@ export default function OverviewPage() {
           <h1>{t('page.overview')}</h1>
           <p>
             {o
-              ? `Data from ${fmtDate(o.data_from)} to ${fmtDate(o.data_to)} · last reading ${fmtAgo(o.data_to)} · ${fmtNum(o.warnings_in_range)} warning events in this period`
-              : 'Loading…'}
+              ? tr('Data from {from} to {to} · last reading {ago} · {n} warning events in this period', { from: fmtDate(o.data_from), to: fmtDate(o.data_to), ago: fmtAgo(o.data_to), n: fmtNum(o.warnings_in_range) })
+              : tr('Loading…')}
           </p>
         </div>
       </div>
@@ -65,41 +65,41 @@ export default function OverviewPage() {
               {lastImport && changedAnything(lastImport) && lastImport.imported_at !== seen && (
                 <div className="alert-row ok">
                   <b>{headline(lastImport)}</b>
-                  <RangeLink to="/import">What changed</RangeLink>
-                  <button type="button" className="when" onClick={() => dismiss(lastImport.imported_at)}>Dismiss</button>
+                  <RangeLink to="/import">{tr('What changed')}</RangeLink>
+                  <button type="button" className="when" onClick={() => dismiss(lastImport.imported_at)}>{tr('Dismiss')}</button>
                 </div>
               )}
               {o.alerts_new > 0 && (
                 <RangeLink to="/alerts" className="alert-row warn">
-                  <b>{o.alerts_new} new alert{o.alerts_new > 1 ? 's' : ''}</b>
-                  <span className="muted">Review and acknowledge</span>
+                  <b>{trn('{n} new alert', '{n} new alerts', o.alerts_new)}</b>
+                  <span className="muted">{tr('Review and acknowledge')}</span>
                 </RangeLink>
               )}
               {o.active_faults > 0 ? (
                 <RangeLink to="/faults" className="alert-row bad">
-                  <b>{o.active_faults} fault{o.active_faults > 1 ? 's' : ''} still listed in the latest read-out</b>
-                  <span className="muted">Open the fault explorer</span>
+                  <b>{trn('{n} fault still listed in the latest read-out', '{n} faults still listed in the latest read-out', o.active_faults)}</b>
+                  <span className="muted">{tr('Open the fault explorer')}</span>
                 </RangeLink>
               ) : (
-                <div className="alert-row ok"><b>No active faults in the latest read-out</b></div>
+                <div className="alert-row ok"><b>{tr('No active faults in the latest read-out')}</b></div>
               )}
               {carWarning && (
                 <RangeLink to="/status" className="alert-row bad">
                   <b>{carWarning}</b>
-                  <span className="muted">The car's own warning flag: open Status</span>
+                  <span className="muted">{tr('The car\'s own warning flag: open Status')}</span>
                 </RangeLink>
               )}
               {o.last_alarm && (
                 <div className="alert-row warn">
-                  <b>Burglar alarm event</b>
-                  <span className="muted">status {o.last_alarm.burglar_status}, reason {o.last_alarm.alarm_reason}</span>
+                  <b>{tr('Burglar alarm event')}</b>
+                  <span className="muted">{tr('status {status}, reason {reason}', { status: o.last_alarm.burglar_status ?? '–', reason: o.last_alarm.alarm_reason ?? '–' })}</span>
                   <span className="when">{fmtDateTime(o.last_alarm.created_at)}</span>
                 </div>
               )}
               {o.unmapped_codes > 0 && (
                 <div className="alert-row">
-                  <b>{o.unmapped_codes} codes have no description yet</b>
-                  <span className="muted">Edit <span className="mono">config/models/{id}/codes/*.yaml</span> and run <span className="mono">make model</span></span>
+                  <b>{trn('{n} code has no description yet', '{n} codes have no description yet', o.unmapped_codes)}</b>
+                  <span className="muted">{tr('Edit')} <span className="mono">config/models/{id}/codes/*.yaml</span> {tr('and run')} <span className="mono">make model</span></span>
                 </div>
               )}
             </div>
@@ -107,37 +107,37 @@ export default function OverviewPage() {
             <div className="grid hero">
               <Panel>
                 <div className="stat">
-                  <div className="label">Odometer</div>
+                  <div className="label">{tr('Odometer')}</div>
                   <div style={{ marginTop: 10 }}><Odometer km={o.odometer_km} /></div>
-                  <div className="sub">{o.odometer_at ? `as of ${fmtDateTime(o.odometer_at)}` : 'no reading in this period'}</div>
+                  <div className="sub">{o.odometer_at ? tr('as of {when}', { when: fmtDateTime(o.odometer_at) }) : tr('no reading in this period')}</div>
                 </div>
               </Panel>
               <Stat
-                label="Distance driven"
+                label={tr('Distance driven')}
                 value={fmtDistance(o.km_in_range, 0, false)}
                 unit={distanceLabel()}
                 sub={`${fmtDate(o.range_from)} – ${fmtDate(o.range_to)}`}
               />
               <Stat
-                label="Fuel economy"
+                label={tr('Fuel economy')}
                 value={fmtConsumption(o.l_per_100km_in_range, 1)}
                 unit={consumptionLabel()}
-                sub={`in this period · lifetime ${fmtConsumption(o.lifetime_l_per_100km, 1)}${
+                sub={`${tr('in this period · lifetime {value}', { value: fmtConsumption(o.lifetime_l_per_100km, 1) })}${
                   o.cost_per_100km_in_range !== null && o.cost_per_100km_in_range !== undefined && o.currency
-                    ? ` · about ${fmtNum(toPer100(o.cost_per_100km_in_range), 2)} ${o.currency} per ${per100Label()} (estimate)`
+                    ? ` · ${tr('about {cost} {currency} per {distance} (estimate)', { cost: fmtNum(toPer100(o.cost_per_100km_in_range), 2), currency: o.currency, distance: per100Label() })}`
                     : ''
                 }`}
               />
               <Stat
-                label="Fuel level"
+                label={tr('Fuel level')}
                 value={fmtNum(o.status.fuel_level_pct)}
                 unit="%"
-                sub={`range ≈ ${fmtDistance(o.status.range_km, 0, false)} ${distanceLabel()}${filled ? ` · ${filled}` : ''}`}
+                sub={`${tr('range ≈ {distance}', { distance: `${fmtDistance(o.status.range_km, 0, false)} ${distanceLabel()}` })}${filled ? ` · ${filled}` : ''}`}
                 alert={(o.status.fuel_level_pct ?? 100) < 15}
               />
               {oil && (
                 <div className="oil-tile">
-                  <Stat label="Next oil change" value={oil.value} unit={`${distanceLabel()} left`} sub={oil.sub} alert={oil.soon} />
+                  <Stat label={tr('Next oil change')} value={oil.value} unit={tr('{unit} left', { unit: distanceLabel() })} sub={oil.sub} alert={oil.soon} />
                 </div>
               )}
             </div>
@@ -150,7 +150,7 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid split" style={{ marginTop: 14 }}>
-        <Panel title="Distance" hint="odometer, daily maximum">
+        <Panel title={tr('Distance')} hint={tr('odometer, daily maximum')}>
           <QueryState query={odometer}>
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart margin={{ right: 18, top: 5 }} data={(odometer.data ?? []).map((d) => ({ t: ts(`${d.day}T00:00:00Z`), km: d.odometer_km }))}>
@@ -170,18 +170,18 @@ export default function OverviewPage() {
           </QueryState>
         </Panel>
 
-        <Panel title="Tire pressure" hint={o?.status.at ? `snapshot ${fmtDateTime(o.status.at)}` : ''}>
+        <Panel title={tr('Tire pressure')} hint={o?.status.at ? tr('snapshot {when}', { when: fmtDateTime(o.status.at) }) : ''}>
           {o && <Tires fl={o.status.tire_fl_kpa} fr={o.status.tire_fr_kpa} rl={o.status.tire_rl_kpa} rr={o.status.tire_rr_kpa} />}
           {tireNote && (
             <p className="muted" style={{ fontSize: 12, margin: '8px 0 0', color: tireNote.stale ? 'var(--amber)' : undefined }}>
               {tireNote.text}
-              {tireNote.stale && ' · old: the car had not measured since'}
+              {tireNote.stale && ` · ${tr('old: the car had not measured since')}`}
             </p>
           )}
         </Panel>
       </div>
 
-      <Panel title="Fuel economy by month" hint={`${consumptionLabel()}, from the car's trip counters`}>
+      <Panel title={tr('Fuel economy by month')} hint={tr("{unit}, from the car's trip counters", { unit: consumptionLabel() })}>
         <QueryState query={fuel}>
           <ResponsiveContainer width="100%" height={230}>
             <BarChart margin={{ right: 18, top: 5 }} data={(fuel.data ?? []).map((m) => ({ ...m, l_per_100km: toConsumption(m.l_per_100km) }))}>

@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr, trn } from '../i18n'
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useMonthly } from '../api/hooks'
@@ -35,9 +35,9 @@ function ChangeLine({ c, previousMonth }: { c: Comparison; previousMonth?: strin
       {c.kind === 'ok' && <span aria-hidden="true">{ARROW[c.direction]} </span>}
       {describeChange(c, previousMonth)}
       {c.kind === 'ok' && c.partialCaveat && (
-        <span className="caveat" title="One of the two months is not complete. Switch on “per day” to compare fairly.">
+        <span className="caveat" title={tr('One of the two months is not complete. Switch on “per day” to compare fairly.')}>
           {' '}
-          · partial month
+          · {tr('partial month')}
         </span>
       )}
     </div>
@@ -55,13 +55,13 @@ function MetricCard({ def, rows, perDay }: { def: MetricDef; rows: MonthMetrics[
   const data = rows.map((r, i) => ({ month: r.month, label: monthShort(r.month), value: values[i], partial: r.partial, i }))
 
   return (
-    <article className="panel metric" aria-label={def.label}>
+    <article className="panel metric" aria-label={tr(def.label)}>
       <div className="metric-head">
-        <h3 title={def.help}>{def.label}</h3>
+        <h3 title={tr(def.help)}>{tr(def.label)}</h3>
         <span className="muted mono">{unit}</span>
       </div>
       {last < 0 ? (
-        <div className="metric-value muted">no data</div>
+        <div className="metric-value muted">{tr('no data')}</div>
       ) : (
         <>
           <div className="metric-value">
@@ -88,12 +88,12 @@ function MetricCard({ def, rows, perDay }: { def: MetricDef; rows: MonthMetrics[
                   <div className="chart-tip">
                     <div className="t">
                       {monthLabel(d.month)}
-                      {d.partial ? ' (partial)' : ''}
+                      {d.partial ? ` (${tr('partial')})` : ''}
                     </div>
                     <div className="row">
-                      <span>{def.label}</span>
+                      <span>{tr(def.label)}</span>
                       <span>
-                        {d.value === null ? 'no data' : `${fmtNum(d.value, digits)} ${unit}`}
+                        {d.value === null ? tr('no data') : `${fmtNum(d.value, digits)} ${unit}`}
                       </span>
                     </div>
                     <div className={`${TONE_CLASS[c.kind === 'ok' ? c.tone : 'neutral']}`}>
@@ -128,11 +128,11 @@ function TrendTable({ rows, perDay, metrics }: { rows: MonthMetrics[]; perDay: b
       <table className="trend-table">
         <thead>
           <tr>
-            <th>Metric</th>
+            <th>{tr('Metric')}</th>
             {rows.map((r) => (
               <th key={r.month} className="num">
                 {monthLabel(r.month)}
-                {r.partial && <div className="muted partial-tag">partial · {r.days_covered}/{r.days_in_month} d</div>}
+                {r.partial && <div className="muted partial-tag">{tr('partial · {covered}/{days} d', { covered: r.days_covered, days: r.days_in_month })}</div>}
               </th>
             ))}
           </tr>
@@ -144,8 +144,8 @@ function TrendTable({ rows, perDay, metrics }: { rows: MonthMetrics[]; perDay: b
             const digits = digitsFor(def, perDay)
             return (
               <tr key={def.key}>
-                <th scope="row" title={def.help}>
-                  {def.label} <span className="muted mono">{unitFor(def, perDay, currency)}</span>
+                <th scope="row" title={tr(def.help)}>
+                  {tr(def.label)} <span className="muted mono">{unitFor(def, perDay, currency)}</span>
                 </th>
                 {values.map((v, i) => {
                   const c = compare(def, values, partial, i, perDay)
@@ -155,7 +155,7 @@ function TrendTable({ rows, perDay, metrics }: { rows: MonthMetrics[]; perDay: b
                       {c.kind === 'ok' && (
                         <div className={`cell-change ${TONE_CLASS[c.tone]}`} title={describeChange(c, rows[i - 1]?.month)}>
                           {ARROW[c.direction]} {shortChange(c)}
-                          {c.partialCaveat && <span className="caveat" title="Compared with a month that is not complete"> *</span>}
+                          {c.partialCaveat && <span className="caveat" title={tr('Compared with a month that is not complete')}> *</span>}
                         </div>
                       )}
                     </td>
@@ -186,20 +186,20 @@ export default function Trends() {
       <div className="page-head">
         <div>
           <h1>{t('page.trends')}</h1>
-          <p>How each figure changed from month to month. The newest month is in red; the arrow compares it with the month before.</p>
+          <p>{tr('How each figure changed from month to month. The newest month is in red; the arrow compares it with the month before.')}</p>
         </div>
         <div className="controls">
-          <div className="chips" role="radiogroup" aria-label="View">
+          <div className="chips" role="radiogroup" aria-label={tr('View')}>
             {(['cards', 'table'] as const).map((v) => (
               <label key={v} className="preset">
                 <input type="radio" name="trend-view" checked={view === v} onChange={() => setView(v)} />
-                <span>{v === 'cards' ? 'Charts' : 'Table'}</span>
+                <span>{v === 'cards' ? tr('Charts') : tr('Table')}</span>
               </label>
             ))}
           </div>
           <label className="toggle">
             <input type="checkbox" checked={perDay} onChange={(e) => setPerDay(e.target.checked)} />
-            per day
+            {tr('per day')}
           </label>
         </div>
       </div>
@@ -207,18 +207,18 @@ export default function Trends() {
       <QueryState query={monthly}>
         {rows.length === 0 ? (
           <Panel>
-            <div className="state">No months in this period.</div>
+            <div className="state">{tr('No months in this period.')}</div>
           </Panel>
         ) : (
           <>
             {partialMonths.length > 0 && (
               <div className="alert-row" style={{ marginBottom: 14 }}>
                 <b>
-                  {partialMonths.length === 1 ? '1 month is' : `${partialMonths.length} months are`} not complete
+                  {trn('{n} month is not complete', '{n} months are not complete', partialMonths.length)}
                 </b>
                 <span className="muted">
-                  {partialMonths.map((m) => `${monthLabel(m.month)} (${m.days_covered}/${m.days_in_month} days)`).join(', ')}.
-                  {!perDay && ' Totals are lower for them; tick “per day” to compare fairly.'}
+                  {partialMonths.map((m) => tr('{month} ({covered}/{days} days)', { month: monthLabel(m.month), covered: m.days_covered, days: m.days_in_month })).join(', ')}.
+                  {!perDay && ` ${tr('Totals are lower for them; tick “per day” to compare fairly.')}`}
                 </span>
               </div>
             )}
@@ -233,7 +233,7 @@ export default function Trends() {
                 <TrendTable rows={rows} perDay={perDay} metrics={metrics} />
                 {partialMonths.length > 0 && !perDay && (
                   <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>
-                    <span className="caveat">*</span> compared with a month that is not complete; tick “per day” for a like-for-like view.
+                    <span className="caveat">*</span> {tr('compared with a month that is not complete; tick “per day” for a like-for-like view.')}
                   </p>
                 )}
               </Panel>
@@ -243,9 +243,9 @@ export default function Trends() {
             </div>
             {noPrice && (
               <p className="muted" style={{ fontSize: 12, margin: '14px 0 0' }}>
-                No fuel price is set, so the estimated fuel cost is not shown. Add <span className="mono">fuel_currency</span> and{' '}
-                <span className="mono">fuel_prices</span> (or <span className="mono">fuel_price_per_l</span>) to{' '}
-                <span className="mono">config/models/{modelId}/settings.yaml</span>, then run <span className="mono">make model</span>.
+                {tr('No fuel price is set, so the estimated fuel cost is not shown. Add')} <span className="mono">fuel_currency</span> {tr('and')}{' '}
+                <span className="mono">fuel_prices</span> {tr('(or')} <span className="mono">fuel_price_per_l</span>) {tr('to')}{' '}
+                <span className="mono">config/models/{modelId}/settings.yaml</span>{tr(', then run')} <span className="mono">make model</span>.
               </p>
             )}
           </>

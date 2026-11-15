@@ -1,3 +1,4 @@
+import { tr, trn } from '../i18n'
 import { useMemo, useState } from 'react'
 import { useFrameSummary } from '../api/hooks'
 import { bodyOfModel } from '../car3d/shapes/common'
@@ -20,7 +21,7 @@ export function FrameSummary({ fault }: { fault: DtcFrequency }) {
   // nothing to compare for a fault without frames: say so quietly instead of an empty panel
   if (s && s.signals.length === 0) return null
   return (
-    <Panel title="In the freeze frames" hint={s ? `${s.frames} frame${s.frames === 1 ? '' : 's'} of this fault` : undefined}>
+    <Panel title={tr('In the freeze frames')} hint={s ? trn('{n} frame of this fault', '{n} frames of this fault', s.frames) : undefined}>
       <QueryState query={summary}>
         {s && (
           <>
@@ -29,19 +30,19 @@ export function FrameSummary({ fault }: { fault: DtcFrequency }) {
               <table className="matrix">
                 <thead>
                   <tr>
-                    <th>Signal</th>
-                    <th className="num">This fault</th>
-                    <th className="num">Other faults’ frames</th>
+                    <th>{tr('Signal')}</th>
+                    <th className="num">{tr('This fault')}</th>
+                    <th className="num">{tr('Other faults’ frames')}</th>
                     <th />
                   </tr>
                 </thead>
                 <tbody>
                   {s.signals.map((x) => (
                     <tr key={x.signal}>
-                      <td>{x.label}</td>
+                      <td>{tr(x.label)}</td>
                       <td className="num">{faultRange(x)}</td>
                       <td className="num">{baselineRange(x)}</td>
-                      <td>{x.position && <Badge kind="dim">{POSITION_TEXT[x.position]}</Badge>}</td>
+                      <td>{x.position && <Badge kind="dim">{tr(POSITION_TEXT[x.position])}</Badge>}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -50,13 +51,12 @@ export function FrameSummary({ fault }: { fault: DtcFrequency }) {
             <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{cautionNote(s)}</p>
             {car.hasData && (
               <div style={{ marginTop: 10 }}>
-                <button type="button" aria-expanded={onCar} onClick={() => setOnCar(!onCar)}>{onCar ? 'Hide the car' : 'Show on the car'}</button>
+                <button type="button" aria-expanded={onCar} onClick={() => setOnCar(!onCar)}>{onCar ? tr('Hide the car') : tr('Show on the car')}</button>
                 {onCar && (
                   <>
-                    <Car3DBox car={car} body={body} fallback={<p className="muted note">The 3D view is not available here; the table above has the same figures.</p>} />
+                    <Car3DBox car={car} body={body} fallback={<p className="muted note">{tr('The 3D view is not available here; the table above has the same figures.')}</p>} />
                     <p className="muted note">
-                      What this fault's freeze frames recorded, on the parts they are about. “Battery” is drawn at the hood: the drawing does not say where the battery
-                      sits. A part is marked only where the table marks a signal; the rest is shown, not judged.
+                      {tr("What this fault's freeze frames recorded, on the parts they are about. “Battery” is drawn at the hood: the drawing does not say where the battery sits. A part is marked only where the table marks a signal; the rest is shown, not judged.")}
                     </p>
                   </>
                 )}

@@ -1,0 +1,17 @@
+export const GARAGE: Record<string, string> = {
+  'last reading {ago}: the figures may be out of date': 'última leitura {ago}: os valores podem estar desatualizados',
+  'no new alerts': 'sem alertas novos',
+  '{n} new alert': '{n} alerta novo',
+  '{n} new alerts': '{n} alertas novos',
+  'no faults listed': 'sem avarias listadas',
+  '{n} fault listed': '{n} avaria listada',
+  '{n} faults listed': '{n} avarias listadas',
+  'not reported': 'não comunicado',
+  '{distance} left': 'faltam {distance}',
+  '{rate} {unit} on average (estimated)': '{rate} {unit} em média (estimado)',
+  '{cost} {currency} per {per} (estimated)': '{cost} {currency} por {per} (estimado)',
+  'Fuel and cost are estimates: the distance times the average consumption, and times the fuel price you entered, not what you paid. Averages between two cars need care (a plug-in hybrid\'s fuel consumption hides the electric part).': 'O combustível e o custo são estimativas: a distância vezes o consumo médio, e vezes o preço do combustível que indicou, não o que pagou. As médias entre dois carros pedem cuidado (o consumo de combustível de um híbrido plug-in esconde a parte elétrica).',
+  'no data yet': 'ainda sem dados',
+  '{n} alert': '{n} alerta',
+  '{n} alerts': '{n} alertas',
+}

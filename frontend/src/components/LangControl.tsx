@@ -1,17 +1,15 @@
-import { LANGS, langName, t, useLang, type Lang } from '../i18n'
+import { CHOICES, langName, t, useLang, useLangChoice, type LangChoice } from '../i18n'
 
-/**
- * The language of this device (PLAN.md M62). Portuguese is offered as "in progress": the menus, the page titles,
- * the period presets and the dates and numbers are translated, the rest is still English.
- */
+/** The language of this device (PLAN.md M62): Auto follows the browser, or English or Portuguese (Portugal). */
 export function LangControl({ className = '' }: { className?: string }) {
-  const [lang, setLang] = useLang()
+  const [, setLang] = useLang()
+  const choice = useLangChoice()
   return (
     <div className={`units-control ${className}`}>
-      <select aria-label={t('lang.label')} value={lang} onChange={(e) => setLang(e.target.value as Lang)} title={t('lang.partial')}>
-        {LANGS.map((l) => (
-          <option key={l} value={l}>
-            {langName(l)}{l === 'pt' ? ` (${t('lang.partial').split(':')[0]})` : ''}
+      <select aria-label={t('lang.label')} value={choice} onChange={(e) => setLang(e.target.value as LangChoice)}>
+        {CHOICES.map((c) => (
+          <option key={c} value={c}>
+            {c === 'auto' ? t('lang.auto') : langName(c)}
           </option>
         ))}
       </select>

@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useMemo, useState, type ReactNode } from 'react'
 
 export function Panel({ title, hint, children, className = '' }: {
@@ -51,9 +52,9 @@ export function QueryState({ query, children }: {
   if (query.isError) {
     return (
       <div className="state error" role="alert">
-        {query.error?.message ?? 'Request failed'}
+        {query.error?.message ?? tr('Request failed')}
         <div className="muted" style={{ marginTop: 6 }}>
-          Is the API running? Try <code>make dev</code>, and <code>make ingest</code> if the database is missing.
+          {tr('Is the API running? Try')} <code>make dev</code>{tr(', and')} <code>make ingest</code> {tr('if the database is missing.')}
         </div>
       </div>
     )
@@ -69,7 +70,7 @@ export type Column<T> = {
   num?: boolean
 }
 
-export function DataTable<T>({ rows, columns, rowKey, selected, onSelect, empty = 'Nothing to show' }: {
+export function DataTable<T>({ rows, columns, rowKey, selected, onSelect, empty }: {
   rows: T[]
   columns: Column<T>[]
   rowKey: (row: T) => string
@@ -89,7 +90,7 @@ export function DataTable<T>({ rows, columns, rowKey, selected, onSelect, empty 
     })
   }, [rows, columns, sort])
 
-  if (rows.length === 0) return <div className="state">{empty}</div>
+  if (rows.length === 0) return <div className="state">{empty ?? tr('Nothing to show')}</div>
   return (
     <div className="table-wrap">
       <table>

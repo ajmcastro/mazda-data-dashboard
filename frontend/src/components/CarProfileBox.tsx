@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { lazy, Suspense, useMemo } from 'react'
 import type { ModelBody } from '../api/types'
 import { bodyOfModel } from '../car3d/shapes/common'
@@ -12,7 +13,7 @@ export function CarProfileBox({ body, others, name }: { body: ModelBody | null |
   return (
     <div className="car-profile-box">
       <Suspense fallback={null}>
-        <CarProfile body={own} scaleWith={all} label={`${name}, side view: a schematic drawing, not the real body`} />
+        <CarProfile body={own} scaleWith={all} label={tr('{name}, side view: a schematic drawing, not the real body', { name })} />
       </Suspense>
     </div>
   )

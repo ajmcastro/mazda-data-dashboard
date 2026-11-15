@@ -1,7 +1,7 @@
 // Pure logic of the Trends page: which metrics there are, how a month is compared with the
 // previous one, and how the comparison is worded. No React in here, so it can be unit tested.
 
-import { locale } from './i18n'
+import { locale, msg, tr } from './i18n'
 import type { MonthMetrics } from './api/types'
 import {
   consumptionDigits, consumptionHigherIsBetter, consumptionLabel, distanceLabel, per100Label, pressureDigits, pressureLabel,
@@ -53,22 +53,22 @@ export const polarityOf = (def: MetricDef): Polarity =>
   def.quantity === 'consumption' && consumptionHigherIsBetter() ? (def.polarity === 'lower' ? 'higher' : def.polarity === 'higher' ? 'lower' : 'neutral') : def.polarity
 
 export const METRICS: MetricDef[] = [
-  { key: 'distance_km', quantity: 'distance', label: 'Distance driven', unit: 'km', digits: 0, additive: true, polarity: 'neutral', perDayUnit: 'km/day', perDayDigits: 1, help: 'From the odometer.' },
-  { key: 'l_per_100km', quantity: 'consumption', label: 'Fuel consumption', unit: 'l/100 km', digits: 2, additive: false, polarity: 'lower', help: 'Average of the car’s trip counters.' },
-  { key: 'fuel_l_est', label: 'Fuel used (estimated)', unit: 'l', digits: 0, additive: true, polarity: 'neutral', perDayUnit: 'l/day', perDayDigits: 1, help: 'Distance × consumption.' },
-  { key: 'days_driven', label: 'Days driven', unit: 'days', digits: 0, additive: true, polarity: 'neutral', perDayUnit: '% of days', perDayDigits: 0, asShareOfDays: true, help: 'Days with at least one recorded drive.' },
-  { key: 'drives', label: 'Drives recorded', unit: 'drives', digits: 0, additive: true, polarity: 'neutral', perDayUnit: 'drives/day', perDayDigits: 1, help: 'Stretches between two status snapshots with driving.' },
-  { key: 'driving_hours', label: 'Time driving', unit: 'h', digits: 1, additive: true, polarity: 'neutral', perDayUnit: 'h/day', perDayDigits: 2, help: 'From the trip counters.' },
-  { key: 'avg_speed_kmh', quantity: 'speed', label: 'Average speed', unit: 'km/h', digits: 1, additive: false, polarity: 'neutral', help: 'Distance divided by driving time.' },
-  { key: 'warning_events', label: 'Warning events', unit: 'events', digits: 0, additive: true, polarity: 'lower', perDayUnit: 'events/day', perDayDigits: 1, help: 'Warning-lamp events reported by the car.' },
-  { key: 'warning_codes', label: 'Different warnings', unit: 'codes', digits: 0, additive: false, polarity: 'lower', help: 'How many distinct warning codes appeared.' },
-  { key: 'fault_readouts', label: 'Read-outs with faults', unit: 'read-outs', digits: 0, additive: true, polarity: 'lower', perDayUnit: 'read-outs/day', perDayDigits: 2, help: 'Diagnostic read-outs that listed at least one fault.' },
-  { key: 'distinct_faults', label: 'Different faults', unit: 'faults', digits: 0, additive: false, polarity: 'lower', help: 'Distinct trouble codes reported.' },
-  { key: 'new_faults', label: 'New faults', unit: 'faults', digits: 0, additive: true, polarity: 'lower', perDayUnit: 'faults/day', perDayDigits: 2, help: 'Trouble codes seen for the first time.' },
-  { key: 'cost_per_100km', quantity: 'per100', label: 'Fuel cost (estimated)', unit: '¤/100 km', digits: 2, additive: false, polarity: 'lower', money: true, help: 'An estimate: the litres the car reports times the fuel price you entered in settings.yaml, trip by trip. Not what you paid.' },
-  { key: 'fuel_cost_est', label: 'Fuel cost, total (estimated)', unit: '¤', digits: 0, additive: true, polarity: 'neutral', money: true, perDayUnit: '¤/day', perDayDigits: 2, help: 'Estimated distance × cost per km: an estimate from your fuel price, not what you paid.' },
-  { key: 'tire_avg_kpa', quantity: 'pressure', label: 'Tire pressure (average)', unit: 'kPa', digits: 0, additive: false, polarity: 'neutral', help: 'Average of the four tires.' },
-  { key: 'tire_min_kpa', quantity: 'pressure', label: 'Lowest tire reading', unit: 'kPa', digits: 0, additive: false, polarity: 'higher', help: 'The lowest single reading of the month.' },
+  { key: 'distance_km', quantity: 'distance', label: msg('Distance driven'), unit: msg('km'), digits: 0, additive: true, polarity: 'neutral', perDayUnit: msg('km/day'), perDayDigits: 1, help: msg('From the odometer.') },
+  { key: 'l_per_100km', quantity: 'consumption', label: msg('Fuel consumption'), unit: msg('l/100 km'), digits: 2, additive: false, polarity: 'lower', help: msg('Average of the car’s trip counters.') },
+  { key: 'fuel_l_est', label: msg('Fuel used (estimated)'), unit: msg('l'), digits: 0, additive: true, polarity: 'neutral', perDayUnit: msg('l/day'), perDayDigits: 1, help: msg('Distance × consumption.') },
+  { key: 'days_driven', label: msg('Days driven'), unit: msg('days'), digits: 0, additive: true, polarity: 'neutral', perDayUnit: msg('% of days'), perDayDigits: 0, asShareOfDays: true, help: msg('Days with at least one recorded drive.') },
+  { key: 'drives', label: msg('Drives recorded'), unit: msg('drives'), digits: 0, additive: true, polarity: 'neutral', perDayUnit: msg('drives/day'), perDayDigits: 1, help: msg('Stretches between two status snapshots with driving.') },
+  { key: 'driving_hours', label: msg('Time driving'), unit: msg('h'), digits: 1, additive: true, polarity: 'neutral', perDayUnit: msg('h/day'), perDayDigits: 2, help: msg('From the trip counters.') },
+  { key: 'avg_speed_kmh', quantity: 'speed', label: msg('Average speed'), unit: msg('km/h'), digits: 1, additive: false, polarity: 'neutral', help: msg('Distance divided by driving time.') },
+  { key: 'warning_events', label: msg('Warning events'), unit: msg('events'), digits: 0, additive: true, polarity: 'lower', perDayUnit: msg('events/day'), perDayDigits: 1, help: msg('Warning-lamp events reported by the car.') },
+  { key: 'warning_codes', label: msg('Different warnings'), unit: msg('codes'), digits: 0, additive: false, polarity: 'lower', help: msg('How many distinct warning codes appeared.') },
+  { key: 'fault_readouts', label: msg('Read-outs with faults'), unit: msg('read-outs'), digits: 0, additive: true, polarity: 'lower', perDayUnit: msg('read-outs/day'), perDayDigits: 2, help: msg('Diagnostic read-outs that listed at least one fault.') },
+  { key: 'distinct_faults', label: msg('Different faults'), unit: msg('faults'), digits: 0, additive: false, polarity: 'lower', help: msg('Distinct trouble codes reported.') },
+  { key: 'new_faults', label: msg('New faults'), unit: msg('faults'), digits: 0, additive: true, polarity: 'lower', perDayUnit: msg('faults/day'), perDayDigits: 2, help: msg('Trouble codes seen for the first time.') },
+  { key: 'cost_per_100km', quantity: 'per100', label: msg('Fuel cost (estimated)'), unit: msg('¤/100 km'), digits: 2, additive: false, polarity: 'lower', money: true, help: msg('An estimate: the litres the car reports times the fuel price you entered in settings.yaml, trip by trip. Not what you paid.') },
+  { key: 'fuel_cost_est', label: msg('Fuel cost, total (estimated)'), unit: msg('¤'), digits: 0, additive: true, polarity: 'neutral', money: true, perDayUnit: msg('¤/day'), perDayDigits: 2, help: msg('Estimated distance × cost per km: an estimate from your fuel price, not what you paid.') },
+  { key: 'tire_avg_kpa', quantity: 'pressure', label: msg('Tire pressure (average)'), unit: msg('kPa'), digits: 0, additive: false, polarity: 'neutral', help: msg('Average of the four tires.') },
+  { key: 'tire_min_kpa', quantity: 'pressure', label: msg('Lowest tire reading'), unit: msg('kPa'), digits: 0, additive: false, polarity: 'higher', help: msg('The lowest single reading of the month.') },
 ]
 
 /** The value to chart for a month, in the unit shown, or null when there is none (a gap, never a zero). */
@@ -89,26 +89,29 @@ export const currencyOf = (rows: readonly MonthMetrics[]): string | null => rows
 export const unitFor = (def: MetricDef, perDay: boolean, currency: string | null = null) => {
   const perDayTotal = perDay && def.additive
   const unit =
-    def.quantity === 'distance' ? (perDayTotal ? `${distanceLabel()}/day` : distanceLabel())
+    def.quantity === 'distance' ? (perDayTotal ? `${distanceLabel()}/${tr('day')}` : distanceLabel())
     : def.quantity === 'consumption' ? consumptionLabel()
     : def.quantity === 'speed' ? speedLabel()
     : def.quantity === 'pressure' ? pressureLabel()
     : def.quantity === 'per100' ? `¤/${per100Label()}`
-    : perDayTotal ? def.perDayUnit ?? def.unit : def.unit
+    : tr(perDayTotal ? def.perDayUnit ?? def.unit : def.unit)
   return def.money ? unit.replace('¤', currency ?? '').trim() : unit
 }
 
-const COUNTABLE = new Set(['days', 'drives', 'events', 'codes', 'read-outs', 'faults'])
+// the counted things and their singular (English adds an s; another language has its own word)
+const COUNTABLE: Record<string, string> = {
+  days: msg('day'), drives: msg('drive'), events: msg('event'), codes: msg('code'), 'read-outs': msg('read-out'), faults: msg('fault'),
+}
 /** "1 fault", "2 faults": the singular for counted things when the value is exactly 1. */
 export const unitLabel = (def: MetricDef, perDay: boolean, value: number | null, currency: string | null = null) => {
-  const unit = unitFor(def, perDay, currency)
-  return value === 1 && COUNTABLE.has(unit) ? unit.slice(0, -1) : unit
+  const counted = !def.quantity && !(perDay && def.additive) ? COUNTABLE[def.unit] : undefined
+  return value === 1 && counted ? tr(counted) : unitFor(def, perDay, currency)
 }
 
 /** Short text for a table cell: "12.3%", "new" (up from nothing), "=" (nothing both months). */
 export function shortChange(c: Extract<Comparison, { kind: 'ok' }>): string {
   if (c.pct !== null) return `${Math.abs(c.pct).toFixed(1)}%`
-  return c.direction === 'flat' ? '=' : c.direction === 'up' ? 'new' : 'none'
+  return c.direction === 'flat' ? '=' : c.direction === 'up' ? tr('new') : tr('none')
 }
 export const digitsFor = (def: MetricDef, perDay: boolean) =>
   def.quantity === 'pressure' ? pressureDigits()
@@ -187,18 +190,18 @@ export function latestIndex(values: (number | null)[]): number {
 
 /** Wording of a comparison, e.g. "12.3% more than May 2026". */
 export function describeChange(c: Comparison, previousMonth: string | undefined): string {
-  const prev = previousMonth ? monthLabel(previousMonth) : 'the previous month'
+  const prev = previousMonth ? monthLabel(previousMonth) : tr('the previous month')
   switch (c.kind) {
     case 'no-value':
-      return 'no data this month'
+      return tr('no data this month')
     case 'first':
-      return 'no previous month in this period'
+      return tr('no previous month in this period')
     case 'missing-previous':
-      return `no data for ${prev} to compare with`
+      return tr('no data for {prev} to compare with', { prev })
     case 'ok':
-      if (c.direction === 'flat') return `unchanged from ${prev}`
-      if (c.pct === null) return `${c.direction === 'up' ? 'up from none' : 'down to none'} in ${prev}`
-      return `${Math.abs(c.pct).toFixed(1)}% ${c.direction === 'up' ? 'more' : 'less'} than ${prev}`
+      if (c.direction === 'flat') return tr('unchanged from {prev}', { prev })
+      if (c.pct === null) return c.direction === 'up' ? tr('up from none in {prev}', { prev }) : tr('down to none in {prev}', { prev })
+      return c.direction === 'up' ? tr('{pct}% more than {prev}', { pct: Math.abs(c.pct).toFixed(1), prev }) : tr('{pct}% less than {prev}', { pct: Math.abs(c.pct).toFixed(1), prev })
   }
 }
 

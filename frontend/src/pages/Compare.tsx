@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr, trn } from '../i18n'
 import { useState, type ReactElement } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -45,7 +45,7 @@ function Figure({ value, def, perDay, side, name, currency }: { value: number | 
       <div>
         <div className="muted cmp-name">{name}</div>
         <div className="metric-value">
-          {value === null ? <span className="muted">no data</span> : fmtNum(value, digitsFor(def, perDay))}
+          {value === null ? <span className="muted">{tr('no data')}</span> : fmtNum(value, digitsFor(def, perDay))}
           {value !== null && <small>{unitLabel(def, perDay, value, currency)}</small>}
         </div>
       </div>
@@ -64,13 +64,13 @@ function MetricCard({ def, aligned, c, names, perDay, currencies }: { def: Metri
     b: m.b ? metricValue(m.b, def, perDay) : null,
   }))
   return (
-    <article className="panel metric" aria-label={def.label}>
+    <article className="panel metric" aria-label={tr(def.label)}>
       <div className="metric-head">
-        <h3 title={def.help}>{def.label}</h3>
+        <h3 title={tr(def.help)}>{tr(def.label)}</h3>
         <span className="muted mono">{unit}</span>
       </div>
-      <span className={`level ${level.level}`} title={level.why}>
-        {LEVEL_LABEL[level.level]}
+      <span className={`level ${level.level}`} title={tr(level.why)}>
+        {tr(LEVEL_LABEL[level.level])}
       </span>
       <div className="cmp-figures">
         <Figure value={c.a.value} def={def} perDay={perDay} side="a" name={names.a} currency={currencies.a} />
@@ -82,11 +82,11 @@ function MetricCard({ def, aligned, c, names, perDay, currencies }: { def: Metri
         {c.kind !== 'none' && (
           <span className="muted">
             {' '}
-            · {c.a.months === c.b.months ? `${c.a.months} month${c.a.months === 1 ? '' : 's'}` : `${c.a.months} and ${c.b.months} months`}
+            · {c.a.months === c.b.months ? trn('{n} month', '{n} months', c.a.months) : tr('{a} and {b} months', { a: c.a.months, b: c.b.months })}
           </span>
         )}
       </div>
-      <p className="muted cmp-why">{level.why}</p>
+      <p className="muted cmp-why">{tr(level.why)}</p>
       <div className="metric-chart" aria-hidden="true">
         <ResponsiveContainer width="100%" height={120}>
           <LineChart data={data} margin={{ top: 6, right: 8, left: 8, bottom: 0 }}>
@@ -103,7 +103,7 @@ function MetricCard({ def, aligned, c, names, perDay, currencies }: { def: Metri
                     {(['a', 'b'] as const).map((s) => (
                       <div className="row" key={s}>
                         <span>{names[s]}</span>
-                        <span>{d[s] === null ? 'no data' : `${fmtNum(d[s], digits)} ${unit}`}</span>
+                        <span>{d[s] === null ? tr('no data') : `${fmtNum(d[s], digits)} ${unit}`}</span>
                       </div>
                     ))}
                   </div>
@@ -125,11 +125,11 @@ function CompareTable({ aligned, names, perDay, basis, currencies, metrics }: { 
       <table className="trend-table">
         <thead>
           <tr>
-            <th>Metric</th>
+            <th>{tr('Metric')}</th>
             <th className="num">{names.a}</th>
             <th className="num">{names.b}</th>
-            <th>Difference</th>
-            <th>Fair to compare?</th>
+            <th>{tr('Difference')}</th>
+            <th>{tr('Fair to compare?')}</th>
           </tr>
         </thead>
         <tbody>
@@ -139,15 +139,15 @@ function CompareTable({ aligned, names, perDay, basis, currencies, metrics }: { 
             const cell = (v: number | null) => (v === null ? <span className="muted">–</span> : fmtNum(v, digitsFor(def, perDay)))
             return (
               <tr key={def.key}>
-                <th scope="row" title={def.help}>
-                  {def.label} <span className="muted mono">{unitFor(def, perDay, currencies.a ?? currencies.b)}</span>
+                <th scope="row" title={tr(def.help)}>
+                  {tr(def.label)} <span className="muted mono">{unitFor(def, perDay, currencies.a ?? currencies.b)}</span>
                 </th>
                 <td className="num mono">{cell(c.a.value)}</td>
                 <td className="num mono">{cell(c.b.value)}</td>
                 <td className="muted">{describeDifference(def, names, c, perDay, currencies.a)}</td>
                 <td>
-                  <span className={`level ${level.level}`} title={level.why}>
-                    {LEVEL_LABEL[level.level]}
+                  <span className={`level ${level.level}`} title={tr(level.why)}>
+                    {tr(LEVEL_LABEL[level.level])}
                   </span>
                 </td>
               </tr>
@@ -194,14 +194,13 @@ function CarsCompare() {
   return (
     <>
       <p className="muted cmp-intro">
-        Two cars side by side, month by month. A different car is not a better or a worse one, so this only says higher
-        and lower, and marks every figure that is not fair to compare.
+        {tr('Two cars side by side, month by month. A different car is not a better or a worse one, so this only says higher and lower, and marks every figure that is not fair to compare.')}
       </p>
       {choices.length >= 2 && a && b && (
           <div className="controls">
             {(['a', 'b'] as const).map((side) => (
               <label key={side}>
-                {side === 'a' ? 'Car' : 'Against'}
+                {side === 'a' ? tr('Car') : tr('Against')}
                 <select
                   className="car-select"
                   value={(side === 'a' ? a : b).id}
@@ -217,15 +216,15 @@ function CarsCompare() {
                 </select>
               </label>
             ))}
-            <div className="chips" role="radiogroup" aria-label="Months">
+            <div className="chips" role="radiogroup" aria-label={tr('Months')}>
               {(['overlap', 'all'] as const).map((v) => (
                 <label key={v} className="preset">
                   <input type="radio" name="cmp-basis" checked={basis === v} onChange={() => set('basis', v === 'all' ? 'all' : null)} />
-                  <span>{v === 'overlap' ? 'Months in common' : 'All data'}</span>
+                  <span>{v === 'overlap' ? tr('Months in common') : tr('All data')}</span>
                 </label>
               ))}
             </div>
-            <div className="chips" role="radiogroup" aria-label="View">
+            <div className="chips" role="radiogroup" aria-label={tr('View')}>
               {(['cards', 'table'] as const).map((v) => (
                 <label key={v} className="preset">
                   <input type="radio" name="cmp-view" checked={view === v} onChange={() => setView(v)} />
@@ -235,11 +234,11 @@ function CarsCompare() {
             </div>
             <label className="toggle">
               <input type="checkbox" checked={perDay} onChange={(e) => set('perday', e.target.checked ? null : '0')} />
-              per day
+              {tr('per day')}
             </label>
             <label className="toggle">
               <input type="checkbox" checked={includePartial} onChange={(e) => set('partial', e.target.checked ? '1' : null)} />
-              incomplete months
+              {tr('incomplete months')}
             </label>
           </div>
       )}
@@ -247,7 +246,7 @@ function CarsCompare() {
       {choices.length < 2 || !a || !b ? (
         <Panel>
           <div className="state">
-            Comparing needs two car models with data. {choices.length === 1 && <>Only {choices[0].name} has data so far: put the other car's exports in <code>data/&lt;model&gt;/</code> and run <code>make ingest MODEL=&lt;model&gt;</code>.</>}
+            {tr('Comparing needs two car models with data.')} {choices.length === 1 && <>{tr("Only {name} has data so far: put the other car's exports in", { name: choices[0].name })} <code>data/&lt;model&gt;/</code> {tr('and run')} <code>make ingest MODEL=&lt;model&gt;</code>.</>}
           </div>
         </Panel>
       ) : pending ? (
@@ -263,7 +262,7 @@ function CarsCompare() {
                   <CarProfileBox body={car.body} others={[a.body, b.body]} name={car.name} />
                   <figcaption className="muted">
                     {shortModelName(car.name)}
-                    {car.body?.length_mm ? ` · ${(car.body.length_mm / 1000).toFixed(2)} m long` : ''}
+                    {car.body?.length_mm ? ` · ${tr('{n} m long', { n: (car.body.length_mm / 1000).toFixed(2) })}` : ''}
                   </figcaption>
                 </figure>
               ))}
@@ -272,14 +271,16 @@ function CarsCompare() {
           <div className="alert-row" style={{ marginBottom: 14 }}>
             <b>{describeBasis(aligned, basis, includePartial)}</b>
             <span className="muted">
-              {perDay ? 'Totals are shown per day, so months of unequal length compare fairly.' : 'Totals are the average of a month.'}
-              {!includePartial && ' Months that are not complete are left out.'}
+              {perDay ? tr('Totals are shown per day, so months of unequal length compare fairly.') : tr('Totals are the average of a month.')}
+              {!includePartial && ` ${tr('Months that are not complete are left out.')}`}
             </span>
           </div>
           {aligned.length === 0 ? (
             <Panel>
               <div className="state">
-                {names.a} and {names.b} have no {includePartial ? '' : 'complete '}month in common. Show “All data” to look at each car on its own.
+                {includePartial
+                  ? tr('{a} and {b} have no month in common. Show “All data” to look at each car on its own.', { a: names.a, b: names.b })
+                  : tr('{a} and {b} have no complete month in common. Show “All data” to look at each car on its own.', { a: names.a, b: names.b })}
               </div>
             </Panel>
           ) : view === 'cards' ? (
@@ -322,11 +323,11 @@ export default function Compare() {
         <div>
           <h1>{t('page.compare')}</h1>
         </div>
-        <div className="chips" role="radiogroup" aria-label="What to compare">
+        <div className="chips" role="radiogroup" aria-label={tr('What to compare')}>
           {(['cars', 'periods'] as const).map((m) => (
             <label key={m} className="preset">
               <input type="radio" name="cmp-mode" checked={mode === m} onChange={() => setMode(m)} />
-              <span>{m === 'cars' ? 'Two cars' : 'Two periods'}</span>
+              <span>{m === 'cars' ? tr('Two cars') : tr('Two periods')}</span>
             </label>
           ))}
         </div>

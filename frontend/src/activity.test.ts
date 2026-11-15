@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { ActivityPattern } from './api/types'
 import { ACTIVITY_NOTE, MIN_DAYS, busiestHours, hourBars, hourLabel, summaryLine, weekdayBars } from './activity'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
 
 const hours = (days: Record<number, number>): ActivityPattern['hours'] =>
   Array.from({ length: 24 }, (_, hour) => ({ hour, active_days: days[hour] ?? 0, warning_codes: 0, km: 0, drives: 0 }))
@@ -65,6 +66,10 @@ describe('the summary sentence', () => {
     const line = summaryLine(hourBars(p), weekdayBars(p))
     expect(line).toBe('Most days with activity fall around 11:00, 13:00 and 14:00. Sundays have activity on 19 of their 22 days.')
     expect(line).not.toMatch(/good|bad|worse|better|risk/i)
+    const portuguese = inPortuguese(() => summaryLine(hourBars(p), weekdayBars(p)))
+    expect(portuguese).not.toBe(line)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
   })
 
   it('says the note does not describe driving style', () => {

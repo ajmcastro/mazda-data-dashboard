@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useDay } from '../api/hooks'
 import { Badge, Panel, QueryState } from '../components/ui'
@@ -26,25 +26,24 @@ export default function DayPage() {
         <div>
           <h1>{day ? dayTitle(day) : t('page.day')}</h1>
           <p>
-            Everything the exports say about one day, in the car's own time{d ? ` (${d.time_zone})` : ''}. A drive and a fill-up are
-            known only as “between two status reports”.
+            {tr("Everything the exports say about one day, in the car's own time{zone}. A drive and a fill-up are known only as “between two status reports”.", { zone: d ? ` (${d.time_zone})` : '' })}
           </p>
         </div>
         {d && day && (
           <div className="controls">
             {d.previous ? (
-              <Link className="preset day-step" to={href(d.previous)} aria-label={`Previous day with data, ${dayShort(d.previous)}`}>
+              <Link className="preset day-step" to={href(d.previous)} aria-label={tr('Previous day with data, {day}', { day: dayShort(d.previous) })}>
                 <span>← {dayShort(d.previous)}</span>
               </Link>
             ) : (
-              <span className="preset day-step muted"><span>← none earlier</span></span>
+              <span className="preset day-step muted"><span>{tr('← none earlier')}</span></span>
             )}
             {d.next ? (
-              <Link className="preset day-step" to={href(d.next)} aria-label={`Next day with data, ${dayShort(d.next)}`}>
+              <Link className="preset day-step" to={href(d.next)} aria-label={tr('Next day with data, {day}', { day: dayShort(d.next) })}>
                 <span>{dayShort(d.next)} →</span>
               </Link>
             ) : (
-              <span className="preset day-step muted"><span>none later →</span></span>
+              <span className="preset day-step muted"><span>{tr('none later →')}</span></span>
             )}
           </div>
         )}
@@ -53,12 +52,12 @@ export default function DayPage() {
         {d && (
           <Panel>
             {!day ? (
-              <div className="state">No data yet.</div>
+              <div className="state">{tr('No data yet.')}</div>
             ) : d.entries.length === 0 ? (
               <div className="state">
-                Nothing in the exports for this day.
-                {d.previous && <> The day before with data is <Link to={href(d.previous)}>{dayShort(d.previous)}</Link>.</>}
-                {d.next && <> The next is <Link to={href(d.next)}>{dayShort(d.next)}</Link>.</>}
+                {tr('Nothing in the exports for this day.')}
+                {d.previous && <> {tr('The day before with data is')} <Link to={href(d.previous)}>{dayShort(d.previous)}</Link>.</>}
+                {d.next && <> {tr('The next is')} <Link to={href(d.next)}>{dayShort(d.next)}</Link>.</>}
               </div>
             ) : (
               <>
@@ -69,7 +68,7 @@ export default function DayPage() {
                     return (
                       <li key={`${e.kind}-${e.at}-${e.code ?? e.ref ?? i}`} className={`day-entry kind-${e.kind}`}>
                         <span className="day-time mono" title={when(e, day)}>{placedAt(e, day)}</span>
-                        <Badge kind={e.kind === 'alert' ? (e.severity ?? 'info') : 'dim'}>{KIND_LABEL[e.kind] ?? e.kind}</Badge>
+                        <Badge kind={e.kind === 'alert' ? (e.severity ?? 'info') : 'dim'}>{tr(KIND_LABEL[e.kind] ?? e.kind)}</Badge>
                         <span className="day-what">
                           {line.to ? <Link to={to(line.to, line.params)}>{line.title}</Link> : line.title}
                           {(line.detail || when(e, day) !== placedAt(e, day)) && (

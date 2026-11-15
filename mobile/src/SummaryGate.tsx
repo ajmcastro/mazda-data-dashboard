@@ -1,4 +1,6 @@
+import { tr } from '@frontend/i18n'
 import { useEffect, type ReactNode } from 'react'
+import { phoneText } from './messages'
 import { useController, useData } from './data'
 
 /**
@@ -18,11 +20,11 @@ export default function SummaryGate({ children }: { children: ReactNode }) {
   if (error && missing) {
     return (
       <div className="state error" role="alert">
-        {error}
-        <button type="button" className="linklike" onClick={() => controller.clearError()}>Dismiss</button>
+        {phoneText(error)}
+        <button type="button" className="linklike" onClick={() => controller.clearError()}>{tr('Dismiss')}</button>
       </div>
     )
   }
-  if (missing) return <div className="state" role="status">Preparing the figures of every car…</div>
+  if (missing) return <div className="state" role="status">{tr('Preparing the figures of every car…')}</div>
   return <>{children}</>
 }

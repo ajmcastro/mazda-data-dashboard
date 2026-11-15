@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useDiagCompare, useDiagFrames, useDiagHistory, useDiagReport, useDiagReports } from '../api/hooks'
@@ -55,19 +55,19 @@ export default function Diagnostics() {
   const s = r?.summary
 
   const obdCols: Column<ObdTest>[] = [
-    { key: 'id', header: 'Monitor', render: (t) => <span className="mono">{t.obdmid}/{t.test}</span>, sort: (t) => t.obdmid + t.test },
-    { key: 'ecu', header: 'ECU', render: (t) => t.ecu ?? '—' },
-    { key: 'val', header: 'Value', num: true, render: (t) => `${fmtNum(t.value, 2)}${t.unit ? ` ${t.unit}` : ''}` },
-    { key: 'range', header: 'Limits', num: true, render: (t) => `${fmtNum(t.min_value, 2)} … ${fmtNum(t.max_value, 2)}` },
+    { key: 'id', header: tr('Monitor'), render: (t) => <span className="mono">{t.obdmid}/{t.test}</span>, sort: (t) => t.obdmid + t.test },
+    { key: 'ecu', header: tr('ECU'), render: (t) => t.ecu ?? '—' },
+    { key: 'val', header: tr('Value'), num: true, render: (t) => `${fmtNum(t.value, 2)}${t.unit ? ` ${t.unit}` : ''}` },
+    { key: 'range', header: tr('Limits'), num: true, render: (t) => `${fmtNum(t.min_value, 2)} … ${fmtNum(t.max_value, 2)}` },
     { key: 'pos', header: '', render: (t) => <RangeBar t={t} /> },
-    { key: 'ok', header: 'Result', render: (t) => (t.in_range ? <Badge kind="ok">pass</Badge> : <Badge kind="critical">out of range</Badge>), sort: (t) => Number(t.in_range) },
+    { key: 'ok', header: tr('Result'), render: (t) => (t.in_range ? <Badge kind="ok">{tr('pass')}</Badge> : <Badge kind="critical">{tr('out of range')}</Badge>), sort: (t) => Number(t.in_range) },
   ]
   const deltaCols: Column<DiagDelta>[] = [
-    { key: 'sec', header: 'Section', render: (d) => <span className="muted">{d.section}</span> },
-    { key: 'key', header: 'Value', render: (d) => <span className="mono">{d.key}</span>, sort: (d) => d.key },
-    { key: 'a', header: 'Earlier report', num: true, render: (d) => fmtNum(d.a, 2, d.unit ?? '') },
-    { key: 'b', header: 'Later report', num: true, render: (d) => fmtNum(d.b, 2, d.unit ?? '') },
-    { key: 'd', header: 'Change', num: true, sort: (d) => Math.abs(d.delta), render: (d) => (d.delta > 0 ? '+' : '') + fmtNum(d.delta, 2) },
+    { key: 'sec', header: tr('Section'), render: (d) => <span className="muted">{d.section}</span> },
+    { key: 'key', header: tr('Value'), render: (d) => <span className="mono">{d.key}</span>, sort: (d) => d.key },
+    { key: 'a', header: tr('Earlier report'), num: true, render: (d) => fmtNum(d.a, 2, d.unit ?? '') },
+    { key: 'b', header: tr('Later report'), num: true, render: (d) => fmtNum(d.b, 2, d.unit ?? '') },
+    { key: 'd', header: tr('Change'), num: true, sort: (d) => Math.abs(d.delta), render: (d) => (d.delta > 0 ? '+' : '') + fmtNum(d.delta, 2) },
   ]
   const deltas = (compare.data ?? []).filter((d) => !onlyChanged || d.delta !== 0)
   const failed = (r?.obd_tests ?? []).filter((t) => t.in_range === false).length
@@ -80,14 +80,14 @@ export default function Diagnostics() {
           <h1>{t('page.diagnostics')}</h1>
           <p>
             {r
-              ? `Diagnostic tool report from ${fmtDateTime(r.info.taken_at)} at ${fmtDistance(r.info.odometer_km)}`
-              : 'The diagnostic report from your Mazda data download.'}
+              ? tr('Diagnostic tool report from {date} at {distance}', { date: fmtDateTime(r.info.taken_at), distance: fmtDistance(r.info.odometer_km) })
+              : tr('The diagnostic report from your Mazda data download.')}
           </p>
         </div>
         {list.length > 0 && (
           <div className="controls">
             <label>
-              Report
+              {tr('Report')}
               <select
                 className="report-select"
                 value={id}
@@ -102,7 +102,7 @@ export default function Diagnostics() {
             </label>
             {list.length > 1 && (
               <label>
-                Compare with
+                {tr('Compare with')}
                 <select
                   className="report-select"
                   value={compareWith ?? ''}
@@ -125,15 +125,15 @@ export default function Diagnostics() {
 
       {notFound && (
         <div className="alert-row warn" role="status" style={{ marginBottom: 14 }}>
-          <b>That report is not in the database</b>
-          <span className="muted">Showing the newest one instead.</span>
+          <b>{tr('That report is not in the database')}</b>
+          <span className="muted">{tr('Showing the newest one instead.')}</span>
         </div>
       )}
       {list.length === 1 && (
         <div className="alert-row" role="status" style={{ marginBottom: 14 }}>
-          <b>1 report loaded</b>
+          <b>{tr('1 report loaded')}</b>
           <span className="muted">
-            Put more diagnostic-tool <span className="mono">*diag-tool*.txt</span> files in <span className="mono">data/</span> and run <span className="mono">make ingest</span> to compare reports over time.
+            {tr('Put more diagnostic-tool')} <span className="mono">*diag-tool*.txt</span> {tr('files in')} <span className="mono">data/</span> {tr('and run')} <span className="mono">make ingest</span> {tr('to compare reports over time.')}
           </span>
         </div>
       )}
@@ -142,7 +142,7 @@ export default function Diagnostics() {
         {list.length === 0 ? (
           <Panel>
             <div className="state">
-              No diagnostic-tool report found. Put the tool's <span className="mono">*diag-tool*.txt</span> file in <span className="mono">data/</span> and run <span className="mono">make ingest</span>.
+              {tr('No diagnostic-tool report found. Put the tool\'s')} <span className="mono">*diag-tool*.txt</span> {tr('file in')} <span className="mono">data/</span> {tr('and run')} <span className="mono">make ingest</span>.
             </div>
           </Panel>
         ) : (
@@ -150,10 +150,10 @@ export default function Diagnostics() {
             {r && (
               <>
                 <div className="grid cols-4">
-                  <Stat label="Lifetime economy" value={fmtConsumption(s?.lifetime_l_per_100km, 2)} unit={consumptionLabel()} sub={`${fmtNum(s?.lifetime_fuel_l, 0)} l over ${fmtDistance(s?.lifetime_km, 0, false)} ${distanceLabel()}`} />
-                  <Stat label="Since last reset" value={fmtConsumption(s?.recent_l_per_100km, 2)} unit={consumptionLabel()} sub={`${fmtNum(s?.recent_fuel_l, 1)} l over ${fmtDistance(s?.recent_km, 0, false)} ${distanceLabel()}`} />
-                  <Stat label="Engine running" value={fmtNum(s?.engine_hours, 0)} unit="h" sub={`${fmtNum(s?.ignition_cycles)} ignition cycles`} />
-                  <Stat label="Emission monitors" value={`${r.obd_tests.length - failed}/${r.obd_tests.length}`} unit="pass" sub={`${activeAes} of ${r.aes.length} AES active`} alert={failed > 0} />
+                  <Stat label={tr('Lifetime economy')} value={fmtConsumption(s?.lifetime_l_per_100km, 2)} unit={consumptionLabel()} sub={tr('{litres} l over {distance}', { litres: fmtNum(s?.lifetime_fuel_l, 0), distance: `${fmtDistance(s?.lifetime_km, 0, false)} ${distanceLabel()}` })} />
+                  <Stat label={tr('Since last reset')} value={fmtConsumption(s?.recent_l_per_100km, 2)} unit={consumptionLabel()} sub={tr('{litres} l over {distance}', { litres: fmtNum(s?.recent_fuel_l, 1), distance: `${fmtDistance(s?.recent_km, 0, false)} ${distanceLabel()}` })} />
+                  <Stat label={tr('Engine running')} value={fmtNum(s?.engine_hours, 0)} unit="h" sub={tr('{n} ignition cycles', { n: fmtNum(s?.ignition_cycles) })} />
+                  <Stat label={tr('Emission monitors')} value={`${r.obd_tests.length - failed}/${r.obd_tests.length}`} unit={tr('pass')} sub={tr('{n} of {total} AES active', { n: activeAes, total: r.aes.length })} alert={failed > 0} />
                 </div>
 
                 <ReportHistory
@@ -166,7 +166,7 @@ export default function Diagnostics() {
                   <Panel title={`Change: ${fmtDateTime(earlierInfo?.taken_at)} → ${fmtDateTime(laterInfo?.taken_at)}`} hint={
                     <label className="toggle">
                       <input type="checkbox" checked={onlyChanged} onChange={(e) => setOnlyChanged(e.target.checked)} />
-                      only changed values
+                      {tr('only changed values')}
                     </label>
                   }>
                     <QueryState query={compare}>
@@ -176,10 +176,10 @@ export default function Diagnostics() {
                 )}
 
                 <div className="grid split" style={{ marginTop: 14 }}>
-                  <Panel title="Emission monitors" hint="Mode 6 results; a value outside its limits is a failed test">
+                  <Panel title={tr('Emission monitors')} hint={tr('Mode 6 results; a value outside its limits is a failed test')}>
                     <DataTable rows={r.obd_tests} columns={obdCols} rowKey={(t) => `${t.ecu}|${t.obdmid}|${t.test}`} />
                   </Panel>
-                  <Panel title="Stored fault lists" hint="from the tool, per control unit">
+                  <Panel title={tr('Stored fault lists')} hint={tr('from the tool, per control unit')}>
                     <div className="stack">
                       {r.dtc_lists.map((g) => (
                         <div key={`${g.list_name}-${g.ecu}`}>
@@ -188,7 +188,7 @@ export default function Diagnostics() {
                           </div>
                           <div className="chips">
                             {g.dtcs.map((d) => (
-                              <span key={d.dtc_code + d.failure_type} className="chip" title={d.title ?? 'no description yet'}>
+                              <span key={d.dtc_code + d.failure_type} className="chip" title={d.title ?? tr('no description yet')}>
                                 {d.dtc_code}:{d.failure_type}
                               </span>
                             ))}
@@ -199,7 +199,7 @@ export default function Diagnostics() {
                   </Panel>
                 </div>
 
-                <Panel title="Counters" hint="engine and driving data stored in the engine control unit">
+                <Panel title={tr('Counters')} hint={tr('engine and driving data stored in the engine control unit')}>
                   <div className="sections">
                     {r.sections
                       .filter((sec) => sec.items.length > 0)
@@ -221,14 +221,14 @@ export default function Diagnostics() {
                   </div>
                 </Panel>
 
-                <Panel title="Freeze frames recorded by the tool" hint="state of the car when each fault was set">
+                <Panel title={tr('Freeze frames recorded by the tool')} hint={tr('state of the car when each fault was set')}>
                   <QueryState query={frames}>
                     <div className="sections">
                       {(frames.data ?? []).map((f) => (
                         <details key={`${f.ecu}-${f.dtc_code}-${f.record_number}`}>
                           <summary>
-                            <span className="mono">{f.dtc_code}:{f.failure_type}</span> on {f.ecu}{' '}
-                            <span className="muted mono">record {f.record_number}</span>
+                            <span className="mono">{f.dtc_code}:{f.failure_type}</span> {tr('on {unit}', { unit: f.ecu ?? '' })}{' '}
+                            <span className="muted mono">{tr('record {n}', { n: f.record_number ?? '' })}</span>
                           </summary>
                           <dl className="kv">
                             {f.signals.map((sig) => (

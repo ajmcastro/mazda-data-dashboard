@@ -4,9 +4,9 @@ import { dayTitle } from '../day'
 import { monthLabel } from '../trends'
 import { en } from './en'
 import { pt } from './pt'
-import { LANGS, getLang, langName, locale, parseLang, setLang, t } from './index'
+import { CHOICES, LANGS, fromBrowser, getChoice, getLang, langName, locale, parseChoice, parseLang, resolveLang, setLang, t } from './index'
 
-afterEach(() => setLang('en'))
+afterEach(() => setLang('auto'))
 
 describe('the catalogues', () => {
   it('have the same keys, and no empty phrase', () => {
@@ -25,11 +25,32 @@ describe('the catalogues', () => {
 })
 
 describe('the language of this device', () => {
-  it('is English unless Portuguese is chosen, and never guessed', () => {
+  it('is Auto until chosen, and Auto is English where there is no browser to ask', () => {
+    expect(getChoice()).toBe('auto')
     expect(getLang()).toBe('en')
     expect([parseLang('pt'), parseLang('pt-BR'), parseLang(null), parseLang('auto'), parseLang('fr')]).toEqual(['pt', 'en', 'en', 'en', 'en'])
+    expect([parseChoice('pt'), parseChoice('en'), parseChoice(null), parseChoice('auto'), parseChoice('fr')]).toEqual(['pt', 'en', 'auto', 'auto', 'auto'])
     expect(LANGS).toEqual(['en', 'pt'])
+    expect(CHOICES).toEqual(['auto', 'en', 'pt'])
     expect([langName('en'), langName('pt')]).toEqual(['English', 'Português'])
+  })
+  it('follows the browser on Auto: the first of its languages that is Portuguese or English', () => {
+    expect(fromBrowser(['pt-PT', 'en'])).toBe('pt')
+    expect(fromBrowser(['pt-BR'])).toBe('pt')
+    expect(fromBrowser(['en-GB', 'pt-PT'])).toBe('en')
+    expect(fromBrowser(['fr-FR', 'pt', 'en'])).toBe('pt')
+    expect(fromBrowser(['de-DE', 'fr'])).toBe('en')
+    expect(fromBrowser([])).toBe('en')
+    expect(fromBrowser(['ptx'])).toBe('en') // not Portuguese: the tag must be pt or pt-something
+    expect(resolveLang('auto', ['pt-PT'])).toBe('pt')
+    expect(resolveLang('en', ['pt-PT'])).toBe('en') // a choice beats the browser
+    expect(resolveLang('pt', ['en-GB'])).toBe('pt')
+  })
+  it('remembers the choice and can go back to Auto', () => {
+    setLang('pt')
+    expect([getChoice(), getLang()]).toEqual(['pt', 'pt'])
+    setLang('auto')
+    expect([getChoice(), getLang()]).toEqual(['auto', 'en'])
   })
   it('translates a phrase and fills its placeholders', () => {
     expect(t('nav.faults')).toBe('Faults')

@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { Link } from 'react-router-dom'
 import { useRefuels } from '../api/hooks'
 import { useDayHref } from '../range'
@@ -15,28 +16,28 @@ export function FillUpsPanel() {
   const d = query.data
   const columns: Column<Refuel>[] = [
     {
-      key: 'when', header: 'Seen by', sort: (r) => r.after_at,
+      key: 'when', header: tr('Seen by'), sort: (r) => r.after_at,
       render: (r) => (
         <span title={between(r)}>
-          <Link to={dayHref(r.after_at.slice(0, 10))}>{fmtDate(r.after_at)}</Link> {r.doubtful && <Badge kind="warning">doubtful</Badge>}
+          <Link to={dayHref(r.after_at.slice(0, 10))}>{fmtDate(r.after_at)}</Link> {r.doubtful && <Badge kind="warning">{tr('doubtful')}</Badge>}
         </span>
       ),
     },
-    { key: 'level', header: 'Fuel level', num: true, sort: (r) => r.points, render: (r) => levels(r) },
-    { key: 'amount', header: 'Filled', num: true, sort: (r) => r.litres ?? r.points, render: (r) => amount(r) },
-    { key: 'since', header: 'Since the one before', num: true, sort: (r) => r.km_since_previous ?? -1, render: (r) => sincePrevious(r) },
+    { key: 'level', header: tr('Fuel level'), num: true, sort: (r) => r.points, render: (r) => levels(r) },
+    { key: 'amount', header: tr('Filled'), num: true, sort: (r) => r.litres ?? r.points, render: (r) => amount(r) },
+    { key: 'since', header: tr('Since the one before'), num: true, sort: (r) => r.km_since_previous ?? -1, render: (r) => sincePrevious(r) },
     {
-      key: 'cost', header: 'Estimated cost', num: true, sort: (r) => r.est_cost ?? -1,
+      key: 'cost', header: tr('Estimated cost'), num: true, sort: (r) => r.est_cost ?? -1,
       render: (r) => (r.est_cost == null ? '—' : `${fmtNum(r.est_cost, 2)}${d?.currency ? ` ${d.currency}` : ''}`),
     },
-    { key: 'paid', header: 'Paid', num: true, sort: (r) => r.paid ?? -1, render: (r) => paidCell(r, d?.currency) },
+    { key: 'paid', header: tr('Paid'), num: true, sort: (r) => r.paid ?? -1, render: (r) => paidCell(r, d?.currency) },
   ]
   const doubts = (d?.refuels ?? []).flatMap((r) => {
     const why = doubt(r, d?.min_points ?? 15)
     return why ? [`${fmtDate(r.after_at)}: ${why}.`] : []
   })
   return (
-    <Panel title="Fill-ups" hint="rises of the fuel level between two status reports">
+    <Panel title={tr('Fill-ups')} hint={tr('rises of the fuel level between two status reports')}>
       <QueryState query={query}>
         {d && (
           <>
@@ -48,14 +49,14 @@ export function FillUpsPanel() {
             ))}
             {d.unmatched.length > 0 && (
               <p className="muted note">
-                Payments in your fuel log with no fill-up seen around their date:{' '}
+                {tr('Payments in your fuel log with no fill-up seen around their date:')}{' '}
                 {d.unmatched.map((p) => `${fmtDate(p.paid_on)} (${fmtNum(p.paid, 2)}${d.currency ? ` ${d.currency}` : ''})`).join(', ')}.
               </p>
             )}
             {d.refuels.length > 0 && (
               <ul className="car-notes muted">
                 {REFUEL_NOTES.map((n) => (
-                  <li key={n}>{n}</li>
+                  <li key={n}>{tr(n)}</li>
                 ))}
               </ul>
             )}

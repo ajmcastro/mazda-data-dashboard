@@ -1,6 +1,7 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { alertDetail, alertTitle, ruleName } from '../alerttext'
 import { alertPart, partName } from '../car'
 import { useAcknowledge, useAcknowledgeAll, useAlerts } from '../api/hooks'
 import type { Alert } from '../api/types'
@@ -17,20 +18,20 @@ function AlertCard({ alert, onAck, busy }: { alert: Alert; onAck?: () => void; b
     <article className={`alert-card ${alert.severity}`}>
       <div className="alert-main">
         <div className="alert-title">
-          <Badge kind={KIND[alert.severity] ?? 'dim'}>{alert.severity}</Badge>
-          <b>{alert.title}</b>
+          <Badge kind={KIND[alert.severity] ?? 'dim'}>{tr(alert.severity)}</Badge>
+          <b>{alertTitle(alert.title)}</b>
         </div>
-        {alert.detail && <p>{alert.detail}</p>}
+        {alert.detail && <p>{alertDetail(alert.detail)}</p>}
         <div className="alert-meta mono">
-          {fmtDateTime(alert.occurred_at)} · {alert.rule.replaceAll('_', ' ')}
-          {alert.acknowledged_at && ` · acknowledged ${fmtDateTime(alert.acknowledged_at)}`}
+          {fmtDateTime(alert.occurred_at)} · {ruleName(alert.rule)}
+          {alert.acknowledged_at && ` · ${tr('acknowledged {at}', { at: fmtDateTime(alert.acknowledged_at) })}`}
         </div>
       </div>
       <div className="alert-actions">
-        {alert.link && alert.link !== '/alerts' && <RangeLink to={alert.link}>View →</RangeLink>}
+        {alert.link && alert.link !== '/alerts' && <RangeLink to={alert.link}>{tr('View →')}</RangeLink>}
         {onAck && (
           <button onClick={onAck} disabled={busy}>
-            Acknowledge
+            {tr('Acknowledge')}
           </button>
         )}
       </div>
@@ -61,33 +62,33 @@ export default function Alerts() {
         <div>
           <h1>{t('page.alerts')}</h1>
           <p>
-            Raised by the rules in <span className="mono">config/models/{id}/alerts.yaml</span> each time you run{' '}
-            <span className="mono">make ingest</span>. Acknowledged alerts are not raised again.
+            {tr('Raised by the rules in')} <span className="mono">config/models/{id}/alerts.yaml</span> {tr('each time you run')}{' '}
+            <span className="mono">make ingest</span>{tr('. Acknowledged alerts are not raised again.')}
           </p>
           {unitsKey() !== unitsKey(DEFAULT_UNITS) && (
             <p className="muted" style={{ fontSize: 12 }}>
-              An alert's text is written when the data is loaded, so its figures stay in kPa, km and l/100 km whatever units you chose.
+              {tr('An alert\'s text is written when the data is loaded, so its figures stay in kPa, km and l/100 km whatever units you chose.')}
             </p>
           )}
         </div>
         {tab === 'new' && list.length > 1 && !part && (
           <button onClick={() => ackAll.mutate()} disabled={ackAll.isPending}>
-            Acknowledge all
+            {tr('Acknowledge all')}
           </button>
         )}
       </div>
 
       {part && (
         <div className="alert-row" style={{ marginBottom: 14 }}>
-          <b>About: {partName(part)}</b>
-          <span className="muted">only the alerts that are about this part of the car</span>
-          <button type="button" className="when" onClick={showAll}>Show all</button>
+          <b>{tr('About: {part}', { part: partName(part) ?? '' })}</b>
+          <span className="muted">{tr('only the alerts that are about this part of the car')}</span>
+          <button type="button" className="when" onClick={showAll}>{tr('Show all')}</button>
         </div>
       )}
       <div className="chips" role="tablist" style={{ marginBottom: 14 }}>
         {(['new', 'acknowledged'] as const).map((t) => (
           <button key={t} role="tab" aria-selected={tab === t} className={`chip ${tab === t ? 'on' : ''}`} onClick={() => setTab(t)}>
-            {t}
+            {tr(t)}
           </button>
         ))}
       </div>
@@ -101,7 +102,7 @@ export default function Alerts() {
       <QueryState query={alerts}>
         {list.length === 0 ? (
           <Panel>
-            <div className="state">{part ? `No ${tab === 'new' ? 'open' : 'acknowledged'} alert about this part.` : tab === 'new' ? 'All clear: no unacknowledged alerts.' : 'Nothing acknowledged yet.'}</div>
+            <div className="state">{part ? (tab === 'new' ? tr('No open alert about this part.') : tr('No acknowledged alert about this part.')) : tab === 'new' ? tr('All clear: no unacknowledged alerts.') : tr('Nothing acknowledged yet.')}</div>
           </Panel>
         ) : (
           <div className="stack">

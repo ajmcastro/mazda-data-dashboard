@@ -6,7 +6,7 @@ import type { Key } from './en'
 export const pt: Record<Key, string> = {
   'lang.name': 'Português',
   'lang.label': 'Idioma',
-  'lang.partial': 'em curso: menus, títulos das páginas e datas',
+  'lang.auto': 'Auto',
 
   'nav.overview': 'Resumo',
   'nav.trends': 'Tendências',

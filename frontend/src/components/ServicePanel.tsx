@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAddServiceEntry, useServiceLog, useWritable } from '../api/hooks'
@@ -22,20 +23,20 @@ export function ServicePanel() {
   const wrong = draft ? problems(draft, kinds) : []
   const file = `config/models/${id}/service_log.yaml`
   const columns: Column<ServiceEntry>[] = [
-    { key: 'date', header: 'Day', sort: (e) => e.date, render: (e) => <Link to={dayHref(e.date)}>{fmtDate(e.date)}</Link> },
-    { key: 'kind', header: 'Kind', sort: (e) => e.kind, render: (e) => <Badge kind="dim">{kindLabel(e.kind)}</Badge> },
-    { key: 'note', header: 'Note', render: (e) => <span style={{ whiteSpace: 'normal' }}>{e.note}</span> },
-    { key: 'odo', header: 'Odometer', num: true, sort: (e) => e.odometer_km ?? -1, render: (e) => fmtDistance(e.odometer_km) },
+    { key: 'date', header: tr('Day'), sort: (e) => e.date, render: (e) => <Link to={dayHref(e.date)}>{fmtDate(e.date)}</Link> },
+    { key: 'kind', header: tr('Kind'), sort: (e) => e.kind, render: (e) => <Badge kind="dim">{kindLabel(e.kind)}</Badge> },
+    { key: 'note', header: tr('Note'), render: (e) => <span style={{ whiteSpace: 'normal' }}>{e.note}</span> },
+    { key: 'odo', header: tr('Odometer'), num: true, sort: (e) => e.odometer_km ?? -1, render: (e) => fmtDistance(e.odometer_km) },
   ]
   const set = (patch: Partial<Draft>) => setDraft((now) => ({ ...(now ?? EMPTY_DRAFT), ...patch }))
   return (
     <Panel
-      title="Service log"
+      title={tr('Service log')}
       hint={
         writable ? (
-          <button type="button" onClick={() => setDraft(draft ? null : EMPTY_DRAFT)}>{draft ? 'Cancel' : 'Add an entry'}</button>
+          <button type="button" onClick={() => setDraft(draft ? null : EMPTY_DRAFT)}>{draft ? tr('Cancel') : tr('Add an entry')}</button>
         ) : (
-          'what you noted was done to the car'
+          tr('what you noted was done to the car')
         )
       }
     >
@@ -50,26 +51,26 @@ export function ServicePanel() {
                   if (wrong.length === 0) add.mutate(toEntry(draft), { onSuccess: () => setDraft(null) })
                 }}
               >
-                <label>Day <input type="date" value={draft.date} onChange={(ev) => set({ date: ev.target.value })} required /></label>
+                <label>{tr('Day')} <input type="date" value={draft.date} onChange={(ev) => set({ date: ev.target.value })} required /></label>
                 <label>
-                  Kind{' '}
+                  {tr('Kind')}{' '}
                   <select value={draft.kind} onChange={(ev) => set({ kind: ev.target.value })}>
                     {kinds.map((k) => (
                       <option key={k} value={k}>{kindLabel(k)}</option>
                     ))}
                   </select>
                 </label>
-                <label className="grow">Note <input type="text" value={draft.note} maxLength={200} onChange={(ev) => set({ note: ev.target.value })} placeholder="what was done" /></label>
-                <label>Odometer (kilometres, optional) <input type="number" min={0} value={draft.odometer} onChange={(ev) => set({ odometer: ev.target.value })} /></label>
-                <button type="submit" disabled={wrong.length > 0 || add.isPending}>Save to the log</button>
+                <label className="grow">{tr('Note')} <input type="text" value={draft.note} maxLength={200} onChange={(ev) => set({ note: ev.target.value })} placeholder={tr('what was done')} /></label>
+                <label>{tr('Odometer (kilometres, optional)')} <input type="number" min={0} value={draft.odometer} onChange={(ev) => set({ odometer: ev.target.value })} /></label>
+                <button type="submit" disabled={wrong.length > 0 || add.isPending}>{tr('Save to the log')}</button>
                 {(draft.note !== '' || draft.date !== '') && wrong.map((w) => <p key={w} className="muted note">{w}</p>)}
                 {add.isError && <p className="note" style={{ color: 'var(--accent)' }}>{add.error.message}</p>}
-                <p className="muted note">Saved as one line at the end of <span className="mono">{file}</span>; nothing else in the file changes.</p>
+                <p className="muted note">{tr('Saved as one line at the end of')} <span className="mono">{file}</span>; {tr('nothing else in the file changes.')}</p>
               </form>
             )}
             {d.entries.length === 0 ? (
               <p className="muted" style={{ margin: 0 }}>
-                Nothing noted yet. {writable ? 'Use “Add an entry”, or keep' : 'Keep'} a list in <span className="mono">{file}</span> and run{' '}
+                {tr('Nothing noted yet.')} {writable ? tr('Use “Add an entry”, or keep a list in') : tr('Keep a list in')} <span className="mono">{file}</span> {tr('and run')}{' '}
                 <span className="mono">make model</span>.
               </p>
             ) : (
@@ -77,13 +78,13 @@ export function ServicePanel() {
             )}
             {d.suggestions.length > 0 && (
               <>
-                <h3 className="sub-head" style={{ margin: '16px 0 6px' }}>Not in the log</h3>
+                <h3 className="sub-head" style={{ margin: '16px 0 6px' }}>{tr('Not in the log')}</h3>
                 <ul className="service-suggestions">
                   {d.suggestions.map((s) => (
                     <li key={`${s.reason}|${s.date}`}>
                       {suggestionText(s)}{' '}
                       {writable ? (
-                        <button type="button" onClick={() => setDraft(draftFrom(s))}>Add it</button>
+                        <button type="button" onClick={() => setDraft(draftFrom(s))}>{tr('Add it')}</button>
                       ) : (
                         <span className="mono muted">{yamlLine({ ...s, note: '' })}</span>
                       )}
@@ -91,8 +92,8 @@ export function ServicePanel() {
                   ))}
                 </ul>
                 <p className="muted note">
-                  These are hints from the data, never entries: nothing is added unless you add it
-                  {writable ? '.' : <> (paste the line into <span className="mono">{file}</span>, write the note, run <span className="mono">make model</span> and make a new pack).</>}
+                  {tr('These are hints from the data, never entries: nothing is added unless you add it')}
+                  {writable ? '.' : <> {tr('(paste the line into')} <span className="mono">{file}</span>{tr(', write the note, run')} <span className="mono">make model</span> {tr('and make a new pack).')}</>}
                 </p>
               </>
             )}

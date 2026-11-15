@@ -1,7 +1,7 @@
 // Formatting helpers. Timestamps come from the API as ISO strings in UTC and render in
 // the browser's local timezone.
 
-import { locale } from './i18n'
+import { locale, msg, tr, trn } from './i18n'
 import { distanceText, fmtDistance } from './units'
 import type { CarWarningFlag, LatestStatus, OilService, TireReading, WarningFlag, WarningFlagEpisode } from './api/types'
 
@@ -58,11 +58,11 @@ export function fmtDateTimeSec(iso: string | null | undefined): string {
 export function fmtAgo(iso: string | null | undefined, now = Date.now()): string {
   if (!iso) return '—'
   const minutes = Math.floor((now - new Date(iso).getTime()) / 60000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes} min ago`
+  if (minutes < 1) return tr('just now')
+  if (minutes < 60) return tr('{n} min ago', { n: minutes })
   const hours = Math.round(minutes / 60)
-  if (hours < 48) return `${hours} h ago`
-  return `${Math.round(hours / 24)} days ago`
+  if (hours < 48) return tr('{n} h ago', { n: hours })
+  return tr('{n} days ago', { n: Math.round(hours / 24) })
 }
 
 export const ts = (iso: string): number => new Date(iso).getTime()
@@ -92,6 +92,11 @@ export function pivotDaily(
   }
   return out
 }
+
+/** The severity words a code or an alert carries, declared so they are translated where shown (`tr(severity)`). */
+export const SEVERITY_WORDS = [msg('critical'), msg('warning'), msg('info'), msg('unknown')]
+/** The states an alert is listed under. */
+export const ALERT_TABS = [msg('new'), msg('acknowledged')]
 
 export const SEVERITY_BADGE: Record<string, string> = {
   critical: 'critical',
@@ -240,7 +245,7 @@ export function pickReport<T extends { report_id: string }>(
 export function reportLabel(r: { taken_at?: string | null; odometer_km?: number | null; source_file: string }): string {
   const when = r.taken_at
     ? new Date(r.taken_at).toLocaleString(locale(), { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : 'unknown date'
+    : tr('unknown date')
   return `${when} · ${fmtDistance(r.odometer_km)} · ${r.source_file}`
 }
 
@@ -250,9 +255,9 @@ export const OIL_SOON_KM = 1000
 /** Wording for the oil-change tile. The number is the car's own, not a calculation. */
 export function oilTile(o: OilService | undefined): { value: string; sub: string; soon: boolean } | null {
   if (!o?.has_data || o.remaining_km === null || o.remaining_km === undefined) return null
-  const parts = [`reported ${fmtDate(o.read_at)}${o.odometer_km != null ? ` at ${distanceText(o.odometer_km)}` : ''}`]
-  if (o.km_since_reading != null && o.km_since_reading >= 50) parts.push(`${distanceText(o.km_since_reading)} driven since`)
-  parts.push('the car counts in steps of 1,000 km or more')
+  const parts = [`${tr('reported {date}', { date: fmtDate(o.read_at) })}${o.odometer_km != null ? ` ${tr('at {distance}', { distance: distanceText(o.odometer_km) })}` : ''}`]
+  if (o.km_since_reading != null && o.km_since_reading >= 50) parts.push(tr('{distance} driven since', { distance: distanceText(o.km_since_reading) }))
+  parts.push(tr('the car counts in steps of 1,000 km or more'))
   return { value: fmtDistance(o.remaining_km, 0, false), sub: parts.join(' · '), soon: o.remaining_km <= OIL_SOON_KM }
 }
 
@@ -260,25 +265,25 @@ export function oilTile(o: OilService | undefined): { value: string; sub: string
 export function carWarningHeadline(flags: readonly CarWarningFlag[] | undefined): string | null {
   const on = (flags ?? []).filter((f) => f.is_on)
   if (on.length === 0) return null
-  if (on.length === 1) return `The car reports a warning: ${on[0].label}`
-  return `The car reports ${on.length} warnings: ${on.map((f) => f.label).join('; ')}`
+  if (on.length === 1) return tr('The car reports a warning: {label}', { label: tr(on[0].label) })
+  return tr('The car reports {n} warnings: {labels}', { n: on.length, labels: on.map((f) => tr(f.label)).join('; ') })
 }
 
 /** "8 min", "3 h 05 min", "2.6 days": how old something is. */
 export function fmtAge(minutes: number | null | undefined): string {
-  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return 'unknown'
-  if (Math.abs(minutes) < 1) return 'under a minute'
+  if (minutes === null || minutes === undefined || Number.isNaN(minutes)) return tr('unknown')
+  if (Math.abs(minutes) < 1) return tr('under a minute')
   const total = Math.round(Math.abs(minutes)) // whole minutes first, so 59.6 becomes "1 h 00 min", not "60 min"
   if (total < 60) return `${total} min`
   if (total < 48 * 60) return `${Math.floor(total / 60)} h ${String(total % 60).padStart(2, '0')} min`
-  return `${(total / 1440).toFixed(1)} days`
+  return tr('{n} days', { n: (total / 1440).toFixed(1) })
 }
 
 /** What the tire panel says about the measurement behind the pressures it shows. */
 export function tireMeasuredNote(s: LatestStatus | undefined): { text: string; stale: boolean } | null {
   if (!s || s.tire_fl_kpa == null) return null
-  if (!s.tire_measured_at) return { text: 'measurement time unknown', stale: false }
-  const text = `measured ${fmtDateTime(s.tire_measured_at)}, ${fmtAge(s.tire_age_minutes)} before this snapshot`
+  if (!s.tire_measured_at) return { text: tr('measurement time unknown'), stale: false }
+  const text = tr('measured {at}, {age} before this snapshot', { at: fmtDateTime(s.tire_measured_at), age: fmtAge(s.tire_age_minutes) })
   return { text, stale: s.tire_stale === true }
 }
 
@@ -288,16 +293,16 @@ export function tireReadingsNote(readings: readonly TireReading[] | undefined): 
   const stale = readings.filter((r) => r.stale).length
   const unknown = readings.filter((r) => !r.time_known).length
   const parts = [
-    `${readings.length} measurement${readings.length === 1 ? '' : 's'}, each at the time the car took it`,
+    trn('{n} measurement, each at the time the car took it', '{n} measurements, each at the time the car took it', readings.length),
   ]
-  if (stale) parts.push(`${stale} still shown by the car long after (stale, see tire_stale_hours in the model's settings.yaml)`)
-  if (unknown) parts.push(`${unknown} without a valid measurement time (placed at the snapshot time)`)
+  if (stale) parts.push(tr("{n} still shown by the car long after (stale, see tire_stale_hours in the model's settings.yaml)", { n: stale }))
+  if (unknown) parts.push(tr('{n} without a valid measurement time (placed at the snapshot time)', { n: unknown }))
   return parts.join('; ')
 }
 
 /** What to call a warning-lamp flag: your description, or where it sits (the car's names are bit numbers). */
 export function lampLabel(f: Pick<WarningFlag, 'title' | 'area' | 'bit'>): string {
-  return f.title ?? `${f.area === 'powertrain' ? 'Power train' : 'Body'} flag ${f.bit}`
+  return f.title ?? (f.area === 'powertrain' ? tr('Power train flag {bit}', { bit: f.bit }) : tr('Body flag {bit}', { bit: f.bit }))
 }
 
 /** Bars of a flag's timeline as percentages of the data span; a bar is never thinner than `minWidth` %. */
@@ -321,7 +326,7 @@ export function lampBars(
 /** "69% of the readings with it on, 58% with it off" for a hint. */
 export function fmtShares(on: number | null | undefined, off: number | null | undefined): string {
   const pct = (v: number | null | undefined) => `${Math.round((v ?? 0) * 100)}%`
-  return `near in ${pct(on)} of the readings with the flag on, ${pct(off)} with it off`
+  return tr('near in {on} of the readings with the flag on, {off} with it off', { on: pct(on), off: pct(off) })
 }
 
 // ---- car models ----
@@ -389,4 +394,10 @@ export function rangeForModel(range: DayRange, from: Span, to: Span): DayRange {
   const start = range.from && range.from > to.first ? range.from : to.first
   const end = range.to && range.to < to.last ? range.to : to.last
   return start > end ? {} : { from: start, to: end }
+}
+
+/** "a", "a and b", "a, b and c", in the reader's language. */
+export function andList(items: readonly string[]): string {
+  if (items.length <= 1) return items.join('')
+  return tr('{list} and {last}', { list: items.slice(0, -1).join(', '), last: items[items.length - 1] })
 }

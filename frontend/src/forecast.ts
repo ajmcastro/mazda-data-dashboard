@@ -1,6 +1,7 @@
 // Pure wording of the maintenance and mileage forecast (PLAN.md M52), and its calendar file. No React in here.
 // Every date is "at the recent pace" and counted from the newest day with data, which the text says.
 
+import { tr } from './i18n'
 import type { Forecast, TireForecast } from './api/types'
 import { fmtDate } from './lib'
 import { WHEEL_NAME } from './tires'
@@ -11,24 +12,24 @@ const has = (v: number | null | undefined): v is number => v !== null && v !== u
 /** "around 25 Jun 2026" or "between 25 Jun 2026 and 02 Aug 2026"; null without a date. */
 export function dateSpan(first: string | null | undefined, last: string | null | undefined): string | null {
   if (!first) return null
-  return !last || last === first ? `around ${fmtDate(first)}` : `between ${fmtDate(first)} and ${fmtDate(last)}`
+  return !last || last === first ? tr('around {date}', { date: fmtDate(first) }) : tr('between {a} and {b}', { a: fmtDate(first), b: fmtDate(last) })
 }
 
 /** The pace behind the dates: "40 km a day over the last 30 days, 27 km over the last 90". */
 export function paceText(f: Forecast): string | null {
   const parts: string[] = []
-  if (has(f.km_per_day_30d)) parts.push(`${distanceText(f.km_per_day_30d)} a day over the last 30 days`)
-  if (has(f.km_per_day_90d)) parts.push(`${distanceText(f.km_per_day_90d)} a day over the last 90`)
+  if (has(f.km_per_day_30d)) parts.push(tr('{distance} a day over the last 30 days', { distance: distanceText(f.km_per_day_30d) }))
+  if (has(f.km_per_day_90d)) parts.push(tr('{distance} a day over the last 90', { distance: distanceText(f.km_per_day_90d) }))
   return parts.length ? parts.join(', ') : null
 }
 
 /** The oil change in words; null for a car that sends no countdown. */
 export function oilAhead(f: Forecast | undefined): string | null {
   if (!f?.has_data || !has(f.oil_left_km)) return null
-  const left = `${distanceText(f.oil_left_km)} left on the car's oil countdown`
+  const left = tr("{distance} left on the car's oil countdown", { distance: distanceText(f.oil_left_km) })
   const when = dateSpan(f.oil_date_first, f.oil_date_last)
-  if (!when) return `${left[0].toUpperCase()}${left.slice(1)}. The recent driving gives no date for it (too little driving, or too little data).`
-  return `Oil change ${when} at your recent pace: ${left}, ${paceText(f)}.`
+  if (!when) return `${left[0].toUpperCase()}${left.slice(1)}. ${tr('The recent driving gives no date for it (too little driving, or too little data).')}`
+  return tr('Oil change {when} at your recent pace: {left}, {pace}.', { when, left, pace: paceText(f) ?? '' })
 }
 
 /** The year's distance in words; null without any pace. */
@@ -36,29 +37,35 @@ export function yearAhead(f: Forecast | undefined): string | null {
   if (!f?.has_data) return null
   if (f.year_start && has(f.year_km)) {
     const since = f.year_counted_from
-      ? `since ${fmtDate(f.year_counted_from)}, where your data starts (the year began ${fmtDate(f.year_start)})`
-      : `since ${fmtDate(f.year_start)}`
-    let text = `${distanceText(f.year_km)} so far this year (${since})`
+      ? tr('since {from}, where your data starts (the year began {start})', { from: fmtDate(f.year_counted_from), start: fmtDate(f.year_start) })
+      : tr('since {date}', { date: fmtDate(f.year_start) })
+    let text = tr('{distance} so far this year ({since})', { distance: distanceText(f.year_km), since })
     if (has(f.year_projected_km) && f.year_end) {
-      text += `; at the recent pace about ${distanceText(f.year_projected_km)} by ${fmtDate(f.year_end)}`
+      text += `; ${tr('at the recent pace about {distance} by {date}', { distance: distanceText(f.year_projected_km), date: fmtDate(f.year_end) })}`
       if (has(f.year_over_km) && has(f.mileage_limit_km)) {
-        const limit = `your ${distanceText(f.mileage_limit_km)} limit`
-        text += f.year_over_km > 0 ? `, ${distanceText(f.year_over_km)} over ${limit}` : f.year_over_km < 0 ? `, ${distanceText(-f.year_over_km)} under ${limit}` : `, right at ${limit}`
+        const limit = tr('your {distance} limit', { distance: distanceText(f.mileage_limit_km) })
+        const against =
+          f.year_over_km > 0
+            ? tr('{distance} over {limit}', { distance: distanceText(f.year_over_km), limit })
+            : f.year_over_km < 0
+              ? tr('{distance} under {limit}', { distance: distanceText(-f.year_over_km), limit })
+              : tr('right at {limit}', { limit })
+        text += `, ${against}`
       }
     }
     return `${text[0].toUpperCase()}${text.slice(1)}.`
   }
-  return has(f.km_per_year) ? `At the recent pace about ${distanceText(f.km_per_year)} a year.` : null
+  return has(f.km_per_year) ? tr('At the recent pace about {distance} a year.', { distance: distanceText(f.km_per_year) }) : null
 }
 
 /** What the dates stand on, said once. */
 export const aheadBasis = (f: Forecast): string =>
-  `Counted from ${fmtDate(f.as_of)}, the newest day with data, not from today. A pace is the odometer over the last 30 or 90 days; the dates move as you drive more or less.`
+  tr('Counted from {date}, the newest day with data, not from today. A pace is the odometer over the last 30 or 90 days; the dates move as you drive more or less.', { date: fmtDate(f.as_of) })
 
 /** A short date for the All cars card, or null. */
 export const oilWhen = (g: { oil_date_first?: string | null; oil_date_last?: string | null }): string | null => {
   const when = dateSpan(g.oil_date_first, g.oil_date_last)
-  return when ? `${when} at the recent pace` : null
+  return when ? tr('{when} at the recent pace', { when }) : null
 }
 
 // ------------------------------------------------------------------ calendar
@@ -75,31 +82,31 @@ export interface CalendarEvent {
 /** The forecasts that have a date, as events. Units follow the reader's choice, as on the page. */
 export function calendarEvents(car: { id: string; name: string }, f: Forecast | undefined, tires: TireForecast | undefined): CalendarEvent[] {
   const out: CalendarEvent[] = []
-  const basis = f?.as_of ? ` An estimate from the data up to ${fmtDate(f.as_of)}.` : ' An estimate.'
+  const basis = f?.as_of ? ` ${tr('An estimate from the data up to {date}.', { date: fmtDate(f.as_of) })}` : ` ${tr('An estimate.')}`
   if (f?.oil_date_first && has(f.oil_left_km)) {
     out.push({
       date: f.oil_date_first,
-      summary: `${car.name}: oil change (estimate)`,
-      description: `Oil change ${dateSpan(f.oil_date_first, f.oil_date_last)} at the recent pace; ${distanceText(f.oil_left_km)} left on the car's countdown.${basis}`,
+      summary: tr('{car}: oil change (estimate)', { car: car.name }),
+      description: `${tr("Oil change {when} at the recent pace; {distance} left on the car's countdown.", { when: dateSpan(f.oil_date_first, f.oil_date_last) ?? '', distance: distanceText(f.oil_left_km) })}${basis}`,
       uid: `oil-${car.id}`,
     })
   }
   if (f?.year_end && has(f.year_projected_km)) {
-    const limit = has(f.mileage_limit_km) ? `, against a limit of ${distanceText(f.mileage_limit_km)}` : ''
+    const limit = has(f.mileage_limit_km) ? `, ${tr('against a limit of {distance}', { distance: distanceText(f.mileage_limit_km) })}` : ''
     out.push({
       date: f.year_end,
-      summary: `${car.name}: mileage year ends`,
-      description: `About ${distanceText(f.year_projected_km)} by this day at the recent pace${limit}.${basis}`,
+      summary: tr('{car}: mileage year ends', { car: car.name }),
+      description: `${tr('About {distance} by this day at the recent pace', { distance: distanceText(f.year_projected_km) })}${limit}.${basis}`,
       uid: `year-${car.id}`,
     })
   }
   for (const w of tires?.wheels ?? []) {
     if (!w.losing || !w.reaches_limit_on) continue
-    const name = WHEEL_NAME[w.wheel] ?? w.wheel
+    const name = tr(WHEEL_NAME[w.wheel] ?? w.wheel)
     out.push({
       date: w.reaches_limit_on,
-      summary: `${car.name}: ${name} tire at ${pressureText(tires!.limit_kpa)} (estimate)`,
-      description: `The ${name} tire is losing pressure against the other three and reaches ${pressureText(tires!.limit_kpa)} around this day at that rate. An estimate.`,
+      summary: tr('{car}: {wheel} tire at {limit} (estimate)', { car: car.name, wheel: name, limit: pressureText(tires!.limit_kpa) }),
+      description: tr('The {wheel} tire is losing pressure against the other three and reaches {limit} around this day at that rate. An estimate.', { wheel: name, limit: pressureText(tires!.limit_kpa) }),
       uid: `tire-${w.wheel}-${car.id}`,
     })
   }

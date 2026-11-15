@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { CartesianGrid, Line, LineChart, ReferenceDot, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { DiagHistoryPoint } from '../api/types'
@@ -45,17 +46,17 @@ export function ReportHistory({ query, selected, onSelect }: {
 }) {
   const data = query.data ?? []
   const columns: Column<DiagHistoryPoint>[] = [
-    { key: 'at', header: 'Report', sort: (p) => p.taken_at ?? '', render: (p) => <span title={p.source_file}>{fmtDate(p.taken_at)}</span> },
-    { key: 'odo', header: 'Odometer', num: true, sort: (p) => p.odometer_km ?? 0, render: (p) => fmtDistance(p.odometer_km) },
+    { key: 'at', header: tr('Report'), sort: (p) => p.taken_at ?? '', render: (p) => <span title={p.source_file}>{fmtDate(p.taken_at)}</span> },
+    { key: 'odo', header: tr('Odometer'), num: true, sort: (p) => p.odometer_km ?? 0, render: (p) => fmtDistance(p.odometer_km) },
     { key: 'km', header: `Lifetime ${distanceLabel()}`, num: true, sort: (p) => p.lifetime_km ?? 0, render: (p) => fmtDistance(p.lifetime_km, 0, false) },
     { key: 'eco', header: consumptionLabel(), num: true, sort: (p) => p.lifetime_l_per_100km ?? 0, render: (p) => fmtConsumption(p.lifetime_l_per_100km, 2) },
-    { key: 'ign', header: 'Ignitions', num: true, sort: (p) => p.ignition_cycles ?? 0, render: (p) => fmtNum(p.ignition_cycles) },
-    { key: 'h', header: 'Engine h', num: true, sort: (p) => p.engine_hours ?? 0, render: (p) => fmtNum(p.engine_hours, 0) },
-    { key: 'mon', header: 'Monitors', num: true, render: (p) => `${p.monitors_passed}/${p.monitors_total}` },
-    { key: 'dtc', header: 'Faults listed', num: true, sort: (p) => p.dtcs_listed, render: (p) => fmtNum(p.dtcs_listed) },
+    { key: 'ign', header: tr('Ignitions'), num: true, sort: (p) => p.ignition_cycles ?? 0, render: (p) => fmtNum(p.ignition_cycles) },
+    { key: 'h', header: tr('Engine h'), num: true, sort: (p) => p.engine_hours ?? 0, render: (p) => fmtNum(p.engine_hours, 0) },
+    { key: 'mon', header: tr('Monitors'), num: true, render: (p) => `${p.monitors_passed}/${p.monitors_total}` },
+    { key: 'dtc', header: tr('Faults listed'), num: true, sort: (p) => p.dtcs_listed, render: (p) => fmtNum(p.dtcs_listed) },
   ]
   return (
-    <Panel title="Report history" hint={data.length > 1 ? 'click a report to open it' : undefined}>
+    <Panel title={tr('Report history')} hint={data.length > 1 ? tr('click a report to open it') : undefined}>
       <QueryState query={query}>
         <DataTable
           rows={[...data].reverse()}
@@ -67,13 +68,13 @@ export function ReportHistory({ query, selected, onSelect }: {
         {data.length > 1 && (
           <div className="grid cols-2" style={{ marginTop: 14 }}>
             <Trend
-              title={`Lifetime fuel economy (${consumptionLabel()})`}
+              title={tr('Lifetime fuel economy ({unit})', { unit: consumptionLabel() })}
               data={data.map((p) => ({ ...p, lifetime_l_per_100km: toConsumption(p.lifetime_l_per_100km) }))}
               field="lifetime_l_per_100km"
               digits={consumptionDigits(2)}
               selected={selected}
             />
-            <Trend title="Ignition cycles" data={data} field="ignition_cycles" digits={0} selected={selected} />
+            <Trend title={tr('Ignition cycles')} data={data} field="ignition_cycles" digits={0} selected={selected} />
           </div>
         )}
       </QueryState>

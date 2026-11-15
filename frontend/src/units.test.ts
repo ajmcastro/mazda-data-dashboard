@@ -144,7 +144,7 @@ describe('no page spells out a unit that the reader can choose', () => {
     text.split('\n').filter((line) => !/^\s*(\/\/|\*|\/\*)/.test(line)).map((line) => line.replace(/\s\/\/ .*$/, '')).join('\n')
   const files = walk(src)
     .map((path) => ({ rel: relative(src, path), text: code(readFileSync(path, 'utf8')) }))
-    .filter((f) => !ALLOWED.has(f.rel) && !f.rel.startsWith('car3d/shapes/'))
+    .filter((f) => !ALLOWED.has(f.rel) && !f.rel.startsWith('car3d/shapes/') && !f.rel.startsWith('i18n/'))
 
   it('finds the pages', () => {
     expect(files.map((f) => f.rel)).toEqual(expect.arrayContaining(['pages/Overview.tsx', 'pages/Status.tsx', 'car.ts', 'garage.ts', 'components/Tires.tsx']))

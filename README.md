@@ -436,10 +436,11 @@ open it to add them to your calendar; nothing is sent anywhere. The oil alert ca
 
 ### Language
 
-The dashboard is in English. A **Portuguese (Portugal) translation has been started**: choose *Português (em curso)*
-in the language menu (the bottom of the Mac's menu; *Data on this phone* in the phone app) and the menus, the page
-titles, the period presets and the dates and numbers switch; the rest of the text is still English. It is never
-chosen for you, and switching back is exact. The choice is per device.
+Both apps are in **English and Portuguese (Portugal)**. The language menu (the bottom of the Mac's menu; *Data on
+this phone* in the phone app) offers *Auto*, *English* and *Português*: Auto follows your browser (Portuguese when
+it asks for Portuguese before English, English otherwise). The choice is per device, and numbers and dates follow
+it. What you wrote yourself stays as you wrote it (code descriptions, service notes), and so do the car's own names
+(control units, signals) and the figures inside an alert.
 
 ### Sharing code descriptions
 

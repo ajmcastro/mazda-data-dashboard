@@ -1,3 +1,4 @@
+import { tr } from '../i18n'
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
@@ -43,9 +44,9 @@ function PeriodCard({ def, c, names, perDay, currency }: { def: MetricDef; c: Pe
     )
   }
   return (
-    <article className="panel metric" aria-label={def.label}>
+    <article className="panel metric" aria-label={tr(def.label)}>
       <div className="metric-head">
-        <h3 title={def.help}>{def.label}</h3>
+        <h3 title={tr(def.help)}>{tr(def.label)}</h3>
         <span className="muted mono">{unit}</span>
       </div>
       <div className="cmp-figures">
@@ -71,7 +72,7 @@ function PeriodCard({ def, c, names, perDay, currency }: { def: MetricDef; c: Pe
                     <div className="chart-tip">
                       <div className="t">{d.name}</div>
                       <div className="row">
-                        <span>{def.label}</span>
+                        <span>{tr(def.label)}</span>
                         <span>{d.value === null ? 'no data' : `${fmtNum(d.value, digits)} ${unit}`}</span>
                       </div>
                     </div>
@@ -154,11 +155,11 @@ export default function ComparePeriods() {
   return (
     <>
       <p className="muted cmp-intro">
-        Two periods of {name}. The earlier one comes first, and since it is the same car, the colours say whether a change is good (teal) or bad (red) for that figure.
+        {tr('Two periods of {name}. The earlier one comes first, and since it is the same car, the colours say whether a change is good (teal) or bad (red) for that figure.', { name })}
       </p>
       <div className="controls">
         <label>
-          Compare
+          {tr('Compare')}
           <select
             className="car-select period-select"
             value={custom ? 'custom' : base?.id}
@@ -171,29 +172,29 @@ export default function ComparePeriods() {
           >
             {presets.map((p) => (
               <option key={p.id} value={p.id} disabled={!p.available}>
-                {p.label}
-                {p.available ? '' : ' (no data then)'}
+                {tr(p.label)}
+                {p.available ? '' : ` (${tr('no data then')})`}
               </option>
             ))}
-            {!around && <option value="around-pick">Before and after a date…</option>}
-            <option value="custom">Choose the periods</option>
+            {!around && <option value="around-pick">{tr('Before and after a date…')}</option>}
+            <option value="custom">{tr('Choose the periods')}</option>
           </select>
         </label>
         {chosen === 'around' && (
           <label>
-            Date
+            {tr('Date')}
             <input type="date" value={around ?? ''} min={first} max={last} onChange={(e) => set({ around: e.target.value || null, preset: 'around', af: null, at: null, bf: null, bt: null })} />
           </label>
         )}
         {custom && (
           <>
-            {dateInput('First from', 'af', a?.from ?? '')}
-            {dateInput('First to', 'at', a?.to ?? '')}
-            {dateInput('Second from', 'bf', b?.from ?? '')}
-            {dateInput('Second to', 'bt', b?.to ?? '')}
+            {dateInput(tr('First from'), 'af', a?.from ?? '')}
+            {dateInput(tr('First to'), 'at', a?.to ?? '')}
+            {dateInput(tr('Second from'), 'bf', b?.from ?? '')}
+            {dateInput(tr('Second to'), 'bt', b?.to ?? '')}
           </>
         )}
-        <div className="chips" role="radiogroup" aria-label="View">
+        <div className="chips" role="radiogroup" aria-label={tr('View')}>
           {(['cards', 'table'] as const).map((v) => (
             <label key={v} className="preset">
               <input type="radio" name="cmp-pview" checked={view === v} onChange={() => setView(v)} />
@@ -203,13 +204,13 @@ export default function ComparePeriods() {
         </div>
         <label className="toggle">
           <input type="checkbox" checked={perDay} onChange={(e) => set({ perday: e.target.checked ? null : '0' })} />
-          per day
+          {tr('per day')}
         </label>
       </div>
 
       {problems.length > 0 && (
         <div className="alert-row" style={{ marginBottom: 14 }} role="status">
-          <b>{blocking.length ? 'These periods cannot be compared' : 'Note'}</b>
+          <b>{blocking.length ? tr('These periods cannot be compared') : tr('Note')}</b>
           <span className="muted">{problems.join(' ')}</span>
         </div>
       )}
@@ -221,10 +222,10 @@ export default function ComparePeriods() {
         <>
           <div className="alert-row" style={{ marginBottom: 14 }}>
             <b>
-              {names.a} against {names.b}
+              {tr('{a} against {b}', { a: names.a, b: names.b })}
             </b>
             <span className="muted">
-              {perDay ? 'Totals are per day, so periods of unequal length compare fairly.' : 'Totals are the sum over the whole period.'} A month cut by a period counts only its days inside it.
+              {perDay ? tr('Totals are per day, so periods of unequal length compare fairly.') : tr('Totals are the sum over the whole period.')} {tr('A month cut by a period counts only its days inside it.')}
             </span>
           </div>
           {view === 'cards' ? (
@@ -239,10 +240,10 @@ export default function ComparePeriods() {
                 <table className="trend-table">
                   <thead>
                     <tr>
-                      <th>Metric</th>
+                      <th>{tr('Metric')}</th>
                       <th className="num">{names.a}</th>
                       <th className="num">{names.b}</th>
-                      <th>Difference</th>
+                      <th>{tr('Difference')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -251,8 +252,8 @@ export default function ComparePeriods() {
                       const cell = (v: number | null) => (v === null ? <span className="muted">–</span> : fmtNum(v, digitsFor(def, perDay)))
                       return (
                         <tr key={def.key}>
-                          <th scope="row" title={def.help}>
-                            {def.label} <span className="muted mono">{unitFor(def, perDay, currency)}</span>
+                          <th scope="row" title={tr(def.help)}>
+                            {tr(def.label)} <span className="muted mono">{unitFor(def, perDay, currency)}</span>
                           </th>
                           <td className="num mono">{cell(c.a.value)}</td>
                           <td className="num mono">{cell(c.b.value)}</td>

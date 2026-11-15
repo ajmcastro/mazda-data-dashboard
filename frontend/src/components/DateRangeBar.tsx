@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr, trn } from '../i18n'
 import { useState } from 'react'
 import { useOverview, useSpan } from '../api/hooks'
 import {
@@ -39,10 +39,10 @@ export function DateRangeBar() {
   }
 
   return (
-    <div className={`range-bar${open ? ' open' : ''}`} role="group" aria-label="Period">
+    <div className={`range-bar${open ? ' open' : ''}`} role="group" aria-label={tr('Period')}>
       <div className="range-controls" id="range-controls">
       <fieldset className="presets" disabled={!span}>
-        <legend className="sr-only">Quick ranges, counted back from the newest data</legend>
+        <legend className="sr-only">{tr('Quick ranges, counted back from the newest data')}</legend>
         {PRESETS.map((p) => (
           <label key={p.id} className="preset">
             <input
@@ -58,7 +58,7 @@ export function DateRangeBar() {
 
       <div className="range-inputs">
         <label>
-          From
+          {tr('From')}
           <input
             type="date"
             value={from ?? ''}
@@ -68,7 +68,7 @@ export function DateRangeBar() {
           />
         </label>
         <label>
-          To
+          {tr('To')}
           <input
             type="date"
             value={to ?? ''}
@@ -84,11 +84,11 @@ export function DateRangeBar() {
         <span className="range-text">
           {shownFrom && shownTo ? (
             <>
-              <b>{activeLabel ?? 'Custom range'}</b> · {fmtDate(shownFrom)} – {fmtDate(shownTo)}
-              {days !== undefined && ` · ${days} day${days === 1 ? '' : 's'}`}
+              <b>{activeLabel ?? tr('Custom range')}</b> · {fmtDate(shownFrom)} – {fmtDate(shownTo)}
+              {days !== undefined && ` · ${trn('{n} day', '{n} days', days)}`}
             </>
           ) : (
-            'no data yet'
+            tr('no data yet')
           )}
         </span>
         <button
@@ -98,14 +98,14 @@ export function DateRangeBar() {
           aria-controls="range-controls"
           onClick={() => setOpen((v) => !v)}
         >
-          {open ? 'Done' : 'Change'}
+          {open ? tr('Done') : tr('Change')}
         </button>
       </div>
 
       {isFiltered && overview && !overview.has_data_in_range && (
         <div className="range-empty" role="status">
-          No data in this period. The data covers {fmtDate(first)} – {fmtDate(last)}.{' '}
-          <button onClick={() => choose('all')}>Show all time</button>
+          {tr('No data in this period. The data covers {from} – {to}.', { from: fmtDate(first), to: fmtDate(last) })}{' '}
+          <button onClick={() => choose('all')}>{tr('Show all time')}</button>
         </div>
       )}
     </div>

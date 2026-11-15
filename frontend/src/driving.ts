@@ -3,6 +3,7 @@
 // page says so. Everything is described neutrally ("more short stretches"): it is about the car's use, never a
 // verdict on the driver. All maths stays in the data's units; only what is shown is converted (units.ts).
 
+import { tr, trn } from './i18n'
 import type { DrivingBand, DrivingMonth, DrivingPattern } from './api/types'
 import { fmtNum } from './lib'
 import { monthLabel } from './trends'
@@ -17,15 +18,14 @@ export const MIN_STRETCHES = 10
 export const MIN_CHANGE = 0.2
 export const MIN_SHIFT = 5
 
-const plural = (n: number, word: string) => `${fmtNum(n)} ${word}${n === 1 ? '' : 'es'}`
 const length = (km: number) => distanceText(km, getUnits().distance === 'km' ? 0 : 1)
 const lengthNumber = (km: number) => length(km).split(' ')[0]
 
 /** "under 5 km", "5 to 20 km", "over 100 km", in the reader's unit. */
 export function bandLabel(b: Pick<DrivingBand, 'min_km' | 'max_km'>): string {
-  if (b.max_km === null || b.max_km === undefined) return `over ${length(b.min_km)}`
-  if (b.min_km === 0) return `under ${length(b.max_km)}`
-  return `${lengthNumber(b.min_km)} to ${length(b.max_km)}`
+  if (b.max_km === null || b.max_km === undefined) return tr('over {length}', { length: length(b.min_km) })
+  if (b.min_km === 0) return tr('under {length}', { length: length(b.max_km) })
+  return tr('{from} to {to}', { from: lengthNumber(b.min_km), to: length(b.max_km) })
 }
 
 /** A part of a whole in percent, or null when there is no whole. */
@@ -42,13 +42,14 @@ export const shortShare = (bands: readonly DrivingBand[]): number | null =>
 /** The sentence above the table. */
 export function headline(d: DrivingPattern | undefined): string | null {
   if (!d) return null
-  if (d.stretches === 0) return 'No driving seen in this period.'
+  if (d.stretches === 0) return tr('No driving seen in this period.')
   const shortest = d.bands[0]
-  const said = [`${plural(d.stretches, 'stretch')} of driving in this period.`]
+  const said = [trn('{n} stretch of driving in this period.', '{n} stretches of driving in this period.', d.stretches, { n: fmtNum(d.stretches) })]
   if (shortest && shortest.stretches > 0) {
     said.push(
-      `${fmtNum(shortest.stretches)} of them (${pct(share(shortest.stretches, d.stretches))}) were ${bandLabel(shortest)}, ` +
-        `${pct(share(shortest.km, d.km))} of the distance.`,
+      tr('{n} of them ({share}) were {band}, {distance} of the distance.', {
+        n: fmtNum(shortest.stretches), share: pct(share(shortest.stretches, d.stretches)), band: bandLabel(shortest), distance: pct(share(shortest.km, d.km)),
+      }),
     )
   }
   return said.join(' ')
@@ -58,9 +59,11 @@ export function headline(d: DrivingPattern | undefined): string | null {
 export function unclassifiedNote(d: DrivingPattern | undefined): string | null {
   if (!d || d.unclassified.stretches === 0) return null
   const n = d.unclassified.stretches
-  return (
-    `${plural(n, 'stretch')} (${distanceText(d.unclassified.km)}) ${n === 1 ? 'is' : 'are'} in no band: the two reports ` +
-    `around ${n === 1 ? 'it' : 'each'} are ${fmtNum(d.gap_hours / 24)} days or more apart, so ${n === 1 ? 'it is' : 'they are'} probably several drives.`
+  return trn(
+    '{n} stretch ({distance}) is in no band: the two reports around it are {days} days or more apart, so it is probably several drives.',
+    '{n} stretches ({distance}) are in no band: the two reports around each are {days} days or more apart, so they are probably several drives.',
+    n,
+    { n: fmtNum(n), distance: distanceText(d.unclassified.km), days: fmtNum(d.gap_hours / 24) },
   )
 }
 
@@ -124,18 +127,18 @@ export function describeMix(c: MixChange): string {
   const [month, previous] = [monthLabel(c.month), monthLabel(c.previous)]
   const said = [
     `${month}: ${fmtConsumption(c.now, 1)} ${unit}, ${previous}: ${fmtConsumption(c.before, 1)}. ` +
-      `Stretches under ${length(SHORT_KM)} went from ${pct(c.shortBefore)} to ${pct(c.shortNow)} of the distance.`,
+      tr('Stretches under {length} went from {before} to {now} of the distance.', { length: length(SHORT_KM), before: pct(c.shortBefore), now: pct(c.shortNow) }),
   ]
   if (c.expected !== null) {
     said.push(
-      `With ${previous}'s consumption for each length, ${month}'s mix alone would give ${fmtConsumption(c.expected, 1)}.`,
+      tr("With {previous}'s consumption for each length, {month}'s mix alone would give {value}.", { previous, month, value: fmtConsumption(c.expected, 1) }),
     )
   }
   return said.join(' ')
 }
 
 export const drivingNotes = (minKm: number): string[] => [
-  'A stretch is the driving between two status reports in a row: the car does not report single trips, so one stretch can be part of a trip or several short ones.',
-  `A consumption is shown from ${distanceText(minKm)} on. The car rounds the average it reports, so the shortest stretches give the least exact figures.`,
-  'Two months side by side show what moved together, not what caused what.',
+  tr('A stretch is the driving between two status reports in a row: the car does not report single trips, so one stretch can be part of a trip or several short ones.'),
+  tr('A consumption is shown from {distance} on. The car rounds the average it reports, so the shortest stretches give the least exact figures.', { distance: distanceText(minKm) }),
+  tr('Two months side by side show what moved together, not what caused what.'),
 ]

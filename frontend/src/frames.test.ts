@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import type { FaultFrameSummary, FrameSignalSummary } from './api/types'
 import { FEW_FRAMES, baselineRange, cautionNote, faultRange, hintLine, rangeText, FRAME_PART, frameCar } from './frames'
+import { ENGLISH_LEFT, PT_VERDICT, inPortuguese } from './i18n/testing'
 
 const sig = (over: Partial<FrameSignalSummary>): FrameSignalSummary => ({
   signal: 'SOC_StateOfCharge', label: 'Battery charge', unit: '%', frames: 3, min: 5, median: 15.5, max: 87.5,
@@ -40,6 +41,10 @@ describe('the hint', () => {
     expect(hintLine(summary([sig({})]))).toBeNull()
     const text = hintLine(summary([sig({ position: 'low' })])) ?? ''
     expect(text).not.toMatch(/cause|because|due to|failure of/i)
+    const portuguese = inPortuguese(() => hintLine(summary([sig({ position: 'low' })])) ?? '')
+    expect(portuguese).not.toBe(text)
+    expect(portuguese).not.toMatch(PT_VERDICT)
+    expect(portuguese).not.toMatch(ENGLISH_LEFT)
   })
 })
 

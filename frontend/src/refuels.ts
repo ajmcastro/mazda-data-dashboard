@@ -3,16 +3,16 @@
 // and the litres are what the gauge gained (fuel burned in between is not seen, so it understates a little).
 // The cost is an estimate; what the owner noted paying is shown next to it and never mixed into it.
 
+import { msg, tr, trn } from './i18n'
 import type { Refuel, Refuels } from './api/types'
 import { fmtDate, fmtDateTime, fmtNum } from './lib'
 import { consumptionLabel, distanceText, fmtConsumption } from './units'
 
-const plural = (n: number, word: string) => `${fmtNum(n)} ${word}${n === 1 ? '' : 's'}`
 const money = (v: number, currency: string | null | undefined) => `${fmtNum(v, 2)}${currency ? ` ${currency}` : ''}`
 
 /** When it happened, as far as the data knows: between the two reports. */
 export const between = (r: Pick<Refuel, 'before_at' | 'after_at'>): string =>
-  `between ${fmtDateTime(r.before_at)} and ${fmtDateTime(r.after_at)}`
+  tr('between {a} and {b}', { a: fmtDateTime(r.before_at), b: fmtDateTime(r.after_at) })
 
 /** "30 → 90 %" */
 export const levels = (r: Pick<Refuel, 'level_before' | 'level_after'>): string =>
@@ -20,7 +20,7 @@ export const levels = (r: Pick<Refuel, 'level_before' | 'level_after'>): string 
 
 /** The litres the gauge gained ("about", because fuel burned between the two reports is not seen), or the points. */
 export const amount = (r: Pick<Refuel, 'litres' | 'points'>): string =>
-  r.litres === null || r.litres === undefined ? `${fmtNum(r.points)} points` : `about ${fmtNum(r.litres, 1)} l`
+  r.litres === null || r.litres === undefined ? tr('{n} points', { n: fmtNum(r.points) }) : tr('about {n} l', { n: fmtNum(r.litres, 1) })
 
 /** What was used between the previous fill-up and this one, by the gauge and the odometer. */
 export function sincePrevious(r: Refuel): string {
@@ -35,28 +35,28 @@ export function sincePrevious(r: Refuel): string {
 /** Why a fill-up is marked doubtful. */
 export function doubt(r: Refuel, minPoints: number): string | null {
   if (!r.doubtful) return null
-  if (r.gap_hours >= 48) return `seen across ${fmtNum(r.gap_hours / 24, 1)} days without a report: more may have gone in`
-  return `a rise of ${fmtNum(r.points)} points, under ${fmtNum(minPoints)}: it may not be a fill-up`
+  if (r.gap_hours >= 48) return tr('seen across {n} days without a report: more may have gone in', { n: fmtNum(r.gap_hours / 24, 1) })
+  return tr('a rise of {n} points, under {min}: it may not be a fill-up', { n: fmtNum(r.points), min: fmtNum(minPoints) })
 }
 
 /** What the owner noted paying for it (several payments around one rise are added up). */
 export function paidCell(r: Refuel, currency: string | null | undefined): string {
   if (r.paid === null || r.paid === undefined) return '—'
-  const litres = r.paid_litres !== null && r.paid_litres !== undefined ? ` for ${fmtNum(r.paid_litres, 1)} l` : ''
-  return `${money(r.paid, currency)}${litres}${r.payments > 1 ? ` (${fmtNum(r.payments)} payments)` : ''}`
+  const litres = r.paid_litres !== null && r.paid_litres !== undefined ? ` ${tr('for {n} l', { n: fmtNum(r.paid_litres, 1) })}` : ''
+  return `${money(r.paid, currency)}${litres}${r.payments > 1 ? ` (${tr('{n} payments', { n: fmtNum(r.payments) })})` : ''}`
 }
 
 /** One or two sentences above the table. Estimates and amounts paid are told apart. */
 export function summaryLine(d: Refuels | undefined): string | null {
   if (!d) return null
-  if (d.fill_ups === 0) return 'No fill-up seen in this period.'
-  const said = [`${plural(d.fill_ups, 'fill-up')} in this period`]
-  if (d.litres !== null && d.litres !== undefined) said[0] += `: about ${fmtNum(d.litres)} l`
-  if (d.est_cost !== null && d.est_cost !== undefined) said[0] += `, an estimated ${money(d.est_cost, d.currency)}`
+  if (d.fill_ups === 0) return tr('No fill-up seen in this period.')
+  const said = [trn('{n} fill-up in this period', '{n} fill-ups in this period', d.fill_ups, { n: fmtNum(d.fill_ups) })]
+  if (d.litres !== null && d.litres !== undefined) said[0] += `: ${tr('about {n} l', { n: fmtNum(d.litres) })}`
+  if (d.est_cost !== null && d.est_cost !== undefined) said[0] += `, ${tr('an estimated {amount}', { amount: money(d.est_cost, d.currency) })}`
   said[0] += '.'
-  if (d.doubtful > 0) said.push(`${fmtNum(d.doubtful)} of them ${d.doubtful === 1 ? 'is' : 'are'} doubtful.`)
+  if (d.doubtful > 0) said.push(trn('{n} of them is doubtful.', '{n} of them are doubtful.', d.doubtful, { n: fmtNum(d.doubtful) }))
   if (d.paid !== null && d.paid !== undefined) {
-    said.push(`You noted paying ${money(d.paid, d.currency)} for ${fmtNum(d.paid_fill_ups)} of them.`)
+    said.push(tr('You noted paying {amount} for {n} of them.', { amount: money(d.paid, d.currency), n: fmtNum(d.paid_fill_ups) }))
   }
   return said.join(' ')
 }
@@ -65,9 +65,9 @@ export function summaryLine(d: Refuels | undefined): string | null {
 export function missingSetting(d: Refuels | undefined, modelId: string): string | null {
   if (!d || d.fill_ups === 0) return null
   if (d.tank_litres === null || d.tank_litres === undefined) {
-    return `Set tank_litres (the size of the fuel tank) in config/models/${modelId}/settings.yaml to see litres instead of points of the gauge.`
+    return tr('Set tank_litres (the size of the fuel tank) in config/models/{model}/settings.yaml to see litres instead of points of the gauge.', { model: modelId })
   }
-  if (!d.currency) return `Set a fuel price in config/models/${modelId}/settings.yaml to see an estimated cost.`
+  if (!d.currency) return tr('Set a fuel price in config/models/{model}/settings.yaml to see an estimated cost.', { model: modelId })
   return null
 }
 
@@ -75,11 +75,11 @@ export function missingSetting(d: Refuels | undefined, modelId: string): string 
 export function lastFillUp(d: Refuels | undefined): string | null {
   const r = d?.refuels.find((x) => !x.doubtful) ?? d?.refuels[0]
   if (!r) return null
-  return `last fill-up by ${fmtDate(r.after_at)}${r.litres !== null && r.litres !== undefined ? `, about ${fmtNum(r.litres)} l` : ''}`
+  return `${tr('last fill-up by {date}', { date: fmtDate(r.after_at) })}${r.litres !== null && r.litres !== undefined ? `, ${tr('about {n} l', { n: fmtNum(r.litres) })}` : ''}`
 }
 
 export const REFUEL_NOTES = [
-  'A fill-up is a rise of the fuel level between two status reports: it happened some time between the two.',
-  'The litres are what the gauge gained. Fuel burned between the two reports is not seen, so the real amount is a little higher.',
-  'The cost is an estimate: the litres times your price for that day. "Paid" is what you noted in fuel_log.yaml, matched by its date.',
+  msg('A fill-up is a rise of the fuel level between two status reports: it happened some time between the two.'),
+  msg('The litres are what the gauge gained. Fuel burned between the two reports is not seen, so the real amount is a little higher.'),
+  msg('The cost is an estimate: the litres times your price for that day. "Paid" is what you noted in fuel_log.yaml, matched by its date.'),
 ] as const

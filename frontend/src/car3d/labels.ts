@@ -97,6 +97,7 @@ export function labelledParts(car: CarState, selected: PartId | null): Part[] {
 
 /** The two lines of a label: a short name ("Front left" for "Front left wheel") and the figure. */
 export function labelText(p: Part): { name: string; value: string } {
+  if (p.short) return p.short // set where the part is made, in the reader's language
   if (p.group === 'wheels') return { name: p.name.replace(/ wheel$/, ''), value: p.value }
   // "6,000 km to oil change" does not fit: the name says what the figure is
   const oil = p.id === 'engine' ? /^(.*) to oil change$/.exec(p.value) : null

@@ -1,4 +1,4 @@
-import { t } from '../i18n'
+import { t, tr } from '../i18n'
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useWarningDaily, useWarningEvents, useWarningFrequency } from '../api/hooks'
@@ -42,12 +42,12 @@ export default function Warnings() {
   const chartData = useMemo(() => pivotDaily(daily.data ?? [], shown), [daily.data, shown])
 
   const columns: Column<WarningFrequency>[] = [
-    { key: 'code', header: 'Code', render: (w) => <span className="mono">{w.code}</span>, sort: (w) => w.code },
-    { key: 'title', header: 'Meaning', render: (w) => <span className={w.known ? '' : 'muted'}>{w.known ? w.title : 'not described yet'}</span>, sort: (w) => w.title },
-    { key: 'sev', header: 'Severity', render: (w) => <Badge kind={SEVERITY_BADGE[w.severity] ?? 'dim'}>{w.severity}</Badge> },
-    { key: 'events', header: 'Events', num: true, render: (w) => fmtNum(w.events), sort: (w) => w.events },
+    { key: 'code', header: tr('Code'), render: (w) => <span className="mono">{w.code}</span>, sort: (w) => w.code },
+    { key: 'title', header: tr('Meaning'), render: (w) => <span className={w.known ? '' : 'muted'}>{w.known ? w.title : tr('not described yet')}</span>, sort: (w) => w.title },
+    { key: 'sev', header: tr('Severity'), render: (w) => <Badge kind={SEVERITY_BADGE[w.severity] ?? 'dim'}>{tr(w.severity)}</Badge> },
+    { key: 'events', header: tr('Events'), num: true, render: (w) => fmtNum(w.events), sort: (w) => w.events },
     {
-      key: 'share', header: 'Share', sort: (w) => w.pct_of_events,
+      key: 'share', header: tr('Share'), sort: (w) => w.pct_of_events,
       render: (w) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div className="bar" style={{ width: 70 }}><i style={{ width: `${w.pct_of_events}%` }} /></div>
@@ -55,14 +55,14 @@ export default function Warnings() {
         </div>
       ),
     },
-    { key: 'days', header: 'Days', num: true, render: (w) => fmtNum(w.days_seen), sort: (w) => w.days_seen },
-    { key: 'last', header: 'Last seen', render: (w) => fmtTick(Date.parse(w.last_seen)), sort: (w) => w.last_seen },
+    { key: 'days', header: tr('Days'), num: true, render: (w) => fmtNum(w.days_seen), sort: (w) => w.days_seen },
+    { key: 'last', header: tr('Last seen'), render: (w) => fmtTick(Date.parse(w.last_seen)), sort: (w) => w.last_seen },
   ]
 
   const evCols: Column<WarningEvent>[] = [
-    { key: 'at', header: 'When', render: (e) => fmtDateTime(e.triggered_at) },
-    { key: 'code', header: 'Code', render: (e) => <span className="mono">{e.code}</span> },
-    { key: 'odo', header: 'Odometer', num: true, render: (e) => fmtDistance(e.odometer_km) },
+    { key: 'at', header: tr('When'), render: (e) => fmtDateTime(e.triggered_at) },
+    { key: 'code', header: tr('Code'), render: (e) => <span className="mono">{e.code}</span> },
+    { key: 'odo', header: tr('Odometer'), num: true, render: (e) => fmtDistance(e.odometer_km) },
   ]
 
   const page = events.data
@@ -73,16 +73,16 @@ export default function Warnings() {
       <div className="page-head">
         <div>
           <h1>{t('page.warnings')}</h1>
-          <p>Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in <span className="mono">config/models/{id}/codes/warnings.yaml</span>.</p>
+          <p>{tr('Warning-lamp events reported by the car. Codes are Mazda-specific; add meanings in')} <span className="mono">config/models/{id}/codes/warnings.yaml</span>.</p>
         </div>
       </div>
 
       <Panel
-        title="Events per day"
+        title={tr('Events per day')}
         hint={
           <label className="toggle">
             <input type="checkbox" checked={hideNoisy} onChange={(e) => setHideNoisy(e.target.checked)} />
-            hide codes in over half of all events
+            {tr('hide codes in over half of all events')}
           </label>
         }
       >
@@ -115,7 +115,7 @@ export default function Warnings() {
       </Panel>
 
       <div className="grid split" style={{ marginTop: 14 }}>
-        <Panel title="Codes" hint="click a row to see its events">
+        <Panel title={tr('Codes')} hint={tr('click a row to see its events')}>
           <QueryState query={freq}>
             <DataTable
               rows={all}
@@ -127,13 +127,13 @@ export default function Warnings() {
           </QueryState>
         </Panel>
 
-        <Panel title={selected ? `Events · ${selected}` : 'Latest events'} hint={`${fmtNum(total)} total`}>
+        <Panel title={selected ? tr('Events · {code}', { code: selected }) : tr('Latest events')} hint={tr('{n} total', { n: fmtNum(total) })}>
           <QueryState query={events}>
             <DataTable rows={page?.items ?? []} columns={evCols} rowKey={(e) => `${e.transaction_id}-${e.code}`} />
             <div className="pager">
-              <span>{total ? `${offset + 1}–${Math.min(offset + PAGE, total)} of ${fmtNum(total)}` : ''}</span>
-              <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>Prev</button>
-              <button disabled={offset + PAGE >= total} onClick={() => setOffset(offset + PAGE)}>Next</button>
+              <span>{total ? tr('{from}–{to} of {total}', { from: offset + 1, to: Math.min(offset + PAGE, total), total: fmtNum(total) }) : ''}</span>
+              <button disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE))}>{tr('Prev')}</button>
+              <button disabled={offset + PAGE >= total} onClick={() => setOffset(offset + PAGE)}>{tr('Next')}</button>
             </div>
           </QueryState>
         </Panel>
