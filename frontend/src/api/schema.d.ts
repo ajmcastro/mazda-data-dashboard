@@ -389,6 +389,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/forecast/month": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Forecast Month
+         * @description The next 30 days at this pace (M71): distance, fuel and estimated cost as a range, from the car's own last
+         *     90 days. A state, counted from the newest day with data.
+         */
+        get: operations["forecast_month_api_forecast_month_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dtcs/frame-voltage": {
         parameters: {
             query?: never;
@@ -2271,6 +2292,56 @@ export interface components {
             source?: string | null;
         };
         /**
+         * MonthForecast
+         * @description The next 30 days at this pace (M71), as a range from the car's own last 90 days. Estimates throughout.
+         */
+        MonthForecast: {
+            /** Enough */
+            enough: boolean;
+            /** As Of */
+            as_of?: string | null;
+            /** Window Days */
+            window_days: number;
+            /** Month Days */
+            month_days: number;
+            /** Block Days */
+            block_days: number;
+            /** Replicates */
+            replicates: number;
+            /** Min Days */
+            min_days: number;
+            /** Days With Data */
+            days_with_data: number;
+            /** Months Of Data */
+            months_of_data: number;
+            /** Km Low */
+            km_low?: number | null;
+            /** Km Mid */
+            km_mid?: number | null;
+            /** Km High */
+            km_high?: number | null;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+            /** Consumption From */
+            consumption_from?: string | null;
+            /** Litres Low */
+            litres_low?: number | null;
+            /** Litres Mid */
+            litres_mid?: number | null;
+            /** Litres High */
+            litres_high?: number | null;
+            /** Price Per L */
+            price_per_l?: number | null;
+            /** Currency */
+            currency?: string | null;
+            /** Cost Low */
+            cost_low?: number | null;
+            /** Cost Mid */
+            cost_mid?: number | null;
+            /** Cost High */
+            cost_high?: number | null;
+        };
+        /**
          * MonthMetrics
          * @description One calendar month. Metrics are None when the month has no data for them (a gap, not 0).
          */
@@ -3935,6 +4006,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forecast_month_api_forecast_month_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthForecast"];
                 };
             };
             /** @description Validation Error */

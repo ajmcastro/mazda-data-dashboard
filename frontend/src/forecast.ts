@@ -2,8 +2,8 @@
 // Every date is "at the recent pace" and counted from the newest day with data, which the text says.
 
 import { tr } from './i18n'
-import type { Forecast, TireForecast } from './api/types'
-import { fmtDate } from './lib'
+import type { Forecast, MonthForecast, TireForecast } from './api/types'
+import { fmtDate, fmtNum } from './lib'
 import { WHEEL_NAME } from './tires'
 import { distanceText, pressureText } from './units'
 
@@ -154,4 +154,43 @@ export function icsFile(events: readonly CalendarEvent[], stamp: Date): string {
   }
   lines.push('END:VCALENDAR')
   return lines.map(fold).join('\r\n') + '\r\n'
+}
+
+// ------------------------------------------------------------ the next 30 days (M71)
+
+/** "Over the next 30 days, at this pace: 600 km to 1,790 km (about 1,130 km), about 40 l to 119 l, 76 EUR to 228 EUR
+ * estimated." Null without enough days. Ranges throughout: the middle 80% of the imagined months. */
+export function monthAhead(m: MonthForecast | undefined): string | null {
+  if (!m?.enough || m.km_low == null || m.km_mid == null || m.km_high == null) return null
+  const parts = [
+    tr('{low} to {high} (about {mid})', { low: distanceText(m.km_low), high: distanceText(m.km_high), mid: distanceText(m.km_mid) }),
+  ]
+  if (m.litres_low != null && m.litres_high != null) {
+    parts.push(tr('about {low} l to {high} l of fuel', { low: fmtNum(m.litres_low), high: fmtNum(m.litres_high) }))
+  }
+  if (m.cost_low != null && m.cost_high != null && m.currency) {
+    parts.push(tr('an estimated {low} to {high} {currency}', { low: fmtNum(m.cost_low), high: fmtNum(m.cost_high), currency: m.currency }))
+  }
+  return tr('Over the next {days} days, at this pace: {parts}.', { days: m.month_days, parts: parts.join(', ') })
+}
+
+/** What the range rests on, said once. */
+export function monthBasis(m: MonthForecast | undefined): string | null {
+  if (!m) return null
+  if (!m.enough) {
+    return m.as_of
+      ? tr('The next {days} days need {min} days with a report in the last {window}; there are {n}.', {
+          days: m.month_days, min: m.min_days, window: m.window_days, n: m.days_with_data,
+        })
+      : null
+  }
+  const basis = tr(
+    'The range for the next {days} days is made from this car’s own last {window} days ({n} with a report), taken a week at a time in {replicates} different orders; it is the middle 80% of the results.',
+    { days: m.month_days, window: m.window_days, n: m.days_with_data, replicates: fmtNum(m.replicates) },
+  )
+  const fuel = m.consumption_from && m.l_per_100km != null
+    ? ` ${tr('Fuel uses the consumption since {date}.', { date: fmtDate(m.consumption_from) })}`
+    : ''
+  const seasons = m.months_of_data < 12 ? ` ${tr('With less than a year of data it cannot allow for the season.')}` : ''
+  return basis + fuel + seasons
 }

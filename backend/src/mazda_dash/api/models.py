@@ -732,6 +732,37 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class MonthForecast(BaseModel):
+    """The next 30 days at this pace (M71), as a range from the car's own last 90 days. Estimates throughout."""
+
+    enough: bool  # min_days days with a report in the window
+    as_of: date | None = None  # the newest day with data: the forecast starts after it
+    window_days: int
+    month_days: int
+    block_days: int
+    replicates: int
+    min_days: int
+    days_with_data: int  # days of the window with a report
+    months_of_data: (
+        float  # the whole history, in months: under 12 the forecast knows no seasons
+    )
+    km_low: float | None = None  # 10th percentile
+    km_mid: float | None = None  # 50th
+    km_high: float | None = None  # 90th
+    l_per_100km: float | None = None  # the consumption used
+    consumption_from: date | None = (
+        None  # the window's first day, or the last change point (M65) after it
+    )
+    litres_low: float | None = None
+    litres_mid: float | None = None
+    litres_high: float | None = None
+    price_per_l: float | None = None  # in force on as_of; None without a fuel price
+    currency: str | None = None
+    cost_low: float | None = None
+    cost_mid: float | None = None
+    cost_high: float | None = None
+
+
 class VoltageFrame(BaseModel):
     at: datetime  # the freeze frame's moment
     voltage: float  # Main_ECU_Voltage_Supply, else ECU_Power_Voltage

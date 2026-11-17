@@ -23,6 +23,7 @@ import { changePoints } from './changes'
 import { drivingRoutines } from './routinesroute'
 import { faultComeback } from './comeback'
 import { frameVoltage } from './voltage'
+import { monthForecast } from './month'
 import { unusualReports } from './unusual'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
@@ -101,6 +102,7 @@ export class Api {
     add('GET', '/api/service-log', serviceLog)
     add('GET', '/api/status/tire-forecast', tireForecast)
     add('GET', '/api/forecast', forecast)
+    add('GET', '/api/forecast/month', monthForecast)
     add('GET', '/api/day', day)
     add('GET', '/api/trips/pattern', drivingPattern)
     add('GET', '/api/trips/routines', drivingRoutines)

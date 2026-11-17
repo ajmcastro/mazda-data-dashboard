@@ -1,6 +1,6 @@
 import { tr } from '../i18n'
-import { useForecast, useTireForecast } from '../api/hooks'
-import { aheadBasis, calendarEvents, icsFile, oilAhead, yearAhead } from '../forecast'
+import { useForecast, useMonthForecast, useTireForecast } from '../api/hooks'
+import { aheadBasis, calendarEvents, icsFile, monthAhead, monthBasis, oilAhead, yearAhead } from '../forecast'
 import { useCurrentModel } from '../model'
 import { forecastLines } from '../tires'
 import { Panel } from './ui'
@@ -21,9 +21,11 @@ function save(name: string, text: string, type: string) {
 export function AheadPanel() {
   const forecast = useForecast().data
   const tires = useTireForecast().data
+  const month = useMonthForecast().data
   const { id, name } = useCurrentModel()
   if (!forecast?.has_data) return null
-  const lines = [oilAhead(forecast), yearAhead(forecast), ...forecastLines(tires)].filter((l): l is string => !!l)
+  const lines = [monthAhead(month), oilAhead(forecast), yearAhead(forecast), ...forecastLines(tires)].filter((l): l is string => !!l)
+  const monthNote = monthBasis(month)
   if (lines.length === 0) return null
   const events = calendarEvents({ id, name }, forecast, tires)
   return (
@@ -42,6 +44,7 @@ export function AheadPanel() {
       {lines.map((line) => (
         <p key={line} style={{ margin: '0 0 8px' }}>{line}</p>
       ))}
+      {monthNote && <p className="muted note">{monthNote}</p>}
       <p className="muted note">
         {aheadBasis(forecast)}
         {forecast.mileage_limit_km == null && (

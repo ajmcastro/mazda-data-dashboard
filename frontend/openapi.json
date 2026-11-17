@@ -1565,6 +1565,55 @@
         }
       }
     },
+    "/api/forecast/month": {
+      "get": {
+        "summary": "Forecast Month",
+        "description": "The next 30 days at this pace (M71): distance, fuel and estimated cost as a range, from the car's own last\n90 days. A state, counted from the newest day with data.",
+        "operationId": "forecast_month_api_forecast_month_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthForecast"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/dtcs/frame-voltage": {
       "get": {
         "summary": "Dtcs Frame Voltage",
@@ -8028,6 +8077,211 @@
         ],
         "title": "ModelUnit",
         "description": "A control unit the owner placed in `layout.yaml`: a zone, or a position as fractions of the car."
+      },
+      "MonthForecast": {
+        "properties": {
+          "enough": {
+            "type": "boolean",
+            "title": "Enough"
+          },
+          "as_of": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "As Of"
+          },
+          "window_days": {
+            "type": "integer",
+            "title": "Window Days"
+          },
+          "month_days": {
+            "type": "integer",
+            "title": "Month Days"
+          },
+          "block_days": {
+            "type": "integer",
+            "title": "Block Days"
+          },
+          "replicates": {
+            "type": "integer",
+            "title": "Replicates"
+          },
+          "min_days": {
+            "type": "integer",
+            "title": "Min Days"
+          },
+          "days_with_data": {
+            "type": "integer",
+            "title": "Days With Data"
+          },
+          "months_of_data": {
+            "type": "number",
+            "title": "Months Of Data"
+          },
+          "km_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Low"
+          },
+          "km_mid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km Mid"
+          },
+          "km_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Km High"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          },
+          "consumption_from": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consumption From"
+          },
+          "litres_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Litres Low"
+          },
+          "litres_mid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Litres Mid"
+          },
+          "litres_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Litres High"
+          },
+          "price_per_l": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price Per L"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency"
+          },
+          "cost_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Low"
+          },
+          "cost_mid": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Mid"
+          },
+          "cost_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enough",
+          "window_days",
+          "month_days",
+          "block_days",
+          "replicates",
+          "min_days",
+          "days_with_data",
+          "months_of_data"
+        ],
+        "title": "MonthForecast",
+        "description": "The next 30 days at this pace (M71), as a range from the car's own last 90 days. Estimates throughout."
       },
       "MonthMetrics": {
         "properties": {

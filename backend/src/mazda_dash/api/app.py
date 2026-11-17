@@ -27,6 +27,7 @@ from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
 from .driving import driving_pattern
 from .episodes import warning_episodes
 from .health import data_health
+from .month import month_forecast
 from .refuels import refuels
 from .routines import driving_routines
 from .selection import registry
@@ -462,6 +463,13 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/forecast/month", response_model=m.MonthForecast)
+def forecast_month(con: duckdb.DuckDBPyConnection = Con):
+    """The next 30 days at this pace (M71): distance, fuel and estimated cost as a range, from the car's own last
+    90 days. A state, counted from the newest day with data."""
+    return month_forecast(con)
 
 
 @app.get("/api/dtcs/frame-voltage", response_model=m.FrameVoltage)
