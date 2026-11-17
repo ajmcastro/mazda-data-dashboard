@@ -245,6 +245,7 @@ export function carView(choice: CarView, failed: string | null): CarView {
 
 const WHEEL_BY_NAME: Record<string, PartId> = { 'front left': 'wheel_fl', 'front right': 'wheel_fr', 'rear left': 'wheel_rl', 'rear right': 'wheel_rr' }
 const WHEEL_BY_CODE: Record<string, PartId> = { fl: 'wheel_fl', fr: 'wheel_fr', rl: 'wheel_rl', rr: 'wheel_rr' }
+const OPEN_PART_IDS: PartId[] = ['door_driver', 'door_passenger', 'door_rear_left', 'door_rear_right', 'trunk', 'hood']
 const WHEEL_BY_FLAG: Record<string, PartId> = Object.fromEntries(WHEELS.map((w) => [w.flag, w.id]))
 
 /**
@@ -267,6 +268,10 @@ export const ALERT_PART: Record<string, (key: string[]) => PartId | null> = {
   recurring_dtc: () => 'dash',
   low_battery_frame: () => 'dash',
   burglar_alarm: () => 'dash',
+  // the part a report stood out for: the fuel tank, an open door (the first listed), or the dashboard for the
+  // tire spread (no single wheel) and the hazard lights; a report's hour is not about a part
+  unusual_report: (k) =>
+    k[1] === 'fuel_drop_parked' ? 'fuel' : k[1] === 'open' ? (OPEN_PART_IDS.find((id) => id === (k[2] ?? '').split('+')[0]) ?? 'dash') : k[1] === 'tire_spread' ? 'dash' : null,
   data_gap: () => null, // about the exports, not the car
 }
 

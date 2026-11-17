@@ -21,6 +21,7 @@ import { PAGES } from './pages'
 import { PHONE } from './phone'
 import { ALERTS } from './alerts'
 import { EPISODES } from './episodes'
+import { UNUSUAL } from './unusual'
 
 export const PHRASES: Record<string, string> = {
   ...COMMON,
@@ -43,4 +44,5 @@ export const PHRASES: Record<string, string> = {
   ...CAR,
   ...FUEL,
   ...EPISODES,
+  ...UNUSUAL,
 }

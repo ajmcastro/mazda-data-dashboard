@@ -389,6 +389,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/status/unusual": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status Unusual
+         * @description The status and door reports of the period least like the car's other reports (M64), each with its
+         *     reasons. Unlike the car's other reports, never a fault.
+         */
+        get: operations["status_unusual_api_status_unusual_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/warnings/episodes": {
         parameters: {
             query?: never;
@@ -2554,6 +2575,60 @@ export interface components {
             /** Occurrences */
             occurrences: number;
         };
+        /** UnusualReason */
+        UnusualReason: {
+            /** Feature */
+            feature: string;
+            /** Value */
+            value?: number | null;
+            /** Label */
+            label?: string | null;
+            /** Share Pct */
+            share_pct?: number | null;
+            /** Z */
+            z?: number | null;
+            /** Usual Low */
+            usual_low?: number | null;
+            /** Usual High */
+            usual_high?: number | null;
+        };
+        /** UnusualReport */
+        UnusualReport: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Kind */
+            kind: string;
+            /** Local */
+            local: string;
+            /** Reasons */
+            reasons: components["schemas"]["UnusualReason"][];
+        };
+        /**
+         * UnusualReports
+         * @description The reports of the period least like the car's other reports (M64); what is usual comes from all the
+         *     data. Never a fault.
+         */
+        UnusualReports: {
+            /** Min Reports */
+            min_reports: number;
+            /** Threshold Z */
+            threshold_z: number;
+            /** Rare Pct */
+            rare_pct: number;
+            /** Status Reports */
+            status_reports: number;
+            /** Doors Reports */
+            doors_reports: number;
+            /** Enough Status */
+            enough_status: boolean;
+            /** Enough Doors */
+            enough_doors: boolean;
+            /** Reports */
+            reports: components["schemas"]["UnusualReport"][];
+        };
         /** ValidationError */
         ValidationError: {
             /** Location */
@@ -3515,6 +3590,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    status_unusual_api_status_unusual_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnusualReports"];
                 };
             };
             /** @description Validation Error */

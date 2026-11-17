@@ -725,6 +725,39 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class UnusualReason(BaseModel):
+    feature: str  # fuel_drop_parked, tire_spread, hour, open
+    value: float | None = None  # the points, the kPa, the local hour
+    label: str | None = None  # open: the open parts, comma-separated
+    share_pct: float | None = (
+        None  # hour, open: share of the reports of that kind with this value
+    )
+    z: float | None = None  # fuel_drop_parked, tire_spread: the robust z-score
+    usual_low: float | None = None  # 10th percentile of the feature
+    usual_high: float | None = None  # 90th percentile
+
+
+class UnusualReport(BaseModel):
+    at: datetime
+    kind: str  # status (remote-status snapshot) or doors (door report)
+    local: str  # the car's local time, YYYY-MM-DD HH:MM
+    reasons: list[UnusualReason]
+
+
+class UnusualReports(BaseModel):
+    """The reports of the period least like the car's other reports (M64); what is usual comes from all the
+    data. Never a fault."""
+
+    min_reports: int
+    threshold_z: float
+    rare_pct: float
+    status_reports: int  # in the period
+    doors_reports: int
+    enough_status: bool  # min_reports or more status reports over all the data
+    enough_doors: bool
+    reports: list[UnusualReport]
+
+
 class PatternCode(BaseModel):
     code: str
     title: str | None = None  # the owner's description; None when the code has none

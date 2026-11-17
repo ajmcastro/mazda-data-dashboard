@@ -1,6 +1,7 @@
-import { msg, tr } from '../i18n'
+import { msg, tr, trn } from '../i18n'
 import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires } from '../api/hooks'
+import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires, useUnusualReports } from '../api/hooks'
+import { MOMENT_MINUTES, momentOf, moments, reasonText } from '../unusual'
 import { PartAlerts } from './PartAlerts'
 import { notesByPart } from '../tires'
 import {
@@ -97,6 +98,11 @@ export function CarPanel() {
   const doorHistory = useDoors(5000, looking || playing)
   const tireHistory = useTires()
   const back = looking ? carStateAt(step, reports, doorHistory.data, tireHistory.data) : null
+  // the reports unlike the car's others (M64), as ticks on the slider and a line under it
+  const unusual = moments(useUnusualReports().data?.reports)
+  const marked = (reports ?? []).flatMap((r, i) => (momentOf(r.created_at, unusual, MOMENT_MINUTES) ? [i] : []))
+  const markedMoments = new Set((reports ?? []).map((r) => momentOf(r.created_at, unusual, MOMENT_MINUTES)?.at).filter(Boolean)).size
+  const standsOut = back ? momentOf(back.at, unusual, MOMENT_MINUTES) : undefined
   const car = back ? back.car : newest
   useEffect(() => {
     if (!playing) return
@@ -176,6 +182,7 @@ export function CarPanel() {
                   max={total - 1}
                   step={1}
                   value={step ?? total - 1}
+                  list={marked.length ? 'car-scrub-unusual' : undefined}
                   onChange={(e) => {
                     setPlaying(false)
                     const next = Number(e.target.value)
@@ -184,11 +191,24 @@ export function CarPanel() {
                   aria-label={tr('Status report shown, from the first of the period to the newest')}
                   aria-valuetext={back ? `${reportText(back)}, ${fmtDateTime(back.at)}` : tr('the newest report')}
                 />
+                {marked.length > 0 && (
+                  <datalist id="car-scrub-unusual">
+                    {marked.map((i) => <option key={i} value={i} />)}
+                  </datalist>
+                )}
                 <span className="mono muted car-scrub-at">{back ? `${reportText(back)} · ${fmtDateTime(back.at)}` : tr('newest')}</span>
                 {looking && <button type="button" onClick={() => { setPlaying(false); setStep(null) }}>{tr('Newest')}</button>}
               </div>
             )}
             {looking && <p className="muted note">{tr(SCRUB_NOTE)}</p>}
+            {standsOut && (
+              <p className="note">
+                {tr('This report stands out from the car’s others: {reasons}.', { reasons: standsOut.reasons.map(reasonText).join('; ') })}
+              </p>
+            )}
+            {marked.length > 0 && !looking && (
+              <p className="muted note">{trn('The ticks on the slider mark the reports of a moment that stands out from the car’s others.', 'The ticks on the slider mark the reports of {n} moments that stand out from the car’s others.', markedMoments)}</p>
+            )}
             <ul className="car-notes muted">
               {CAR_NOTES.map((n) => (
                 <li key={n}>{tr(n)}</li>

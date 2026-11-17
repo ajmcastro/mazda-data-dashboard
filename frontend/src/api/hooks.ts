@@ -245,6 +245,19 @@ export const useDay = (day: string | undefined) => {
   })
 }
 
+/**
+ * The status and door reports least like the car's other reports (M64): of the selected period, or of the
+ * days given (the Day page asks for the days around one day, whatever the period).
+ */
+export const useUnusualReports = (days?: { from: string; to: string }) => {
+  const range = useRangeQuery()
+  const query = days ? { model: range.model, ...days } : range
+  return useQuery({
+    queryKey: ['unusual-reports', query],
+    queryFn: () => unwrap(client.GET('/api/status/unusual', { params: { query } })),
+  })
+}
+
 /** The warnings of the selected period as episodes and recurring patterns, learned from all the data (M63). */
 export const useWarningEpisodes = () => {
   const range = useRangeQuery()

@@ -29,6 +29,7 @@ from .refuels import refuels
 from .selection import registry
 from .service import service_log
 from .trends import PRICED, monthly_metrics
+from .unusual import unusual_reports
 
 app = FastAPI(title="Mazda data dashboard API", version="0.2.0")
 Con = Depends(get_con)
@@ -457,6 +458,13 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/status/unusual", response_model=m.UnusualReports)
+def status_unusual(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """The status and door reports of the period least like the car's other reports (M64), each with its
+    reasons. Unlike the car's other reports, never a fault."""
+    return unusual_reports(con, rng)
 
 
 @app.get("/api/warnings/episodes", response_model=m.WarningEpisodes)

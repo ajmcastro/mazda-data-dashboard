@@ -57,6 +57,14 @@ class TireLeakForecast(Rule):
     days: int = Field(14, ge=1, le=365)
 
 
+class UnusualReport(Rule):
+    """Raised once per reason a status or door report is unlike the car's other reports (M64). Off by
+    default: it says a report is unusual, not that anything is wrong."""
+
+    enabled: bool = False
+    severity: Severity = "info"
+
+
 class LowBatteryFrame(Rule):
     min_voltage: float = Field(12.0, gt=0)
 
@@ -133,6 +141,7 @@ class Rules(_Strict):
     low_tire_pressure: LowTirePressure = LowTirePressure()
     tire_leak_forecast: TireLeakForecast = TireLeakForecast()
     low_battery_frame: LowBatteryFrame = LowBatteryFrame()
+    unusual_report: UnusualReport = UnusualReport()
     data_gap: DataGap = DataGap()
     oil_change_due: OilChangeDue = OilChangeDue()
     car_warning_flag: CarWarningFlag = CarWarningFlag()

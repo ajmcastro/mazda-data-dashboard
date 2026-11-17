@@ -1565,6 +1565,93 @@
         }
       }
     },
+    "/api/status/unusual": {
+      "get": {
+        "summary": "Status Unusual",
+        "description": "The status and door reports of the period least like the car's other reports (M64), each with its\nreasons. Unlike the car's other reports, never a fault.",
+        "operationId": "status_unusual_api_status_unusual_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnusualReports"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/warnings/episodes": {
       "get": {
         "summary": "Warnings Episodes",
@@ -9153,6 +9240,169 @@
           "occurrences"
         ],
         "title": "UnmappedCode"
+      },
+      "UnusualReason": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "share_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Share Pct"
+          },
+          "z": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Z"
+          },
+          "usual_low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usual Low"
+          },
+          "usual_high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usual High"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature"
+        ],
+        "title": "UnusualReason"
+      },
+      "UnusualReport": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "local": {
+            "type": "string",
+            "title": "Local"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/UnusualReason"
+            },
+            "type": "array",
+            "title": "Reasons"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "kind",
+          "local",
+          "reasons"
+        ],
+        "title": "UnusualReport"
+      },
+      "UnusualReports": {
+        "properties": {
+          "min_reports": {
+            "type": "integer",
+            "title": "Min Reports"
+          },
+          "threshold_z": {
+            "type": "number",
+            "title": "Threshold Z"
+          },
+          "rare_pct": {
+            "type": "number",
+            "title": "Rare Pct"
+          },
+          "status_reports": {
+            "type": "integer",
+            "title": "Status Reports"
+          },
+          "doors_reports": {
+            "type": "integer",
+            "title": "Doors Reports"
+          },
+          "enough_status": {
+            "type": "boolean",
+            "title": "Enough Status"
+          },
+          "enough_doors": {
+            "type": "boolean",
+            "title": "Enough Doors"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/UnusualReport"
+            },
+            "type": "array",
+            "title": "Reports"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_reports",
+          "threshold_z",
+          "rare_pct",
+          "status_reports",
+          "doors_reports",
+          "enough_status",
+          "enough_doors",
+          "reports"
+        ],
+        "title": "UnusualReports",
+        "description": "The reports of the period least like the car's other reports (M64); what is usual comes from all the\ndata. Never a fault."
       },
       "ValidationError": {
         "properties": {

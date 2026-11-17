@@ -1,8 +1,9 @@
 import { t, tr } from '../i18n'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useDay } from '../api/hooks'
+import { useDay, useUnusualReports } from '../api/hooks'
 import { Badge, Panel, QueryState } from '../components/ui'
-import { KIND_LABEL, dayShort, dayTitle, describe, isDay, placedAt, summary, when } from '../day'
+import { KIND_LABEL, addDays, dayShort, dayTitle, describe, isDay, placedAt, summary, when } from '../day'
+import { standsOut } from '../unusual'
 import { useDayHref, useRangeSearch } from '../range'
 
 /** One day at a glance (PLAN.md M49): everything the exports say about one day, in the car's local time. */
@@ -14,6 +15,8 @@ export default function DayPage() {
   const search = useRangeSearch()
   const d = query.data
   const day = d?.date ?? null
+  // the reports of this day that stand out (M64): the UTC days around the car's local day, whatever the period
+  const unusual = useUnusualReports(day ? { from: addDays(day, -1), to: addDays(day, 1) } : undefined)
   const to = (path: string, extra?: Record<string, string>) => {
     const p = new URLSearchParams(search)
     for (const [k, v] of Object.entries(extra ?? {})) p.set(k, v)
@@ -65,6 +68,7 @@ export default function DayPage() {
                 <ol className="day-list">
                   {d.entries.map((e, i) => {
                     const line = describe(e)
+                    const odd = standsOut(e.kind, e.at, unusual.data?.reports)
                     return (
                       <li key={`${e.kind}-${e.at}-${e.code ?? e.ref ?? i}`} className={`day-entry kind-${e.kind}`}>
                         <span className="day-time mono" title={when(e, day)}>{placedAt(e, day)}</span>
@@ -76,6 +80,7 @@ export default function DayPage() {
                               {[when(e, day) !== placedAt(e, day) ? when(e, day) : null, line.detail].filter(Boolean).join(' · ')}
                             </span>
                           )}
+                          {odd && <span className="day-detail day-unusual">{odd}</span>}
                         </span>
                       </li>
                     )

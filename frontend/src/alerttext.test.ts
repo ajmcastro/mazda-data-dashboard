@@ -35,6 +35,28 @@ const SAMPLES: Record<string, [string, string][]> = {
       'The freeze frame of fault BCM U0198 recorded 11.4 V (Battery_Voltage), below your 12 V limit. Worth a look at the battery; a hint, not a diagnosis.',
     ],
   ],
+  unusual_report: [
+    [
+      'Unusual report: the fuel level fell 6 points while parked',
+      "At 2026-07-18 03:14 (car's local time) the fuel level was 6 points lower than in the report before while the odometer did not move; usually it falls by 0 to 0.5 points. Unlike this car's other reports; a hint, not a diagnosis.",
+    ],
+    [
+      'Unusual report: tire pressures 30 kPa apart',
+      "At 2026-11-06 17:35 (car's local time) the highest and lowest tire pressures were 30 kPa apart; usually 0 to 10 kPa. Unlike this car's other reports; a hint, not a diagnosis.",
+    ],
+    [
+      "Unusual report at 03:14 (car's local time)",
+      "The car sent a report at 2026-07-18 03:14 (car's local time), an hour with 0.4% of its status reports. Unlike this car's other reports; a hint, not a diagnosis.",
+    ],
+    [
+      "Unusual report at 23:00 (car's local time)",
+      "The car sent a report at 2026-11-07 23:00 (car's local time), an hour with 0.8% of its door reports. Unlike this car's other reports; a hint, not a diagnosis.",
+    ],
+    [
+      'Unusual report: driver door, hazard lights open',
+      "At 2026-07-12 11:50 (car's local time) the car reported driver door, hazard lights open, as in 0.4% of its door reports. Unlike this car's other reports; a hint, not a diagnosis.",
+    ],
+  ],
   data_gap: [['No new data for 133 days', 'The latest data point is from 2026-06-30 18:01 UTC. Request a new export from Mazda and run `make ingest`.']],
   oil_change_due: [
     [

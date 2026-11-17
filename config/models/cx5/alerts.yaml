@@ -43,6 +43,10 @@ rules:
   # a wheel losing pressure against the other three that reaches min_kpa above within `days` (off by default)
   tire_leak_forecast: {enabled: false, severity: warning, days: 14}
 
+  # A status or door report unlike the car's other reports (the "Unusual reports" panel on Status): one alert
+  # per reason. Off by default: it says a report is unusual, not that anything is wrong.
+  unusual_report: {enabled: false, severity: info}
+
   # A fault's freeze frame recorded a supply voltage (main ECU or ECU power) below this value (volts), within
   # the lookback window. One alert per fault. A hint to look at the battery, not a diagnosis.
   low_battery_frame: {enabled: true, severity: warning, min_voltage: 12.0}

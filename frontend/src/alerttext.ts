@@ -7,6 +7,11 @@ type Rule = [RegExp, (m: RegExpExecArray) => string]
 
 const WHEELS = [msg('front left'), msg('front right'), msg('rear left'), msg('rear right')]
 const AREAS = [msg('powertrain'), msg('body')]
+const OPEN = [msg('driver door'), msg('passenger door'), msg('rear left door'), msg('rear right door'), msg('trunk'), msg('hood'), msg('hazard lights')]
+/** "driver door, hazard lights" as the detector lists open parts, each part translated. */
+const openList = (text: string): string => text.split(', ').map((p) => word(p, OPEN)).join(', ')
+const UNUSUAL_END = msg(" Unlike this car's other reports; a hint, not a diagnosis.")
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 /** A word the detectors choose from a short list (a wheel, an area): translated when it is one of them. */
 const word = (text: string, list: string[]): string => (list.includes(text) ? tr(text) : text)
 /** "2026-06-27 14:05 UTC" stays as written; only the words for a missing value are translated. */
@@ -28,6 +33,13 @@ const TITLES: Rule[] = [
   [/^Burglar alarm status raised$/, () => tr('Burglar alarm status raised')],
   [/^High fuel consumption: (.+)$/, (m) => tr('High fuel consumption: {value}', { value: m[1] })],
   [/^Low fuel: (.+)$/, (m) => tr('Low fuel: {value}', { value: m[1] })],
+  [
+    /^Unusual report: the fuel level fell (\S+) points while parked$/,
+    (m) => tr('Unusual report: the fuel level fell {n} points while parked', { n: m[1] }),
+  ],
+  [/^Unusual report: tire pressures (\S+ \S+) apart$/, (m) => tr('Unusual report: tire pressures {spread} apart', { spread: m[1] })],
+  [/^Unusual report at (\S+) \(car's local time\)$/, (m) => tr("Unusual report at {time} (car's local time)", { time: m[1] })],
+  [/^Unusual report: (.+) open$/, (m) => tr('Unusual report: {parts} open', { parts: openList(m[1]) })],
   [
     /^Tire losing pressure \((.+)\): about (\S+) days to the limit$/,
     (m) => tr('Tire losing pressure ({wheel}): about {days} days to the limit', { wheel: word(m[1], WHEELS), days: m[2] }),
@@ -91,6 +103,28 @@ const DETAILS: Rule[] = [
       tr('The {wheel} tire is losing about {rate} a week against the other three. At this rate it reaches your {limit} limit around {day} (it read {now}; based on {n} measurements over {days} days).', {
         wheel: word(m[1], WHEELS), rate: m[2], limit: m[3], day: m[4], now: m[5], n: m[6], days: m[7],
       }),
+  ],
+  [
+    new RegExp(`^At (.+?) \\(car's local time\\) the fuel level was (\\S+) points lower than in the report before while the odometer did not move; usually it falls by (\\S+) to (\\S+) points\\.${esc(UNUSUAL_END)}$`),
+    (m) =>
+      tr("At {when} (car's local time) the fuel level was {n} points lower than in the report before while the odometer did not move; usually it falls by {low} to {high} points.", { when: m[1], n: m[2], low: m[3], high: m[4] }) + tr(UNUSUAL_END),
+  ],
+  [
+    new RegExp(`^At (.+?) \\(car's local time\\) the highest and lowest tire pressures were (\\S+ \\S+) apart; usually (\\S+) to (\\S+ \\S+)\\.${esc(UNUSUAL_END)}$`),
+    (m) =>
+      tr("At {when} (car's local time) the highest and lowest tire pressures were {spread} apart; usually {low} to {high}.", { when: m[1], spread: m[2], low: m[3], high: m[4] }) + tr(UNUSUAL_END),
+  ],
+  [
+    new RegExp(`^The car sent a report at (.+?) \\(car's local time\\), an hour with (\\S+)% of its (status|door) reports\\.${esc(UNUSUAL_END)}$`),
+    (m) =>
+      (m[3] === 'status'
+        ? tr("The car sent a report at {when} (car's local time), an hour with {pct}% of its status reports.", { when: m[1], pct: m[2] })
+        : tr("The car sent a report at {when} (car's local time), an hour with {pct}% of its door reports.", { when: m[1], pct: m[2] })) + tr(UNUSUAL_END),
+  ],
+  [
+    new RegExp(`^At (.+?) \\(car's local time\\) the car reported (.+) open, as in (\\S+)% of its door reports\\.${esc(UNUSUAL_END)}$`),
+    (m) =>
+      tr("At {when} (car's local time) the car reported {parts} open, as in {pct}% of its door reports.", { when: m[1], parts: openList(m[2]), pct: m[3] }) + tr(UNUSUAL_END),
   ],
   [
     /^The (.+) tire read (.+?) on (\S+), below your (.+?) limit\.$/,
@@ -173,7 +207,7 @@ export const RULE_NAMES: Record<string, string> = {
   warning_spike: msg('warning spike'), burglar_alarm: msg('burglar alarm'), high_consumption: msg('high consumption'),
   low_fuel: msg('low fuel'), low_tire_pressure: msg('low tire pressure'), tire_leak_forecast: msg('tire leak forecast'),
   low_battery_frame: msg('low voltage in a freeze frame'), data_gap: msg('no new data'), oil_change_due: msg('oil change due'),
-  car_warning_flag: msg('car warning flag'), new_warning_flag: msg('new warning-lamp flag'),
+  car_warning_flag: msg('car warning flag'), new_warning_flag: msg('new warning-lamp flag'), unusual_report: msg('unusual report'),
 }
 /** A rule nobody named yet is shown by its own name, as before. */
 export const ruleName = (rule: string): string => (rule in RULE_NAMES ? tr(RULE_NAMES[rule]) : rule.replaceAll('_', ' '))

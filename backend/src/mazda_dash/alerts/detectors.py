@@ -260,6 +260,88 @@ def tire_leak_forecast(ctx: Context) -> list[Candidate]:
     return out
 
 
+OPEN_WORDS = {
+    "door_driver": "driver door",
+    "door_passenger": "passenger door",
+    "door_rear_left": "rear left door",
+    "door_rear_right": "rear right door",
+    "trunk": "trunk",
+    "hood": "hood",
+    "hazard": "hazard lights",
+}
+UNUSUAL_SQL = (
+    "SELECT r.created_at, r.kind, r.feature, r.value, r.label, r.share_pct, r.usual_low, r.usual_high, "
+    "strftime(timezone(c.zone, make_timestamptz(epoch_us(r.created_at))), '%Y-%m-%d %H:%M') AS local "
+    "FROM v_unusual_reasons r CROSS JOIN (SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), "
+    "'UTC') AS zone FROM ref_settings) c WHERE r.created_at >= ? ORDER BY r.created_at, r.kind, r.feature"
+)
+UNUSUAL_END = "Unlike this car's other reports; a hint, not a diagnosis."
+
+
+def _unusual_text(r: dict) -> tuple[str, str, str]:
+    """(key part, title, detail) of one reason a report is unusual (M64)."""
+    at = f"At {r['local']} (car's local time)"
+    v, lo, hi = r["value"], r["usual_low"], r["usual_high"]
+    if r["feature"] == "fuel_drop_parked":
+        return (
+            f"{v:g}",
+            f"Unusual report: the fuel level fell {v:g} points while parked",
+            (
+                f"{at} the fuel level was {v:g} points lower than in the report before while the odometer "
+                f"did not move; usually it falls by {lo:g} to {hi:g} points. {UNUSUAL_END}"
+            ),
+        )
+    if r["feature"] == "tire_spread":
+        return (
+            f"{v:g}",
+            f"Unusual report: tire pressures {v:g} kPa apart",
+            (
+                f"{at} the highest and lowest tire pressures were {v:g} kPa apart; usually {lo:g} to "
+                f"{hi:g} kPa. {UNUSUAL_END}"
+            ),
+        )
+    if r["feature"] == "hour":
+        kind = "status" if r["kind"] == "status" else "door"
+        return (
+            f"{v:g}",
+            f"Unusual report at {r['local'][11:]} (car's local time)",
+            (
+                f"The car sent a report at {r['local']} (car's local time), an hour with "
+                f"{r['share_pct']:g}% of its {kind} reports. {UNUSUAL_END}"
+            ),
+        )
+    parts = ", ".join(OPEN_WORDS.get(p, p) for p in (r["label"] or "").split(","))
+    return (
+        (r["label"] or "").replace(",", "+"),
+        f"Unusual report: {parts} open",
+        f"{at} the car reported {parts} open, as in {r['share_pct']:g}% of its door reports. {UNUSUAL_END}",
+    )
+
+
+def unusual_report(ctx: Context) -> list[Candidate]:
+    """A status or door report unlike the car's other reports (M64, v_unusual_reasons): one alert per reason.
+    Off by default."""
+    rule = ctx.cfg.rules.unusual_report
+    cur = ctx.con.execute(UNUSUAL_SQL, [ctx.since])
+    names = [d[0] for d in cur.description]
+    out = []
+    for row in cur.fetchall():
+        r = dict(zip(names, row, strict=True))
+        key, title, detail = _unusual_text(r)
+        out.append(
+            Candidate(
+                "unusual_report",
+                f"unusual_report:{r['feature']}:{key}:{_stamp(r['created_at'])}",
+                rule.severity,
+                title,
+                detail,
+                r["created_at"],
+                "/status",
+            )
+        )
+    return out
+
+
 def low_tire_pressure(ctx: Context) -> list[Candidate]:
     rule = ctx.cfg.rules.low_tire_pressure
     # keyed on when the car MEASURED the pressure (v_tire_readings), so one low reading that appears in
@@ -472,6 +554,7 @@ DETECTORS: dict[str, Callable[[Context], list[Candidate]]] = {
     "low_tire_pressure": low_tire_pressure,
     "tire_leak_forecast": tire_leak_forecast,
     "low_battery_frame": low_battery_frame,
+    "unusual_report": unusual_report,
     "data_gap": data_gap,
     "oil_change_due": oil_change_due,
     "car_warning_flag": car_warning_flag,

@@ -55,4 +55,21 @@ export const ALERTS: Record<string, string> = {
   'oil change due': 'mudança de óleo a chegar',
   'car warning flag': 'indicador de aviso do carro',
   'new warning-lamp flag': 'novo indicador de luz de aviso',
+  'unusual report': 'relatório invulgar',
+  'hazard lights': 'quatro piscas',
+  'Unusual report: the fuel level fell {n} points while parked': 'Relatório invulgar: o combustível desceu {n} pontos com o carro parado',
+  'Unusual report: tire pressures {spread} apart': 'Relatório invulgar: pressões dos pneus a {spread} de distância',
+  "Unusual report at {time} (car's local time)": 'Relatório invulgar às {time} (hora local do carro)',
+  'Unusual report: {parts} open': 'Relatório invulgar: aberto(s): {parts}',
+  " Unlike this car's other reports; a hint, not a diagnosis.": ' Diferente dos outros relatórios deste carro; uma pista, não um diagnóstico.',
+  "At {when} (car's local time) the fuel level was {n} points lower than in the report before while the odometer did not move; usually it falls by {low} to {high} points.":
+    'Em {when} (hora local do carro) o nível de combustível estava {n} pontos abaixo do relatório anterior sem o conta-quilómetros mexer; em regra desce de {low} a {high} pontos.',
+  "At {when} (car's local time) the highest and lowest tire pressures were {spread} apart; usually {low} to {high}.":
+    'Em {when} (hora local do carro) a maior e a menor pressão dos pneus diferiam {spread}; em regra de {low} a {high}.',
+  "The car sent a report at {when} (car's local time), an hour with {pct}% of its status reports.":
+    'O carro enviou um relatório em {when} (hora local do carro), uma hora com {pct}% dos seus relatórios de estado.',
+  "The car sent a report at {when} (car's local time), an hour with {pct}% of its door reports.":
+    'O carro enviou um relatório em {when} (hora local do carro), uma hora com {pct}% dos seus relatórios das portas.',
+  "At {when} (car's local time) the car reported {parts} open, as in {pct}% of its door reports.":
+    'Em {when} (hora local do carro) o carro indicou aberto(s): {parts}, como em {pct}% dos seus relatórios das portas.',
 }

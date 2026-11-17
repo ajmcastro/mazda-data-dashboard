@@ -10,6 +10,7 @@ import { forecastBasis, forecastLines } from '../tires'
 import { WarningLamps } from '../components/WarningLamps'
 import { WhenPanel } from '../components/WhenPanel'
 import { WhoRidesPanel } from '../components/WhoRidesPanel'
+import { UnusualPanel } from '../components/UnusualPanel'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, fmtDate, fmtDateTime, fmtNum, fmtTick, tireReadingsNote, ts } from '../lib'
 import { consumptionLabel, distanceLabel, fmtConsumption, distanceText, fmtDistance, pressureLabel, toDistance, toPressure, getUnits } from '../units'
@@ -186,6 +187,8 @@ export default function Status() {
       )}
 
       <WarningLamps />
+
+      <UnusualPanel />
 
       <WhenPanel />
 

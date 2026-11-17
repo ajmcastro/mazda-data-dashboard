@@ -577,6 +577,93 @@ SELECT s.kind, s.at_utc, s.code, s.km,
        timezone(c.zone, make_timestamptz(epoch_us(s.at_utc))) AS local_at
 FROM src s CROSS JOIN cfg c;
 
+-- -------------------------------------------------- unusual status reports (M64)
+-- Each reason a report is UNLIKE THIS CAR'S OTHER REPORTS (all of its data), never a fault. Two kinds of report:
+-- `status` (the remote-status snapshots of v_vehicle_status) and `doors` (v_door_status). Nothing is scored
+-- for a kind with fewer than 30 reports. Numeric features get a ROBUST z-score, (value - median) / scale with
+-- scale = 1.4826 x the median absolute deviation, but never under the gauge's own step (the car's values are
+-- so regular that the deviation is often 0); only the unusual side counts, from z = 3.5:
+--   fuel_drop_parked  points the fuel level FELL between two consecutive status reports while the odometer
+--                     moved less than 1 km (a rise counts as 0; a rise of 5 points or more is a fill-up and the
+--                     pair is left out; from 10 such pairs; scale at least 1 point)
+--   tire_spread       highest minus lowest of the four pressures (scale at least 5 kPa)
+-- Categorical features are unusual when fewer than 1% of the reports of that kind share the value:
+--   hour              the car's LOCAL hour of the report (`value` = the hour)
+--   open              the set of open doors, trunk, hood and hazard lights (`label`, comma-separated); a report
+--                     with nothing open is never unusual for this
+-- `share_pct` = the share of reports with that value; `usual_low` / `usual_high` = the 10th and 90th
+-- percentile of a numeric feature. A value the car flagged Invalid is NULL in the views and never scored.
+CREATE OR REPLACE VIEW v_unusual_reasons AS
+WITH cfg AS (
+    SELECT coalesce(max(value) FILTER (WHERE key = 'car_timezone'), 'UTC') AS zone FROM ref_settings
+), st AS (
+    SELECT created_at, odometer_km, fuel_level_pct,
+           lag(odometer_km) OVER w AS prev_odometer, lag(fuel_level_pct) OVER w AS prev_fuel,
+           greatest(tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa)
+             - least(tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa) AS spread
+    FROM v_vehicle_status WINDOW w AS (ORDER BY created_at)
+), status_n AS (
+    SELECT count(*) AS n FROM st
+), values_ AS (
+    SELECT created_at, 'fuel_drop_parked' AS feature, greatest(prev_fuel - fuel_level_pct, 0) AS x, 1.0 AS floor
+    FROM st
+    WHERE fuel_level_pct IS NOT NULL AND prev_fuel IS NOT NULL AND odometer_km IS NOT NULL
+      AND prev_odometer IS NOT NULL AND odometer_km - prev_odometer < 1 AND fuel_level_pct - prev_fuel < 5
+    UNION ALL
+    SELECT created_at, 'tire_spread', spread, 5.0 FROM st WHERE spread IS NOT NULL
+), centre AS (
+    SELECT feature, median(x) AS m, quantile_cont(x, 0.1) AS lo, quantile_cont(x, 0.9) AS hi, count(*) AS n,
+           any_value(floor) AS floor
+    FROM values_ GROUP BY feature
+), spread_ AS (
+    SELECT v.feature, greatest(1.4826 * median(abs(v.x - c.m)), any_value(c.floor)) AS scale
+    FROM values_ v JOIN centre c USING (feature) GROUP BY v.feature
+), numeric AS (
+    SELECT v.created_at, 'status' AS kind, v.feature, v.x AS value, CAST(NULL AS VARCHAR) AS label,
+           CAST(NULL AS DOUBLE) AS share_pct, round((v.x - c.m) / s.scale, 1) AS z,
+           c.lo AS usual_low, c.hi AS usual_high
+    FROM values_ v JOIN centre c USING (feature) JOIN spread_ s USING (feature) CROSS JOIN status_n n
+    WHERE n.n >= 30 AND (v.feature <> 'fuel_drop_parked' OR c.n >= 10) AND (v.x - c.m) / s.scale >= 3.5
+), reports AS (
+    SELECT 'status' AS kind, created_at FROM v_vehicle_status
+    UNION ALL
+    SELECT 'doors', created_at FROM v_door_status
+), hours AS (
+    SELECT r.kind, r.created_at, hour(timezone(c.zone, make_timestamptz(epoch_us(r.created_at)))) AS h
+    FROM reports r CROSS JOIN cfg c
+), kinds AS (
+    SELECT kind, count(*) AS n FROM reports GROUP BY kind
+), hour_counts AS (
+    SELECT kind, h, count(*) AS c FROM hours GROUP BY kind, h
+), rare_hours AS (
+    SELECT h.created_at, h.kind, 'hour' AS feature, CAST(h.h AS DOUBLE) AS value, CAST(NULL AS VARCHAR) AS label,
+           round(100.0 * hc.c / k.n, 1) AS share_pct, CAST(NULL AS DOUBLE) AS z,
+           CAST(NULL AS DOUBLE) AS usual_low, CAST(NULL AS DOUBLE) AS usual_high
+    FROM hours h JOIN hour_counts hc USING (kind, h) JOIN kinds k USING (kind)
+    WHERE k.n >= 30 AND hc.c < 0.01 * k.n
+), open_sets AS (
+    SELECT created_at,
+           concat_ws(',', CASE WHEN door_driver <> 0 THEN 'door_driver' END,
+                          CASE WHEN door_passenger <> 0 THEN 'door_passenger' END,
+                          CASE WHEN door_rear_left <> 0 THEN 'door_rear_left' END,
+                          CASE WHEN door_rear_right <> 0 THEN 'door_rear_right' END,
+                          CASE WHEN trunk <> 0 THEN 'trunk' END,
+                          CASE WHEN hood <> 0 THEN 'hood' END,
+                          CASE WHEN hazard_switch <> 0 THEN 'hazard' END) AS open_key
+    FROM v_door_status
+), open_counts AS (
+    SELECT open_key, count(*) AS c FROM open_sets GROUP BY open_key
+), rare_open AS (
+    SELECT o.created_at, 'doors' AS kind, 'open' AS feature, CAST(NULL AS DOUBLE) AS value, o.open_key AS label,
+           round(100.0 * oc.c / k.n, 1) AS share_pct, CAST(NULL AS DOUBLE) AS z,
+           CAST(NULL AS DOUBLE) AS usual_low, CAST(NULL AS DOUBLE) AS usual_high
+    FROM open_sets o JOIN open_counts oc USING (open_key) JOIN kinds k ON k.kind = 'doors'
+    WHERE k.n >= 30 AND o.open_key <> '' AND oc.c < 0.01 * k.n
+)
+SELECT * FROM numeric
+UNION ALL SELECT * FROM rare_hours
+UNION ALL SELECT * FROM rare_open;
+
 -- ----------------------------------------------------------- who rides (M37)
 -- The seat belts of each status snapshot: 1 = buckled, 0 = not, NULL = unknown or not sent. The first-row
 -- signals come as value/validity pairs, the rear ones as plain columns. The third-row belts are not read (a

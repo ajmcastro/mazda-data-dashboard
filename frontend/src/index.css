@@ -458,6 +458,10 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .episode-list > li { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 6px; }
 .episode-head { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
 .episode-faults { font-size: 12px; }
+.unusual-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.unusual-list > li { display: grid; grid-template-columns: 11.5em 1fr; gap: 4px 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+@media (max-width: 640px) { .unusual-list > li { grid-template-columns: 1fr; } }
+.day-unusual { color: var(--accent); }
 
 /* a car's flat side view on other pages (M60): neutral tones, never a state colour */
 .car-profile-box { height: 74px; margin: 2px 0 10px; }
