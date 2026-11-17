@@ -1,7 +1,7 @@
 import { t, tr, trn } from '../i18n'
 import { useEffect, useState } from 'react'
 import {
-  useAlerts, useCarWarnings, useDiagHistory, useDtcFrequency, useForecast, useFrameSummary, useOverview, useServiceLog,
+  useAlerts, useCarWarnings, useComeback, useDiagHistory, useDtcFrequency, useForecast, useFrameSummary, useOverview, useServiceLog,
   useTireForecast, useWarningFlags,
 } from '../api/hooks'
 import { FEW_FRAMES, hintLine } from '../frames'
@@ -9,6 +9,7 @@ import { useCurrentModel } from '../model'
 import { useDateRange } from '../range'
 import { REPORT_FOOTER, SECTION_IDS, SECTION_TITLE, buildReport, isEmpty, type Section, type SectionId } from '../report'
 import { fmtDate } from '../lib'
+import { comebackOf, reportLine } from '../comeback'
 
 /** What the freeze frames say about one fault, in the Faults page's own words (M36); nothing when it says nothing. */
 function FrameLine({ ecu, code }: { ecu: string; code: string }) {
@@ -21,6 +22,18 @@ function FrameLine({ ecu, code }: { ecu: string; code: string }) {
       <span className="muted">
         {trn('{n} frame', '{n} frames', s.frames)}{s.frames < FEW_FRAMES ? tr(': a hint, not a pattern') : ''}.
       </span>
+    </li>
+  )
+}
+
+/** Whether one fault came back after it stopped being listed (M67), in one line; nothing for a fault never read. */
+function ComebackLine({ ecu, code }: { ecu: string; code: string }) {
+  const c = useComeback().data
+  const f = comebackOf(c, ecu, code)
+  if (!f || !c) return null
+  return (
+    <li>
+      <b>{code}</b> ({ecu}): {reportLine(f, c.min_ended)}.
     </li>
   )
 }
@@ -53,6 +66,14 @@ function SectionView({ s }: { s: Section }) {
             <FrameLine key={`${f.ecu}|${f.dtc_code}`} ecu={f.ecu} code={f.dtc_code} />
           ))}
           <li className="muted">{tr('Freeze frames describe the car at the moment a fault was recorded, set against the frames of its other faults; they do not say what caused it.')}</li>
+        </ul>
+      )}
+      {s.faults && s.faults.length > 0 && (
+        <ul className="report-frames">
+          {s.faults.slice(0, 12).map((f) => (
+            <ComebackLine key={`${f.ecu}|${f.dtc_code}`} ecu={f.ecu} code={f.dtc_code} />
+          ))}
+          <li className="muted">{tr('Read-outs happen only when the car is read, so a fault may have come back before the read-out that lists it again.')}</li>
         </ul>
       )}
     </section>

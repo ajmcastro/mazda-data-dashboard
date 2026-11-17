@@ -725,6 +725,44 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class ComebackWait(BaseModel):
+    from_at: datetime  # the first read-out of the unit that no longer listed the fault
+    to_at: datetime | None = (
+        None  # the read-out that listed it again; None = not back by the newest read-out
+    )
+    days: float
+    back: bool
+
+
+class StillAway(BaseModel):
+    days: int
+    pct: float  # Kaplan–Meier: share of the waits still not back after this many days
+
+
+class FaultComeback(BaseModel):
+    ecu: str
+    dtc_code: str
+    title: str | None = None
+    readouts: int  # read-outs in which the unit answered
+    listed: int  # of them, those that listed the fault
+    first_at: datetime
+    last_listed_at: datetime
+    last_read_at: datetime  # the unit's newest read-out
+    listed_now: bool  # listed in it
+    waits: list[ComebackWait]
+    ended: int  # waits that ended with the fault listed again
+    enough: bool  # ended >= min_ended: the estimate is given
+    still_away: list[StillAway]
+    median_days: float | None = None
+
+
+class Comeback(BaseModel):
+    """After a fault stopped being listed, how soon it was read out again (M67), for every fault ever listed."""
+
+    min_ended: int
+    faults: list[FaultComeback]
+
+
 class Routine(BaseModel):
     routine: int  # 1 = the routine with the most stretches
     stretches: int

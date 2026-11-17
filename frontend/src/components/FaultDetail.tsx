@@ -6,6 +6,7 @@ import type { DtcEvent, DtcFrequency, FreezeFrame } from '../api/types'
 import { fmtDateTime, fmtDateTimeSec, fmtNum, signalLabel, signalValue } from '../lib'
 import { fmtDistance } from '../units'
 import { FrameSummary } from './FrameSummary'
+import { ComebackPanel } from './ComebackPanel'
 import { Badge, DataTable, Panel, QueryState, type Column } from './ui'
 
 const yesNo = (v: boolean | null | undefined) => (v === null || v === undefined ? '—' : v ? tr('yes') : tr('no'))
@@ -54,6 +55,9 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
     <>
       <div style={{ marginTop: 14 }}>
         <FrameSummary fault={fault} />
+      </div>
+      <div style={{ marginTop: 14 }}>
+        <ComebackPanel fault={fault} />
       </div>
       <div className="grid cols-2" style={{ marginTop: 14 }}>
         <Panel title={`${fault.ecu} · ${fault.dtc_code}:${fault.failure_type}`} hint={tr('click a read-out to see what surrounded it')}>

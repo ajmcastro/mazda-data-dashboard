@@ -389,6 +389,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dtcs/comeback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dtcs Comeback
+         * @description For every fault ever listed: its read-outs, when it stopped being listed and when it came back (M67),
+         *     with a Kaplan–Meier estimate from three waits that ended. A state, from all the read-outs.
+         */
+        get: operations["dtcs_comeback_api_dtcs_comeback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trips/routines": {
         parameters: {
             query?: never;
@@ -1169,6 +1190,30 @@ export interface components {
             /** Codes */
             codes: string[];
         };
+        /**
+         * Comeback
+         * @description After a fault stopped being listed, how soon it was read out again (M67), for every fault ever listed.
+         */
+        Comeback: {
+            /** Min Ended */
+            min_ended: number;
+            /** Faults */
+            faults: components["schemas"]["FaultComeback"][];
+        };
+        /** ComebackWait */
+        ComebackWait: {
+            /**
+             * From At
+             * Format: date-time
+             */
+            from_at: string;
+            /** To At */
+            to_at?: string | null;
+            /** Days */
+            days: number;
+            /** Back */
+            back: boolean;
+        };
         /** CommonCode */
         CommonCode: {
             /** Code */
@@ -1702,6 +1747,46 @@ export interface components {
             last_odometer_km?: number | null;
             /** Active In Latest Readout */
             active_in_latest_readout: boolean;
+        };
+        /** FaultComeback */
+        FaultComeback: {
+            /** Ecu */
+            ecu: string;
+            /** Dtc Code */
+            dtc_code: string;
+            /** Title */
+            title?: string | null;
+            /** Readouts */
+            readouts: number;
+            /** Listed */
+            listed: number;
+            /**
+             * First At
+             * Format: date-time
+             */
+            first_at: string;
+            /**
+             * Last Listed At
+             * Format: date-time
+             */
+            last_listed_at: string;
+            /**
+             * Last Read At
+             * Format: date-time
+             */
+            last_read_at: string;
+            /** Listed Now */
+            listed_now: boolean;
+            /** Waits */
+            waits: components["schemas"]["ComebackWait"][];
+            /** Ended */
+            ended: number;
+            /** Enough */
+            enough: boolean;
+            /** Still Away */
+            still_away: components["schemas"]["StillAway"][];
+            /** Median Days */
+            median_days?: number | null;
         };
         /** FaultContext */
         FaultContext: {
@@ -2638,6 +2723,13 @@ export interface components {
             tire_rl_kpa?: number | null;
             /** Tire Rr Kpa */
             tire_rr_kpa?: number | null;
+        };
+        /** StillAway */
+        StillAway: {
+            /** Days */
+            days: number;
+            /** Pct */
+            pct: number;
         };
         /** TireForecast */
         TireForecast: {
@@ -3744,6 +3836,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dtcs_comeback_api_dtcs_comeback_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Comeback"];
                 };
             };
             /** @description Validation Error */

@@ -249,6 +249,7 @@ def record(client: TestClient) -> list[dict]:
     rec.get("/api/forecast")
     rec.get("/api/trends/change-points")
     rec.get("/api/trips/routines")
+    rec.get("/api/dtcs/comeback")
     rec.get("/api/codes/unmapped")
     rec.get("/api/maintenance/oil")
     rec.get("/api/status/car-warnings")

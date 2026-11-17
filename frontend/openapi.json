@@ -1565,6 +1565,55 @@
         }
       }
     },
+    "/api/dtcs/comeback": {
+      "get": {
+        "summary": "Dtcs Comeback",
+        "description": "For every fault ever listed: its read-outs, when it stopped being listed and when it came back (M67),\nwith a Kaplan\u2013Meier estimate from three waits that ended. A state, from all the read-outs.",
+        "operationId": "dtcs_comeback_api_dtcs_comeback_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Comeback"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/trips/routines": {
       "get": {
         "summary": "Trips Routines",
@@ -4226,6 +4275,64 @@
         ],
         "title": "CodeCompanions"
       },
+      "Comeback": {
+        "properties": {
+          "min_ended": {
+            "type": "integer",
+            "title": "Min Ended"
+          },
+          "faults": {
+            "items": {
+              "$ref": "#/components/schemas/FaultComeback"
+            },
+            "type": "array",
+            "title": "Faults"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_ended",
+          "faults"
+        ],
+        "title": "Comeback",
+        "description": "After a fault stopped being listed, how soon it was read out again (M67), for every fault ever listed."
+      },
+      "ComebackWait": {
+        "properties": {
+          "from_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "From At"
+          },
+          "to_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To At"
+          },
+          "days": {
+            "type": "number",
+            "title": "Days"
+          },
+          "back": {
+            "type": "boolean",
+            "title": "Back"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_at",
+          "days",
+          "back"
+        ],
+        "title": "ComebackWait"
+      },
       "CommonCode": {
         "properties": {
           "code": {
@@ -6106,6 +6213,105 @@
           "active_in_latest_readout"
         ],
         "title": "DtcFrequency"
+      },
+      "FaultComeback": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "readouts": {
+            "type": "integer",
+            "title": "Readouts"
+          },
+          "listed": {
+            "type": "integer",
+            "title": "Listed"
+          },
+          "first_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First At"
+          },
+          "last_listed_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Listed At"
+          },
+          "last_read_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Read At"
+          },
+          "listed_now": {
+            "type": "boolean",
+            "title": "Listed Now"
+          },
+          "waits": {
+            "items": {
+              "$ref": "#/components/schemas/ComebackWait"
+            },
+            "type": "array",
+            "title": "Waits"
+          },
+          "ended": {
+            "type": "integer",
+            "title": "Ended"
+          },
+          "enough": {
+            "type": "boolean",
+            "title": "Enough"
+          },
+          "still_away": {
+            "items": {
+              "$ref": "#/components/schemas/StillAway"
+            },
+            "type": "array",
+            "title": "Still Away"
+          },
+          "median_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Days"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu",
+          "dtc_code",
+          "readouts",
+          "listed",
+          "first_at",
+          "last_listed_at",
+          "last_read_at",
+          "listed_now",
+          "waits",
+          "ended",
+          "enough",
+          "still_away"
+        ],
+        "title": "FaultComeback"
       },
       "FaultContext": {
         "properties": {
@@ -9364,6 +9570,24 @@
           "created_at"
         ],
         "title": "StatusPoint"
+      },
+      "StillAway": {
+        "properties": {
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "pct": {
+            "type": "number",
+            "title": "Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "days",
+          "pct"
+        ],
+        "title": "StillAway"
       },
       "TireForecast": {
         "properties": {

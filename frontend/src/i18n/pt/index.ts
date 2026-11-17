@@ -24,6 +24,7 @@ import { EPISODES } from './episodes'
 import { UNUSUAL } from './unusual'
 import { STEPS } from './steps'
 import { ROUTINES } from './routines'
+import { COMEBACK } from './comeback'
 
 export const PHRASES: Record<string, string> = {
   ...COMMON,
@@ -49,4 +50,5 @@ export const PHRASES: Record<string, string> = {
   ...UNUSUAL,
   ...STEPS,
   ...ROUTINES,
+  ...COMEBACK,
 }

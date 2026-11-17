@@ -20,6 +20,7 @@ from ..models import Model
 from ..tires import FORECAST_SQL, MIN_READINGS, MIN_SPAN_DAYS, WINDOW_DAYS
 from . import models as m
 from .changes import change_points
+from .comeback import fault_comeback
 from .dates import DateRange, date_range
 from .day import day
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
@@ -460,6 +461,13 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/dtcs/comeback", response_model=m.Comeback)
+def dtcs_comeback(con: duckdb.DuckDBPyConnection = Con):
+    """For every fault ever listed: its read-outs, when it stopped being listed and when it came back (M67),
+    with a Kaplan–Meier estimate from three waits that ended. A state, from all the read-outs."""
+    return fault_comeback(con)
 
 
 @app.get("/api/trips/routines", response_model=m.Routines)

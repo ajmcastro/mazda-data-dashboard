@@ -68,6 +68,9 @@ class Profile:
     belts: bool = False  # does the car send the seatbelt signals (who rides)?
     # from this day on every drive uses this many l/100 km more (the change point of M65; no random number)
     l100_step: tuple[date, float] | None = None
+    # a fault that comes and goes (M67): listed only in these read-outs, without freeze frames (no random number)
+    flapping_fault: tuple[str, str] | None = None
+    flapping_readouts: tuple[int, ...] = ()
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
@@ -176,6 +179,8 @@ CX60 = Profile(
     diag_offset_hours=2,
     oil=False,
     l100_step=(date(2026, 6, 10), 0.9),
+    flapping_fault=("EPS", "C1452:11"),
+    flapping_readouts=(1, 2, 4, 9, 13),
     belts=True,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
@@ -593,6 +598,10 @@ def fault_schedule(n_readouts: int, p: Profile) -> dict[int, list[tuple[str, str
     for i in range(3, 6):
         plan[i].append(p.transient_fault)  # appears, then clears
     plan[n_readouts - 1].append(p.new_fault)  # brand new in the latest read-out
+    if p.flapping_fault:
+        for i in p.flapping_readouts:
+            if i < n_readouts:
+                plan[i].append(p.flapping_fault)  # comes and goes
     return plan
 
 
@@ -630,6 +639,8 @@ def write_dtcs(out: Path, rng: random.Random, car: Car, p: Profile) -> None:
             else:
                 detail.append([tx, p.vin, _n(when), 1, ecu, "", "", 0])
         for ecu, dtc in plan[i]:
+            if (ecu, dtc) == p.flapping_fault:
+                continue  # no freeze frame: they would draw random numbers and change the rest of the sample
             for rec in ("01", "02") if (ecu, dtc) == p.recurring_fault else ("01",):
                 snap = trigger - timedelta(
                     days=rng.randint(0, 3), minutes=rng.randint(0, 600)

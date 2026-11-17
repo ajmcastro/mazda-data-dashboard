@@ -245,6 +245,15 @@ export const useDay = (day: string | undefined) => {
   })
 }
 
+/** For every fault ever listed: when it stopped being listed and when it came back (M67; a state). */
+export const useComeback = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['comeback', model],
+    queryFn: () => unwrap(client.GET('/api/dtcs/comeback', { params: { query: { model } } })),
+  })
+}
+
 /** The stretches grouped into the car's recurring kinds of stretch, from all its data (M66; a state). */
 export const useRoutines = () => {
   const { model } = useRangeQuery()
