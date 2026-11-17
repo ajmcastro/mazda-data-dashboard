@@ -1565,6 +1565,55 @@
         }
       }
     },
+    "/api/trends/change-points": {
+      "get": {
+        "summary": "Trends Change Points",
+        "description": "Where the consumption stepped up or down (M65), from all the data (a state, not a period): the\nsegments of constant level, each with its share of short stretches as context.",
+        "operationId": "trends_change_points_api_trends_change_points_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePoints"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/status/unusual": {
       "get": {
         "summary": "Status Unusual",
@@ -4050,6 +4099,58 @@
         ],
         "title": "CarWarnings"
       },
+      "ChangePoints": {
+        "properties": {
+          "min_km": {
+            "type": "number",
+            "title": "Min Km"
+          },
+          "min_stretches": {
+            "type": "integer",
+            "title": "Min Stretches"
+          },
+          "min_step": {
+            "type": "number",
+            "title": "Min Step"
+          },
+          "stretch_km": {
+            "type": "number",
+            "title": "Stretch Km"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "enough": {
+            "type": "boolean",
+            "title": "Enough"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/ConsumptionSegment"
+            },
+            "type": "array",
+            "title": "Segments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "min_km",
+          "min_stretches",
+          "min_step",
+          "stretch_km",
+          "stretches",
+          "km",
+          "enough",
+          "segments"
+        ],
+        "title": "ChangePoints",
+        "description": "The car's consumption cut into periods of constant level (M65), from all its data; a change point is\nwhere one segment ends and the next begins. One segment = no change found."
+      },
       "CodeCompanions": {
         "properties": {
           "code": {
@@ -4104,6 +4205,52 @@
           "pct"
         ],
         "title": "CommonCode"
+      },
+      "ConsumptionSegment": {
+        "properties": {
+          "from_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "From At"
+          },
+          "to_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "To At"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "l_per_100km": {
+            "type": "number",
+            "title": "L Per 100Km"
+          },
+          "short_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Short Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "from_at",
+          "to_at",
+          "stretches",
+          "km",
+          "l_per_100km"
+        ],
+        "title": "ConsumptionSegment"
       },
       "ContextFault": {
         "properties": {

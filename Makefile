@@ -90,9 +90,11 @@ sample-data:
 	cd backend && uv run python -m mazda_dash.sample ../sample_data
 
 # Try the app without your own data: load sample_data/<model>/ into db/demo-<model>.duckdb (one per model, never
-# your own databases: MAZDA_DB_PREFIX) and serve them
+# your own databases: MAZDA_DB_PREFIX) and serve them. Each demo database is rebuilt from scratch: when the
+# sample files change (a new version of the generator), loading them on top of the old ones would keep the old
+# rows next to the new. Only files named demo-<model>.duckdb are removed (acknowledged demo alerts go with them).
 demo-ingest:
-	cd backend && for m in $$(uv run python -m mazda_dash.models ids); do echo "== $$m"; MAZDA_DB_PREFIX=demo- uv run python -m mazda_dash.ingest --model $$m --data ../sample_data/$$m --settings ../sample_data/$$m/settings.yaml || exit 1; done
+	cd backend && for m in $$(uv run python -m mazda_dash.models ids); do echo "== $$m"; rm -f "../db/demo-$$m.duckdb" "../db/demo-$$m.duckdb.wal"; MAZDA_DB_PREFIX=demo- uv run python -m mazda_dash.ingest --model $$m --data ../sample_data/$$m --settings ../sample_data/$$m/settings.yaml || exit 1; done
 
 demo: demo-ingest
 	MAZDA_DB_PREFIX=demo- $(MAKE) -j2 api web

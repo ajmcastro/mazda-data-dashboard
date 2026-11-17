@@ -66,6 +66,8 @@ class Profile:
     diag_offset_hours: int = 0  # the diagnostic tool's clock
     oil: bool = True  # does the car send the oil-change countdown?
     belts: bool = False  # does the car send the seatbelt signals (who rides)?
+    # from this day on every drive uses this many l/100 km more (the change point of M65; no random number)
+    l100_step: tuple[date, float] | None = None
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
@@ -173,6 +175,7 @@ CX60 = Profile(
     leak_wheel=0,
     diag_offset_hours=2,
     oil=False,
+    l100_step=(date(2026, 6, 10), 0.9),
     belts=True,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
@@ -383,6 +386,8 @@ def build_drives(rng: random.Random, p: Profile) -> tuple[Car, list[dict]]:
             l100 = rng.gauss(p.base_l100, 0.5) + (7.5 if km == 60.0 else 0)
             if km < 15:
                 l100 += 0.8  # short city trips use more
+            if p.l100_step and day.date() >= p.l100_step[0]:
+                l100 += p.l100_step[1]
             end = car.drive(start, km, max(5.2, l100))
             if car.fuel_pct < 14:
                 before = car.fuel_pct

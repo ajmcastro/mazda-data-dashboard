@@ -725,6 +725,31 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class ConsumptionSegment(BaseModel):
+    from_at: datetime  # the start of its first stretch
+    to_at: datetime  # the end of its last stretch
+    stretches: int  # stretches of stretch_km or more in it
+    km: float
+    l_per_100km: float  # weighted by distance
+    short_pct: float | None = (
+        None  # share of all its classified stretches under stretch_km
+    )
+
+
+class ChangePoints(BaseModel):
+    """The car's consumption cut into periods of constant level (M65), from all its data; a change point is
+    where one segment ends and the next begins. One segment = no change found."""
+
+    min_km: float
+    min_stretches: int
+    min_step: float
+    stretch_km: float
+    stretches: int
+    km: float
+    enough: bool
+    segments: list[ConsumptionSegment]
+
+
 class UnusualReason(BaseModel):
     feature: str  # fuel_drop_parked, tire_spread, hour, open
     value: float | None = None  # the points, the kPa, the local hour

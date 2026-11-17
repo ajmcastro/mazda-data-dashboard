@@ -245,6 +245,15 @@ export const useDay = (day: string | undefined) => {
   })
 }
 
+/** Where the consumption stepped up or down, from all the car's data (M65; a state: no period). */
+export const useChangePoints = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['change-points', model],
+    queryFn: () => unwrap(client.GET('/api/trends/change-points', { params: { query: { model } } })),
+  })
+}
+
 /**
  * The status and door reports least like the car's other reports (M64): of the selected period, or of the
  * days given (the Day page asks for the days around one day, whatever the period).

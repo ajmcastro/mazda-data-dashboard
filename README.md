@@ -192,7 +192,7 @@ are under *More*.
 | Page | What it shows |
 |---|---|
 | **Overview** | Odometer, distance, fuel economy (with the estimated cost per 100 km when a fuel price is set), fuel level and the last fill-up, the car's own **next oil change** countdown, tire pressures (with when the car measured them), and what needs attention: new alerts, faults still listed, any warning flag the car itself raises. **Looking ahead**: the oil change as two dates at your recent pace, the year's distance against an optional limit, any tire losing pressure, and a calendar file of those dates (see [Looking ahead](#looking-ahead-optional-limit)). |
-| **Trends** | Every month compared with the one before, including the estimated fuel cost when a fuel price is set. **How the car is driven**: the stretches of driving by length (under 5 km, 5–20, 20–100, over 100) with the distance, fuel and consumption of each, by month too, and a sentence when a month's consumption and its share of short stretches moved together. |
+| **Trends** | Every month compared with the one before, including the estimated fuel cost when a fuel price is set. **How the car is driven**: the stretches of driving by length (under 5 km, 5–20, 20–100, over 100) with the distance, fuel and consumption of each, by month too, and a sentence when a month's consumption and its share of short stretches moved together. **Steps in consumption**: the dates over all your data where the consumption stepped up or down and stayed there, with the share of short stretches and your service log around then as context. |
 | **Compare** | **Two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar. |
 | **Alerts** | What the alert rules raised; acknowledge them one by one or all at once. The car on the Status page marks the parts that have open alerts, and a click on a marker shows only those. |
 | **Warnings** | Warning events per day, the **patterns** (which codes usually turn up together, learned from all your data; a hint next to each code you have not described yet), how often each code appears, and the events behind each code. Click a day on the chart to open that day. |
@@ -736,7 +736,7 @@ Run them from the project folder. The first group is what you need to use the da
 | Command | What it does |
 |---|---|
 | `make setup` | install backend and frontend dependencies |
-| `make demo` | run the dashboard on the synthetic sample data (`make demo-ingest` only loads it) |
+| `make demo` | run the dashboard on the synthetic sample data (`make demo-ingest` only loads it; the demo databases `db/demo-<model>.duckdb` are rebuilt from scratch each time, your own are never touched) |
 | `make ingest` | load `data/<id>/` into `db/<id>.duckdb`, rebuild the views, evaluate alerts |
 | `make dev` | run API and dashboard (`make api` / `make web` for just one of them) |
 | `make model` | reload each model's configuration (`codes/*.yaml`, `settings.yaml`, the fuel and service logs) and recreate the SQL views |

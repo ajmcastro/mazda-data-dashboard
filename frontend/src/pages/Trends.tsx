@@ -4,6 +4,7 @@ import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 
 import { useMonthly } from '../api/hooks'
 import type { MonthMetrics } from '../api/types'
 import { DrivingPanel } from '../components/DrivingPanel'
+import { StepsPanel } from '../components/StepsPanel'
 import { Panel, QueryState } from '../components/ui'
 import { ANIMATE, fmtNum } from '../lib'
 import { useCurrentModel } from '../model'
@@ -238,6 +239,9 @@ export default function Trends() {
                 )}
               </Panel>
             )}
+            <div style={{ marginTop: 14 }}>
+              <StepsPanel />
+            </div>
             <div style={{ marginTop: 14 }}>
               <DrivingPanel />
             </div>

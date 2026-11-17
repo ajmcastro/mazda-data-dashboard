@@ -5,7 +5,7 @@ Time:12:00:00
 TimeZone:UTC+0200
 
 
-ODO:4415km
+ODO:4447km
 
 Mode 9
 ModuleName:ECM
@@ -14,20 +14,20 @@ CALID   SAMPLECALID000000
 CVN   0000000000000000000000000000000000000000
 IPT
    (OBDCOND) = 120
-   (IGNCNTR) = 222
+   (IGNCNTR) = 223
    (CATCOMP1) = 150
 ECUNAME   ECM-EngineControl
 TG/EFN
 VOD - Engine Run/Idle Time
    (IGNCNTR_R) = 40
-   (IGNCNTR_L) = 222
+   (IGNCNTR_L) = 223
    (ERT_R) = 52000 s
-   (ERT_L) = 343308 s
+   (ERT_L) = 345764 s
 VOD - Distance/Fuel Used
    (DT_R) = 780.0 km
-   (DT_L) = 4370.8 km
+   (DT_L) = 4402.1 km
    (FC_R) = 53.04 l
-   (FC_L) = 338.74 l
+   (FC_L) = 341.16 l
 AAF #1 OCC Vehicle Data
    (AAF1_TIME1_R) = 4294967295 s
    (AAF1_TIME1_L) = 120 s
@@ -53,7 +53,7 @@ ModuleName:DSC
 DTC:C1A50:87-28
 RecordNumber:01
 APP:12.5 %
-ODOMETER:4412.8 km
+ODOMETER:4444.1 km
 VSS:48 km/h
 VPWR:13.1 V
 AMB_TEMP:21 ℃

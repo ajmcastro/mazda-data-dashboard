@@ -19,6 +19,7 @@ from ..model.settings import add_service_entry, load_service_log
 from ..models import Model
 from ..tires import FORECAST_SQL, MIN_READINGS, MIN_SPAN_DAYS, WINDOW_DAYS
 from . import models as m
+from .changes import change_points
 from .dates import DateRange, date_range
 from .day import day
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
@@ -458,6 +459,13 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/trends/change-points", response_model=m.ChangePoints)
+def trends_change_points(con: duckdb.DuckDBPyConnection = Con):
+    """Where the consumption stepped up or down (M65), from all the data (a state, not a period): the
+    segments of constant level, each with its share of short stretches as context."""
+    return change_points(con)
 
 
 @app.get("/api/status/unusual", response_model=m.UnusualReports)

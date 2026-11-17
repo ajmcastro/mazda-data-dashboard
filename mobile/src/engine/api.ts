@@ -19,6 +19,7 @@ import { day } from './day'
 import { forecast } from './forecast'
 import { drivingPattern } from './driving'
 import { warningEpisodes } from './episodes'
+import { changePoints } from './changes'
 import { unusualReports } from './unusual'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
@@ -90,6 +91,7 @@ export class Api {
     add('GET', '/api/garage', garage)
     add('GET', '/api/overview', overview)
     add('GET', '/api/trends/monthly', trendsMonthly)
+    add('GET', '/api/trends/change-points', changePoints)
     add('GET', '/api/odometer/daily', odometerDaily)
     add('GET', '/api/fuel/monthly', fuelMonthly)
     add('GET', '/api/fuel/refuels', refuels)

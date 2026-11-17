@@ -389,6 +389,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trends/change-points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trends Change Points
+         * @description Where the consumption stepped up or down (M65), from all the data (a state, not a period): the
+         *     segments of constant level, each with its share of short stretches as context.
+         */
+        get: operations["trends_change_points_api_trends_change_points_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/status/unusual": {
         parameters: {
             query?: never;
@@ -1096,6 +1117,29 @@ export interface components {
             /** Episodes */
             episodes: components["schemas"]["CarWarningEpisode"][];
         };
+        /**
+         * ChangePoints
+         * @description The car's consumption cut into periods of constant level (M65), from all its data; a change point is
+         *     where one segment ends and the next begins. One segment = no change found.
+         */
+        ChangePoints: {
+            /** Min Km */
+            min_km: number;
+            /** Min Stretches */
+            min_stretches: number;
+            /** Min Step */
+            min_step: number;
+            /** Stretch Km */
+            stretch_km: number;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** Enough */
+            enough: boolean;
+            /** Segments */
+            segments: components["schemas"]["ConsumptionSegment"][];
+        };
         /** CodeCompanions */
         CodeCompanions: {
             /** Code */
@@ -1113,6 +1157,27 @@ export interface components {
             title?: string | null;
             /** Pct */
             pct: number;
+        };
+        /** ConsumptionSegment */
+        ConsumptionSegment: {
+            /**
+             * From At
+             * Format: date-time
+             */
+            from_at: string;
+            /**
+             * To At
+             * Format: date-time
+             */
+            to_at: string;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** L Per 100Km */
+            l_per_100km: number;
+            /** Short Pct */
+            short_pct?: number | null;
         };
         /** ContextFault */
         ContextFault: {
@@ -3590,6 +3655,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trends_change_points_api_trends_change_points_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChangePoints"];
                 };
             };
             /** @description Validation Error */
