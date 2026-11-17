@@ -11,6 +11,8 @@ export const CAR: Record<string, string> = {
   'at this rate it is more than a year from {limit}': 'a este ritmo está a mais de um ano de {limit}',
   'losing about {loss} a week against the other three': 'a perder cerca de {loss} por semana face às outras três',
   '{limit} around {date} at this rate': '{limit} por volta de {date} a este ritmo',
+  'The rate is the median over every pair of measurements a day or more apart, so a wheel that reads lower at one time of day than another is not taken for a leak.':
+    'O ritmo é a mediana de todos os pares de medições com um dia ou mais de intervalo, por isso uma roda que marca menos a uma hora do dia do que a outra não é tomada por uma fuga.',
   'A wheel is compared with the mean of the other three at each measurement of the last {days} days, so weather that moves all four together does not count. It needs {n} measurements over {span} days; a wheel that is not losing pressure is not mentioned.': 'Cada roda é comparada com a média das outras três em cada medição dos últimos {days} dias, por isso o tempo, que mexe nas quatro ao mesmo tempo, não conta. São precisas {n} medições ao longo de {span} dias; uma roda que não está a perder pressão não é mencionada.',
   'A door value of 0 is assumed to mean closed; any other value is shown as open with the raw value.': 'Assume-se que um valor 0 numa porta significa fechada; qualquer outro valor aparece como aberta, com o valor em bruto.',
   'Lock codes are shown raw: their meaning is not documented.': 'Os códigos dos fechos aparecem em bruto: o seu significado não está documentado.',

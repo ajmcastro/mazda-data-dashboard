@@ -61,6 +61,14 @@ export function notesByPart(d: TireForecast | undefined): Record<string, string>
 
 /** What the forecast needs, said once under the lines (or when there is none to show). */
 export const forecastBasis = (d: TireForecast): string =>
-  tr('A wheel is compared with the mean of the other three at each measurement of the last {days} days, so weather that moves all four together does not count. It needs {n} measurements over {span} days; a wheel that is not losing pressure is not mentioned.', {
+  `${tr('A wheel is compared with the mean of the other three at each measurement of the last {days} days, so weather that moves all four together does not count. It needs {n} measurements over {span} days; a wheel that is not losing pressure is not mentioned.', {
     days: fmtNum(d.window_days), n: fmtNum(d.min_measurements), span: fmtNum(d.min_span_days),
-  })
+  })} ${tr(DAILY_NOTE)}`
+
+/**
+ * Why a wheel that reads lower in the mornings (it cools faster, or the sun warms the others) is not taken for a
+ * leak (M69): the rate is the median of the slopes between pairs of measurements a day or more apart.
+ */
+export const DAILY_NOTE = msg(
+  'The rate is the median over every pair of measurements a day or more apart, so a wheel that reads lower at one time of day than another is not taken for a leak.',
+)

@@ -74,6 +74,9 @@ class Profile:
     # the freeze frames are taken with the engine running and their supply voltage falls this many volts every 30
     # days (M68); applied after the random draws, so the rest of the sample does not change
     frame_voltage_decline: float | None = None
+    # (wheel, kPa): that wheel reads this much lower when the car measured it before noon, local time (M69); no
+    # random number
+    morning_dip: tuple[int, float] | None = None
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
@@ -185,6 +188,7 @@ CX60 = Profile(
     flapping_fault=("EPS", "C1452:11"),
     flapping_readouts=(1, 2, 4, 9, 13),
     frame_voltage_decline=0.15,
+    morning_dip=(1, 10.0),
     belts=True,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
@@ -371,6 +375,12 @@ class Car:
             days_left = (self.p.end - t).days
             if days_left < 21:
                 value -= (21 - days_left) * 2.4
+        if self.p.morning_dip and i == self.p.morning_dip[0]:
+            measured = self.tire_measured.replace(tzinfo=UTC).astimezone(
+                ZoneInfo(self.p.timezone)
+            )
+            if measured.hour < 12:
+                value -= self.p.morning_dip[1]
         return int(round(value / 5) * 5)
 
 

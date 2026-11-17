@@ -253,6 +253,8 @@ def test_the_sample_cars_leaking_wheel_is_found(tmp_path, pid):
     ingest(data, db, REPO / "config" / "models" / pid / "codes", data / "settings.yaml")
     d = get(db)
     leaking = ("fl", "fr", "rl", "rr")[PROFILES[pid].leak_wheel]
+    # every other wheel has a forecast and is not losing pressure: on the CX-60 that includes the wheel that reads
+    # 10 kPa lower in the mornings (Profile.morning_dip, M69)
     for w in d["wheels"]:
         assert w["enough"]
         assert w["losing"] == (w["wheel"] == leaking), w
@@ -261,3 +263,48 @@ def test_the_sample_cars_leaking_wheel_is_found(tmp_path, pid):
         -25 < found["kpa_per_week"] < -8
     )  # the generator's leak is about 20 kPa a week over three weeks
     assert found["below_limit"]  # both sample cars end under 200 kPa
+
+
+# ------------------------------------------------------------ time of day (M69)
+
+
+def by_hour(days=30, dip=10.0, leak=0.0, wheel=1, shift=True):
+    """One measurement a day on `wheel`, `dip` kPa lower when measured in the morning (08:00) than in the
+    evening (20:00). With `shift`, the first 20 days are mostly evenings and the last 10 mostly mornings: the case
+    where a daily pattern could look like a trend."""
+    out = []
+    for day in range(days + 1):
+        morning = (day % 7 == 3) if (day < 20 or not shift) else (day % 7 != 3)
+        if not shift:
+            morning = day % 2 == 0
+        t = day + (0 if morning else 12) / 24
+        kpa = [250.0] * 4
+        kpa[wheel] = 250.0 - (dip if morning else 0.0) - leak * t
+        out.append((t, tuple(kpa)))
+    return out
+
+
+@pytest.mark.parametrize("shift", [False, True])
+def test_a_wheel_that_reads_lower_in_the_mornings_is_not_taken_for_a_leak(
+    tmp_path, shift
+):
+    w = wheels(get(make_db(tmp_path, by_hour(shift=shift))))["fr"]
+    assert w["enough"] and w["kpa_per_week"] == 0.0 and w["losing"] is False
+
+
+def test_a_real_leak_is_measured_the_same_with_a_morning_dip(tmp_path):
+    plain = wheels(get(make_db(tmp_path / "a", by_hour(dip=0.0, leak=0.5))))["fr"]
+    dipped = wheels(get(make_db(tmp_path / "b", by_hour(dip=10.0, leak=0.5))))["fr"]
+    assert plain["losing"] and dipped["losing"]
+    assert dipped["kpa_per_week"] == plain["kpa_per_week"] == pytest.approx(-3.5)
+
+
+def test_a_daily_swing_of_15_kpa_on_one_wheel_can_be_taken_for_a_refill(tmp_path):
+    # a known limit, not a feature: the wheel's own pressure rises 25 kPa or more and 20 or more against the
+    # others from a cold morning to a warm evening, which is what a refill looks like. Realistic swings (5-10 kPa)
+    # do not reach it; if the refill rule is ever made smarter, this test should change with it.
+    readings = [
+        (t, (250.0, kpa[1] - 15.0 if kpa[1] < 250 else kpa[1], 250.0, 250.0))
+        for t, kpa in by_hour(dip=10.0, shift=False)
+    ]
+    assert wheels(get(make_db(tmp_path, readings)))["fr"]["refilled_at"] is not None
