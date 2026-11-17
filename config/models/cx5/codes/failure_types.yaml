@@ -1,12 +1,27 @@
 # Failure-type byte (the part after ':' in a DTC, e.g. "87" in "U0198:87").
 # Definitions follow SAE J2012-DA; only the entries I am confident about are listed.
 "00": No sub type information
+"01": General electrical failure
+"04": System internal failure
+"08": Bus signal / message failure
+"09": Component failure
 "11": Circuit short to ground
 "12": Circuit short to battery
 "13": Circuit open
 "16": Circuit voltage below threshold
 "17": Circuit voltage above threshold
+"29": Signal invalid
+"49": Internal electronic failure
+"54": Missing calibration
+"55": Not configured
+"62": Signal compare failure
+"64": Signal plausibility failure
+"68": Event information
 "81": Invalid serial data received
+"82": Alive / sequence counter incorrect / not updated
 "86": Signal invalid
 "87": Missing message
 "88": Bus off
+# "89" (seen in U2701:89) is left out: it is not a subtype defined in SAE J2012-DA as far as is known.
+"92": Performance or incorrect operation
+"96": Component internal failure

@@ -10,17 +10,65 @@
   title: Control module (internal fault)
   severity: unknown
   notes: SAE J2012 definition.
-"U2122": {title: null, severity: unknown}
-"U2123": {title: null, severity: unknown}
-"U2124": {title: null, severity: unknown}
-"U2524": {title: null, severity: unknown}
-"U2701": {title: null, severity: unknown}
-"C1681": {title: null, severity: unknown}
-"C1A0E": {title: null, severity: unknown}
-"C1A0F": {title: null, severity: unknown}
-"C1A10": {title: null, severity: unknown}
-"C1AE1": {title: null, severity: unknown}
-"C1AE2": {title: null, severity: unknown}
-"C1AE3": {title: null, severity: unknown}
-"C1AE4": {title: null, severity: unknown}
-"C1C83": {title: null, severity: unknown}
+"U2122":
+  title: Communication error with front radar sensor
+  severity: warning
+  notes: Mazda-specific; communication lost/error with FR module.
+"U2123":
+  title: Communication error with front side radar sensor (LH)
+  severity: warning
+  notes: Mazda-specific; communication lost/error with FSRL module.
+"U2124":
+  title: Communication error with front side radar sensor (RH)
+  severity: warning
+  notes: Mazda-specific; communication lost/error with FSRR module.
+"U2524":
+  title: CAN communication bus fault
+  severity: warning
+  notes: Network/bus communication error on secondary vehicle CAN bus.
+"U2701":
+  title: Communication error with cockpit domain controller (Ethernet)
+  severity: warning
+  notes: Documented in 2026 CX-5 Service Alerts SA-006/26 and SA-015/26 (typically logged as U2701:89 between DCM and CDC).
+"C1681":
+  title: Front camera / ADAS feedback malfunction
+  severity: warning
+  notes: Chassis/ADAS sensor circuit or feedback fault (verify against the reporting ECU in your CSV).
+"C1A0E":
+  title: null
+  severity: unknown
+  notes: >-
+    Meaning unknown. In this car's data only the ADU (i-ACTIVSENSE domain unit) reports it, always as :87
+    (missing message) and in the same read-outs as C1681, C1A0F, C1A10, C1AE1-C1AE4 and C1C83. An earlier
+    guess "Brake fluid pressure / chassis sensor invalid data" was dropped: the ADU is not the brake unit.
+"C1A0F":
+  title: null
+  severity: unknown
+  notes: >-
+    Meaning unknown. In this car's data only the ADU (i-ACTIVSENSE domain unit) reports it, always as :87
+    (missing message) and in the same read-outs as C1681, C1A0E, C1A10, C1AE1-C1AE4 and C1C83. An earlier
+    guess "Brake fluid pressure / chassis sensor correlation fault" was dropped: the ADU is not the brake unit.
+"C1A10":
+  title: Front millimeter-wave radar sensor malfunction
+  severity: warning
+  notes: Internal malfunction or signal fault in front radar assembly.
+"C1AE1":
+  title: Front left ultrasonic parking sensor malfunction
+  severity: info
+  notes: Sonar/parking assist sensor circuit or signal fault (FL).
+"C1AE2":
+  title: Front left-center ultrasonic parking sensor malfunction
+  severity: info
+  notes: Sonar/parking assist sensor circuit or signal fault (FLC).
+"C1AE3":
+  title: Front right-center ultrasonic parking sensor malfunction
+  severity: info
+  notes: Sonar/parking assist sensor circuit or signal fault (FRC).
+"C1AE4":
+  title: Front right ultrasonic parking sensor malfunction
+  severity: info
+  notes: Sonar/parking assist sensor circuit or signal fault (FR).
+"C1C83":
+  title: null
+  severity: unknown
+  notes: Mazda-specific 2026 chassis/ADAS code not yet indexed in public service bulletins; correlate with the reporting ECU column in your DTC CSV.

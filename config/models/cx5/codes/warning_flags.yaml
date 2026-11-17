@@ -11,3 +11,26 @@
 #   title: Example lamp
 #   severity: info
 #   notes: where you found out, and how sure you are
+
+# Notes below are co-occurrences found in this car's exports (Jun–Nov 2026), not meanings: titles stay null.
+vdt_7_warningbody_2_44:
+  title: null
+  notes: >-
+    Hint only. Came on 3 times (1 Aug, 12 Oct, 29 Oct 2026); each time warning $1B4 was reported
+    between the previous status report and the one showing the flag on, and $1B4 was seen on no other days.
+vdt_2_warningpt_1_23:
+  title: null
+  notes: >-
+    Hint only. Always switches on and off together with vdt_2_warningpt_2_46 (6 identical episodes);
+    first on 15 Oct 2026, the day of the diagnostic report. The rare warnings $049, $072, $086 and $0B5
+    appeared once (22 Oct) just before one of its episodes.
+vdt_2_warningpt_2_46:
+  title: null
+  notes: >-
+    Hint only. Always switches on and off together with vdt_2_warningpt_1_23 (6 identical episodes);
+    first on 15 Oct 2026, the day of the diagnostic report.
+vdt_7_warningbody_1_30:
+  title: null
+  notes: >-
+    Hint only. Switches on and off about 58 times, apparently with normal use; no particular warning
+    code or fault goes with it.

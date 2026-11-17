@@ -11,18 +11,22 @@
 "$049":
   title: null
   severity: unknown
+  notes: Hint only. Seen on one day only (22 Oct 2026, twice within a minute), together with $072, $086, $0B5, just before vdt_2_warningpt_1_23 / 2_46 came on.
 "$072":
   title: null
   severity: unknown
+  notes: Hint only. Seen on one day only (22 Oct 2026, twice within a minute), together with $049, $086, $0B5, just before vdt_2_warningpt_1_23 / 2_46 came on.
 "$086":
   title: null
   severity: unknown
+  notes: Hint only. Seen on one day only (22 Oct 2026, twice within a minute), together with $049, $072, $0B5, just before vdt_2_warningpt_1_23 / 2_46 came on.
 "$08D":
   title: null
   severity: unknown
 "$0B5":
   title: null
   severity: unknown
+  notes: Hint only. Seen on one day only (22 Oct 2026, twice within a minute), together with $049, $072, $086, just before vdt_2_warningpt_1_23 / 2_46 came on.
 "$182":
   title: null
   severity: unknown
@@ -35,6 +39,7 @@
 "$1B4":
   title: null
   severity: unknown
+  notes: Hint only. Reported on 4 days (1-2 Aug, 12 Oct, 29 Oct 2026), each time around vdt_7_warningbody_2_44 coming on or off.
 "$20F":
   title: null
   severity: unknown
