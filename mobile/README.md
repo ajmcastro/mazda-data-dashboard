@@ -16,6 +16,9 @@ How it works (details and measurements in `../PLAN.md`):
   `backend/src/mazda_dash/model/views.sql`, and answers the pages' `/api/...` requests with
   `src/engine/`, a TypeScript port of the Python API proven identical by contract tests.
 - **Compare** and **All cars** (More): the engine holds one car at a time, so each stored car's monthly figures (the answer of `/api/trends/monthly` without a period) and its `/api/garage` card (a few KiB together) are cached in IndexedDB the first time that car is loaded, keyed by the pack and by a version of the engine's answer. The first time you open one of these pages, cars that have never been loaded are loaded one after the other ("Preparing the comparison…") and the car you were looking at comes back; after that it opens at once, offline too. Replacing or deleting a pack discards its figures.
+- The panels that learn from the data (warning patterns, unusual reports, steps in consumption, routines, whether a
+  fault comes back, the voltage in the freeze frames, the next 30 days as a range) are computed on the phone from the
+  same pack, by the same SQL views or the same code as the Mac: a pack made before them shows them too.
 - The packs (one per car model) and the alert acknowledgements made on the phone (kept per model) are kept in the browser's IndexedDB. One model is loaded in the engine at a time, the one the address names (`#/?model=cx60`); a model selector at the top of the screen switches (it appears with two or more packs). Importing the pack of another model only stores it, so the address and the data on screen never disagree.
 
 ## Run it

@@ -108,6 +108,14 @@ The code tour is in [CLAUDE.md](CLAUDE.md); the ones that matter most when chang
 19. **A new alert rule** needs its model in `alerts/config.py`, a detector and a test, a row in the README's Alerts
     table, the part of the car it is about in `ALERT_PART` (`frontend/src/car.ts`), and its sentences and name in
     `frontend/src/alerttext.ts`; tests read the detectors' list and fail when one of those two is missing.
+20. **Learning from the data stays plain statistics, the same on both apps.** Patterns, unusual reports, steps in
+    consumption, routines, fault comeback, the voltage trend and the monthly forecast are computed from the car's own
+    data, never from a trained model or another car's. Prefer SQL in `views.sql` (the phone rebuilds it); when a loop is
+    needed, write it the same in Python and in `mobile/src/engine/` (same order of operations, an integer random
+    generator, features rounded where Python and the browser could differ in the last bit), so `make mobile-test`
+    finds identical answers. Each result gives what it rests on and stays silent under a minimum. Try a new method on
+    real data before wiring it, and say so in PLAN.md when it changes nothing. When the demo should show it, plant it
+    through a `Profile` flag of the second demo car, derived from the clock, never from new random numbers.
 
 ## Pull requests
 

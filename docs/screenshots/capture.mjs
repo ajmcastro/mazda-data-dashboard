@@ -133,6 +133,10 @@ await shoot('day.png', '/day?day=2026-06-27')
 await shoot('report.png', '/report')
 await shoot('data-health.png', '/health')
 await shoot('compare.png', '/compare')
+// learning from the data (M63-M71): the panels the first demo car shows well
+await shoot('patterns.png', '/warnings', (p) => scrollToHeading(p, 'Patterns'))
+await shoot('unusual.png', '/status', (p) => scrollToHeading(p, 'Unusual reports'))
+await shoot('routines.png', '/trends', (p) => scrollToHeading(p, 'Routines'))
 await mac.close()
 
 // the second demo model, to show the model selector at work (its data ends on 31 July)
@@ -153,6 +157,23 @@ await scrollToHeading(mac60, 'Who rides')
 await sleep(800)
 await mac60.screenshot({ path: path.join(out, 'who-rides-cx60.png') })
 console.log('wrote who-rides-cx60.png')
+// learning from the data on the second demo car, whose sample plants what these panels look for: a step in
+// consumption (M65), a fault that comes and goes (M67) and a slow fall of the freeze frames' voltage (M68)
+async function shoot60(file, url, prepare) {
+  await mac60.goto(`http://localhost:5173${url}`, { waitUntil: 'networkidle0' })
+  await sleep(800)
+  await prepare(mac60)
+  await sleep(800)
+  await mac60.screenshot({ path: path.join(out, file) })
+  console.log('wrote', file)
+}
+await shoot60('steps-cx60.png', '/trends?model=cx60', (p) => scrollToHeading(p, 'Steps in consumption'))
+await shoot60('comeback-cx60.png', '/faults?model=cx60', async (p) => {
+  await p.evaluate(() => [...document.querySelectorAll('tbody tr')].find((r) => r.textContent.includes('C1452'))?.click())
+  await sleep(1500)
+  await scrollToHeading(p, 'Comes back?')
+})
+await shoot60('voltage-cx60.png', '/faults?model=cx60', (p) => scrollToHeading(p, 'Battery voltage in the freeze frames'))
 await mac60.close()
 
 // the same dashboard in Portuguese (the language is a choice per device, kept in the browser)

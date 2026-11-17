@@ -12,14 +12,21 @@ the phone**.
 - **Understand the car day to day**: the fill-ups the fuel level shows, how the car is driven (short and long
   stretches), everything that happened on one day, your own service log marked on the charts, and whether your
   data has gaps.
-- **Look ahead**: the next oil change as dates at your recent pace, the year's distance against a limit you
-  set, a tire that is slowly losing pressure, and a calendar file of those dates.
+- **Look ahead**: the next 30 days' distance, fuel and cost as a range, the next oil change as dates at your
+  recent pace, the year's distance against a limit you set, a tire that is slowly losing pressure, and a calendar
+  file of those dates.
+- **Learn from the data**: which warning codes turn up together, the status reports least like your car's
+  others, the dates its consumption stepped up or down, its recurring kinds of trip, whether a fault came back
+  after it cleared, and the battery voltage recorded with faults over time. Plain statistics run on your own
+  data (no trained model, nothing sent anywhere), each saying what it rests on and offered as a hint, never a
+  diagnosis.
 - **The car in 3D**: a schematic of your car you can turn and zoom, with tire pressures, doors, fuel, the oil
   countdown and the odometer shown next to the part they belong to, what needs a look marked, and a slider to
   step back through the period. On the Mac and on the phone.
 - **Get told**: alerts for a new or recurring fault, a warning spike, an alarm event, a low supply voltage in
   a fault's freeze frame, unusually high fuel use, low tire pressure or a slow leak, an oil change coming up,
-  the warning flags the car raises itself, and a stale export.
+  the warning flags the car raises itself, a status report unlike the others (off by default), and a stale
+  export.
 - **Take it to the workshop**: a one-page report to print or save as a PDF, with the faults, what surrounded
   them and the car's state.
 - **Add data without a terminal**: drop Mazda's download on the *Import* page and see what changed.
@@ -56,7 +63,7 @@ far the data can be trusted.
 
 <table>
   <tr>
-    <td><img src="docs/screenshots/looking-ahead.png" alt="Looking ahead on the Overview: the oil change as two dates at the recent pace, the year's distance against a limit, a tire losing pressure, and the calendar file"></td>
+    <td><img src="docs/screenshots/looking-ahead.png" alt="Looking ahead on the Overview: the next 30 days as a range, the oil change as two dates at the recent pace, the year's distance, a tire losing pressure, and the calendar file"></td>
     <td><img src="docs/screenshots/driving.png" alt="How the car is driven, on Trends: stretches of driving by length with distance, fuel and consumption, and by month"></td>
   </tr>
   <tr>
@@ -66,6 +73,25 @@ far the data can be trusted.
   <tr>
     <td><img src="docs/screenshots/data-health.png" alt="Data health: days with a status report, the longest silence, invalid readings, and what each export file covers"></td>
     <td><img src="docs/screenshots/who-rides-cx60.png" alt="Who rides, on the second demo car: the share of status reports with each seat belt buckled, and the seats seen from above"></td>
+  </tr>
+</table>
+
+**Learning from the data**: which warning codes turn up together, the reports least like the car's others, its
+recurring kinds of trip, a step in consumption, a fault that comes and goes, and the voltage recorded with faults
+(the last three on the second demo car, whose sample data plants each of them).
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/patterns.png" alt="Patterns on the Warnings page: episodes of warnings grouped into recurring patterns, each with the codes it always or sometimes holds"></td>
+    <td><img src="docs/screenshots/unusual.png" alt="Unusual reports on the Status page: the moments least like the car's other reports, each with what was unusual and what is usual"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/routines.png" alt="Routines on the Trends page: weekday mornings and evenings of about 17 km and weekend stretches of about 82 km, each with its share of the distance"></td>
+    <td><img src="docs/screenshots/steps-cx60.png" alt="Steps in consumption on the Trends page of the second demo car: the level from 7.9 to 9.2 l/100 km around 9 June"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/comeback-cx60.png" alt="Comes back? in a fault's detail: when it stopped being listed and when it was listed again, with the share still away after 7, 30 and 90 days"></td>
+    <td><img src="docs/screenshots/voltage-cx60.png" alt="Battery voltage in the freeze frames on the Faults page: the voltage recorded with faults over time, engine running, about −0.16 V every 30 days"></td>
   </tr>
 </table>
 
@@ -129,7 +155,8 @@ With more than one car model loaded, the sidebar has a model selector (here the 
 - [Try it in two minutes (no data needed)](#try-it-in-two-minutes-no-data-needed)
 - [What is in the dashboard](#what-is-in-the-dashboard): the pages, the words used, units, language, periods
 - [Use your own data](#use-your-own-data): getting it from Mazda, loading it, car models, and the optional
-  settings (time zone, fuel cost, fill-ups, looking ahead, service log, fault map, clues for unknown codes, sharing code descriptions)
+  settings (time zone, fuel cost, warning episodes, fill-ups, looking ahead, service log, fault map, clues for unknown codes, sharing
+  code descriptions)
 - [Use it on your iPhone](#use-it-on-your-iphone-offline-with-your-data-on-the-phone)
 - [Alerts](#alerts) · [Commands](#commands) · [How it works](#how-it-works) · [Limitations](#limitations)
 - [Privacy](#privacy) · [Troubleshooting](#troubleshooting) · [Development](#development)
@@ -200,7 +227,7 @@ are under *More*.
 | **Status** | **The car in 3D** (or the same as a list; numbered pins on the phone), with a **slider** that steps back through the status reports of the period or plays them. Then, each in its own panel: fuel level and range; tire pressure per wheel at the time the car **measured** it, and for a wheel losing pressure against the other three, how fast and when it reaches your limit at that rate; the **fill-ups** (see [Fill-ups](#fill-ups-optional)); the **service log** (see [Service log](#service-log-optional)); the car's own warning flags; the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it); when the car is used (by hour and weekday); who rides (from the seat belts, when the car sends them); the oil-change countdown; recent trips and the alarm history; the **unusual reports**: the reports least like your car's others (a fuel drop while parked, a wide spread between the tires, an hour the car is rarely used, a door rarely left open), also marked on the slider and the Day page. |
 | **Diagnostics** | The diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next. |
 | **All cars** | One card per car model with data: its side view, the odometer, the last 30 days, the **fuel used and its cost** over those days (estimates; the cost only when a fuel price is set), fuel level, the car's own next-oil-change countdown, new alerts, faults still listed, the car's own warnings that are on, and a note when its newest reading is more than a week old. |
-| **Day** | One day at a glance, in the car's own time: the stretches driven, each status report with what changed, doors, the warning codes of the day, fault read-outs, alarm reports, a fill-up, a service-log entry, a diagnostic report and the alerts about that day, in order, each linking to its page. Arrows step to the previous and next day that has anything. |
+| **Day** | One day at a glance, in the car's own time: the stretches driven, each status report with what changed, doors, the warning codes of the day, fault read-outs, alarm reports, a fill-up, a service-log entry, a diagnostic report and the alerts about that day, in order, each linking to its page; a status or door report that stands out says why, and each drive names its closest routine. Arrows step to the previous and next day that has anything. |
 | **Report** | One page to print or save as a PDF for the workshop, for the period you chose: the car, its faults with what their freeze frames show and whether they came back, the car's own warnings, the warning-lamp flags that changed, tires, the newest diagnostic report against the one before, your service log and the open alerts. Untick what you do not want; the VIN is left out unless you tick it. |
 | **Data health** | How far to trust the rest: what each kind of export file covers (first and last record, how many, on how many days), how many days have a status report, the silences between status reports of two days or more, and the signals the car itself flagged as Invalid (those readings are never used). It describes the exports, not the car. |
 | **Import** (the Mac only) | Drop a new download from Mazda on the page: it is checked, stored in the model's data folder, loaded, and summarised (new rows, the newest day, distance since the last load, faults that appeared or left, new warning codes, new alerts). See [Adding newer data later](#adding-newer-data-later). |
@@ -504,7 +531,9 @@ open it to add them to your calendar; nothing is sent anywhere. The oil alert ca
 
 ### Clues for unknown codes
 
-`scripts/correlate_mazda_warnings.py` reads a model's database (read-only, after `make ingest`) and lists what
+The Warnings page gives the first clue itself: next to a code you have not described it shows the codes it usually
+comes with, and its **Patterns** panel lists the warnings that turn up together (see
+[Warning episodes](#warning-episodes)). For more, `scripts/correlate_mazda_warnings.py` reads a model's database (read-only, after `make ingest`) and lists what
 happened together: the warning codes of each event that started a fault read-out and the faults new in that
 read-out, every time a warning-lamp flag came on or went off with the warning codes reported in between, and the
 dates of the rare warning codes with the flags that were on at the next status report. It prints nothing that
@@ -786,7 +815,10 @@ data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your co
 - `backend/src/mazda_dash/api`: the JSON API. It only reads, with three exceptions that never leave your machine:
   acknowledging an alert, adding a service-log entry, and importing a download (`importer.py`).
 - `backend/src/mazda_dash/tires.py`, `forecast.py`: the tire leak and the looking-ahead estimates, shared by the
-  API and the alert rules. `codepack.py`: sharing code descriptions. `pack.py`: the phone's data pack.
+  API and the alert rules. `changepoints.py`, `routines.py` and the routes `api/episodes.py`, `unusual.py`,
+  `changes.py`, `routines.py`, `comeback.py`, `voltage.py`, `month.py`: learning from the data with plain
+  statistics (robust scores, binary segmentation, k-medoids, Kaplan–Meier, Theil–Sen, a block bootstrap), either in
+  the SQL views or written the same in Python and in the phone's TypeScript, so both give the same answers. `codepack.py`: sharing code descriptions. `pack.py`: the phone's data pack.
 - `frontend/`: Vite, React, TypeScript, Recharts. Types are generated from the API's OpenAPI
   schema. The wording of every sentence the pages show lives in small tested modules next to the pages, and
   `frontend/src/i18n/` holds the two languages. The 3D car (`frontend/src/car3d/`) is drawn with three.js, loaded
@@ -819,8 +851,14 @@ data/<id>/*.csv, *.txt ──ingest──▶ DuckDB tables ──views + your co
   sit, so the [fault map](#fault-map-optional) shows only the units you place yourself. The dimensions in
   `model.yaml` were looked up, not taken from a manual.
 - **The fuel cost is an estimate.** The litres the car reports times the price you enter: not what you paid, and nothing for electricity.
-- **Forecasts are your recent pace carried forward.** The oil-change dates, the year's distance and a tire reaching
-  its limit say "at this rate", are counted from your newest data, and change as you drive more or less.
+- **Forecasts are your recent pace carried forward.** The next 30 days' range, the oil-change dates, the year's
+  distance and a tire reaching its limit say "at this rate", are counted from your newest data, and change as you
+  drive more or less. With less than a year of data nothing allows for the season.
+- **Learning from the data rests on one car and a few months.** Patterns, unusual reports, routines, steps in
+  consumption, whether a fault comes back and the voltage trend are learned from all of your car's data, so they
+  can change when new data arrives, and each one needs a minimum before it says anything (with a few months of one
+  car, "too few" is a common and honest answer). They describe the data, never what a code means, why something
+  happened or whether a part is healthy.
 - **A fill-up and a drive are known only as "between two status reports".** The car reports its state now and
   then, not each trip, so times and litres are approximate and say so.
 - **The phone app is a read-only viewer.** It does not read Mazda's files, evaluate alerts, import a download or
