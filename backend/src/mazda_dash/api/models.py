@@ -725,6 +725,64 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class PatternCode(BaseModel):
+    code: str
+    title: str | None = None  # the owner's description; None when the code has none
+    role: str  # core (in 80% or more of the pattern's episodes) or sometimes
+    pct: float  # share of the pattern's episodes (all the data) that hold the code
+
+
+class CommonCode(BaseModel):
+    code: str
+    title: str | None = None
+    pct: float  # share of all episodes that hold the code (90% or more: left out of the grouping)
+
+
+class PatternFault(BaseModel):
+    ecu: str
+    dtc_code: str
+    title: str | None = None
+    episodes: int  # episodes of the pattern in the period with this fault read out within fault_hours
+    pct: float  # the same as a share of the pattern's episodes in the period
+    pct_all: (
+        float  # share of ALL the period's episodes with this fault read out near them
+    )
+
+
+class CodeCompanions(BaseModel):
+    code: str
+    episodes: int  # episodes (all the data) that hold the code
+    codes: list[str]  # the other codes in 80% or more of them (common codes left out)
+
+
+class WarningPattern(BaseModel):
+    pattern: int  # 1 = the pattern with the most episodes over all the data
+    episodes: int  # in the period
+    episodes_total: int  # over all the data
+    recurring: bool  # episodes_total >= min_episodes
+    days: int
+    first_at: datetime
+    last_at: datetime
+    median_minutes: float
+    codes: list[PatternCode]
+    faults: list[PatternFault]
+
+
+class WarningEpisodes(BaseModel):
+    """Warnings grouped into episodes and recurring patterns (M63). Patterns are learned from all the data;
+    the period decides which episodes are counted."""
+
+    gap_minutes: int
+    min_episodes: int
+    fault_hours: int
+    episodes: int
+    recurring_patterns: int
+    one_off_episodes: int
+    common: list[CommonCode]
+    companions: list[CodeCompanions]
+    patterns: list[WarningPattern]
+
+
 class DrivingBand(BaseModel):
     band: str  # under_5, 5_to_20, 20_to_100, over_100
     min_km: float

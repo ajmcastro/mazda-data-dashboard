@@ -454,6 +454,10 @@ fieldset.presets:disabled .preset { opacity: 0.5; cursor: default; }
 .cover-track i { position: absolute; top: 0; bottom: 0; background: var(--steel); border-radius: 2px; }
 .panel.mt { margin-top: 14px; }
 .note { font-size: 12px; margin: 10px 0 0; }
+.episode-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.episode-list > li { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 6px; }
+.episode-head { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; }
+.episode-faults { font-size: 12px; }
 
 /* a car's flat side view on other pages (M60): neutral tones, never a state colour */
 .car-profile-box { height: 74px; margin: 2px 0 10px; }

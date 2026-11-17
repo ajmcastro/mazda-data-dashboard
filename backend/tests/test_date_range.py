@@ -13,7 +13,7 @@ from mazda_dash.sample import generate
 CONFIG = Path(__file__).parents[2] / "config" / "models" / "cx5" / "codes"
 PERIOD_ENDPOINTS = [
     "/api/odometer/daily", "/api/fuel/monthly", "/api/trips/segments", "/api/status/timeline",
-    "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily", "/api/activity/pattern", "/api/status/occupancy", "/api/data/health", "/api/fuel/refuels", "/api/trips/pattern",
+    "/api/doors/timeline", "/api/alarms", "/api/warnings/frequency", "/api/warnings/daily", "/api/activity/pattern", "/api/status/occupancy", "/api/data/health", "/api/fuel/refuels", "/api/trips/pattern", "/api/warnings/episodes",
     "/api/dtcs/events", "/api/dtcs/readouts",
 ]  # fmt: skip
 
@@ -165,6 +165,10 @@ def test_an_empty_range_gives_empty_results_not_errors(client):
             assert got["stretches"] == 0 and got["months"] == []
             assert [b["stretches"] for b in got["bands"]] == [0, 0, 0, 0]
             assert got["l_per_100km"] is None
+        elif path == "/api/warnings/episodes":
+            got = get(client, path, **nothing)
+            assert got["episodes"] == 0 and got["patterns"] == []
+            assert got["recurring_patterns"] == 0 and got["one_off_episodes"] == 0
         elif path == "/api/status/occupancy":
             got = get(client, path, **nothing)
             assert (

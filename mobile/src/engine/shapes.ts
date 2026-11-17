@@ -109,3 +109,6 @@ export const WARNING_FLAG = [
 export const WARNING_FLAG_EPISODE = ['flag', 'started_at', 'last_on_at', 'readings', 'max_value', 'ongoing']
 export const HINT_WARNING = ['code', 'title', 'severity', 'known', 'on_with', 'off_with', 'share_on', 'share_off']
 export const HINT_FAULT = ['ecu', 'dtc_code', 'failure_type', 'title', 'severity', 'on_with', 'off_with', 'share_on', 'share_off']
+export const PATTERN_CODE = ['code', 'title', 'role', 'pct']
+export const COMMON_CODE = ['code', 'title', 'pct']
+export const PATTERN_FAULT = ['ecu', 'dtc_code', 'title', 'episodes', 'pct', 'pct_all']

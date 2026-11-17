@@ -20,6 +20,7 @@ import { COMPONENTS } from './components'
 import { PAGES } from './pages'
 import { PHONE } from './phone'
 import { ALERTS } from './alerts'
+import { EPISODES } from './episodes'
 
 export const PHRASES: Record<string, string> = {
   ...COMMON,
@@ -41,4 +42,5 @@ export const PHRASES: Record<string, string> = {
   ...GARAGE,
   ...CAR,
   ...FUEL,
+  ...EPISODES,
 }

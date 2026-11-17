@@ -23,6 +23,7 @@ from .dates import DateRange, date_range
 from .day import day
 from .db import Selected, db_path, get_con, get_rw_con, has_table, one, rows
 from .driving import driving_pattern
+from .episodes import warning_episodes
 from .health import data_health
 from .refuels import refuels
 from .selection import registry
@@ -456,6 +457,13 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/warnings/episodes", response_model=m.WarningEpisodes)
+def warnings_episodes(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
+    """The warnings as episodes and recurring patterns (M63): which codes usually turn up together. A hint
+    for reading the warnings, never the meaning of a code."""
+    return warning_episodes(con, rng)
 
 
 @app.get("/api/warnings/daily", response_model=list[m.WarningDay])

@@ -1565,6 +1565,93 @@
         }
       }
     },
+    "/api/warnings/episodes": {
+      "get": {
+        "summary": "Warnings Episodes",
+        "description": "The warnings as episodes and recurring patterns (M63): which codes usually turn up together. A hint\nfor reading the warnings, never the meaning of a code.",
+        "operationId": "warnings_episodes_api_warnings_episodes_get",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "first day, inclusive (UTC)",
+              "title": "From"
+            },
+            "description": "first day, inclusive (UTC)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "last day, inclusive (UTC)",
+              "title": "To"
+            },
+            "description": "last day, inclusive (UTC)"
+          },
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WarningEpisodes"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/warnings/daily": {
       "get": {
         "summary": "Warning Daily",
@@ -3875,6 +3962,61 @@
           "episodes"
         ],
         "title": "CarWarnings"
+      },
+      "CodeCompanions": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "episodes": {
+            "type": "integer",
+            "title": "Episodes"
+          },
+          "codes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Codes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "episodes",
+          "codes"
+        ],
+        "title": "CodeCompanions"
+      },
+      "CommonCode": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "pct": {
+            "type": "number",
+            "title": "Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "pct"
+        ],
+        "title": "CommonCode"
       },
       "ContextFault": {
         "properties": {
@@ -8054,6 +8196,84 @@
         ],
         "title": "Overview"
       },
+      "PatternCode": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "role": {
+            "type": "string",
+            "title": "Role"
+          },
+          "pct": {
+            "type": "number",
+            "title": "Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "role",
+          "pct"
+        ],
+        "title": "PatternCode"
+      },
+      "PatternFault": {
+        "properties": {
+          "ecu": {
+            "type": "string",
+            "title": "Ecu"
+          },
+          "dtc_code": {
+            "type": "string",
+            "title": "Dtc Code"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "episodes": {
+            "type": "integer",
+            "title": "Episodes"
+          },
+          "pct": {
+            "type": "number",
+            "title": "Pct"
+          },
+          "pct_all": {
+            "type": "number",
+            "title": "Pct All"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ecu",
+          "dtc_code",
+          "episodes",
+          "pct",
+          "pct_all"
+        ],
+        "title": "PatternFault"
+      },
       "Readout": {
         "properties": {
           "transaction_id": {
@@ -8998,6 +9218,69 @@
         ],
         "title": "WarningDay"
       },
+      "WarningEpisodes": {
+        "properties": {
+          "gap_minutes": {
+            "type": "integer",
+            "title": "Gap Minutes"
+          },
+          "min_episodes": {
+            "type": "integer",
+            "title": "Min Episodes"
+          },
+          "fault_hours": {
+            "type": "integer",
+            "title": "Fault Hours"
+          },
+          "episodes": {
+            "type": "integer",
+            "title": "Episodes"
+          },
+          "recurring_patterns": {
+            "type": "integer",
+            "title": "Recurring Patterns"
+          },
+          "one_off_episodes": {
+            "type": "integer",
+            "title": "One Off Episodes"
+          },
+          "common": {
+            "items": {
+              "$ref": "#/components/schemas/CommonCode"
+            },
+            "type": "array",
+            "title": "Common"
+          },
+          "companions": {
+            "items": {
+              "$ref": "#/components/schemas/CodeCompanions"
+            },
+            "type": "array",
+            "title": "Companions"
+          },
+          "patterns": {
+            "items": {
+              "$ref": "#/components/schemas/WarningPattern"
+            },
+            "type": "array",
+            "title": "Patterns"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gap_minutes",
+          "min_episodes",
+          "fault_hours",
+          "episodes",
+          "recurring_patterns",
+          "one_off_episodes",
+          "common",
+          "companions",
+          "patterns"
+        ],
+        "title": "WarningEpisodes",
+        "description": "Warnings grouped into episodes and recurring patterns (M63). Patterns are learned from all the data;\nthe period decides which episodes are counted."
+      },
       "WarningEvent": {
         "properties": {
           "transaction_id": {
@@ -9377,6 +9660,72 @@
           "items"
         ],
         "title": "WarningPage"
+      },
+      "WarningPattern": {
+        "properties": {
+          "pattern": {
+            "type": "integer",
+            "title": "Pattern"
+          },
+          "episodes": {
+            "type": "integer",
+            "title": "Episodes"
+          },
+          "episodes_total": {
+            "type": "integer",
+            "title": "Episodes Total"
+          },
+          "recurring": {
+            "type": "boolean",
+            "title": "Recurring"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "first_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "First At"
+          },
+          "last_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last At"
+          },
+          "median_minutes": {
+            "type": "number",
+            "title": "Median Minutes"
+          },
+          "codes": {
+            "items": {
+              "$ref": "#/components/schemas/PatternCode"
+            },
+            "type": "array",
+            "title": "Codes"
+          },
+          "faults": {
+            "items": {
+              "$ref": "#/components/schemas/PatternFault"
+            },
+            "type": "array",
+            "title": "Faults"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pattern",
+          "episodes",
+          "episodes_total",
+          "recurring",
+          "days",
+          "first_at",
+          "last_at",
+          "median_minutes",
+          "codes",
+          "faults"
+        ],
+        "title": "WarningPattern"
       },
       "WheelForecast": {
         "properties": {

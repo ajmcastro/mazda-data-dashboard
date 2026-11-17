@@ -26,6 +26,106 @@ SELECT code, any_value(title) AS title, any_value(severity) AS severity,
 FROM v_warnings
 GROUP BY code;
 
+-- ------------------------------------------------------- warning episodes (M63)
+-- An EPISODE is a run of warning moments with no silence longer than ref_settings.warning_episode_minutes
+-- (default 10) between two of them; its codes are the distinct codes raised in it. Episodes are numbered
+-- from the oldest. A code present in 90% or more of all episodes (from 10 episodes on) is COMMON: it is
+-- left out of the grouping, or it would make every episode look alike. The rest of an episode's codes is its
+-- `set_key`. PATTERNS are found by mode seeking over the distinct sets: each set points to the most frequent
+-- set that is alike (Jaccard similarity 0.6 or more; ties: fewer codes, then the key), itself included, and
+-- follows those pointers to a set that points to itself (its mode). Every set with the same mode is one
+-- pattern. Unlike linking every similar pair (which chains everything into one group) this keeps patterns
+-- built around the sets that recur most. Deterministic: no random start, a tie-breaker everywhere. An episode
+-- with only common codes has the empty set, a pattern of its own. Patterns are numbered from the one with
+-- the most episodes (all of the data, not a period). Hints only: never the meaning of a code.
+CREATE OR REPLACE VIEW v_warning_episode_sets AS
+WITH cfg AS (
+    SELECT coalesce(try_cast(max(value) FILTER (WHERE key = 'warning_episode_minutes') AS INTEGER), 10) AS gap
+    FROM ref_settings
+), moments AS (
+    SELECT DISTINCT triggered_at FROM v_warnings WHERE triggered_at IS NOT NULL
+), starts AS (
+    SELECT m.triggered_at,
+           CASE WHEN lag(m.triggered_at) OVER w IS NULL
+                  OR date_diff('second', lag(m.triggered_at) OVER w, m.triggered_at) > 60 * cfg.gap
+                THEN 1 ELSE 0 END AS is_start
+    FROM moments m CROSS JOIN cfg WINDOW w AS (ORDER BY m.triggered_at)
+), numbered AS (
+    SELECT triggered_at, sum(is_start) OVER (ORDER BY triggered_at) AS episode FROM starts
+), episodes AS (
+    SELECT n.episode, min(n.triggered_at) AS start_at, max(n.triggered_at) AS end_at,
+           count(DISTINCT n.triggered_at) AS moments, count(*) AS events,
+           list_sort(list(DISTINCT w.code)) AS codes
+    FROM numbered n JOIN v_warnings w ON w.triggered_at = n.triggered_at
+    GROUP BY n.episode
+), total AS (
+    SELECT count(*) AS n FROM episodes
+), common AS (
+    SELECT u.code
+    FROM (SELECT unnest(codes) AS code FROM episodes) u CROSS JOIN total t
+    GROUP BY u.code, t.n
+    HAVING t.n >= 10 AND count(*) >= 0.9 * t.n
+), kept AS (
+    SELECT u.episode, list_sort(list(u.code)) AS codes
+    FROM (SELECT episode, unnest(codes) AS code FROM episodes) u
+    WHERE u.code NOT IN (SELECT code FROM common)
+    GROUP BY u.episode
+)
+SELECT e.episode, e.start_at, e.end_at, e.moments, e.events, e.codes,
+       coalesce(k.codes, CAST([] AS VARCHAR[])) AS set_codes,
+       coalesce(array_to_string(k.codes, ','), '') AS set_key
+FROM episodes e LEFT JOIN kept k USING (episode);
+
+CREATE OR REPLACE VIEW v_warning_set_modes AS
+WITH RECURSIVE sets AS (
+    SELECT set_key, any_value(set_codes) AS set_codes, count(*) AS episodes
+    FROM v_warning_episode_sets WHERE set_key <> '' GROUP BY set_key
+), ranked AS (
+    SELECT *, row_number() OVER (ORDER BY episodes DESC, len(set_codes), set_key) AS set_rank FROM sets
+), up AS (
+    SELECT a.set_key, arg_min(b.set_key, b.set_rank) AS up_key
+    FROM ranked a JOIN ranked b
+      ON len(list_intersect(a.set_codes, b.set_codes)) >= 0.6 * len(list_distinct(list_concat(a.set_codes, b.set_codes)))
+    GROUP BY a.set_key
+), climb(set_key, node, step) AS (
+    SELECT set_key, up_key, 1 FROM up
+    UNION ALL
+    SELECT c.set_key, u.up_key, c.step + 1 FROM climb c JOIN up u ON u.set_key = c.node WHERE u.up_key <> c.node
+)
+SELECT set_key, arg_max(node, step) AS mode_key FROM climb GROUP BY set_key
+UNION ALL
+SELECT '', '';
+
+CREATE OR REPLACE VIEW v_warning_episodes AS
+WITH grouped AS (
+    SELECT e.*, m.mode_key FROM v_warning_episode_sets e JOIN v_warning_set_modes m USING (set_key)
+), patterns AS (
+    SELECT mode_key, row_number() OVER (ORDER BY count(*) DESC, mode_key) AS pattern
+    FROM grouped GROUP BY mode_key
+)
+SELECT g.episode, g.start_at, g.end_at, g.moments, g.events, g.codes, g.set_key, p.pattern, g.mode_key
+FROM grouped g JOIN patterns p USING (mode_key);
+
+-- Each pattern's codes over all its episodes: `role` = 'core' (in 80% or more of them), 'sometimes', or
+-- 'common' for a code left out of the grouping (listed under every pattern it appears in).
+CREATE OR REPLACE VIEW v_warning_pattern_codes AS
+WITH sizes AS (
+    SELECT pattern, count(*) AS episodes FROM v_warning_episodes GROUP BY pattern
+), common AS (
+    SELECT DISTINCT u.code
+    FROM (SELECT unnest(codes) AS code, set_key FROM v_warning_episodes) u
+    WHERE NOT list_contains(string_split(u.set_key, ','), u.code)
+), counts AS (
+    SELECT e.pattern, u.code, count(*) AS episodes_with
+    FROM v_warning_episodes e, unnest(e.codes) AS u(code)
+    GROUP BY e.pattern, u.code
+)
+SELECT c.pattern, c.code, c.episodes_with, s.episodes,
+       round(100.0 * c.episodes_with / s.episodes, 1) AS pct,
+       CASE WHEN c.code IN (SELECT code FROM common) THEN 'common'
+            WHEN c.episodes_with >= 0.8 * s.episodes THEN 'core' ELSE 'sometimes' END AS role
+FROM counts c JOIN sizes s USING (pattern);
+
 -- --------------------------------------------------------------------- DTCs
 -- One row per ECU per read-out in which a well-formed DTC was reported.
 CREATE OR REPLACE VIEW v_dtc_events AS

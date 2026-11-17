@@ -19,6 +19,9 @@ FUEL_KEYS = {"fuel_currency", "fuel_prices", "fuel_price_per_l"}
 # shows points), and a rise of the level counts as a fill-up from this many points on
 REFUEL_KEYS = {"tank_litres", "refuel_min_points"}
 REFUEL_MIN_POINTS = 15.0
+# warning episodes (M63): a silence longer than this many minutes between two warnings starts a new episode
+EPISODE_MINUTES = 10
+EPISODE_KEY = "warning_episode_minutes"
 # the yearly distance (M52): `mileage: {limit_km_per_year: 15000, start_date: 2026-03-03}` (a lease or
 # warranty year); optional, without it only the yearly pace is shown
 MILEAGE_KEY = "mileage"
@@ -292,7 +295,7 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
         data = yaml.safe_load(path.read_text()) or {}
         if not isinstance(data, dict):
             raise TypeError(f"{path}: expected a mapping of setting -> value")
-    known = {*DEFAULTS, *FUEL_KEYS, *REFUEL_KEYS, MILEAGE_KEY}
+    known = {*DEFAULTS, *FUEL_KEYS, *REFUEL_KEYS, MILEAGE_KEY, EPISODE_KEY}
     unknown = set(data) - known
     if unknown:
         raise ValueError(
@@ -350,6 +353,21 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
     )
     values["refuel_min_points"] = (
         f"{points if points is not None else REFUEL_MIN_POINTS:g}"
+    )
+    minutes = _number(
+        path,
+        data,
+        "warning_episode_minutes",
+        1,
+        240,
+        "the silence in minutes that ends a warning episode",
+    )
+    if minutes is not None and minutes != int(minutes):
+        raise ValueError(
+            f"{path}: warning_episode_minutes must be a whole number of minutes"
+        )
+    values["warning_episode_minutes"] = (
+        f"{int(minutes) if minutes is not None else EPISODE_MINUTES}"
     )
     con.execute("CREATE OR REPLACE TABLE ref_settings (key VARCHAR, value VARCHAR)")
     con.executemany("INSERT INTO ref_settings VALUES (?, ?)", list(values.items()))

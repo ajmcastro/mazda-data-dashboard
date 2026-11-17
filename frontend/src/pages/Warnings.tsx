@@ -1,7 +1,7 @@
 import { t, tr } from '../i18n'
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useWarningDaily, useWarningEvents, useWarningFrequency } from '../api/hooks'
+import { useWarningDaily, useWarningEpisodes, useWarningEvents, useWarningFrequency } from '../api/hooks'
 import type { WarningEvent, WarningFrequency } from '../api/types'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtTick, fmtDate, fmtDateTime, fmtNum, pivotDaily } from '../lib'
@@ -10,6 +10,8 @@ import { useNavigate } from 'react-router-dom'
 import { isDay } from '../day'
 import { useDateRange, useDayHref } from '../range'
 import { useCurrentModel } from '../model'
+import EpisodesPanel from '../components/EpisodesPanel'
+import { codeHint } from '../episodes'
 
 const PALETTE = ['var(--accent)', 'var(--amber)', 'var(--teal)', 'var(--steel)', '#b58bd6', '#d6b48b', '#8bd6c4']
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
@@ -19,6 +21,7 @@ export default function Warnings() {
   const { id } = useCurrentModel()
   const freq = useWarningFrequency()
   const daily = useWarningDaily()
+  const episodes = useWarningEpisodes()
   const navigate = useNavigate()
   const dayHref = useDayHref()
   const { from, to } = useDateRange()
@@ -43,7 +46,14 @@ export default function Warnings() {
 
   const columns: Column<WarningFrequency>[] = [
     { key: 'code', header: tr('Code'), render: (w) => <span className="mono">{w.code}</span>, sort: (w) => w.code },
-    { key: 'title', header: tr('Meaning'), render: (w) => <span className={w.known ? '' : 'muted'}>{w.known ? w.title : tr('not described yet')}</span>, sort: (w) => w.title },
+    {
+      key: 'title', header: tr('Meaning'), sort: (w) => w.title,
+      render: (w) => {
+        if (w.known) return <span>{w.title}</span>
+        const hint = codeHint(w.code, episodes.data)
+        return <span className="muted">{tr('not described yet')}{hint ? ` · ${hint}` : ''}</span>
+      },
+    },
     { key: 'sev', header: tr('Severity'), render: (w) => <Badge kind={SEVERITY_BADGE[w.severity] ?? 'dim'}>{tr(w.severity)}</Badge> },
     { key: 'events', header: tr('Events'), num: true, render: (w) => fmtNum(w.events), sort: (w) => w.events },
     {
@@ -113,6 +123,10 @@ export default function Warnings() {
           </div>
         </QueryState>
       </Panel>
+
+      <div style={{ marginTop: 14 }}>
+        <EpisodesPanel data={episodes.data} onCode={(code) => { setChosen(code); setOffset(0) }} />
+      </div>
 
       <div className="grid split" style={{ marginTop: 14 }}>
         <Panel title={tr('Codes')} hint={tr('click a row to see its events')}>

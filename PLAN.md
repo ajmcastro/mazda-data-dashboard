@@ -2,7 +2,7 @@
 
 Personal dashboard to analyse the data Mazda exported for my cars (a CX-5, and a CX-60 set up the same way), with alerts for relevant events. The files in `data/` are described in [docs/data-dictionary.md](docs/data-dictionary.md); how to use the app is in [README.md](README.md); [CLAUDE.md](CLAUDE.md) is the tour of the code. The repo is meant to be open-sourced, so privacy and reproducibility were designed in from the start.
 
-**Status: complete. Every planned milestone (M1–M62) is done except M28** (adapting to a real CX-60 export: on hold until there is one): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos), and eighteen milestones of "more value from the same data" (M45–M62: units, data health, fill-ups, the driving pattern, the day page, a service log, the tire leak and maintenance forecasts, import from the dashboard, a report for the workshop, six follow-ups of the 3D car, code description packs, and Portuguese as a second language). Other ideas are under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
+**Status: M1–M63 are done except M28** (adapting to a real CX-60 export: on hold until there is one): the Mac dashboard (M1–M11), the offline iPhone app (M12–M16, live on GitHub Pages and tested on a real iPhone), four features built from the car's own signals (M17 next oil change, M18 the car's own warnings, M19 tire reading time, M20 warning-lamp flags), several car models (M21–M27), comparing cars and periods and the estimated fuel cost (M29–M34), more from the data already loaded (M35 when the car is used, M36 fault context, M37 who rides), the car in 3D (M38–M41 the status view on the Mac and the phone, M42–M44 each car's own shape traced from the owner's photos), and eighteen milestones of "more value from the same data" (M45–M62: units, data health, fill-ups, the driving pattern, the day page, a service log, the tire leak and maintenance forecasts, import from the dashboard, a report for the workshop, six follow-ups of the 3D car, code description packs, and Portuguese as a second language). Learning from the data has begun: **M63 warning episodes is done; M64–M71 are planned, not started** ("Learning from the data"). Other ideas are under "Ideas not built". This file keeps the design decisions and the plan each milestone was built from, with an "as built" note where the result differs; it is a design log, so some sections describe the plan in the future tense before the "as built" note that follows them.
 
 ## Decisions
 
@@ -106,8 +106,10 @@ The README has a one-line description of each: `setup`, `models`, `migrate-model
 | M53–M54 | Import from the dashboard, report for the workshop ✅ | drop Mazda's download on a page; a printable page for the mechanic |
 | M55–M60 | The 3D car, further ✅ | alerts on the parts, a time slider, the seats, a fault's frames on the car, the fault map, side views on All cars and Compare |
 | M61–M62 | Code description packs, a second language ✅ | share descriptions as a file; both apps in Portuguese (Portugal) as well as English |
+| M63 | Warning episodes ✅ | the warnings grouped into episodes and recurring patterns, faults that stand out next to them, a hint beside undescribed codes |
+| M64–M71 | Learning from the data (planned, not started) | unusual status reports, consumption change points, driving routines, fault comeback, battery voltage trend, temperature-aware tire forecast, fill-up matching, a monthly forecast with ranges. Details under "Learning from the data" |
 
-M28 (a real CX-60 export) is the only milestone not built; it has no row because there is nothing to show yet.
+M28 (a real CX-60 export) is on hold; it has no row because there is nothing to show yet. M64–M71 are planned and not started.
 
 Each milestone was implemented only on request ("start implementing milestone N") and ended with a summary and a check that it works.
 
@@ -1455,6 +1457,134 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 5. The fault map waits for the owner's placements, or uses zones only (M59).
 6. The second language is Portuguese of Portugal (M62).
 
+## Learning from the data (M63 built; M64–M71 planned)
+
+### Goal
+Nine milestones that apply machine learning (clustering, anomaly detection, survival analysis, change points, robust regression, probabilistic matching, forecasting with ranges) to the data the dashboard already loads, to find patterns no fixed rule shows: which warnings belong together, which status reports are out of the ordinary, whether a fault tends to come back, whether the battery or the consumption changed, and what next month may cost. No new data source and no outside request. They came from the ideas of 17 Nov 2026; the owner asked for all of them as milestones. **None is started**: each starts on the owner's word, like every milestone before. M28 stays on hold.
+
+### What the owner's data says about them (CX-5, 12 Jun – 10 Nov 2026; checked before planning)
+- **Warnings:** 12,374 code occurrences at 7,802 moments on 64 days, 22 different codes. Cutting the moments wherever 10 minutes pass without a warning gives **247 episodes with 62 different sets of codes**, most of them near-copies of each other (`$210,$226,$290,$2CD,$2FE` 39 times, the same without `$2CD` 28 times): a similarity grouping (not exact sets) is what makes them readable (M63).
+- **Status reports:** 258, uneven (half within 1.6 hours of the one before, the longest silence 262 hours). Status reports carry **no outside temperature and no battery voltage** (182 remote-status signals, none of them); fuel, odometer, doors, tires, belts and the car's flags are there (M64, M69).
+- **Faults:** 111 fault readings in 36 read-outs, 16 codes; the most frequent (BCM `U0198`) is in 30 read-outs, most others in 3 to 17. Enough for a comeback curve on a handful of codes only (M67).
+- **Freeze frames:** 37 frames at 16 distinct moments, each with `ECU_Power_Voltage`, `Main_ECU_Voltage_Supply`, `SOC_StateOfCharge`, `Ambient_Air_Temperature`, `Time_Since_Engine_Start`. The only source of voltage and outside temperature, and a thin one (M68, M69).
+- **Stretches:** 214 between 13 Jun and 10 Nov, 192 of them between reports less than 48 h apart (M65, M66).
+- **Tires:** 228 measurements of all four wheels (M69).
+- **What was paid:** `fuel_log.yaml` is empty for this car and the service log has one entry: M70 has nothing to match on the owner's data until payments are logged; the demo data has them.
+- **History:** five months. Nothing seasonal can be learned yet (M71 says so instead of pretending).
+
+### Decisions (proposed, to confirm when each starts)
+1. **Order:** what the owner's data supports best first (warning episodes, unusual reports), then the methods other milestones reuse (change points before the battery trend), then the ones that rest on thin data or on data the owner has not logged yet (fault comeback, battery, tire temperature, payments), and the forecast last, because it uses the others' results.
+2. **Explainable methods over heavy models.** Five months of one car is a small sample: robust statistics (median, MAD, Theil–Sen as in M51), survival curves, change points, deterministic grouping. **No neural networks, no model files, no training on other people's data.** Every result says what it rests on (how many readings, over which days) and is withheld under a minimum, as the forecasts of M51 and M52 are.
+3. **Both apps, one maths.** Where the method fits in SQL it is one SQL text shared by Python and the phone's engine (the M51 rule: change both together, goldens on both sample cars). Where it needs an iterative fit (change points, the routine grouping), it is fitted **at `make model` / ingest in Python** and stored in an `ml_*` table that the pack carries as an optional table (an older pack shows the page without that panel; no pack format change). Fits are deterministic: no random seeds that vary, no clock, no machine time zone.
+4. **Hints, never verdicts or meanings.** An episode is "these codes usually appear together", never what they mean; an unusual report is "unlike this car's other reports", never a fault; a change point is "consumption changed around this date", never why. The wording modules get the neutrality tests of M48 and M36 (in both languages, M62), and **nothing is written into the owner's code descriptions by itself**.
+5. **Alerts are opt-in.** Any new alert rule from these milestones is off by default in `alerts.yaml`, needs its `ALERT_PART` entry (M55) and its sentence patterns (M62).
+6. **Sample data:** the CX-5 sample bytes stay as they are; where a feature needs something to show on the demo, it comes from the clock or a `Profile` flag of the CX-60 (the M37 rule).
+7. **One milestone at a time,** each ending with tests, both builds, the docs (README, CLAUDE.md, the data dictionary for new views and tables) and a commit.
+
+### Milestones
+| | What | Visible result |
+|---|---|---|
+| **Patterns** | | |
+| M63 | Warning episodes | the warnings grouped into recurring episodes, with the codes each usually holds |
+| M64 | Unusual status reports | the reports that are least like the car's others, marked on the Day page and the time scrubber |
+| **Changes over time** | | |
+| M65 | Consumption change points | dates where the consumption stepped up or down, next to service entries and fill-ups |
+| M66 | Driving routines | the car's recurring kinds of stretch ("weekday mornings, about 18 km") and each one's consumption |
+| **Faults and parts** | | |
+| M67 | Fault comeback | per fault, how soon after a read-out it usually reappeared |
+| M68 | Battery health trend | the supply voltage of the freeze frames over time, temperature taken into account |
+| M69 | Temperature-aware tire pressure | the leak forecast without the cold-morning dips |
+| **Money and the future** | | |
+| M70 | Fill-up matching | each payment matched to its fill-up with a confidence |
+| M71 | Monthly forecast with ranges | next month's distance, fuel and cost as a range |
+
+### M63 — Warning episodes ✅ done
+- **Method:** cut the warning moments into episodes wherever `gap_minutes` (default 10, `settings.yaml`) pass without a warning; describe each episode by its set of codes; group episodes whose sets are alike (Jaccard similarity at or above 0.6, single-linkage, deterministic) into **patterns**, each with its *core* codes (in at least 80% of its episodes) and its *sometimes* codes. A code in nearly every episode (like `$210`) is listed once as "in almost every episode" and left out of the similarity, or it would join everything.
+- **Where:** episodes as a view `v_warning_episodes` (gaps and islands in SQL, shared); the grouping is fitted at `make model` into `ml_warning_patterns` (pattern, codes, role) and `ml_episode_pattern` (episode, pattern), carried by the pack. `GET /api/warnings/episodes` (a period endpoint): patterns with how many episodes, on how many days, first and last, typical length, the faults read out within a day of them.
+- **UI:** a "Patterns" panel on Warnings: one row per pattern (its codes with their titles where the owner has one, how often, a strip of when), and on the code-description flow a hint "usually appears with …" for an undescribed code. The Day page names the pattern of each episode.
+- **Tests:** the gap rule across midnight and a silence; the always-present code; two patterns that differ by one code; determinism (same input, same patterns, any row order); an empty period; both sample cars (goldens).
+- **Done when:** the owner's 247 episodes come out as a short list of patterns that can be checked against the raw rows by eye, and both apps agree.
+
+**M63 as built.**
+- **All in SQL, shared by both apps (changed from the sketch):** no `ml_*` table and no fit at `make model`. Four views in `views.sql` do it, and the phone rebuilds them from the same file: `v_warning_episode_sets` (episodes by gaps and islands; a code in 90% or more of all episodes, from 10 episodes on, is *common* and left out of the comparison), `v_warning_set_modes` (the grouping, a recursive CTE), `v_warning_episodes` (each episode with its pattern number) and `v_warning_pattern_codes` (each pattern's codes, `core` from 80% of its episodes, `sometimes`, or `common`). **No pack change, no `SUMMARY_VERSION` change**; `make model` after pulling.
+- **Mode seeking, not single linkage (changed from the sketch):** linking every pair of sets with a Jaccard similarity of 0.6 or more chained 51 of the owner's 62 distinct sets into one group. Instead each set points to the most frequent set that is alike (itself included; ties: fewer codes, then the key) and follows those pointers to a set that points to itself; every set with the same end is one pattern. Patterns form around the sets that recur most, and a set alike to two others cannot join them (a test pins it).
+- **Setting:** `warning_episode_minutes` in `settings.yaml` (whole minutes, 1 to 240, default 10), stored in `ref_settings`; documented in both models' settings files and the README.
+- **Route:** `GET /api/warnings/episodes`, a period endpoint (`PERIOD_ENDPOINTS`, the golden matrix): `backend/src/mazda_dash/api/episodes.py` and, with the same SQL, `mobile/src/engine/episodes.ts`. Patterns and roles come from all the data, the period counts episodes by their start. It answers the gap, the common codes, each pattern in the period (episodes in the period and in all, recurring from 3 in all, days, first and last, the median length, its codes with role and share, the faults next to it) and each code's **companions**.
+- **Faults next to a pattern, against a baseline (added):** on the owner's data BCM `U0198` is in 30 of 36 read-outs, so "read out within a day" put it next to every pattern. A fault is now listed only when it was read out within 24 hours of at least 3 of the pattern's episodes in the period **and** near a share of them at least 1.5 times its share of all the period's episodes; both shares are returned and shown.
+- **The hint beside an undescribed code (changed):** the first version took the core codes of the pattern where the code was most present, which named codes that a rare code was seldom seen with. The route now gives each code's companions directly: the other codes in 80% or more of the episodes that hold it (from 3 such episodes, common codes left out). The Warnings table shows "not described yet · usually with $2FE". Nothing is written into the code descriptions.
+- **UI:** `components/EpisodesPanel.tsx` on Warnings, between the chart and the code table: the headline, one entry per recurring pattern (its line, its codes as chips: "always" for core, "sometimes · 35%", "+N rarer" under 10%; a chip picks that code's events), faults that stand out, the common codes, what is not listed, and a note on how it is made. Wording in `frontend/src/episodes.ts` (neutrality tested in English and Portuguese), Portuguese in `i18n/pt/episodes.ts`.
+- **Not done:** the Day page does not name an episode's pattern yet (it would change `api/day.py`, `day.ts` and `DAY_ENTRY` for a small gain); screenshots not retaken.
+- **Real data (the owner's CX-5, 12 Jun – 10 Nov 2026):** 247 episodes; `$210` is in 98% of them and set apart; 7 recurring patterns hold 238. Pattern 1 (186 episodes on 59 days, usually about 20 minutes): `$2FE`, `$290`, `$226` always, `$2CD` 55% and `$182` 35% of the time. Pattern 2 (23): `$2CD` and `$2FE`. One fault stands out: BCM `U0198` next to pattern 7 (`$182` alone; 3 of 3 episodes, against 46% of all). Companions: `$2DA` comes with `$226`, `$290` and `$2FE`; `$182` with `$2FE`.
+- **Tests:** backend 18 in `test_episodes.py` (the gap and its setting, midnight, common codes and their minimum, near-copies, no chaining, load order, only common codes, faults against the baseline and the minimum, companions, the period, no warnings, both sample cars) plus the shared date-range and contract tests (486 in all); frontend 10 in `episodes.test.ts` (438); the phone contract replays the route on both cars (1,117).
+- **Checked in the browser:** the Warnings page on the Mac with the owner's data, in English and in Portuguese at phone width (no sideways scroll). The owner checked the phone app (`make mobile-dev`, demo data) by eye. **Not done:** the iOS Simulator.
+
+### M64 — Unusual status reports
+- **Method:** per status report, a handful of features the car sends (fuel change per hour since the report before, distance per hour, hour of day, doors or trunk open, the tire spread, the car's own flags raised); each scored by a **robust z-score** (median and MAD of the car's own reports in the last 90 days), the report's score the largest of them, "unusual" from 3.5. One SQL, shared. An Isolation Forest was considered and left out: it would be Python only, random, and no better on 258 rows.
+- **Route and UI:** `GET /api/status/unusual` (a period endpoint): the reports above the threshold with the feature that made each unusual and its value next to the car's usual range. Marks on the Day page and on the time scrubber (M56), and a short list on Status ("27 Sep 03:12: the fuel level fell 9 points while the car covered no distance; usually it changes by under 1 point an hour when parked").
+- **Never a fault:** the text says "unlike this car's other reports", never a cause; a feature the car flagged Invalid is not scored. An optional alert `unusual_report` (off by default, part from the feature: fuel, door, wheel).
+- **Tests:** a planted fuel drop and an open door at night are found; a car with constant values gives no division by zero (MAD of 0); Invalid values ignored; fewer than 30 reports = no scores; both sample cars.
+- **Done when:** on the owner's data each marked report can be explained by looking at the Day page, and both apps agree.
+
+### M65 — Consumption change points
+- **Method:** the consumption of the stretches (weighted by distance, a stretch from 5 km), as a series in time; change points found by **binary segmentation with a penalty** (a split is kept only when it lowers the cost by more than the penalty and each side holds at least 150 km and 10 stretches). Fitted in Python at ingest into `ml_change_points` (`series`, at, before, after, the km each side rests on), carried by the pack. Written so M68 can reuse it for the voltage series.
+- **UI:** dashed vertical marks on the Trends consumption chart and a line under it ("around 14 Sep the consumption went from about 7.1 to 7.9 l/100 km; 1,240 km before, 980 after"), with the service-log entries, fill-ups and the share of short stretches (M48) next to it **as context, never as a reason**.
+- **Tests:** a planted step is found within a few stretches; noise without a step gives none; short sides are refused; the penalty is deterministic; the units of M45 shown, the maths in l/100 km.
+- **Done when:** the demo's planted step (a `Profile` flag of the CX-60) is found, the owner's series gives none or a step visible on the chart, and both apps show the same marks.
+
+### M66 — Driving routines
+- **Method:** each stretch described by its length (log), duration, weekday or weekend, and the hour it started; grouped by **k-medoids with a fixed start and k chosen by silhouette** (2 to 6), fitted at ingest in Python into `ml_routines` and `ml_stretch_routine`, carried by the pack. A routine is kept only with 8 stretches on 4 different days; the rest is "other".
+- **UI:** a "Routines" panel on Trends after the driving pattern (M48): each routine in words ("weekday mornings, about 18 km in 25 minutes; 41 stretches"), its share of the distance, its consumption from 20 km summed, and a small chart of when it happens. The Day page names a stretch's routine.
+- **Words:** a routine is a kind of stretch, never a place (no GPS is used or inferred) and never a judgement of the driver (the M48 test words).
+- **Tests:** two planted routines are separated; determinism; the minimums; a car with too few stretches shows nothing; both sample cars.
+- **Done when:** the owner's 192 stretches give routines the owner recognises, or the panel says there are too few, and both apps agree.
+
+### M67 — Fault comeback
+- **Method:** per fault code and control unit, each read-out where it is no longer reported starts a wait; the wait ends when it is read out again, or is cut off at the newest read-out (censored). A **Kaplan–Meier curve** in SQL (shared): the share still not back after 7, 30 and 90 days, and the median wait when the curve reaches it. Shown only for a fault with 3 waits that ended, else "too few cases".
+- **Route and UI:** `GET /api/dtcs/comeback?ecu=&dtc_code=` (a state endpoint) in `FaultDetail` under the freeze-frame summary ("after it stopped being reported, it came back within 30 days 4 times out of 6; a read-out after a workshop visit is marked"); the service-log visits (M50) are drawn on the curve's time line. A line in the report for the workshop (M54).
+- **Tests:** a fault that always returns, one that never does (all censored), one with a single wait; a read-out on the same day; both sample cars.
+- **Done when:** the curves for the owner's `U0198` and `U3000` agree with a hand count of the read-outs, and both apps agree.
+
+### M68 — Battery health trend
+- **Method:** the supply voltage of the freeze frames (`ECU_Power_Voltage`, `Main_ECU_Voltage_Supply`), the frames taken in the first minute after a start set apart (cranking); the rest adjusted for `Ambient_Air_Temperature` by a **Theil–Sen line** (the M51 estimator), and the adjusted voltage watched over time with the M65 change points. Shown from 12 distinct frames over 60 days; the owner's 16 moments are near that edge, and the page says so.
+- **Route and UI:** `GET /api/dtcs/frame-voltage` (a state endpoint): each frame's voltage, temperature, adjusted value, a slope per month with its basis, and any change point. A panel on Faults and a note on the battery in the 3D view (a note, never a state: M51 rule); `SOC_StateOfCharge` drawn alongside when the car sends it.
+- **Words:** "the voltage recorded with faults", never the battery's health as a fact (frames are only taken when a fault is recorded, so they are not a fair sample of the car's life: said on the panel).
+- **Tests:** a planted decline found through temperature swings; cranking frames left out; too few frames; both sample cars.
+- **Done when:** the owner's frames are plotted with the adjustment and the panel either shows a trend or explains why it does not.
+
+### M69 — Temperature-aware tire pressure
+- **Method:** the leak forecast of M51 already cancels what moves all four wheels together; what is left of the cold mornings is the wheel that warms or cools faster. Fit, per wheel, the remaining difference against the **hour of day and the month** (the status reports carry no outside temperature; a freeze frame's `Ambient_Air_Temperature` is used when one is within an hour, which is rare), take that pattern out, then run the same Theil–Sen forecast. In the shared `tires.py` / `tires.ts` SQL.
+- **UI:** none new: the M51 lines and the alert use the adjusted series; the line says "after allowing for the time of day" when the adjustment moved the rate by more than 1 kPa a week.
+- **Tests:** a planted morning dip on one wheel no longer looks like a leak; a real leak survives the adjustment; the M51 tests keep passing on the unadjusted cases.
+- **Done when:** the demo's leaking wheels keep their rates, a CX-60 `Profile` flag with a morning dip gives no false leak, and the owner's (non-leaking) wheels still say nothing.
+
+### M70 — Fill-up matching
+- **Method:** replace M47's "earliest fill-up whose two days span the payment" with a **score** per payment and candidate fill-up: the days between them, the litres paid against the litres seen (when both exist), the level rise; each payment goes to the best candidate (one-to-one, ties by time), and its confidence (high, medium, low) is shown. In the shared `refuels` SQL.
+- **UI:** the confidence in the Fill-ups table; a low-confidence match is listed with the payment and the fill-up side by side for the owner to check; unmatched payments stay listed.
+- **Tests:** the M47 cases unchanged where they were clear; a payment a day off; two payments, two fill-ups, crossed dates; litres that disagree; an older pack without payments.
+- **Done when:** the demo's payments match as the generator wrote them, and the owner's fill-ups match as soon as payments are logged.
+
+### M71 — Monthly forecast with ranges
+- **Method:** next month's distance, litres and estimated cost as a **range (10th to 90th percentile)** by resampling the car's own days (blocks of a week, to keep weekly habits together) from the last 90 days, the price in force on the newest day, the consumption of the last 90 days (or after the last M65 change point, when there is one). **No seasonality until 12 months of data exist**; then the same month a year before is blended in, and the page says which was used. Fixed resampling order, so the answer is deterministic. In SQL, shared, or fitted at ingest if the resampling is too heavy for the phone.
+- **Route and UI:** `GET /api/forecast/month` (a state endpoint) and a line in the Overview's "Looking ahead" panel (M52): "next month, at this pace: 900–1,350 km, about 70–100 l, 120–180 EUR (from the last 90 days)". A calendar entry is not added.
+- **Tests:** a steady car gives a narrow range; a car with long silences gives a wide one and says so; no price, no cost; under 30 days with data, nothing; both sample cars.
+- **Done when:** the range for a past month, built from the 90 days before it, can be checked against what that month really was on the owner's data.
+
+### Risks
+| Risk | Plan |
+|---|---|
+| Five months of one car is a small sample; patterns may be noise | minimums on every result, the basis shown, "few cases" cautions, robust methods only |
+| A pattern or an unusual report is read as a diagnosis | neutral wording tests in both languages; hints never written into the code descriptions |
+| Python and the phone compute different numbers | shared SQL where possible; fits stored in `ml_*` tables carried by the pack otherwise; goldens on both sample cars |
+| Fits change from one run to the next | deterministic methods, fixed starts, tie-breakers in every `ORDER BY` |
+| Freeze frames are a biased sample (taken only with a fault) | said on the battery panel; no claim about the car's life in general |
+| The demo data cannot show a feature without changing the CX-5 bytes | `Profile` flags on the CX-60 only, derived from the clock |
+
+### Points to confirm
+1. The order (decision 1), or which milestone to pull forward.
+2. Fits at `make model` / ingest stored in `ml_*` tables carried by the pack, where shared SQL is not enough (decision 3).
+3. The default thresholds: 10 minutes for an episode (M63), 3.5 for an unusual report (M64), the minimums of M65–M68.
+4. New alert rules (M64, possibly M68) off by default.
+
 ## Open questions
 
 - **Meaning of the `$xxx` warning codes, the DTC status flags, the alarm codes, the non-zero values of the car's own warning flags and the 128 warning-lamp flags.** Still open: Mazda does not publish them. `$210` appears in ~98% of events and is probably informational, but that is a guess. Descriptions are meant to be filled in by the owner in `config/codes/`; the dashboard offers hints (what appears around a flag) as a starting point.
@@ -1474,3 +1604,19 @@ Ideas around comparing that are not milestones yet (smaller, or they need a deci
 - **Code vocabulary across models:** which warning and fault codes appear in both cars and which in one only, as a *hint* for filling in a model's code descriptions ("this code is described for the CX-5; it may or may not mean the same here"). It must stay a suggestion the user copies by hand: descriptions are never shared or borrowed automatically.
 - **Export:** a CSV of a comparison table.
 - **A combined alerts view** across cars, read-only (the Garage cards of M32 only show the counts).
+
+### Agentic AI (proposed 17 Nov 2026, not decided)
+
+The machine-learning ideas proposed with these are now milestones M63–M71 ("Learning from the data"). None of the ideas below is a milestone yet; each would become one only on the owner's word. They keep the project's rules: no verdict on the car, no invented code titles, and the phone makes no outside request.
+
+| Feature | Description | Value to the project |
+|---|---|---|
+| **"Ask your car" (read-only text-to-SQL agent)** | Questions in plain language ("When did the hood last stay open overnight?"); the agent may only query the `v_*` views through a read-only tool, each answer shows the SQL it ran and links to the matching page. Mac only and opt-in, with a local model (Ollama) or Claude after explicit consent. | Any question answered without building a page for each; showing the SQL keeps it verifiable. |
+| **Code description research assistant** | For a code with `title: null`, the agent searches public sources (forums, OBD references), proposes a title with its sources and confidence; nothing is written until the owner accepts it, and accepted entries get `source:` as in M61. | Tackles the biggest gap, undescribed codes, without breaking the "never invent titles" rule: a person decides and the source is recorded. |
+| **Workshop visit prep** | From the M54 report, open faults, episodes and comeback forecasts, draft the questions for the mechanic and what to show them; after the visit, draft the service-log entry for the owner to confirm. | More productive visits; closes the loop with M50. |
+| **Import watcher and weekly digest** | A background agent notices a new Mazda export in Downloads, imports it into the right model (M53), runs alerts and writes a short neutral digest of what changed, with the existing neutrality tests as guardrails on its text. | The dashboard updates itself instead of waiting for `make ingest`, and the news arrives without opening it. |
+| **Alert triage notes** | When an alert fires, an agent gathers its context (freeze frames, the Day page, similar past episodes, data health) and attaches an investigation note to it. | Each alert arrives with its evidence already collected; less clicking between pages. |
+| **New-model onboarding assistant** | Given a first export of a new car (the CX-60 data of M28), run `make compat`, draft `model.yaml` and `settings.yaml`, flag missing signals and list the steps of "How to add a model". | Turns M28 and any future car into a guided half-hour job. |
+| **Recall and service bulletin check** | Look up public recalls by model, year and engine only (never the VIN) and match them with the car's fault codes. | Flags known issues that match what the car reports while keeping the privacy promise. |
+
+To keep in mind: these need a language model, so they would be Mac only and opt-in, preferably with a local model; the phone keeps making no outside request.

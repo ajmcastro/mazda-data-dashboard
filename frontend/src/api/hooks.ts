@@ -245,6 +245,15 @@ export const useDay = (day: string | undefined) => {
   })
 }
 
+/** The warnings of the selected period as episodes and recurring patterns, learned from all the data (M63). */
+export const useWarningEpisodes = () => {
+  const range = useRangeQuery()
+  return useQuery({
+    queryKey: ['warning-episodes', range],
+    queryFn: () => unwrap(client.GET('/api/warnings/episodes', { params: { query: range } })),
+  })
+}
+
 /** How the car is driven in the selected period: stretches of driving by length (M48). */
 export const useDrivingPattern = () => {
   const range = useRangeQuery()

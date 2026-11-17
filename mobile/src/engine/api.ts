@@ -18,6 +18,7 @@ import { dataHealth } from './datahealth'
 import { day } from './day'
 import { forecast } from './forecast'
 import { drivingPattern } from './driving'
+import { warningEpisodes } from './episodes'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
 import { tireForecast } from './tires'
@@ -103,6 +104,7 @@ export class Api {
     add('GET', '/api/alarms', alarms)
     add('GET', '/api/warnings/frequency', warningFrequency)
     add('GET', '/api/warnings/daily', warningDaily)
+    add('GET', '/api/warnings/episodes', warningEpisodes)
     add('GET', '/api/activity/pattern', activityPattern)
     add('GET', '/api/status/occupancy', occupancy)
     add('GET', '/api/data/health', dataHealth)

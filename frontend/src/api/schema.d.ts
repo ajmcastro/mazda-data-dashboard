@@ -389,6 +389,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/warnings/episodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Warnings Episodes
+         * @description The warnings as episodes and recurring patterns (M63): which codes usually turn up together. A hint
+         *     for reading the warnings, never the meaning of a code.
+         */
+        get: operations["warnings_episodes_api_warnings_episodes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/warnings/daily": {
         parameters: {
             query?: never;
@@ -1053,6 +1074,24 @@ export interface components {
             flags: components["schemas"]["CarWarningFlag"][];
             /** Episodes */
             episodes: components["schemas"]["CarWarningEpisode"][];
+        };
+        /** CodeCompanions */
+        CodeCompanions: {
+            /** Code */
+            code: string;
+            /** Episodes */
+            episodes: number;
+            /** Codes */
+            codes: string[];
+        };
+        /** CommonCode */
+        CommonCode: {
+            /** Code */
+            code: string;
+            /** Title */
+            title?: string | null;
+            /** Pct */
+            pct: number;
         };
         /** ContextFault */
         ContextFault: {
@@ -2213,6 +2252,32 @@ export interface components {
             alerts_new: number;
             last_alarm?: components["schemas"]["AlarmEvent"] | null;
         };
+        /** PatternCode */
+        PatternCode: {
+            /** Code */
+            code: string;
+            /** Title */
+            title?: string | null;
+            /** Role */
+            role: string;
+            /** Pct */
+            pct: number;
+        };
+        /** PatternFault */
+        PatternFault: {
+            /** Ecu */
+            ecu: string;
+            /** Dtc Code */
+            dtc_code: string;
+            /** Title */
+            title?: string | null;
+            /** Episodes */
+            episodes: number;
+            /** Pct */
+            pct: number;
+            /** Pct All */
+            pct_all: number;
+        };
         /** Readout */
         Readout: {
             /** Transaction Id */
@@ -2514,6 +2579,31 @@ export interface components {
             /** Events */
             events: number;
         };
+        /**
+         * WarningEpisodes
+         * @description Warnings grouped into episodes and recurring patterns (M63). Patterns are learned from all the data;
+         *     the period decides which episodes are counted.
+         */
+        WarningEpisodes: {
+            /** Gap Minutes */
+            gap_minutes: number;
+            /** Min Episodes */
+            min_episodes: number;
+            /** Fault Hours */
+            fault_hours: number;
+            /** Episodes */
+            episodes: number;
+            /** Recurring Patterns */
+            recurring_patterns: number;
+            /** One Off Episodes */
+            one_off_episodes: number;
+            /** Common */
+            common: components["schemas"]["CommonCode"][];
+            /** Companions */
+            companions: components["schemas"]["CodeCompanions"][];
+            /** Patterns */
+            patterns: components["schemas"]["WarningPattern"][];
+        };
         /** WarningEvent */
         WarningEvent: {
             /** Transaction Id */
@@ -2652,6 +2742,35 @@ export interface components {
             total: number;
             /** Items */
             items: components["schemas"]["WarningEvent"][];
+        };
+        /** WarningPattern */
+        WarningPattern: {
+            /** Pattern */
+            pattern: number;
+            /** Episodes */
+            episodes: number;
+            /** Episodes Total */
+            episodes_total: number;
+            /** Recurring */
+            recurring: boolean;
+            /** Days */
+            days: number;
+            /**
+             * First At
+             * Format: date-time
+             */
+            first_at: string;
+            /**
+             * Last At
+             * Format: date-time
+             */
+            last_at: string;
+            /** Median Minutes */
+            median_minutes: number;
+            /** Codes */
+            codes: components["schemas"]["PatternCode"][];
+            /** Faults */
+            faults: components["schemas"]["PatternFault"][];
         };
         /** WheelForecast */
         WheelForecast: {
@@ -3396,6 +3515,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    warnings_episodes_api_warnings_episodes_get: {
+        parameters: {
+            query?: {
+                /** @description first day, inclusive (UTC) */
+                from?: string | null;
+                /** @description last day, inclusive (UTC) */
+                to?: string | null;
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WarningEpisodes"];
                 };
             };
             /** @description Validation Error */

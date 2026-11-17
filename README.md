@@ -195,7 +195,7 @@ are under *More*.
 | **Trends** | Every month compared with the one before, including the estimated fuel cost when a fuel price is set. **How the car is driven**: the stretches of driving by length (under 5 km, 5–20, 20–100, over 100) with the distance, fuel and consumption of each, by month too, and a sentence when a month's consumption and its share of short stretches moved together. |
 | **Compare** | **Two cars** side by side (when two models have data): the months both cars have complete, per day, with every figure marked *comparable*, *compare with care* or *not comparable*; only "higher" and "lower", never "better" or "worse". Or **two periods of the car on screen** (one car is enough): last 30 days against the 30 before, this month against the month before or a year ago, before and after a date, or any two periods you pick; here, since it is the same car, the colours say whether a change is good or bad. It uses each car's own history, not the period bar. |
 | **Alerts** | What the alert rules raised; acknowledge them one by one or all at once. The car on the Status page marks the parts that have open alerts, and a click on a marker shows only those. |
-| **Warnings** | Warning events per day, how often each code appears, and the events behind each code. Click a day on the chart to open that day. |
+| **Warnings** | Warning events per day, the **patterns** (which codes usually turn up together, learned from all your data; a hint next to each code you have not described yet), how often each code appears, and the events behind each code. Click a day on the chart to open that day. |
 | **Faults** | Trouble codes (active or cleared), their history, freeze-frame data, what else happened around them, and **Show on the car** for what a fault's freeze frames have in common. A **fault map** shows the control units you placed on a plan of the car, lit by their faults (see [Fault map](#fault-map-optional)). |
 | **Status** | **The car in 3D** (or the same as a list; numbered pins on the phone), with a **slider** that steps back through the status reports of the period or plays them. Then, each in its own panel: fuel level and range; tire pressure per wheel at the time the car **measured** it, and for a wheel losing pressure against the other three, how fast and when it reaches your limit at that rate; the **fill-ups** (see [Fill-ups](#fill-ups-optional)); the **service log** (see [Service log](#service-log-optional)); the car's own warning flags; the **warning lamps** (the car's 128 bit flags: the few that ever change, each with a timeline and hints about what happens around it); when the car is used (by hour and weekday); who rides (from the seat belts, when the car sends them); the oil-change countdown; recent trips and the alarm history. |
 | **Diagnostics** | The diagnostic report(s) in your downloads: emission monitors, stored fault lists, counters, and how they changed from one report to the next. |
@@ -442,6 +442,20 @@ applies before its date). Each trip is priced with the price in force on its day
 months it happened. Then run `make model` (the phone app needs a new pack: `make mobile-pack`). It is per car: a
 second model has its own file and its own currency, and the compare page does not set amounts in two currencies
 against each other.
+
+### Warning episodes
+
+The Warnings page groups the warnings into **episodes**: a run of warnings with no silence longer than 10 minutes.
+Episodes whose codes are alike are grouped into **patterns** around the sets of codes that recur most, and a code
+that is in nearly every episode is set apart. A pattern says which codes turn up together, never what they mean or
+why; a fault is listed next to a pattern only when it was read out near clearly more of its episodes than of all
+episodes. Next to a code without a description, the table shows the codes it usually comes with, as a starting point
+for describing it yourself. To cut episodes at another silence, set it in your model's `settings.yaml` and run
+`make model`:
+
+```yaml
+warning_episode_minutes: 10   # from 1 to 240
+```
 
 ### Fill-ups (optional)
 

@@ -36,3 +36,7 @@ tank_litres: 56
 # Optional: a yearly distance limit (a lease or warranty year). The Overview's "Looking ahead" then sets the
 # distance so far this year and the projection at your recent pace against it. Remove the # and set your own.
 # mileage: {limit_km_per_year: 15000, start_date: 2026-03-03}
+
+# Warning episodes (the "Patterns" panel on Warnings): a silence longer than this many minutes between two warnings
+# ends an episode (default 10, from 1 to 240).
+# warning_episode_minutes: 10
