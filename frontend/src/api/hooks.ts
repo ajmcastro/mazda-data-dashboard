@@ -245,6 +245,15 @@ export const useDay = (day: string | undefined) => {
   })
 }
 
+/** The supply voltage of the freeze frames over time, by engine state (M68; a state). */
+export const useFrameVoltage = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['frame-voltage', model],
+    queryFn: () => unwrap(client.GET('/api/dtcs/frame-voltage', { params: { query: { model } } })),
+  })
+}
+
 /** For every fault ever listed: when it stopped being listed and when it came back (M67; a state). */
 export const useComeback = () => {
   const { model } = useRangeQuery()

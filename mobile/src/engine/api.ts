@@ -22,6 +22,7 @@ import { warningEpisodes } from './episodes'
 import { changePoints } from './changes'
 import { drivingRoutines } from './routinesroute'
 import { faultComeback } from './comeback'
+import { frameVoltage } from './voltage'
 import { unusualReports } from './unusual'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
@@ -120,6 +121,7 @@ export class Api {
     add('GET', '/api/dtcs/events', dtcEvents)
     add('GET', '/api/dtcs/frame-summary', frameSummary)
     add('GET', '/api/dtcs/comeback', faultComeback)
+    add('GET', '/api/dtcs/frame-voltage', frameVoltage)
     add('GET', '/api/dtcs/readouts', dtcReadouts)
     add('GET', '/api/dtcs/snapshots', dtcSnapshots)
     add('GET', '/api/codes/unmapped', unmapped)

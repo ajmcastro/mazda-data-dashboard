@@ -1565,6 +1565,55 @@
         }
       }
     },
+    "/api/dtcs/frame-voltage": {
+      "get": {
+        "summary": "Dtcs Frame Voltage",
+        "description": "The supply voltage of the freeze frames over time, by engine state, with a temperature-adjusted trend\nwhen there are enough frames (M68). A state, from all the frames.",
+        "operationId": "dtcs_frame_voltage_api_dtcs_frame_voltage_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FrameVoltage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/dtcs/comeback": {
       "get": {
         "summary": "Dtcs Comeback",
@@ -6931,6 +6980,51 @@
         ],
         "title": "FrameSignalSummary"
       },
+      "FrameVoltage": {
+        "properties": {
+          "starting_seconds": {
+            "type": "integer",
+            "title": "Starting Seconds"
+          },
+          "min_frames": {
+            "type": "integer",
+            "title": "Min Frames"
+          },
+          "min_days": {
+            "type": "integer",
+            "title": "Min Days"
+          },
+          "min_span_days": {
+            "type": "integer",
+            "title": "Min Span Days"
+          },
+          "frames": {
+            "items": {
+              "$ref": "#/components/schemas/VoltageFrame"
+            },
+            "type": "array",
+            "title": "Frames"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/VoltageGroup"
+            },
+            "type": "array",
+            "title": "Groups"
+          }
+        },
+        "type": "object",
+        "required": [
+          "starting_seconds",
+          "min_frames",
+          "min_days",
+          "min_span_days",
+          "frames",
+          "groups"
+        ],
+        "title": "FrameVoltage",
+        "description": "The supply voltage recorded with faults (M68), by engine state, with a trend when there are enough frames."
+      },
       "FreezeFrame": {
         "properties": {
           "frame_id": {
@@ -10048,6 +10142,209 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VoltageFrame": {
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "At"
+          },
+          "voltage": {
+            "type": "number",
+            "title": "Voltage"
+          },
+          "ambient": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ambient"
+          },
+          "soc": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Soc"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "at",
+          "voltage",
+          "state"
+        ],
+        "title": "VoltageFrame"
+      },
+      "VoltageGroup": {
+        "properties": {
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "frames": {
+            "type": "integer",
+            "title": "Frames"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "first_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First At"
+          },
+          "last_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last At"
+          },
+          "span_days": {
+            "type": "number",
+            "title": "Span Days"
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          },
+          "low": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Low"
+          },
+          "high": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "High"
+          },
+          "enough": {
+            "type": "boolean",
+            "title": "Enough"
+          },
+          "per_degree": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Degree"
+          },
+          "per_30_days": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per 30 Days"
+          },
+          "flat": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Flat"
+          },
+          "change_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change At"
+          },
+          "change_before": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change Before"
+          },
+          "change_after": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Change After"
+          }
+        },
+        "type": "object",
+        "required": [
+          "state",
+          "frames",
+          "days",
+          "span_days",
+          "enough"
+        ],
+        "title": "VoltageGroup"
       },
       "WarningDay": {
         "properties": {

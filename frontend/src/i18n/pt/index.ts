@@ -25,6 +25,7 @@ import { UNUSUAL } from './unusual'
 import { STEPS } from './steps'
 import { ROUTINES } from './routines'
 import { COMEBACK } from './comeback'
+import { VOLTAGE } from './voltage'
 
 export const PHRASES: Record<string, string> = {
   ...COMMON,
@@ -51,4 +52,5 @@ export const PHRASES: Record<string, string> = {
   ...STEPS,
   ...ROUTINES,
   ...COMEBACK,
+  ...VOLTAGE,
 }

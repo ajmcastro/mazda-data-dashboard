@@ -725,6 +725,52 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class VoltageFrame(BaseModel):
+    at: datetime  # the freeze frame's moment
+    voltage: float  # Main_ECU_Voltage_Supply, else ECU_Power_Voltage
+    ambient: float | None = None  # degrees Celsius
+    soc: float | None = None  # SOC_StateOfCharge, %
+    state: str  # running, starting (first minute after a start), off, unknown
+
+
+class VoltageGroup(BaseModel):
+    state: str  # running or off
+    frames: int
+    days: int  # different days
+    first_at: datetime | None = None
+    last_at: datetime | None = None
+    span_days: float
+    median: float | None = None
+    low: float | None = None
+    high: float | None = None
+    enough: (
+        bool  # min_frames on min_days over min_span_days: the figures below are given
+    )
+    per_degree: float | None = (
+        None  # volts per degree of outside temperature (Theil-Sen)
+    )
+    per_30_days: float | None = (
+        None  # the temperature-adjusted voltage's slope (Theil-Sen)
+    )
+    flat: bool | None = None  # under 0.05 V per 30 days either way
+    change_at: datetime | None = (
+        None  # a change point in the adjusted voltage, the first frame after it
+    )
+    change_before: float | None = None
+    change_after: float | None = None
+
+
+class FrameVoltage(BaseModel):
+    """The supply voltage recorded with faults (M68), by engine state, with a trend when there are enough frames."""
+
+    starting_seconds: int
+    min_frames: int
+    min_days: int
+    min_span_days: int
+    frames: list[VoltageFrame]
+    groups: list[VoltageGroup]
+
+
 class ComebackWait(BaseModel):
     from_at: datetime  # the first read-out of the unit that no longer listed the fault
     to_at: datetime | None = (

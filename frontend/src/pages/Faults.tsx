@@ -5,6 +5,7 @@ import { useDtcFrequency, useReadouts } from '../api/hooks'
 import type { DtcFrequency } from '../api/types'
 import { FaultDetail } from '../components/FaultDetail'
 import { FaultMap } from '../components/FaultMap'
+import { VoltagePanel } from '../components/VoltagePanel'
 import { Badge, ChartTip, DataTable, Panel, QueryState, type Column } from '../components/ui'
 import { ANIMATE, SEVERITY_BADGE, fmtDateTime, fmtNum, fmtTick, ts } from '../lib'
 
@@ -70,6 +71,10 @@ export default function Faults() {
       </div>
 
       {sel && <FaultDetail key={key(sel)} fault={sel} />}
+
+      <div style={{ marginTop: 14 }}>
+        <VoltagePanel />
+      </div>
     </>
   )
 }

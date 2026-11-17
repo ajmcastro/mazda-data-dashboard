@@ -1,6 +1,7 @@
 import { msg, tr, trn } from '../i18n'
 import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires, useUnusualReports } from '../api/hooks'
+import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires, useUnusualReports, useFrameVoltage } from '../api/hooks'
+import { engineNote } from '../voltage'
 import { MOMENT_MINUTES, momentOf, moments, reasonText } from '../unusual'
 import { PartAlerts } from './PartAlerts'
 import { notesByPart } from '../tires'
@@ -88,7 +89,10 @@ export function CarPanel() {
   // so the panel does not wait for them and a failure of theirs does not hide the rest
   const query = overview.isError || !doors.isError ? overview : doors
   const pending = overview.isPending || doors.isPending
-  const newest = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notesByPart(forecast.data), alertCounts(openAlerts.data))
+  // a battery trend of the freeze frames (M68) is a note on the engine, never a state
+  const battery = engineNote(useFrameVoltage().data)
+  const notes = { ...notesByPart(forecast.data), ...(battery ? { engine: battery } : {}) }
+  const newest = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notes, alertCounts(openAlerts.data))
   // the time scrubber (M56): the reports of the period, one step each; null = the newest, as the panel always showed
   const reports = useStatusTimeline().data
   const total = reports?.length ?? 0

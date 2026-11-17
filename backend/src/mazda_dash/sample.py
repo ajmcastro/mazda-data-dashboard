@@ -71,6 +71,9 @@ class Profile:
     # a fault that comes and goes (M67): listed only in these read-outs, without freeze frames (no random number)
     flapping_fault: tuple[str, str] | None = None
     flapping_readouts: tuple[int, ...] = ()
+    # the freeze frames are taken with the engine running and their supply voltage falls this many volts every 30
+    # days (M68); applied after the random draws, so the rest of the sample does not change
+    frame_voltage_decline: float | None = None
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
@@ -181,6 +184,7 @@ CX60 = Profile(
     l100_step=(date(2026, 6, 10), 0.9),
     flapping_fault=("EPS", "C1452:11"),
     flapping_readouts=(1, 2, 4, 9, 13),
+    frame_voltage_decline=0.15,
     belts=True,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
@@ -656,6 +660,18 @@ def write_dtcs(out: Path, rng: random.Random, car: Car, p: Profile) -> None:
                     Shift_Position=rng.randint(0, 4),
                     SOC_StateOfCharge=rng.randint(40, 90),
                 )
+                if p.frame_voltage_decline is not None:
+                    months = (snap - p.start).total_seconds() / 86400 / 30
+                    values["Engine_RPM"] = values["Engine_RPM"] or 780
+                    values["Time_Since_Engine_Start"] = round(
+                        values["Time_Since_Engine_Start"] * 20, 2
+                    )
+                    values["Main_ECU_Voltage_Supply"] = round(
+                        13.4
+                        + (values["Main_ECU_Voltage_Supply"] - 12.2) / 2
+                        - p.frame_voltage_decline * months,
+                        2,
+                    )
                 ssr.append(
                     [
                         _tx(rng),

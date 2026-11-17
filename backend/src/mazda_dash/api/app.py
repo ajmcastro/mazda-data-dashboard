@@ -33,6 +33,7 @@ from .selection import registry
 from .service import service_log
 from .trends import PRICED, monthly_metrics
 from .unusual import unusual_reports
+from .voltage import frame_voltage
 
 app = FastAPI(title="Mazda data dashboard API", version="0.2.0")
 Con = Depends(get_con)
@@ -461,6 +462,13 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/dtcs/frame-voltage", response_model=m.FrameVoltage)
+def dtcs_frame_voltage(con: duckdb.DuckDBPyConnection = Con):
+    """The supply voltage of the freeze frames over time, by engine state, with a temperature-adjusted trend
+    when there are enough frames (M68). A state, from all the frames."""
+    return frame_voltage(con)
 
 
 @app.get("/api/dtcs/comeback", response_model=m.Comeback)

@@ -389,6 +389,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dtcs/frame-voltage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Dtcs Frame Voltage
+         * @description The supply voltage of the freeze frames over time, by engine state, with a temperature-adjusted trend
+         *     when there are enough frames (M68). A state, from all the frames.
+         */
+        get: operations["dtcs_frame_voltage_api_dtcs_frame_voltage_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/dtcs/comeback": {
         parameters: {
             query?: never;
@@ -1940,6 +1961,24 @@ export interface components {
             /** Position */
             position?: ("low" | "high") | null;
         };
+        /**
+         * FrameVoltage
+         * @description The supply voltage recorded with faults (M68), by engine state, with a trend when there are enough frames.
+         */
+        FrameVoltage: {
+            /** Starting Seconds */
+            starting_seconds: number;
+            /** Min Frames */
+            min_frames: number;
+            /** Min Days */
+            min_days: number;
+            /** Min Span Days */
+            min_span_days: number;
+            /** Frames */
+            frames: components["schemas"]["VoltageFrame"][];
+            /** Groups */
+            groups: components["schemas"]["VoltageGroup"][];
+        };
         /** FreezeFrame */
         FreezeFrame: {
             /** Frame Id */
@@ -2887,6 +2926,57 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VoltageFrame */
+        VoltageFrame: {
+            /**
+             * At
+             * Format: date-time
+             */
+            at: string;
+            /** Voltage */
+            voltage: number;
+            /** Ambient */
+            ambient?: number | null;
+            /** Soc */
+            soc?: number | null;
+            /** State */
+            state: string;
+        };
+        /** VoltageGroup */
+        VoltageGroup: {
+            /** State */
+            state: string;
+            /** Frames */
+            frames: number;
+            /** Days */
+            days: number;
+            /** First At */
+            first_at?: string | null;
+            /** Last At */
+            last_at?: string | null;
+            /** Span Days */
+            span_days: number;
+            /** Median */
+            median?: number | null;
+            /** Low */
+            low?: number | null;
+            /** High */
+            high?: number | null;
+            /** Enough */
+            enough: boolean;
+            /** Per Degree */
+            per_degree?: number | null;
+            /** Per 30 Days */
+            per_30_days?: number | null;
+            /** Flat */
+            flat?: boolean | null;
+            /** Change At */
+            change_at?: string | null;
+            /** Change Before */
+            change_before?: number | null;
+            /** Change After */
+            change_after?: number | null;
         };
         /** WarningDay */
         WarningDay: {
@@ -3836,6 +3926,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dtcs_frame_voltage_api_dtcs_frame_voltage_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameVoltage"];
                 };
             };
             /** @description Validation Error */
