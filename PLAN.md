@@ -1468,10 +1468,9 @@ Eighteen milestones that make the dashboard more useful day to day without any n
 
 Email or push notifications; several cars of the same model (a vehicle level under the model, see "Several car models"); parsing Mazda's zip and CSV files on the phone (so the Mac is not needed at all); Android testing on a real device; Windows support without WSL; a published Docker image; the maintenance-reminder signals (`mntsetdist`, `remregdist`), which are not set up in the author's car.
 
-The 3D follow-ups proposed with M38 (time scrubber, seats, alerts on the car, fault map, freeze-frame scene, cars on other pages) are now milestones M55–M60. Still only an idea: **a closer likeness** of the 3D cars (curved glass, wheel-arch flares and cladding, a real grille, or a view from above to replace the estimated widths).
+**A closer likeness** of the 3D cars (curved glass, wheel-arch flares and cladding, a real grille, or a view from above to replace the estimated widths).
 
 Ideas around comparing that are not milestones yet (smaller, or they need a decision first):
 - **Code vocabulary across models:** which warning and fault codes appear in both cars and which in one only, as a *hint* for filling in a model's code descriptions ("this code is described for the CX-5; it may or may not mean the same here"). It must stay a suggestion the user copies by hand: descriptions are never shared or borrowed automatically.
-- **Notes on the charts:** now M50 (the service log).
-- **Export:** a CSV of a comparison table (the printable summary is now M54, the report for the mechanic).
+- **Export:** a CSV of a comparison table.
 - **A combined alerts view** across cars, read-only (the Garage cards of M32 only show the counts).
