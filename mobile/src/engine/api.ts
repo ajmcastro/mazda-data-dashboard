@@ -20,6 +20,7 @@ import { forecast } from './forecast'
 import { drivingPattern } from './driving'
 import { warningEpisodes } from './episodes'
 import { changePoints } from './changes'
+import { drivingRoutines } from './routinesroute'
 import { unusualReports } from './unusual'
 import { refuels } from './refuels'
 import { serviceLog } from './service'
@@ -100,6 +101,7 @@ export class Api {
     add('GET', '/api/forecast', forecast)
     add('GET', '/api/day', day)
     add('GET', '/api/trips/pattern', drivingPattern)
+    add('GET', '/api/trips/routines', drivingRoutines)
     add('GET', '/api/trips/segments', tripSegments)
     add('GET', '/api/status/timeline', statusTimeline)
     add('GET', '/api/status/tires', tireReadings)

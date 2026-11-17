@@ -27,6 +27,7 @@ from .driving import driving_pattern
 from .episodes import warning_episodes
 from .health import data_health
 from .refuels import refuels
+from .routines import driving_routines
 from .selection import registry
 from .service import service_log
 from .trends import PRICED, monthly_metrics
@@ -459,6 +460,12 @@ def warning_frequency(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = C
         f"FROM v_warnings {where} GROUP BY code ORDER BY events DESC, code",
         [*params, *params],
     )
+
+
+@app.get("/api/trips/routines", response_model=m.Routines)
+def trips_routines(con: duckdb.DuckDBPyConnection = Con):
+    """The stretches grouped into the car's recurring kinds of stretch (M66), from all the data (a state)."""
+    return driving_routines(con)
 
 
 @app.get("/api/trends/change-points", response_model=m.ChangePoints)

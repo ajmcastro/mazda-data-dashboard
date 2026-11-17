@@ -1565,6 +1565,55 @@
         }
       }
     },
+    "/api/trips/routines": {
+      "get": {
+        "summary": "Trips Routines",
+        "description": "The stretches grouped into the car's recurring kinds of stretch (M66), from all the data (a state).",
+        "operationId": "trips_routines_api_trips_routines_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Routines"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/trends/change-points": {
       "get": {
         "summary": "Trends Change Points",
@@ -8790,6 +8839,191 @@
           "unmatched"
         ],
         "title": "Refuels"
+      },
+      "Routine": {
+        "properties": {
+          "routine": {
+            "type": "integer",
+            "title": "Routine"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "days": {
+            "type": "integer",
+            "title": "Days"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "km_share_pct": {
+            "type": "number",
+            "title": "Km Share Pct"
+          },
+          "km_median": {
+            "type": "number",
+            "title": "Km Median"
+          },
+          "minutes_median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutes Median"
+          },
+          "weekend_pct": {
+            "type": "number",
+            "title": "Weekend Pct"
+          },
+          "hour": {
+            "type": "number",
+            "title": "Hour"
+          },
+          "hour_low": {
+            "type": "number",
+            "title": "Hour Low"
+          },
+          "hour_high": {
+            "type": "number",
+            "title": "Hour High"
+          },
+          "l_per_100km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "L Per 100Km"
+          }
+        },
+        "type": "object",
+        "required": [
+          "routine",
+          "stretches",
+          "days",
+          "km",
+          "km_share_pct",
+          "km_median",
+          "weekend_pct",
+          "hour",
+          "hour_low",
+          "hour_high"
+        ],
+        "title": "Routine"
+      },
+      "RoutineMember": {
+        "properties": {
+          "end_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "End At"
+          },
+          "routine": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Routine"
+          }
+        },
+        "type": "object",
+        "required": [
+          "end_at"
+        ],
+        "title": "RoutineMember"
+      },
+      "Routines": {
+        "properties": {
+          "enough": {
+            "type": "boolean",
+            "title": "Enough"
+          },
+          "stretches": {
+            "type": "integer",
+            "title": "Stretches"
+          },
+          "km": {
+            "type": "number",
+            "title": "Km"
+          },
+          "k": {
+            "type": "integer",
+            "title": "K"
+          },
+          "silhouette": {
+            "type": "number",
+            "title": "Silhouette"
+          },
+          "clear": {
+            "type": "boolean",
+            "title": "Clear"
+          },
+          "min_stretches": {
+            "type": "integer",
+            "title": "Min Stretches"
+          },
+          "min_days": {
+            "type": "integer",
+            "title": "Min Days"
+          },
+          "min_silhouette": {
+            "type": "number",
+            "title": "Min Silhouette"
+          },
+          "routines": {
+            "items": {
+              "$ref": "#/components/schemas/Routine"
+            },
+            "type": "array",
+            "title": "Routines"
+          },
+          "other_stretches": {
+            "type": "integer",
+            "title": "Other Stretches"
+          },
+          "other_km": {
+            "type": "number",
+            "title": "Other Km"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/RoutineMember"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "type": "object",
+        "required": [
+          "enough",
+          "stretches",
+          "km",
+          "k",
+          "silhouette",
+          "clear",
+          "min_stretches",
+          "min_days",
+          "min_silhouette",
+          "routines",
+          "other_stretches",
+          "other_km",
+          "members"
+        ],
+        "title": "Routines",
+        "description": "The stretches grouped into the car's recurring kinds of stretch (M66), from all its data."
       },
       "ServiceAdded": {
         "properties": {

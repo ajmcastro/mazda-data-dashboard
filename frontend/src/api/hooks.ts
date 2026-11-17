@@ -245,6 +245,15 @@ export const useDay = (day: string | undefined) => {
   })
 }
 
+/** The stretches grouped into the car's recurring kinds of stretch, from all its data (M66; a state). */
+export const useRoutines = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['routines', model],
+    queryFn: () => unwrap(client.GET('/api/trips/routines', { params: { query: { model } } })),
+  })
+}
+
 /** Where the consumption stepped up or down, from all the car's data (M65; a state: no period). */
 export const useChangePoints = () => {
   const { model } = useRangeQuery()

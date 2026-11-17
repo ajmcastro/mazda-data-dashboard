@@ -725,6 +725,46 @@ class Day(BaseModel):
     entries: list[DayEntry]
 
 
+class Routine(BaseModel):
+    routine: int  # 1 = the routine with the most stretches
+    stretches: int
+    days: int  # different local days
+    km: float
+    km_share_pct: float  # of all the grouped stretches' km
+    km_median: float
+    minutes_median: float | None = (
+        None  # driving time, from the stretches that have a positive one
+    )
+    weekend_pct: float  # ended on a Saturday or Sunday (local)
+    hour: float  # typical local hour it ended (circular mean)
+    hour_low: float  # 10th and 90th percentile around it
+    hour_high: float
+    l_per_100km: float | None = None  # from 20 km on
+
+
+class RoutineMember(BaseModel):
+    end_at: datetime
+    routine: int | None = None  # None = other
+
+
+class Routines(BaseModel):
+    """The stretches grouped into the car's recurring kinds of stretch (M66), from all its data."""
+
+    enough: bool
+    stretches: int
+    km: float
+    k: int  # groups the method found (some may be too small to be a routine)
+    silhouette: float  # how well the groups are apart, -1 to 1
+    clear: bool  # silhouette >= min_silhouette
+    min_stretches: int
+    min_days: int
+    min_silhouette: float
+    routines: list[Routine]
+    other_stretches: int
+    other_km: float
+    members: list[RoutineMember]
+
+
 class ConsumptionSegment(BaseModel):
     from_at: datetime  # the start of its first stretch
     to_at: datetime  # the end of its last stretch

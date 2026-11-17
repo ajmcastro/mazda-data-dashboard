@@ -1,9 +1,10 @@
 import { t, tr } from '../i18n'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useDay, useUnusualReports } from '../api/hooks'
+import { useDay, useRoutines, useUnusualReports } from '../api/hooks'
 import { Badge, Panel, QueryState } from '../components/ui'
 import { KIND_LABEL, addDays, dayShort, dayTitle, describe, isDay, placedAt, summary, when } from '../day'
 import { standsOut } from '../unusual'
+import { routineOf } from '../routines'
 import { useDayHref, useRangeSearch } from '../range'
 
 /** One day at a glance (PLAN.md M49): everything the exports say about one day, in the car's local time. */
@@ -17,6 +18,7 @@ export default function DayPage() {
   const day = d?.date ?? null
   // the reports of this day that stand out (M64): the UTC days around the car's local day, whatever the period
   const unusual = useUnusualReports(day ? { from: addDays(day, -1), to: addDays(day, 1) } : undefined)
+  const routines = useRoutines() // a drive's routine (M66), matched by the time its stretch ended
   const to = (path: string, extra?: Record<string, string>) => {
     const p = new URLSearchParams(search)
     for (const [k, v] of Object.entries(extra ?? {})) p.set(k, v)
@@ -69,6 +71,8 @@ export default function DayPage() {
                   {d.entries.map((e, i) => {
                     const line = describe(e)
                     const odd = standsOut(e.kind, e.at, unusual.data?.reports)
+                    // a drive's `at` is the report before the stretch, `until` the one at its end: routines are by the end
+                    const routine = e.kind === 'drive' ? routineOf(e.until, routines.data) : null
                     return (
                       <li key={`${e.kind}-${e.at}-${e.code ?? e.ref ?? i}`} className={`day-entry kind-${e.kind}`}>
                         <span className="day-time mono" title={when(e, day)}>{placedAt(e, day)}</span>
@@ -81,6 +85,7 @@ export default function DayPage() {
                             </span>
                           )}
                           {odd && <span className="day-detail day-unusual">{odd}</span>}
+                          {routine && <span className="muted day-detail">{routine}</span>}
                         </span>
                       </li>
                     )

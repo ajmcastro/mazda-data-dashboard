@@ -389,6 +389,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/trips/routines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Trips Routines
+         * @description The stretches grouped into the car's recurring kinds of stretch (M66), from all the data (a state).
+         */
+        get: operations["trips_routines_api_trips_routines_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/trends/change-points": {
         parameters: {
             query?: never;
@@ -2455,6 +2475,75 @@ export interface components {
             /** Unmatched */
             unmatched: components["schemas"]["FuelPayment"][];
         };
+        /** Routine */
+        Routine: {
+            /** Routine */
+            routine: number;
+            /** Stretches */
+            stretches: number;
+            /** Days */
+            days: number;
+            /** Km */
+            km: number;
+            /** Km Share Pct */
+            km_share_pct: number;
+            /** Km Median */
+            km_median: number;
+            /** Minutes Median */
+            minutes_median?: number | null;
+            /** Weekend Pct */
+            weekend_pct: number;
+            /** Hour */
+            hour: number;
+            /** Hour Low */
+            hour_low: number;
+            /** Hour High */
+            hour_high: number;
+            /** L Per 100Km */
+            l_per_100km?: number | null;
+        };
+        /** RoutineMember */
+        RoutineMember: {
+            /**
+             * End At
+             * Format: date-time
+             */
+            end_at: string;
+            /** Routine */
+            routine?: number | null;
+        };
+        /**
+         * Routines
+         * @description The stretches grouped into the car's recurring kinds of stretch (M66), from all its data.
+         */
+        Routines: {
+            /** Enough */
+            enough: boolean;
+            /** Stretches */
+            stretches: number;
+            /** Km */
+            km: number;
+            /** K */
+            k: number;
+            /** Silhouette */
+            silhouette: number;
+            /** Clear */
+            clear: boolean;
+            /** Min Stretches */
+            min_stretches: number;
+            /** Min Days */
+            min_days: number;
+            /** Min Silhouette */
+            min_silhouette: number;
+            /** Routines */
+            routines: components["schemas"]["Routine"][];
+            /** Other Stretches */
+            other_stretches: number;
+            /** Other Km */
+            other_km: number;
+            /** Members */
+            members: components["schemas"]["RoutineMember"][];
+        };
         /** ServiceAdded */
         ServiceAdded: {
             /** Added */
@@ -3655,6 +3744,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WarningFrequency"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trips_routines_api_trips_routines_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Routines"];
                 };
             };
             /** @description Validation Error */

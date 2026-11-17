@@ -5,6 +5,7 @@ import { useMonthly } from '../api/hooks'
 import type { MonthMetrics } from '../api/types'
 import { DrivingPanel } from '../components/DrivingPanel'
 import { StepsPanel } from '../components/StepsPanel'
+import { RoutinesPanel } from '../components/RoutinesPanel'
 import { Panel, QueryState } from '../components/ui'
 import { ANIMATE, fmtNum } from '../lib'
 import { useCurrentModel } from '../model'
@@ -244,6 +245,9 @@ export default function Trends() {
             </div>
             <div style={{ marginTop: 14 }}>
               <DrivingPanel />
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <RoutinesPanel />
             </div>
             {noPrice && (
               <p className="muted" style={{ fontSize: 12, margin: '14px 0 0' }}>
