@@ -129,7 +129,7 @@ With more than one car model loaded, the sidebar has a model selector (here the 
 - [Try it in two minutes (no data needed)](#try-it-in-two-minutes-no-data-needed)
 - [What is in the dashboard](#what-is-in-the-dashboard): the pages, the words used, units, language, periods
 - [Use your own data](#use-your-own-data): getting it from Mazda, loading it, car models, and the optional
-  settings (time zone, fuel cost, fill-ups, looking ahead, service log, fault map, sharing code descriptions)
+  settings (time zone, fuel cost, fill-ups, looking ahead, service log, fault map, clues for unknown codes, sharing code descriptions)
 - [Use it on your iPhone](#use-it-on-your-iphone-offline-with-your-data-on-the-phone)
 - [Alerts](#alerts) · [Commands](#commands) · [How it works](#how-it-works) · [Limitations](#limitations)
 - [Privacy](#privacy) · [Troubleshooting](#troubleshooting) · [Development](#development)
@@ -319,6 +319,7 @@ Once the dashboard runs you no longer need the terminal for new downloads: the *
 
 Run `make unmapped` to see warning and fault codes (and warning-lamp flags) that have no description
 yet, then add what you learn to `config/models/<id>/codes/*.yaml` (for the CX-5, `config/models/cx5/codes/`) and run `make model`.
+For clues about what an unknown code or flag goes with, see [Clues for unknown codes](#clues-for-unknown-codes).
 
 ### Car models
 
@@ -486,6 +487,22 @@ The panel then shows the distance so far this year and the projection against th
 the dates (oil change, end of the year, a tire reaching your pressure limit) as an `.ics` file made in the page:
 open it to add them to your calendar; nothing is sent anywhere. The oil alert can also fire by date: add
 `days: 30` to `oil_change_due` in `alerts.yaml`.
+
+### Clues for unknown codes
+
+`scripts/correlate_mazda_warnings.py` reads a model's database (read-only, after `make ingest`) and lists what
+happened together: the warning codes of each event that started a fault read-out and the faults new in that
+read-out, every time a warning-lamp flag came on or went off with the warning codes reported in between, and the
+dates of the rare warning codes with the flags that were on at the next status report. It prints nothing that
+identifies the car.
+
+```bash
+cd backend && uv run python ../scripts/correlate_mazda_warnings.py --model cx5
+```
+
+`--model` defaults to the default model and `--db` points it at another database file. What it finds are **hints,
+not meanings**: two things showing up together does not say what either one is. Keep a hint in the entry's `notes`
+(starting with "Hint only", say) and leave `title: null` until you know the meaning from a real source.
 
 ### Sharing code descriptions
 
