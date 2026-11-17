@@ -9026,6 +9026,33 @@
             "type": "integer",
             "title": "Payments",
             "default": 0
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "days_off": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Off"
+          },
+          "litres_differ": {
+            "type": "boolean",
+            "title": "Litres Differ",
+            "default": false
           }
         },
         "type": "object",

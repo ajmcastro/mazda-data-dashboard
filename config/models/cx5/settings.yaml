@@ -31,7 +31,7 @@ tank_litres: 56
 # refuel_min_points: 15
 # What you actually paid goes in a file next to this one, fuel_log.yaml (amounts in fuel_currency), e.g.
 #   - {date: 2026-06-06, paid: 78.40, litres: 41.1}
-# `litres` is optional. A payment is matched to the fill-up seen around its date.
+# `litres` is optional. A payment is matched to the fill-up nearest its date (up to 3 days away).
 
 # Optional: a yearly distance limit (a lease or warranty year). The Overview's "Looking ahead" then sets the
 # distance so far this year and the projection at your recent pace against it. Remove the # and set your own.

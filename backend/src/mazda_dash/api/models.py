@@ -529,6 +529,13 @@ class Refuel(BaseModel):
     paid: float | None = None  # what the owner noted paying (fuel_log.yaml)
     paid_litres: float | None = None
     payments: int = 0  # how many noted payments it adds up
+    confidence: str | None = (
+        None  # of the match (M70): high, medium or low; None without a payment
+    )
+    days_off: int | None = (
+        None  # the largest of its payments' days from the two reports' days (0: between)
+    )
+    litres_differ: bool = False  # a payment's litres and the gauge's do not agree
 
 
 class FuelPayment(BaseModel):

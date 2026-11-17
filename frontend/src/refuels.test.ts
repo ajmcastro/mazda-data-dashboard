@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { Refuel, Refuels } from './api/types'
 import { fmtDate, fmtDateTime, fmtNum } from './lib'
-import { REFUEL_NOTES, amount, between, doubt, lastFillUp, levels, missingSetting, paidCell, sincePrevious, summaryLine } from './refuels'
+import { REFUEL_NOTES, amount, between, doubt, lastFillUp, levels, matchLine, missingSetting, paidCell, sincePrevious, summaryLine } from './refuels'
 import { DEFAULT_UNITS, setUnits } from './units'
 
 afterEach(() => setUnits(DEFAULT_UNITS))
@@ -10,7 +10,7 @@ const r = (over: Partial<Refuel> = {}): Refuel => ({
   before_at: '2026-06-05T17:53:07Z', after_at: '2026-06-06T15:44:55Z', level_before: 25, level_after: 98, points: 73,
   gap_hours: 21.9, odometer_km: 4106.2, doubtful: false, litres: 40.9, km_since_previous: 578.8,
   used_since_previous_l: 36.3, l_per_100km_since_previous: 6.28, est_cost: 73.99, paid: null, paid_litres: null, payments: 0,
-  ...over,
+  litres_differ: false, ...over,
 })
 const d = (over: Partial<Refuels> = {}): Refuels => ({
   tank_litres: 56, min_points: 15, currency: 'EUR', fill_ups: 7, doubtful: 0, litres: 297.8, est_cost: 523.48,
@@ -41,6 +41,8 @@ describe('a fill-up in words', () => {
   it('shows what was noted as paid, apart from the estimate', () => {
     expect(paidCell(r(), 'EUR')).toBe('—')
     expect(paidCell(r({ paid: 89.95, paid_litres: 48.7, payments: 1 }), 'EUR')).toBe('89.95 EUR for 48.7 l')
+    expect(paidCell(r({ paid: 89.95, paid_litres: 48.7, payments: 1, confidence: 'high' }), 'EUR')).toBe('89.95 EUR for 48.7 l')
+    expect(paidCell(r({ paid: 89.95, payments: 1, confidence: 'medium', days_off: 1 }), 'EUR')).toBe('89.95 EUR · likely match')
     expect(paidCell(r({ paid: 61.5, payments: 2 }), 'EUR')).toBe('61.50 EUR (2 payments)')
   })
 })
@@ -80,5 +82,16 @@ describe('the summary', () => {
     expect(text).toContain('estimate')
     expect(text).toContain('between two status reports')
     expect(summaryLine(d({ paid: null, paid_fill_ups: 0 }))).not.toMatch(/paid|paying/)
+  })
+})
+
+describe('the match of a payment (M70)', () => {
+  it('is explained only when it is not certain', () => {
+    expect(matchLine(r({ paid: 50, payments: 1, confidence: 'high', days_off: 0 }))).toBeNull()
+    expect(matchLine(r({ paid: 50, payments: 1 }))).toBeNull()
+    expect(matchLine(r({ paid: 50, payments: 1, confidence: 'medium', days_off: 1 }))).toMatch(/: likely match \(noted 1 day from the two reports\)\.$/)
+    expect(matchLine(r({ paid: 50, payments: 1, confidence: 'low', days_off: 3, litres_differ: true }))).toMatch(
+      /: uncertain match \(noted 3 days from the two reports; the litres you noted and the litres the gauge gained differ\)\.$/,
+    )
   })
 })

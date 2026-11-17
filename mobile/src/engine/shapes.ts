@@ -36,7 +36,7 @@ export const OCCUPANCY_MONTH = ['month', 'belted_readings', 'passenger_readings'
 export const REFUEL = [
   'before_at', 'after_at', 'level_before', 'level_after', 'points', 'gap_hours', 'odometer_km', 'doubtful', 'litres',
   'km_since_previous', 'used_since_previous_l', 'l_per_100km_since_previous', 'est_cost', 'paid', 'paid_litres',
-  'payments',
+  'payments', 'confidence', 'days_off', 'litres_differ',
 ]
 export const FUEL_PAYMENT = ['paid_on', 'paid', 'litres']
 export const FORECAST = [

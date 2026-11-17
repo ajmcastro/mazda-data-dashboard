@@ -18,5 +18,11 @@ export const FUEL: Record<string, string> = {
   'last fill-up by {date}': 'último abastecimento até {date}',
   'A fill-up is a rise of the fuel level between two status reports: it happened some time between the two.': 'Um abastecimento é uma subida do nível de combustível entre dois relatórios de estado: aconteceu algures entre os dois.',
   'The litres are what the gauge gained. Fuel burned between the two reports is not seen, so the real amount is a little higher.': 'Os litros são o que o indicador ganhou. O combustível gasto entre os dois relatórios não se vê, por isso a quantidade real é um pouco maior.',
-  'The cost is an estimate: the litres times your price for that day. "Paid" is what you noted in fuel_log.yaml, matched by its date.': 'O custo é uma estimativa: os litros vezes o seu preço desse dia. "Pago" é o que registou em fuel_log.yaml, associado pela data.',
+  'The cost is an estimate: the litres times your price for that day. "Paid" is what you noted in fuel_log.yaml, matched to the fill-up nearest its date (up to 3 days away): a likely or uncertain match is marked when the date is off or the litres disagree.':
+    'O custo é uma estimativa: os litros vezes o seu preço desse dia. "Pago" é o que registou em fuel_log.yaml, associado ao abastecimento mais próximo da data (até 3 dias de distância): uma associação provável ou incerta é assinalada quando a data não coincide ou os litros não batem certo.',
+  'likely match': 'associação provável',
+  'uncertain match': 'associação incerta',
+  'noted {n} day from the two reports': 'registado a {n} dia dos dois relatórios',
+  'noted {n} days from the two reports': 'registado a {n} dias dos dois relatórios',
+  'the litres you noted and the litres the gauge gained differ': 'os litros que registou e os que o indicador ganhou não coincidem',
 }

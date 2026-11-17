@@ -77,6 +77,8 @@ class Profile:
     # (wheel, kPa): that wheel reads this much lower when the car measured it before noon, local time (M69); no
     # random number
     morning_dip: tuple[int, float] | None = None
+    # one noted payment in three is dated a day after its fill-up (a receipt noted the next day, M70)
+    late_receipt: bool = False
     extra_signals: tuple[
         str, ...
     ] = ()  # signals this model has that the dashboard does not read
@@ -189,6 +191,7 @@ CX60 = Profile(
     flapping_readouts=(1, 2, 4, 9, 13),
     frame_voltage_decline=0.15,
     morning_dip=(1, 10.0),
+    late_receipt=True,
     belts=True,
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
@@ -882,8 +885,9 @@ def fuel_log_text(p: Profile, refuels: list[tuple[datetime, float]]) -> str:
             [per_l for start, per_l in p.fuel_prices if start <= day]
             or [p.fuel_prices[0][1]]
         )[-1]
+        noted = day + timedelta(days=1) if p.late_receipt and i % 3 == 1 else day
         lines.append(
-            f"- {{date: {day.isoformat()}, paid: {litres * price * 1.02:.2f}, litres: {litres:.1f}}}"
+            f"- {{date: {noted.isoformat()}, paid: {litres * price * 1.02:.2f}, litres: {litres:.1f}}}"
         )
     lines.append(
         f"- {{date: {(p.start + timedelta(days=1)).date().isoformat()}, paid: 20.00}}"

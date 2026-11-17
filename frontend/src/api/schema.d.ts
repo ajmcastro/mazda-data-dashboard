@@ -2573,6 +2573,15 @@ export interface components {
              * @default 0
              */
             payments: number;
+            /** Confidence */
+            confidence?: string | null;
+            /** Days Off */
+            days_off?: number | null;
+            /**
+             * Litres Differ
+             * @default false
+             */
+            litres_differ: boolean;
         };
         /** Refuels */
         Refuels: {

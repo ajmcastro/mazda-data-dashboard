@@ -5,7 +5,7 @@ import { useDayHref } from '../range'
 import type { Refuel } from '../api/types'
 import { fmtDate, fmtNum } from '../lib'
 import { useCurrentModel } from '../model'
-import { REFUEL_NOTES, amount, between, doubt, levels, missingSetting, paidCell, sincePrevious, summaryLine } from '../refuels'
+import { REFUEL_NOTES, amount, between, doubt, levels, matchLine, missingSetting, paidCell, sincePrevious, summaryLine } from '../refuels'
 import { Badge, DataTable, Panel, QueryState, type Column } from './ui'
 
 /** The fill-ups of the period: rises of the fuel level between two status reports (PLAN.md M47). */
@@ -47,6 +47,10 @@ export function FillUpsPanel() {
             {doubts.map((line) => (
               <p key={line} className="muted note">{line}</p>
             ))}
+            {d.refuels.flatMap((r) => {
+              const line = matchLine(r)
+              return line ? [<p key={`m-${r.after_at}`} className="muted note">{line}</p>] : []
+            })}
             {d.unmatched.length > 0 && (
               <p className="muted note">
                 {tr('Payments in your fuel log with no fill-up seen around their date:')}{' '}

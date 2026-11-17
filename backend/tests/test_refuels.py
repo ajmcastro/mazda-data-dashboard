@@ -197,8 +197,20 @@ def test_a_fill_up_around_midnight_takes_a_payment_of_either_day(tmp_path):
             make_db(tmp_path / day, readings, fuel_log=f"- {{date: {day}, paid: 55}}\n")
         )
         assert got["refuels"][0]["paid"] == 55.0, day
+        assert got["refuels"][0]["confidence"] == "high", day
+    # a day after the two reports' days: still matched (M70), with less confidence
     got = get(
-        make_db(tmp_path / "far", readings, fuel_log="- {date: 2026-05-03, paid: 55}\n")
+        make_db(
+            tmp_path / "next", readings, fuel_log="- {date: 2026-05-03, paid: 55}\n"
+        )
+    )
+    assert (
+        got["refuels"][0]["paid"] == 55.0
+        and got["refuels"][0]["confidence"] == "medium"
+    )
+    assert got["refuels"][0]["days_off"] == 1 and got["unmatched"] == []
+    got = get(
+        make_db(tmp_path / "far", readings, fuel_log="- {date: 2026-05-06, paid: 55}\n")
     )
     assert got["refuels"][0]["paid"] is None and len(got["unmatched"]) == 1
 
@@ -309,3 +321,52 @@ def test_the_sample_car_refuels_and_its_log_is_read(demo, pid):
             assert r["paid_litres"] >= r["litres"]
     chained = [r for r in got["refuels"] if r["l_per_100km_since_previous"] is not None]
     assert chained and all(3 < r["l_per_100km_since_previous"] < 15 for r in chained)
+
+
+# ------------------------------------------------------------ scored matching (M70)
+# TWO_FILLS: 30 l seen on 2 May (local), 37.5 l seen on 3 May
+
+
+def paid(log: str, tmp_path) -> list[dict]:
+    got = get(make_db(tmp_path, TWO_FILLS, fuel_log=log))
+    return sorted(got["refuels"], key=lambda r: r["after_at"]), got["unmatched"]
+
+
+def test_litres_that_disagree_lower_the_confidence(tmp_path):
+    (first, _), _ = paid("- {date: 2026-05-02, paid: 60, litres: 80}\n", tmp_path)
+    assert (
+        first["paid"] == 60
+        and first["confidence"] == "medium"
+        and first["litres_differ"] is True
+    )
+    (first, _), _ = paid(
+        "- {date: 2026-05-02, paid: 60, litres: 33}\n", tmp_path / "ok"
+    )
+    assert (
+        first["confidence"] == "high" and first["litres_differ"] is False
+    )  # 30 of 33: the gauge sees less
+
+
+def test_a_payment_goes_to_the_nearest_fill_up(tmp_path):
+    (first, second), unmatched = paid("- {date: 2026-05-04, paid: 70}\n", tmp_path)
+    assert first["payments"] == 0 and second["paid"] == 70 and second["days_off"] == 1
+    assert second["confidence"] == "medium" and unmatched == []
+
+
+def test_a_payment_days_away_is_low_and_further_is_unmatched(tmp_path):
+    (_, second), _ = paid("- {date: 2026-05-06, paid: 70}\n", tmp_path)
+    assert (
+        second["paid"] == 70
+        and second["confidence"] == "low"
+        and second["days_off"] == 3
+    )
+    (_, second), unmatched = paid("- {date: 2026-05-07, paid: 70}\n", tmp_path / "far")
+    assert second["paid"] is None and len(unmatched) == 1
+
+
+def test_a_fill_up_takes_the_lowest_confidence_of_its_payments(tmp_path):
+    log = "- {date: 2026-05-02, paid: 40}\n- {date: 2026-04-30, paid: 20}\n"
+    (first, _), _ = paid(log, tmp_path)
+    assert (
+        first["payments"] == 2 and first["paid"] == 60 and first["confidence"] == "low"
+    )

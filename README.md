@@ -480,7 +480,7 @@ To see **what you really paid** next to the estimate, keep a file `fuel_log.yaml
 - {date: 2026-06-27, paid: 89.95}
 ```
 
-A payment is matched to the fill-up seen around its date; one that matches none is listed under the table. Then run
+A payment is matched to the fill-up nearest its date, up to 3 days away; when the date is a day or more off, or the litres you noted and the litres the gauge saw disagree, the table marks it as a likely or uncertain match and says why. One that matches none is listed under the table. Then run
 `make model` (and, for the phone, `make mobile-pack` and import the new pack). The two amounts are never mixed: the
 total says how many fill-ups the paid amount covers.
 

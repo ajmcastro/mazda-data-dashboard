@@ -43,7 +43,22 @@ export function doubt(r: Refuel, minPoints: number): string | null {
 export function paidCell(r: Refuel, currency: string | null | undefined): string {
   if (r.paid === null || r.paid === undefined) return '—'
   const litres = r.paid_litres !== null && r.paid_litres !== undefined ? ` ${tr('for {n} l', { n: fmtNum(r.paid_litres, 1) })}` : ''
-  return `${money(r.paid, currency)}${litres}${r.payments > 1 ? ` (${tr('{n} payments', { n: fmtNum(r.payments) })})` : ''}`
+  const match = r.confidence && r.confidence !== 'high' ? ` · ${tr(CONFIDENCE[r.confidence] ?? r.confidence)}` : ''
+  return `${money(r.paid, currency)}${litres}${r.payments > 1 ? ` (${tr('{n} payments', { n: fmtNum(r.payments) })})` : ''}${match}`
+}
+
+const CONFIDENCE: Record<string, string> = { medium: msg('likely match'), low: msg('uncertain match') }
+
+/**
+ * Why a payment's match is not certain (M70), for the line under the table, or null for a match on the right days
+ * with litres that agree (or none noted).
+ */
+export function matchLine(r: Refuel): string | null {
+  if (!r.confidence || r.confidence === 'high') return null
+  const why: string[] = []
+  if (r.days_off) why.push(trn('noted {n} day from the two reports', 'noted {n} days from the two reports', r.days_off, { n: r.days_off }))
+  if (r.litres_differ) why.push(tr('the litres you noted and the litres the gauge gained differ'))
+  return `${fmtDate(r.after_at)}: ${tr(CONFIDENCE[r.confidence] ?? r.confidence)}${why.length ? ` (${why.join('; ')})` : ''}.`
 }
 
 /** One or two sentences above the table. Estimates and amounts paid are told apart. */
@@ -81,5 +96,5 @@ export function lastFillUp(d: Refuels | undefined): string | null {
 export const REFUEL_NOTES = [
   msg('A fill-up is a rise of the fuel level between two status reports: it happened some time between the two.'),
   msg('The litres are what the gauge gained. Fuel burned between the two reports is not seen, so the real amount is a little higher.'),
-  msg('The cost is an estimate: the litres times your price for that day. "Paid" is what you noted in fuel_log.yaml, matched by its date.'),
+  msg('The cost is an estimate: the litres times your price for that day. "Paid" is what you noted in fuel_log.yaml, matched to the fill-up nearest its date (up to 3 days away): a likely or uncertain match is marked when the date is off or the litres disagree.'),
 ] as const
