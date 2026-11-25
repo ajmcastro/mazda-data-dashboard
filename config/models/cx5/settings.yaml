@@ -22,6 +22,8 @@ fuel_prices:
    - {from: 2026-09-01, per_l: 2.079}
    - {from: 2026-10-01, per_l: 2.094}
    - {from: 2026-11-01, per_l: 1.922}
+   - {from: 2026-11-18, per_l: 1.859}
+   - {from: 2026-11-24, per_l: 1.829}
 
 # Optional: fill-ups (the "Fill-ups" panel on Status). The car reports the fuel level in % only, so litres
 # need the size of the fuel tank (see the owner's manual). Remove the # and set YOUR tank's size, then run
