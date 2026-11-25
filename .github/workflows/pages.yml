@@ -19,11 +19,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v6
       - uses: astral-sh/setup-uv@v7
@@ -49,5 +46,15 @@ jobs:
       - uses: actions/upload-pages-artifact@v5
         with:
           path: mobile/dist
+
+  # A job of its own: an artifact uploaded a moment ago may not be listed yet (actions/deploy-pages#451), and
+  # when that still happens "Re-run failed jobs" repeats only this job (a second upload could not be deployed).
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v5
