@@ -86,6 +86,7 @@ export default function ReportPage() {
   const period = useDateRange()
   const [include, setInclude] = useState<ReadonlySet<SectionId>>(new Set(SECTION_IDS))
   const [showVin, setShowVin] = useState(false)
+  const [madeAt] = useState(() => new Date().toISOString())
   const input = {
     car: { id: car.id, name: car.name },
     period: { from: period.from, to: period.to },
@@ -152,7 +153,7 @@ export default function ReportPage() {
       <article className="report-page">
         <header>
           <h1>{tr('{name}: report for the workshop', { name: car.name })}</h1>
-          <p className="muted">{tr('Made on {date}', { date: fmtDate(new Date().toISOString()) })}</p>
+          <p className="muted">{tr('Made on {date}', { date: fmtDate(madeAt) })}</p>
         </header>
         {sections.map((s) => (
           <SectionView key={s.id} s={s} />

@@ -17,6 +17,10 @@ function save(name: string, text: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+function saveCalendar(id: string, events: ReturnType<typeof calendarEvents>) {
+  save(`${id}-forecast.ics`, icsFile(events, new Date()), 'text/calendar')
+}
+
 /** Looking ahead (PLAN.md M52): the oil change and the year's distance at the recent pace, and a calendar file. */
 export function AheadPanel() {
   const forecast = useForecast().data
@@ -33,7 +37,7 @@ export function AheadPanel() {
       title={tr('Looking ahead')}
       hint={
         events.length > 0 ? (
-          <button type="button" onClick={() => save(`${id}-forecast.ics`, icsFile(events, new Date()), 'text/calendar')}>
+          <button type="button" onClick={() => saveCalendar(id, events)}>
             {tr('Calendar file ({n})', { n: events.length })}
           </button>
         ) : (

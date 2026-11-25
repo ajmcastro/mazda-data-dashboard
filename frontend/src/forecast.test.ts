@@ -103,7 +103,7 @@ describe('the calendar file', () => {
   })
   it('escapes and folds text', () => {
     const text = icsFile([{ date: '2026-12-31', summary: 'a, b; c\\d', description: 'two\nlines', uid: 'x' }], new Date(0))
-    expect(text).toContain('SUMMARY:a\\, b\; c\\\\d')
+    expect(text).toContain('SUMMARY:a\\, b\\; c\\\\d')
     expect(text).toContain('DESCRIPTION:two\\nlines')
     expect(text).toContain('DTEND;VALUE=DATE:20270101') // the day after, across a year
     const long = fold(`DESCRIPTION:${'é'.repeat(100)}`)

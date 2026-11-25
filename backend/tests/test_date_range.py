@@ -22,7 +22,9 @@ PERIOD_ENDPOINTS = [
 def client(tmp_path_factory):
     root = tmp_path_factory.mktemp("range")
     generate(root / "data")
-    ingest(root / "data", root / "r.duckdb", CONFIG)
+    # the sample's own settings and logs: the repository's hold the owner's real fill-ups and services, which
+    # change whenever they add one (and are outside the sample's period)
+    ingest(root / "data", root / "r.duckdb", CONFIG, root / "data" / "settings.yaml")
     mp = pytest.MonkeyPatch()
     mp.setenv("MAZDA_DB", str(root / "r.duckdb"))
     yield TestClient(app)

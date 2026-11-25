@@ -113,7 +113,7 @@ export function calendarEvents(car: { id: string; name: string }, f: Forecast | 
   return out.sort((a, b) => a.date.localeCompare(b.date) || a.uid.localeCompare(b.uid))
 }
 
-const escapeText = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
+const escapeText = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
 const compact = (day: string) => day.replace(/-/g, '')
 function nextDay(day: string): string {
   return new Date(Date.parse(`${day}T00:00:00Z`) + 86_400_000).toISOString().slice(0, 10)
