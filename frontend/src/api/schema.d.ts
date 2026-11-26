@@ -562,9 +562,31 @@ export interface paths {
         /**
          * Occupancy
          * @description Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),
-         *     how many had the front passenger's or a rear belt buckled too. Seat belts only, not seat sensors.
+         *     how many had the front passenger's or a rear belt buckled too; and, where the platform documents them
+         *     (M72), what each seat's sensor read among the same snapshots.
          */
         get: operations["occupancy_api_status_occupancy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/signals/values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Signal Values
+         * @description What the values of some signals mean, as Mazda documents them for the model's platform (M72). Empty
+         *     for a model whose platform has no documented values. A state, so it ignores the period.
+         */
+        get: operations["signal_values_api_signals_values_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1452,6 +1474,12 @@ export interface components {
             text?: string | null;
             /** Ref */
             ref?: string | null;
+            /** Engine State */
+            engine_state?: number | null;
+            /** Alarm Status */
+            alarm_status?: number | null;
+            /** Alarm Reason */
+            alarm_reason?: number | null;
         };
         /** DiagDelta */
         DiagDelta: {
@@ -2218,6 +2246,8 @@ export interface components {
             tire_age_minutes?: number | null;
             /** Tire Stale */
             tire_stale?: boolean | null;
+            /** Engine State */
+            engine_state?: number | null;
         };
         /**
          * ModelBody
@@ -2436,6 +2466,11 @@ export interface components {
             driver_only_readings: number;
             /** Months */
             months: components["schemas"]["OccupancyMonth"][];
+            /**
+             * Sensors
+             * @default []
+             */
+            sensors: components["schemas"]["SeatSensor"][];
         };
         /** OccupancyMonth */
         OccupancyMonth: {
@@ -2748,6 +2783,27 @@ export interface components {
             /** Members */
             members: components["schemas"]["RoutineMember"][];
         };
+        /**
+         * SeatSensor
+         * @description One seat's sensor (occupant classification, M72) among the snapshots with the driver's belt buckled.
+         *     A sensor reads a weight, so "occupied" can be a bag as well as a person.
+         */
+        SeatSensor: {
+            /** Seat */
+            seat: string;
+            /** Readings */
+            readings: number;
+            /** Occupied Readings */
+            occupied_readings: number;
+            /** Latest Value */
+            latest_value?: number | null;
+            /** Latest Label */
+            latest_label?: string | null;
+            /** Latest State */
+            latest_state?: string | null;
+            /** Latest At */
+            latest_at?: string | null;
+        };
         /** ServiceAdded */
         ServiceAdded: {
             /** Added */
@@ -2799,6 +2855,29 @@ export interface components {
             date: string;
             /** Odometer Km */
             odometer_km?: number | null;
+        };
+        /** SignalValue */
+        SignalValue: {
+            /** Signal */
+            signal: string;
+            /** Value */
+            value: number;
+            /** Label */
+            label: string;
+            /** State */
+            state: string;
+        };
+        /**
+         * SignalValues
+         * @description What the values of some signals mean, as Mazda documents them for the model's platform (M72).
+         */
+        SignalValues: {
+            /** Platform */
+            platform?: string | null;
+            /** Source */
+            source?: string | null;
+            /** Values */
+            values: components["schemas"]["SignalValue"][];
         };
         /** SnapshotSignal */
         SnapshotSignal: {
@@ -4310,6 +4389,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Occupancy"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    signal_values_api_signals_values_get: {
+        parameters: {
+            query?: {
+                /** @description Model id from /api/models; the default model when omitted */
+                model?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalValues"];
                 };
             };
             /** @description Validation Error */

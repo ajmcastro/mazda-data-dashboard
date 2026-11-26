@@ -1,6 +1,7 @@
 import { t, tr, trn } from '../i18n'
 import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
-import { useAlarms, useCarWarnings, useOilService, useRefuels, useServiceLog, useTireForecast, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
+import { useAlarms, useCarWarnings, useOilService, useRefuels, useServiceLog, useSignalValues, useTireForecast, useStatusTimeline, useTires, useTripSegments } from '../api/hooks'
+import { documents, meaningOf, meanings, valueText } from '../signals'
 import type { AlarmEvent, CarWarningEpisode, OilService, TripSegment } from '../api/types'
 import { CarPanel } from '../components/CarPanel'
 import { FillUpsPanel } from '../components/FillUpsPanel'
@@ -33,6 +34,7 @@ export default function Status() {
   const trips = useTripSegments(60)
   const oil = useOilService()
   const carWarnings = useCarWarnings()
+  const documented = meanings(useSignalValues().data)
   const tires = useTires()
   const forecast = useTireForecast().data
   // what the owner noted in the service log, marked on the time charts
@@ -78,8 +80,9 @@ export default function Status() {
   ]
   const alarmCols: Column<AlarmEvent>[] = [
     { key: 'at', header: tr('When'), render: (a) => fmtDateTime(a.created_at) },
-    { key: 'st', header: tr('Burglar status'), num: true, render: (a) => fmtNum(a.burglar_status) },
-    { key: 'rs', header: tr('Reason'), num: true, render: (a) => fmtNum(a.alarm_reason) },
+    // in words where the platform documents the values (M72), raw otherwise
+    { key: 'st', header: tr('Burglar status'), num: !documents(documented, 'burglarstatus'), render: (a) => valueText(documented, 'burglarstatus', a.burglar_status) },
+    { key: 'rs', header: tr('Reason'), num: !documents(documented, 'balarmreasondactl'), render: (a) => valueText(documented, 'balarmreasondactl', a.alarm_reason) },
   ]
   return (
     <>
@@ -169,7 +172,9 @@ export default function Status() {
               <div key={f.flag} style={{ display: 'contents' }}>
                 <dt>{tr(f.label)}</dt>
                 <dd style={f.is_on ? { color: 'var(--accent)' } : undefined}>
-                  {f.is_on ? tr('ON since {date} (raw {value})', { date: fmtDate(f.since), value: fmtNum(f.value) }) : tr('clear')}
+                  {f.is_on
+                    ? tr('ON since {date} ({value})', { date: fmtDate(f.since), value: meaningOf(documented, f.flag, f.value)?.label.toLowerCase() ?? tr('raw {value}', { value: fmtNum(f.value) }) })
+                    : meaningOf(documented, f.flag, f.value)?.state === 'unknown' ? meaningOf(documented, f.flag, f.value)?.label : tr('clear')}
                 </dd>
               </div>
             ))}
@@ -181,7 +186,9 @@ export default function Status() {
             </div>
           )}
           <p className="muted" style={{ fontSize: 12, margin: '10px 0 0' }}>
-            {tr('These are flags the car sends. Mazda does not publish what a non-zero value means, so any value other than 0 is treated as a warning.')}
+            {documents(documented, 'oillevelwarning')
+              ? tr('These are flags the car sends. Mazda documents their values for this car’s platform: a flag counts as on when its value is documented as a warning, and a value documented as not available counts as nothing.')
+              : tr('These are flags the car sends. Mazda does not publish what a non-zero value means, so any value other than 0 is treated as a warning.')}
           </p>
         </Panel>
       )}

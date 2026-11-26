@@ -57,6 +57,7 @@ TABLES = [
     "ref_fuel_paid",
     "ref_service_log",
     "ref_warning_flags",
+    "ref_signal_values",  # M72; optional on the phone (an older pack shows raw values)
 ]
 # The one big signal source; the others (vis, alt) are small and exported whole.
 TRIMMED_SOURCE = "rts"

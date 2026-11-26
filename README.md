@@ -358,6 +358,7 @@ Each model has its own:
 | raw exports | `data/<id>/` (git-ignored) |
 | database | `db/<id>.duckdb` (git-ignored) |
 | configuration | `config/models/<id>/`: `model.yaml`, `settings.yaml`, `alerts.yaml`, `codes/*.yaml`, and the optional files you keep yourself: `fuel_log.yaml`, `service_log.yaml`, `layout.yaml` |
+| what Mazda documents a platform's signal values to mean | `config/platforms/<platform>/signal_values.yaml` (used by every model whose `model.yaml` names that `platform`) |
 | phone data pack | `db/<id>.cx5pack` (git-ignored, holds the VIN) |
 | synthetic demo data | `sample_data/<id>/` (committed) |
 
@@ -546,6 +547,21 @@ cd backend && uv run python ../scripts/correlate_mazda_warnings.py --model cx5
 `--model` defaults to the default model and `--db` points it at another database file. What it finds are **hints,
 not meanings**: two things showing up together does not say what either one is. Keep a hint in the entry's `notes`
 (starting with "Hint only", say) and leave `title: null` until you know the meaning from a real source.
+
+### What Mazda documents
+
+Mazda's data catalogue for the **24PF** platform (the code in a CX-5's file names) says what the values of some
+signals mean: the door locks, the alarm, the engine state, the seat sensors, the tire pressure system, the oil
+level. `config/platforms/24PF/signal_values.yaml` holds those meanings, and every model whose `model.yaml` says
+`platform: 24PF` shows them in words: "locked" instead of "lock code 2", "Armed" instead of "status 3", the engine
+state on the car and on the Day page, and the seat sensors on Who rides. A lock switch or a seat sensor that
+reports its own failure is marked to check. A model with another platform, or none, keeps showing the raw numbers.
+After a change to the file, run `make model` (and `make mobile-pack` for the phone).
+
+The catalogue does not describe the warning codes (`$xxx`) or the fault codes: it points to dictionaries
+(`24PF_WAR_dict.xlsx`, `exdc24_dtcdict.xlsx`) that you can ask Mazda for. The warning dictionary Mazda sends as
+`wardict_en.pdf` is for other generations of cars (it lists VINs that start `JMZKF`, `JM4BP`, `JMZDR`, `JMZKH`,
+`JMZKL`) and does not fit a 2026 CX-5, so do not take titles from it for that car.
 
 ### Sharing code descriptions
 

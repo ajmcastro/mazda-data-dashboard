@@ -21,6 +21,7 @@ import { drivingPattern } from './driving'
 import { warningEpisodes } from './episodes'
 import { changePoints } from './changes'
 import { drivingRoutines } from './routinesroute'
+import { signalValues } from './signals'
 import { faultComeback } from './comeback'
 import { frameVoltage } from './voltage'
 import { monthForecast } from './month'
@@ -116,6 +117,7 @@ export class Api {
     add('GET', '/api/warnings/episodes', warningEpisodes)
     add('GET', '/api/activity/pattern', activityPattern)
     add('GET', '/api/status/occupancy', occupancy)
+    add('GET', '/api/signals/values', signalValues)
     add('GET', '/api/status/unusual', unusualReports)
     add('GET', '/api/data/health', dataHealth)
     add('GET', '/api/warnings/events', warningEvents)

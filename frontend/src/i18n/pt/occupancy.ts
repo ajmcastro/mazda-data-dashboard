@@ -9,4 +9,7 @@ export const OCCUPANCY: Record<string, string> = {
   'Rear left': 'Traseiro esquerdo',
   'Rear right': 'Traseiro direito',
   'Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row and a child seat are not seen either.': 'Cada lugar é sombreado pela frequência com que o seu cinto estava apertado nos relatórios com o condutor de cinto. Uma terceira fila e uma cadeira de criança também não são vistas.',
+  'The seat sensors weigh the seat, so a bag counts as occupied too. Shares are of the snapshots with the driver’s belt buckled; a sensor reading Unknown is left out.': 'Os sensores dos bancos pesam o banco, por isso um saco também conta como ocupado. As percentagens são dos relatórios de estado com o cinto do condutor apertado; um sensor que lê Desconhecido fica de fora.',
+  'SEAT SENSORS: READ OCCUPIED': 'SENSORES DOS BANCOS: LERAM OCUPADO',
+  'latest: {state}': 'mais recente: {state}',
 }

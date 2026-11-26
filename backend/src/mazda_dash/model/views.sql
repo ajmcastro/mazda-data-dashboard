@@ -351,8 +351,9 @@ SELECT i.read_at, i.remaining_km, i.previous_km, i.interval_no,
 FROM i LEFT JOIN v_vehicle_status s ON s.created_at = i.read_at;
 
 -- ------------------------------------------------------------ the car's own warnings
--- Warning flags the car itself reports, each 0 = all clear. What a non-zero value means is not published:
--- any non-zero is treated as "the car is warning" and the raw value is kept. Invalid readings are ignored.
+-- Warning flags the car itself reports, each 0 = all clear. For a platform whose values are documented
+-- (M72) the documented state decides; otherwise any non-zero is treated as "the car is warning". The raw
+-- value is kept either way. Invalid readings are ignored.
 -- To follow another flag, add it to the CASE below (the same list feeds the phone data pack, which keeps
 -- only signals named as signal = '...'). `n` is the display order.
 CREATE OR REPLACE VIEW v_car_warning_readings AS
@@ -371,9 +372,14 @@ WITH named AS (
     FROM signal_readings
     WHERE valid IS NOT FALSE AND value_num IS NOT NULL
 )
-SELECT signal AS flag, flag.label AS label, flag.n AS sort_order,
-       created_at AS read_at, value_num AS value, value_num <> 0 AS is_on
-FROM named WHERE flag IS NOT NULL;
+-- A value the platform documents (ref_signal_values, M72) is on when its state is "attention", so a value
+-- documented as "not available" or "reserved" is not a warning; any other value counts when it is non-zero.
+SELECT n.signal AS flag, n.flag.label AS label, n.flag.n AS sort_order,
+       n.created_at AS read_at, n.value_num AS value,
+       CASE WHEN m.state IS NOT NULL THEN m.state = 'attention' ELSE n.value_num <> 0 END AS is_on
+FROM named n
+LEFT JOIN ref_signal_values m ON m.signal = n.signal AND m.value = n.value_num
+WHERE n.flag IS NOT NULL;
 
 -- Runs of consecutive readings with a flag on. ongoing = the run includes the flag's latest reading.
 CREATE OR REPLACE VIEW v_car_warning_episodes AS
@@ -667,16 +673,36 @@ UNION ALL SELECT * FROM rare_open;
 -- ----------------------------------------------------------- who rides (M37)
 -- The seat belts of each status snapshot: 1 = buckled, 0 = not, NULL = unknown or not sent. The first-row
 -- signals come as value/validity pairs, the rear ones as plain columns. The third-row belts are not read (a
--- CX-5 has no third row: they read 1 almost always) and nor is the seat-sensor status (values undocumented).
+-- CX-5 has no third row: they read 1 almost always). The seat sensors are read since M72, when the platform
+-- documents their values (v_seat_sensors).
 CREATE OR REPLACE VIEW v_occupancy AS
 SELECT created_at,
        max(value_num) FILTER (WHERE signal = 'firstrowbuckledriver' AND valid IS NOT FALSE) AS driver_belt,
        max(value_num) FILTER (WHERE signal = 'firstrowbucklepsngr' AND valid IS NOT FALSE) AS passenger_belt,
        max(value_num) FILTER (WHERE signal = 'rear_left_seatbelt_used' AND valid IS NOT FALSE) AS rear_left_belt,
-       max(value_num) FILTER (WHERE signal = 'rear_right_seatbelt_used' AND valid IS NOT FALSE) AS rear_right_belt
+       max(value_num) FILTER (WHERE signal = 'rear_right_seatbelt_used' AND valid IS NOT FALSE) AS rear_right_belt,
+       -- the seat sensors (occupant classification, M72): raw values, read through ref_signal_values
+       max(value_num) FILTER (WHERE signal = 'ocsstatus' AND valid IS NOT FALSE) AS passenger_sensor,
+       max(value_num) FILTER (WHERE signal = 'rlocsstatdactl' AND valid IS NOT FALSE) AS rear_left_sensor,
+       max(value_num) FILTER (WHERE signal = 'rcocsstatdactl' AND valid IS NOT FALSE) AS rear_center_sensor,
+       max(value_num) FILTER (WHERE signal = 'rrocsstatdactl' AND valid IS NOT FALSE) AS rear_right_sensor
 FROM signal_readings
 WHERE source = 'rts'
 GROUP BY created_at;
+
+-- Each seat sensor reading with its documented meaning (M72): only for a platform whose values are known
+-- (an empty ref_signal_values gives no rows), and only with the driver's belt buckled, the base of Who rides.
+CREATE OR REPLACE VIEW v_seat_sensors AS
+WITH seats AS (
+    SELECT created_at, driver_belt, 'passenger' AS seat, 'ocsstatus' AS signal, passenger_sensor AS value
+    FROM v_occupancy
+    UNION ALL SELECT created_at, driver_belt, 'rear_left', 'rlocsstatdactl', rear_left_sensor FROM v_occupancy
+    UNION ALL SELECT created_at, driver_belt, 'rear_center', 'rcocsstatdactl', rear_center_sensor FROM v_occupancy
+    UNION ALL SELECT created_at, driver_belt, 'rear_right', 'rrocsstatdactl', rear_right_sensor FROM v_occupancy
+)
+SELECT s.created_at, s.seat, s.value, m.label, m.state
+FROM seats s JOIN ref_signal_values m ON m.signal = s.signal AND m.value = s.value
+WHERE s.driver_belt = 1;
 
 -- --------------------------------------------------------- diagnostic tool
 CREATE OR REPLACE VIEW v_diag_values AS

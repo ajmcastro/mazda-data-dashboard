@@ -24,3 +24,6 @@ mobile/contract/
 
 # Code description packs made by `make codes-export` (meant for sharing, not for the repository)
 *-codes.yaml
+
+# Mazda's own documentation (PDFs sent to the owner; not ours to publish, see PLAN.md M72)
+docs/mazda-pdfs/

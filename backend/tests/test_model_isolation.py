@@ -144,3 +144,26 @@ def test_an_empty_model_folder_is_reported_and_creates_no_database(root, capsys)
     out = capsys.readouterr().out
     assert "no export files for Mazda CX60" in out
     assert not registry.get("cx60").db_path.exists()
+
+
+def test_documented_signal_values_reach_only_a_model_of_that_platform(root):
+    """M72: a platform's documented values go into the database of a model whose model.yaml names that
+    platform, never into another model's."""
+    folder = root / "config" / "platforms" / "24PF"
+    folder.mkdir(parents=True)
+    (folder / "signal_values.yaml").write_text(
+        "source: a test\nsignals:\n  enginestate:\n    3: {label: Running, state: info}\n"
+    )
+    model_yaml = root / "config" / "models" / "cx5" / "model.yaml"
+    model_yaml.write_text(model_yaml.read_text() + "platform: 24PF\n")
+    registry = load_registry(root)
+    for m in registry.models:
+        ingest(m.data_dir, m.db_path, m.codes_dir)
+    by_id = {m.id: m for m in registry.models}
+    assert rows(by_id["cx5"], "SELECT signal, value, label FROM ref_signal_values") == [
+        ("enginestate", 3.0, "Running")
+    ]
+    assert rows(by_id["cx60"], "SELECT count(*) FROM ref_signal_values") == [(0,)]
+    assert rows(
+        by_id["cx60"], "SELECT count(*) FROM ref_settings WHERE key = 'platform'"
+    ) == [(0,)]

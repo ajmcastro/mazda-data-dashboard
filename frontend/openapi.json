@@ -2077,7 +2077,7 @@
     "/api/status/occupancy": {
       "get": {
         "summary": "Occupancy",
-        "description": "Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),\nhow many had the front passenger's or a rear belt buckled too. Seat belts only, not seat sensors.",
+        "description": "Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),\nhow many had the front passenger's or a rear belt buckled too; and, where the platform documents them\n(M72), what each seat's sensor read among the same snapshots.",
         "operationId": "occupancy_api_status_occupancy_get",
         "parameters": [
           {
@@ -2144,6 +2144,55 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Occupancy"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/signals/values": {
+      "get": {
+        "summary": "Signal Values",
+        "description": "What the values of some signals mean, as Mazda documents them for the model's platform (M72). Empty\nfor a model whose platform has no documented values. A state, so it ignores the period.",
+        "operationId": "signal_values_api_signals_values_get",
+        "parameters": [
+          {
+            "name": "model",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Model id from /api/models; the default model when omitted",
+              "title": "Model"
+            },
+            "description": "Model id from /api/models; the default model when omitted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignalValues"
                 }
               }
             }
@@ -5078,6 +5127,39 @@
               }
             ],
             "title": "Ref"
+          },
+          "engine_state": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine State"
+          },
+          "alarm_status": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alarm Status"
+          },
+          "alarm_reason": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alarm Reason"
           }
         },
         "type": "object",
@@ -7847,6 +7929,17 @@
               }
             ],
             "title": "Tire Stale"
+          },
+          "engine_state": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine State"
           }
         },
         "type": "object",
@@ -8636,6 +8729,14 @@
             },
             "type": "array",
             "title": "Months"
+          },
+          "sensors": {
+            "items": {
+              "$ref": "#/components/schemas/SeatSensor"
+            },
+            "type": "array",
+            "title": "Sensors",
+            "default": []
           }
         },
         "type": "object",
@@ -9606,6 +9707,75 @@
         "title": "Routines",
         "description": "The stretches grouped into the car's recurring kinds of stretch (M66), from all its data."
       },
+      "SeatSensor": {
+        "properties": {
+          "seat": {
+            "type": "string",
+            "title": "Seat"
+          },
+          "readings": {
+            "type": "integer",
+            "title": "Readings"
+          },
+          "occupied_readings": {
+            "type": "integer",
+            "title": "Occupied Readings"
+          },
+          "latest_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Value"
+          },
+          "latest_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Label"
+          },
+          "latest_state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest State"
+          },
+          "latest_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "seat",
+          "readings",
+          "occupied_readings"
+        ],
+        "title": "SeatSensor",
+        "description": "One seat's sensor (occupant classification, M72) among the snapshots with the driver's belt buckled.\nA sensor reads a weight, so \"occupied\" can be a bag as well as a person."
+      },
       "ServiceAdded": {
         "properties": {
           "added": {
@@ -9758,6 +9928,73 @@
         ],
         "title": "ServiceSuggestion",
         "description": "Something the data hints at that the log does not have; offered, never added."
+      },
+      "SignalValue": {
+        "properties": {
+          "signal": {
+            "type": "string",
+            "title": "Signal"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          }
+        },
+        "type": "object",
+        "required": [
+          "signal",
+          "value",
+          "label",
+          "state"
+        ],
+        "title": "SignalValue"
+      },
+      "SignalValues": {
+        "properties": {
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "values": {
+            "items": {
+              "$ref": "#/components/schemas/SignalValue"
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "values"
+        ],
+        "title": "SignalValues",
+        "description": "What the values of some signals mean, as Mazda documents them for the model's platform (M72)."
       },
       "SnapshotSignal": {
         "properties": {

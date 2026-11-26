@@ -1,0 +1,104 @@
+# What the values of some signals mean, as Mazda documents them for the 24PF platform (PLAN.md M72).
+# Shared by every model whose config/models/<id>/model.yaml says `platform: 24PF`; a model with another
+# platform, or none, gets none of this and its pages show the raw numbers.
+#
+# Each signal maps a value to:
+#   label: a short name for the value, in English (both apps translate it: frontend/src/i18n/pt/signals.ts)
+#   state: ok | info | attention | unknown
+#     ok        what is expected (closed, locked, normal)
+#     info      a fact, neither good nor bad (the engine is running, a seat is occupied)
+#     attention the car itself reports a problem or a warning (a sensor fault, a low level)
+#     unknown   documented as "not available", "not used" or "reserved": the reading says nothing
+# Only values the documentation gives are listed; any other value is shown raw.
+# The labels are written for this project, not copied from the documents. Run `make model` after a change.
+source: >-
+  Mazda data catalogue, 24PF platform (rtspf24, the vehicle status alert file, altpf24),
+  version 20260408, sent to the owner on 26 Nov 2026
+
+signals:
+  # ---- status reports (rts)
+  enginestate:
+    1: {label: Ready, state: info}
+    2: {label: Cranking, state: info}
+    3: {label: Running, state: info}
+    5: {label: "Stop-start: about to stop", state: info}
+    6: {label: "Stop-start: stopping", state: info}
+    7: {label: Stopped by stop-start, state: info}
+    8: {label: "Stop-start: ready to restart", state: info}
+    9: {label: "Stop-start: restarting", state: info}
+    10: {label: Running with stop-start on, state: info}
+  # occupant classification: the seat sensors (ocsstatus = the front passenger's seat)
+  ocsstatus: &seat_sensor
+    0: {label: Unknown, state: unknown}
+    1: {label: Empty, state: ok}
+    2: {label: Occupied, state: info}
+    3: {label: Malfunction, state: attention}
+  rlocsstatdactl: *seat_sensor
+  rcocsstatdactl: *seat_sensor
+  rrocsstatdactl: *seat_sensor
+  oillevelwarning:
+    0: {label: Normal, state: ok}
+    1: {label: Low, state: attention}
+    2: {label: Over the high mark, state: attention}
+    3: {label: Not used, state: unknown}
+  tpmsstatus:
+    0: {label: Normal, state: ok}
+    1: {label: Failure, state: attention}
+    2: {label: Reserved, state: unknown}
+    3: {label: Reserved, state: unknown}
+  tpmssystemflt:
+    0: {label: No failure, state: ok}
+    1: {label: Signal missing, state: attention}
+    2: {label: Signal missing with an error, state: attention}
+    3: {label: Sensor battery low, state: attention}
+    4: {label: Control unit failure, state: attention}
+    5: {label: Repeated errors, state: attention}
+  fltyrepresswarn: &tire_warning
+    0: {label: Normal, state: ok}
+    1: {label: Low, state: attention}
+    2: {label: Not available, state: unknown}
+    3: {label: Reserved, state: unknown}
+  frtyrepresswarn: *tire_warning
+  rltyrepresswarn: *tire_warning
+  rrtyrepresswarn: *tire_warning
+  seatbeltwrndrq:
+    0: {label: "Off", state: ok}
+    1: {label: On without a chime, state: attention}
+    2: {label: On with a chime, state: attention}
+    3: {label: On with the chime off, state: attention}
+
+  # ---- door reports (vis)
+  dropnwrn:
+    0: {label: "Off", state: ok}
+    1: {label: "On", state: attention}
+    2: {label: Flashing, state: attention}
+    3: {label: Reserved, state: unknown}
+  # the two lock switches count the other way round from each other
+  locklinkswdrv:
+    0: {label: Unlocked, state: info}
+    1: {label: Neutral, state: info}
+    2: {label: Locked, state: ok}
+    3: {label: Failure, state: attention}
+  locklinkswpsngr:
+    0: {label: Locked, state: ok}
+    1: {label: Unlocked, state: info}
+
+  # ---- alarm (alt)
+  burglarstatus:
+    0: {label: Off while driving, state: info}
+    1: {label: Not set, state: info}
+    2: {label: Setting, state: info}
+    3: {label: Armed, state: ok}
+    4: {label: Armed with the trunk open, state: info}
+    5: {label: Alarm sounding, state: attention}
+    6: {label: Pause between alarms, state: attention}
+  balarmreasondactl:
+    0: {label: No cause, state: info}
+    1: {label: Door, state: info}
+    2: {label: Trunk, state: info}
+    3: {label: Hood, state: info}
+    4: {label: Battery removed, state: info}
+    5: {label: Intrusion, state: info}
+    6: {label: Tilt, state: info}
+    7: {label: Glass breakage, state: info}
+    8: {label: Ignition on, state: info}

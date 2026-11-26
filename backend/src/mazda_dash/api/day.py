@@ -17,7 +17,8 @@ from .db import has_table, one, rows
 
 COLS = (
     'kind, at_utc AS "at", until_utc AS "until", code, title, severity, n, km, l_per_100km, odometer_km, '
-    "fuel_level_pct, d_fuel_pct, tire_min_kpa, litres, doubtful, text, ref"
+    "fuel_level_pct, d_fuel_pct, tire_min_kpa, litres, doubtful, text, ref, engine_state, alarm_status, "
+    "alarm_reason"
 )
 # every column of an entry, typed, so each kind names only what it has
 NULLS = {
@@ -36,6 +37,10 @@ NULLS = {
     "doubtful": "BOOLEAN",
     "text": "VARCHAR",
     "ref": "VARCHAR",
+    # raw values that the documented meanings (M72) put into words on the page
+    "engine_state": "DOUBLE",
+    "alarm_status": "DOUBLE",
+    "alarm_reason": "DOUBLE",
 }
 
 
@@ -115,12 +120,14 @@ SOURCES = [
         "(SELECT created_at, odometer_km, fuel_level_pct, "
         "fuel_level_pct - lag(fuel_level_pct) OVER (ORDER BY created_at) AS d_fuel, "
         "odometer_km - lag(odometer_km) OVER (ORDER BY created_at) AS d_km, "
-        "least(tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa) AS tire_min FROM v_vehicle_status) s",
+        "least(tire_fl_kpa, tire_fr_kpa, tire_rl_kpa, tire_rr_kpa) AS tire_min, engine_state "
+        "FROM v_vehicle_status) s",
         km="round(d_km, 1)",
         odometer_km="odometer_km",
         fuel_level_pct="fuel_level_pct",
         d_fuel_pct="round(d_fuel, 1)",
         tire_min_kpa="tire_min",
+        engine_state="engine_state",
     ),
     # doors, trunk and hood: only when what is open differs from the report before
     _select(
@@ -140,6 +147,8 @@ SOURCES = [
         "v_alarm_events",
         text="'status ' || CAST(CAST(burglar_status AS BIGINT) AS VARCHAR) || ', reason ' || "
         "CAST(CAST(alarm_reason AS BIGINT) AS VARCHAR)",
+        alarm_status="burglar_status",
+        alarm_reason="alarm_reason",
     ),
     # a fill-up, seen by the later of its two reports
     _select(

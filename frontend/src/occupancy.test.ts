@@ -4,7 +4,7 @@ import { MIN_READINGS, OCCUPANCY_NOTE, monthBars, pct, shares, summaryLine, SEAT
 
 const o = (over: Partial<Occupancy> = {}): Occupancy => ({
   available: true, readings: 258, belted_readings: 149, passenger_readings: 24, rear_readings: 12,
-  driver_only_readings: 117, rear_left_readings: 9, rear_right_readings: 5,
+  driver_only_readings: 117, rear_left_readings: 9, rear_right_readings: 5, sensors: [],
   months: [
     { month: '2026-06', belted_readings: 20, passenger_readings: 4, rear_readings: 0 },
     { month: '2026-07', belted_readings: 3, passenger_readings: 3, rear_readings: 1 },

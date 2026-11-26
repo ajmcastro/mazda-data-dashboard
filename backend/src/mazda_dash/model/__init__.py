@@ -12,6 +12,7 @@ import duckdb
 from ..models import add_model_option, resolve
 from .lookups import load_lookups
 from .settings import load_settings
+from .signal_values import load_signal_values
 
 
 def build_model(
@@ -20,7 +21,9 @@ def build_model(
     """Lookups and settings first, then the views. The settings file is ``settings.yaml`` next to
     the ``codes`` folder unless given."""
     load_lookups(con, config_dir)
-    load_settings(con, settings_path or config_dir.parent / "settings.yaml")
+    settings_path = settings_path or config_dir.parent / "settings.yaml"
+    settings = load_settings(con, settings_path)
+    load_signal_values(con, config_dir, settings, settings_path)
     con.execute(resources.files(__package__).joinpath("views.sql").read_text())
 
 

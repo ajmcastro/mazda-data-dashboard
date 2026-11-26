@@ -237,7 +237,7 @@ export const PAGES: Record<string, string> = {
   'Fuel level and range': 'Nível de combustível e autonomia',
   'Gap': 'Intervalo',
   'None of the {n} flags is on in the latest readings.': 'Nenhum dos {n} indicadores está ligado nas leituras mais recentes.',
-  'ON since {date} (raw {value})': 'LIGADO desde {date} (em bruto {value})',
+  'ON since {date} ({value})': 'LIGADO desde {date} ({value})',
   'Oil change countdown': 'Contagem para a mudança de óleo',
   'Reason': 'Motivo',
   'Recent trips': 'Viagens recentes',

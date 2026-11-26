@@ -245,6 +245,7 @@ def record(client: TestClient) -> list[dict]:
         rec.get("/api/day", date=bad)
 
     rec.get("/api/service-log")
+    rec.get("/api/signals/values")
     rec.get("/api/status/tire-forecast")
     rec.get("/api/forecast")
     rec.get("/api/trends/change-points")

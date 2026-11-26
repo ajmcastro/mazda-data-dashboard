@@ -7,6 +7,7 @@ import type { Day, DayEntry } from './api/types'
 import { alertDetail, alertTitle, codeTitle } from './alerttext'
 import { fmtNum } from './lib'
 import { consumptionLabel, distanceText, fmtConsumption, pressureText } from './units'
+import { alarmText as signalAlarmText, documents, engineStateNote, type Meanings } from './signals'
 
 const DAY_MS = 86_400_000
 
@@ -68,7 +69,7 @@ export interface Line {
 }
 
 /** One entry in words, with the page that has more about it. */
-export function describe(e: DayEntry): Line {
+export function describe(e: DayEntry, m?: Meanings): Line {
   switch (e.kind) {
     case 'drive':
       return {
@@ -83,6 +84,9 @@ export function describe(e: DayEntry): Line {
         parts.push(`${tr('fuel {n} %', { n: fmtNum(e.fuel_level_pct) })}${has(e.d_fuel_pct) && e.d_fuel_pct !== 0 ? ` (${signed(e.d_fuel_pct)})` : ''}`)
       }
       if (has(e.tire_min_kpa)) parts.push(tr('lowest tire {pressure}', { pressure: pressureText(e.tire_min_kpa) }))
+      // the engine state, where the platform documents it (M72)
+      const engine = engineStateNote(m, e.engine_state)
+      if (engine) parts.push(engine)
       return { title: tr('Status report'), detail: parts.join(' · ') || null, to: '/status' }
     }
     case 'doors':
@@ -101,7 +105,12 @@ export function describe(e: DayEntry): Line {
         to: '/faults',
       }
     case 'alarm':
-      return { title: tr('Alarm report'), detail: e.text ? alarmText(e.text) : null, to: '/status' }
+      return {
+        title: tr('Alarm report'),
+        // in words where the platform documents the values (M72), the raw codes otherwise
+        detail: documents(m, 'burglarstatus') ? signalAlarmText(m, e.alarm_status, e.alarm_reason) : e.text ? alarmText(e.text) : null,
+        to: '/status',
+      }
     case 'fill_up':
       return {
         title: `${tr('Fill-up: {what}', { what: has(e.litres) ? tr('about {n} l', { n: fmtNum(e.litres, 1) }) : has(e.d_fuel_pct) ? tr('{n} points', { n: fmtNum(e.d_fuel_pct) }) : tr('seen') })}${e.doubtful ? ` (${tr('doubtful')})` : ''}`,

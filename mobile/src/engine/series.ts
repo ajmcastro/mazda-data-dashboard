@@ -40,7 +40,7 @@ export const overview: Handler = async ({ con, range }) => {
   const status = await con.one(
     'SELECT s.created_at AS at, s.fuel_level_pct, s.range_km, s.tire_fl_kpa, s.tire_fr_kpa, ' +
       's.tire_rl_kpa, s.tire_rr_kpa, t.measured_at AS tire_measured_at, ' +
-      't.age_minutes AS tire_age_minutes, t.stale AS tire_stale ' +
+      't.age_minutes AS tire_age_minutes, t.stale AS tire_stale, s.engine_state ' +
       'FROM v_vehicle_status s LEFT JOIN v_tire_snapshots t ON t.created_at = s.created_at ' +
       `WHERE s.fuel_level_pct IS NOT NULL ${st.sql} ORDER BY s.created_at DESC LIMIT 1`,
     st.params,

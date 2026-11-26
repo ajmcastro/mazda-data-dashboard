@@ -1,12 +1,13 @@
 import { msg, tr, trn } from '../i18n'
 import { Component, lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useStatusTimeline, useTireForecast, useTires, useUnusualReports, useFrameVoltage } from '../api/hooks'
+import { useAlerts, useCarWarnings, useDoors, useOilService, useOverview, useSignalValues, useStatusTimeline, useTireForecast, useTires, useUnusualReports, useFrameVoltage } from '../api/hooks'
+import { meanings } from '../signals'
 import { engineNote } from '../voltage'
 import { MOMENT_MINUTES, momentOf, moments, reasonText } from '../unusual'
 import { PartAlerts } from './PartAlerts'
 import { notesByPart } from '../tires'
 import {
-  CAR_NOTES, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge, type CarState, type CarView, type PartGroup, alertCounts, SCRUB_NOTE, carStateAt, reportText,
+  carNotes, CAR_VIEW_KEY, carHeadline, carState, carView, listedParts, parseCarView, stateBadge, type CarState, type CarView, type PartGroup, alertCounts, SCRUB_NOTE, carStateAt, reportText,
 } from '../car'
 import { bodyOfModel } from '../car3d/shapes/common' // not geometry.ts: the outlines belong in the 3D chunk
 import { ANIMATE, fmtDateTime } from '../lib'
@@ -92,7 +93,9 @@ export function CarPanel() {
   // a battery trend of the freeze frames (M68) is a note on the engine, never a state
   const battery = engineNote(useFrameVoltage().data)
   const notes = { ...notesByPart(forecast.data), ...(battery ? { engine: battery } : {}) }
-  const newest = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notes, alertCounts(openAlerts.data))
+  // what the platform documents the values to mean (M72): the words for the locks, the flags and the engine
+  const documented = meanings(useSignalValues().data)
+  const newest = carState(overview.data, doors.data?.[0], oil.data, carWarnings.data, notes, alertCounts(openAlerts.data), documented)
   // the time scrubber (M56): the reports of the period, one step each; null = the newest, as the panel always showed
   const reports = useStatusTimeline().data
   const total = reports?.length ?? 0
@@ -101,7 +104,7 @@ export function CarPanel() {
   const looking = step !== null && step < total - 1
   const doorHistory = useDoors(5000, looking || playing)
   const tireHistory = useTires()
-  const back = looking ? carStateAt(step, reports, doorHistory.data, tireHistory.data) : null
+  const back = looking ? carStateAt(step, reports, doorHistory.data, tireHistory.data, documented) : null
   // the reports unlike the car's others (M64), as ticks on the slider and a line under it
   const unusual = moments(useUnusualReports().data?.reports)
   const marked = (reports ?? []).flatMap((r, i) => (momentOf(r.created_at, unusual, MOMENT_MINUTES) ? [i] : []))
@@ -214,7 +217,7 @@ export function CarPanel() {
               <p className="muted note">{trn('The ticks on the slider mark the reports of a moment that stands out from the car’s others.', 'The ticks on the slider mark the reports of {n} moments that stand out from the car’s others.', markedMoments)}</p>
             )}
             <ul className="car-notes muted">
-              {CAR_NOTES.map((n) => (
+              {carNotes(documented).map((n) => (
                 <li key={n}>{tr(n)}</li>
               ))}
             </ul>

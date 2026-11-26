@@ -306,3 +306,31 @@ describe('fill-ups (M47)', () => {
     }
   }, 120_000)
 })
+
+describe('documented signal values (M72)', () => {
+  type Values = { platform: string | null; values: { signal: string; value: number; label: string }[] }
+
+  it('answers the table the pack carries', async () => {
+    const { api } = await fresh()
+    const got = (await api.handle('GET', '/api/signals/values')).body as Values
+    expect(got.platform).toBe('24PF')
+    expect(got.values.find((v) => v.signal === 'locklinkswdrv' && v.value === 2)?.label).toBe('Locked')
+  }, 120_000)
+
+  it('is empty, and the views still work, from a pack made before M72', async () => {
+    const { files, manifest } = readPack(packBytes())
+    const { zipSync, strToU8 } = await import('fflate')
+    const { ref_signal_values: _gone, ...tables } = manifest.tables
+    const { 'tables/ref_signal_values.parquet': _file, ...rest } = files
+    const old = zipSync({ ...rest, 'manifest.json': strToU8(JSON.stringify({ ...manifest, tables })) }, { level: 0 })
+    const raw = await nodeDb()
+    await loadPack(raw, old)
+    const api = new Api({ acks: new MemoryAckStore(), now: clock })
+    api.use(raw, 'cx5')
+    const got = (await api.handle('GET', '/api/signals/values')).body as Values
+    expect(got.values).toEqual([])
+    for (const path of ['/api/status/car-warnings', '/api/status/occupancy', '/api/overview']) {
+      expect((await api.handle('GET', path)).status).toBe(200)
+    }
+  }, 120_000)
+})

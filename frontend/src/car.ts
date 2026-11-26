@@ -8,6 +8,7 @@ import { msg, tr, trn } from './i18n'
 import type { CarWarningFlag, CarWarnings, DoorPoint, OilService, Overview, StatusPoint, TireReading } from './api/types'
 import { fmtAge, fmtDateTime, fmtNum, OIL_SOON_KM } from './lib'
 import { distanceText, fmtDistance, fmtPressure, pressureText } from './units'
+import { documents, engineStateNote, meaningOf, type Meanings } from './signals'
 
 export type PartId =
   | 'wheel_fl' | 'wheel_fr' | 'wheel_rl' | 'wheel_rr'
@@ -56,6 +57,16 @@ export const CAR_NOTES = [
   msg('Lock codes are shown raw: their meaning is not documented.'),
   msg("Fuel, tires, doors and the odometer are the newest in the selected period; the warning flags and the oil countdown are the car's latest."),
 ] as const
+const LOCK_NOTE = CAR_NOTES[1]
+
+/** The notes under the panel: the one about raw lock codes only when the platform does not document them (M72). */
+export const carNotes = (m?: Meanings): readonly string[] =>
+  documents(m, 'locklinkswdrv') ? CAR_NOTES.filter((n) => n !== LOCK_NOTE) : CAR_NOTES
+
+/** A flag of the car's own in words when its platform documents the value (M72), the raw value otherwise. */
+function flagWords(f: CarWarningFlag, m: Meanings | undefined): string {
+  return meaningOf(m, f.flag, f.value)?.label.toLowerCase() ?? tr('raw {value}', { value: fmtNum(f.value) })
+}
 
 const WHEELS: { id: PartId; name: string; short: string; key: 'tire_fl_kpa' | 'tire_fr_kpa' | 'tire_rl_kpa' | 'tire_rr_kpa'; flag: string }[] = [
   { id: 'wheel_fl', name: msg('Front left wheel'), short: msg('Front left'), key: 'tire_fl_kpa', flag: 'fltyrepresswarn' },
@@ -79,7 +90,7 @@ const PART_FLAGS = new Set([...WHEELS.map((w) => w.flag), OIL_FLAG])
 
 const num = (v: number | null | undefined): v is number => typeof v === 'number' && !Number.isNaN(v)
 
-function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Part[] {
+function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>, m?: Meanings): Part[] {
   const s = o?.status
   const values = WHEELS.map((w) => s?.[w.key]).filter(num)
   const lowest = values.length ? Math.min(...values) : null
@@ -93,7 +104,9 @@ function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Pa
     let state: PartState = !sends ? 'absent' : num(v) ? 'ok' : 'unknown'
     if (flag?.is_on) {
       state = 'attention'
-      notes.push(tr("the car's tire flag is on (raw {value})", { value: fmtNum(flag.value) }))
+      notes.push(tr("the car's tire flag is on ({value})", { value: flagWords(flag, m) }))
+    } else if (flag && meaningOf(m, flag.flag, flag.value)?.state === 'unknown') {
+      notes.push(tr("the car's tire flag: {value}", { value: flagWords(flag, m) }))
     }
     if (num(v) && v === lowest && spread >= LOWEST_SPREAD_KPA) {
       state = 'attention'
@@ -116,15 +129,20 @@ function wheels(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Pa
   })
 }
 
-function doors(d: DoorPoint | undefined): Part[] {
+function doors(d: DoorPoint | undefined, m?: Meanings): Part[] {
   return DOORS.map((def) => {
     if (!d) return { id: def.id, name: tr(def.name), group: 'doors', state: 'absent', value: tr('not sent'), notes: [], at: null, old: false }
     const v = d[def.key]
     const notes: string[] = []
-    if (def.lock && num(d[def.lock])) notes.push(tr('lock code {code}', { code: fmtNum(d[def.lock]) }))
+    // the two lock switches count the other way round from each other: only the documented words say which (M72)
+    const lock = def.lock ? meaningOf(m, def.lock === 'lock_driver' ? 'locklinkswdrv' : 'locklinkswpsngr', d[def.lock]) : null
+    if (lock) notes.push(tr('lock: {state}', { state: lock.label.toLowerCase() }))
+    else if (def.lock && num(d[def.lock])) notes.push(tr('lock code {code}', { code: fmtNum(d[def.lock]) }))
+    // a failure the lock switch itself reports marks the door, as the car's own flags mark a part
+    const failed = lock?.state === 'attention'
     return {
       id: def.id, name: tr(def.name), group: 'doors', old: false, at: d.created_at, notes,
-      state: !num(v) ? 'unknown' : v === 0 ? 'ok' : 'open',
+      state: failed ? 'attention' : !num(v) ? 'unknown' : v === 0 ? 'ok' : 'open',
       value: !num(v) ? tr('unknown') : v === 0 ? tr('closed') : tr('open (raw {value})', { value: fmtNum(v) }),
     }
   })
@@ -141,14 +159,18 @@ function fuel(o: Overview | undefined): Part {
   }
 }
 
-function engine(oil: OilService | undefined, flags: Map<string, CarWarningFlag>): Part {
+function engine(o: Overview | undefined, oil: OilService | undefined, flags: Map<string, CarWarningFlag>, m?: Meanings): Part {
   const flag = flags.get(OIL_FLAG)
   const km = oil?.has_data ? oil.remaining_km : null
-  const notes: string[] = []
-  let state: PartState = num(km) || flag ? 'ok' : 'absent'
+  // the engine state of the report shown (M72): a note, never a state
+  const running = engineStateNote(m, o?.status.engine_state)
+  const notes: string[] = running ? [running] : []
+  let state: PartState = num(km) || flag || running ? 'ok' : 'absent'
   if (flag?.is_on) {
     state = 'attention'
-    notes.push(tr("the car's oil level flag is on (raw {value})", { value: fmtNum(flag.value) }))
+    notes.push(tr("the car's oil level flag is on ({value})", { value: flagWords(flag, m) }))
+  } else if (flag && meaningOf(m, flag.flag, flag.value)?.state === 'unknown') {
+    notes.push(tr("the car's oil level flag: {value}", { value: flagWords(flag, m) }))
   }
   if (num(km)) {
     if (km <= OIL_SOON_KM) {
@@ -161,19 +183,19 @@ function engine(oil: OilService | undefined, flags: Map<string, CarWarningFlag>)
   return {
     id: 'engine', name: tr('Engine'), group: 'other', state, old: false, notes,
     short: num(km) ? { name: tr('Oil change in'), value: distanceText(km) } : flag ? { name: tr('Oil level flag'), value: flag.is_on ? tr('on') : tr('clear') } : undefined,
-    value: num(km) ? tr('{distance} to oil change', { distance: distanceText(km) }) : flag ? (flag.is_on ? tr('oil level flag on') : tr('oil level flag clear')) : tr('not sent'),
-    at: num(km) ? (oil?.read_at ?? null) : (flag?.last_read_at ?? null),
+    value: num(km) ? tr('{distance} to oil change', { distance: distanceText(km) }) : flag ? (flag.is_on ? tr('oil level flag on') : tr('oil level flag clear')) : running ? (meaningOf(m, 'enginestate', o?.status.engine_state)?.label ?? '') : tr('not sent'),
+    at: num(km) ? (oil?.read_at ?? null) : flag ? (flag.last_read_at ?? null) : (o?.status.at ?? null),
   }
 }
 
-function dash(o: Overview | undefined, flags: Map<string, CarWarningFlag>): Part {
+function dash(o: Overview | undefined, flags: Map<string, CarWarningFlag>, m?: Meanings): Part {
   const on = [...flags.values()].filter((f) => f.is_on && !PART_FLAGS.has(f.flag))
   const km = o?.odometer_km
   return {
     id: 'dash', name: tr('Dashboard'), group: 'other', old: false,
     state: on.length ? 'attention' : num(km) ? 'ok' : 'absent',
     value: num(km) ? fmtDistance(km) : on.length ? tr('warning on') : tr('not sent'),
-    notes: on.map((f) => tr('flag on: {label} (raw {value})', { label: tr(f.label), value: fmtNum(f.value) })),
+    notes: on.map((f) => tr('flag on: {label} ({value})', { label: tr(f.label), value: flagWords(f, m) })),
     at: num(km) ? (o?.odometer_at ?? null) : (on[0]?.last_read_at ?? null),
   }
 }
@@ -188,9 +210,11 @@ export function carState(
   extraNotes: Record<string, string> = {},
   /** open alerts by part (M55, `alertCounts`): a marker with the count, which never changes a state either */
   alertsBy: Partial<Record<PartId, number>> = {},
+  /** what the platform documents its values to mean (M72, `meanings`); without it the raw values are shown */
+  m?: Meanings,
 ): CarState {
   const flags = new Map((carWarnings?.has_data ? carWarnings.flags : []).map((f) => [f.flag, f]))
-  const parts = [...wheels(overview, flags), ...doors(door), fuel(overview), engine(oil, flags), dash(overview, flags)].map((p) =>
+  const parts = [...wheels(overview, flags, m), ...doors(door, m), fuel(overview), engine(overview, oil, flags, m), dash(overview, flags, m)].map((p) =>
     extraNotes[p.id] && p.state !== 'absent' ? { ...p, notes: [...p.notes, extraNotes[p.id]] } : p,
   ).map((p) => (alertsBy[p.id] && p.state !== 'absent' ? { ...p, alerts: alertsBy[p.id] } : p))
   return {
@@ -337,6 +361,7 @@ export function carStateAt(
   status: readonly StatusPoint[] | undefined,
   doorPoints: readonly DoorPoint[] | undefined,
   tires: readonly TireReading[] | undefined,
+  m?: Meanings,
 ): CarAt {
   const reports = byTime(status, (p) => p.created_at)
   if (reports.length === 0) return { car: carState(undefined, undefined, undefined, undefined), index: 0, total: 0, at: null }
@@ -362,9 +387,10 @@ export function carStateAt(
       tire_measured_at: measured,
       tire_age_minutes: age,
       tire_stale: reading && age !== null ? oldBy(reading, age) : null,
+      engine_state: report.engine_state ?? null,
     },
   } as unknown as Overview
-  return { car: carState(overview, door, undefined, undefined), index: i + 1, total: reports.length, at: report.created_at }
+  return { car: carState(overview, door, undefined, undefined, {}, {}, m), index: i + 1, total: reports.length, at: report.created_at }
 }
 
 /**

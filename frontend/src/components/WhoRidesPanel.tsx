@@ -2,9 +2,9 @@ import { tr } from '../i18n'
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useOccupancy } from '../api/hooks'
 import { useCurrentModel } from '../model'
-import { OCCUPANCY_NOTE, SEATS_NOTE, monthBars, seatShade, seats, shares, summaryLine, type Seat } from '../occupancy'
+import { OCCUPANCY_NOTE, SEATS_NOTE, SENSORS_NOTE, monthBars, seatShade, seats, sensorRows, shares, summaryLine, type Seat } from '../occupancy'
 import { ANIMATE } from '../lib'
-import { Panel, QueryState } from './ui'
+import { Badge, Panel, QueryState } from './ui'
 
 const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 
@@ -37,6 +37,7 @@ export function WhoRidesPanel() {
   const bars = monthBars(o)
   const line = summaryLine(o)
   const seatList = seats(o, steering)
+  const sensors = sensorRows(o) // the seat sensors, where the platform documents them (M72)
   return (
     <Panel title={tr('Who rides')} hint={tr('from the seat belts')}>
       <QueryState query={occupancy}>
@@ -98,7 +99,27 @@ export function WhoRidesPanel() {
                 </dl>
               </div>
             )}
-            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>{tr(OCCUPANCY_NOTE)}{seatList.length > 0 ? ` ${tr(SEATS_NOTE)}` : ''}</p>
+            {sensors.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <div className="sub-h">{tr('SEAT SENSORS: READ OCCUPIED')}</div>
+                <dl className="kv">
+                  {sensors.map((s) => (
+                    <div key={s.seat} style={{ display: 'contents' }}>
+                      <dt>{s.label}</dt>
+                      <dd>
+                        {s.attention && <Badge kind="critical">{tr('check')}</Badge>} {s.pct === null ? '—' : `${s.pct}%`}{' '}
+                        <span className="muted">({s.readings}{s.latest ? ` · ${tr('latest: {state}', { state: s.latest.toLowerCase() })}` : ''})</span>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
+            <p className="muted" style={{ fontSize: 12, margin: '8px 0 0' }}>
+              {tr(OCCUPANCY_NOTE)}
+              {seatList.length > 0 ? ` ${tr(SEATS_NOTE)}` : ''}
+              {sensors.length > 0 ? ` ${tr(SENSORS_NOTE)}` : ''}
+            </p>
           </>
         )}
       </QueryState>

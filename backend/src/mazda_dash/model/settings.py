@@ -25,6 +25,9 @@ EPISODE_KEY = "warning_episode_minutes"
 # the yearly distance (M52): `mileage: {limit_km_per_year: 15000, start_date: 2026-03-03}` (a lease or
 # warranty year); optional, without it only the yearly pace is shown
 MILEAGE_KEY = "mileage"
+# the platform whose documented signal values apply (M72): only for a model whose model.yaml names none, so
+# the sample's settings can give the demo the meanings (signal_values.py checks that rule)
+PLATFORM_KEY = "platform"
 CURRENCY = re.compile(r"[A-Z]{3}")
 SINGLE_PRICE_FROM = date(1970, 1, 1)  # a lone fuel_price_per_l applies to all the data
 
@@ -295,7 +298,14 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
         data = yaml.safe_load(path.read_text()) or {}
         if not isinstance(data, dict):
             raise TypeError(f"{path}: expected a mapping of setting -> value")
-    known = {*DEFAULTS, *FUEL_KEYS, *REFUEL_KEYS, MILEAGE_KEY, EPISODE_KEY}
+    known = {
+        *DEFAULTS,
+        *FUEL_KEYS,
+        *REFUEL_KEYS,
+        MILEAGE_KEY,
+        EPISODE_KEY,
+        PLATFORM_KEY,
+    }
     unknown = set(data) - known
     if unknown:
         raise ValueError(
@@ -371,6 +381,12 @@ def load_settings(con: duckdb.DuckDBPyConnection, path: Path | None) -> dict[str
     )
     con.execute("CREATE OR REPLACE TABLE ref_settings (key VARCHAR, value VARCHAR)")
     con.executemany("INSERT INTO ref_settings VALUES (?, ?)", list(values.items()))
+    if PLATFORM_KEY in data:
+        platform = data[PLATFORM_KEY]
+        if not isinstance(platform, str) or not platform.isalnum():
+            raise ValueError(f"{path}: platform must be a platform code such as 24PF")
+        # returned, not stored: ref_settings gets the platform once its values are loaded (signal_values.py)
+        values[PLATFORM_KEY] = platform
     con.execute(
         "CREATE OR REPLACE TABLE ref_fuel_prices (valid_from DATE, per_l DOUBLE)"
     )

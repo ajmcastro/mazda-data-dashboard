@@ -208,7 +208,7 @@ def overview(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
         con,
         "SELECT s.created_at AS at, s.fuel_level_pct, s.range_km, s.tire_fl_kpa, s.tire_fr_kpa, "
         "s.tire_rl_kpa, s.tire_rr_kpa, t.measured_at AS tire_measured_at, "
-        "t.age_minutes AS tire_age_minutes, t.stale AS tire_stale "
+        "t.age_minutes AS tire_age_minutes, t.stale AS tire_stale, s.engine_state "
         "FROM v_vehicle_status s LEFT JOIN v_tire_snapshots t ON t.created_at = s.created_at "
         f"WHERE s.fuel_level_pct IS NOT NULL {st_where} ORDER BY s.created_at DESC LIMIT 1",
         st_params,
@@ -534,12 +534,23 @@ OCCUPANCY_COUNTS = """
     count(*) FILTER (WHERE driver_belt = 1 AND coalesce(passenger_belt, 0) = 0
                      AND coalesce(rear_left_belt, 0) = 0 AND coalesce(rear_right_belt, 0) = 0)
         AS driver_only_readings"""
+# the seat sensors (M72) among the same readings, documented values only (v_seat_sensors); the seats in the
+# order the panel draws them
+SEAT_SENSORS = (
+    "SELECT seat, count(*) FILTER (WHERE state <> 'unknown') AS readings, "
+    "count(*) FILTER (WHERE label = 'Occupied') AS occupied_readings, "
+    "arg_max(value, created_at) AS latest_value, arg_max(label, created_at) AS latest_label, "
+    "arg_max(state, created_at) AS latest_state, max(created_at) AS latest_at "
+    "FROM v_seat_sensors WHERE TRUE {where} GROUP BY seat "
+    "ORDER BY CASE seat WHEN 'passenger' THEN 1 WHEN 'rear_left' THEN 2 WHEN 'rear_center' THEN 3 ELSE 4 END"
+)
 
 
 @app.get("/api/status/occupancy", response_model=m.Occupancy)
 def occupancy(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
     """Who rides (M37): among the status snapshots with the driver's belt buckled (the car is being used),
-    how many had the front passenger's or a rear belt buckled too. Seat belts only, not seat sensors."""
+    how many had the front passenger's or a rear belt buckled too; and, where the platform documents them
+    (M72), what each seat's sensor read among the same snapshots."""
     where, params = rng.clause("created_at", "AND")
     base = f"FROM v_occupancy WHERE driver_belt IS NOT NULL {where}"
     total = one(con, f"SELECT {OCCUPANCY_COUNTS} {base}", params)
@@ -552,7 +563,26 @@ def occupancy(rng: DateRange = Range, con: duckdb.DuckDBPyConnection = Con):
         f"{base} GROUP BY 1 HAVING count(*) FILTER (WHERE driver_belt = 1) > 0 ORDER BY 1",
         params,
     )
-    return m.Occupancy(available=total["readings"] > 0, months=months, **total)
+    sensors = rows(con, SEAT_SENSORS.format(where=where), params)
+    return m.Occupancy(
+        available=total["readings"] > 0, months=months, sensors=sensors, **total
+    )
+
+
+@app.get("/api/signals/values", response_model=m.SignalValues)
+def signal_values(con: duckdb.DuckDBPyConnection = Con):
+    """What the values of some signals mean, as Mazda documents them for the model's platform (M72). Empty
+    for a model whose platform has no documented values. A state, so it ignores the period."""
+    cfg = one(
+        con,
+        "SELECT max(value) FILTER (WHERE key = 'platform') AS platform, "
+        "max(value) FILTER (WHERE key = 'signal_values_source') AS source FROM ref_settings",
+    )
+    values = rows(
+        con,
+        "SELECT signal, value, label, state FROM ref_signal_values ORDER BY signal, value",
+    )
+    return m.SignalValues(platform=cfg["platform"], source=cfg["source"], values=values)
 
 
 @app.get("/api/data/health", response_model=m.DataHealth)

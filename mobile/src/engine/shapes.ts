@@ -17,7 +17,7 @@ export const DOOR_POINT = [
 export const ALARM_EVENT = ['created_at', 'burglar_status', 'alarm_reason']
 export const LATEST_STATUS = [
   'at', 'fuel_level_pct', 'range_km', 'tire_fl_kpa', 'tire_fr_kpa', 'tire_rl_kpa', 'tire_rr_kpa',
-  'tire_measured_at', 'tire_age_minutes', 'tire_stale',
+  'tire_measured_at', 'tire_age_minutes', 'tire_stale', 'engine_state',
 ]
 export const TIRE_READING = [
   'reading_at', 'time_known', 'first_snapshot_at', 'last_snapshot_at', 'snapshots', 'age_minutes',
@@ -33,6 +33,10 @@ export const FRAME_SIGNAL_SUMMARY = [
   'baseline_median', 'baseline_max', 'baseline_p10', 'baseline_p90', 'position',
 ]
 export const OCCUPANCY_MONTH = ['month', 'belted_readings', 'passenger_readings', 'rear_readings']
+export const SEAT_SENSOR = [
+  'seat', 'readings', 'occupied_readings', 'latest_value', 'latest_label', 'latest_state', 'latest_at',
+]
+export const SIGNAL_VALUE = ['signal', 'value', 'label', 'state']
 export const REFUEL = [
   'before_at', 'after_at', 'level_before', 'level_after', 'points', 'gap_hours', 'odometer_km', 'doubtful', 'litres',
   'km_since_previous', 'used_since_previous_l', 'l_per_100km_since_previous', 'est_cost', 'paid', 'paid_litres',
@@ -52,7 +56,8 @@ export const SERVICE_ENTRY = ['date', 'kind', 'note', 'odometer_km']
 export const SERVICE_SUGGESTION = ['kind', 'reason', 'date', 'odometer_km']
 export const DAY_ENTRY = [
   'kind', 'at', 'until', 'local', 'local_until', 'code', 'title', 'severity', 'n', 'km', 'l_per_100km', 'odometer_km',
-  'fuel_level_pct', 'd_fuel_pct', 'tire_min_kpa', 'litres', 'doubtful', 'text', 'ref',
+  'fuel_level_pct', 'd_fuel_pct', 'tire_min_kpa', 'litres', 'doubtful', 'text', 'ref', 'engine_state', 'alarm_status',
+  'alarm_reason',
 ]
 export const DRIVING_BAND = ['band', 'min_km', 'max_km', 'stretches', 'km', 'fuel_l', 'l_per_100km']
 export const DRIVING_BAND_TOTAL = [...DRIVING_BAND, 'driving_hours', 'avg_speed_kmh']

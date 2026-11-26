@@ -1,6 +1,7 @@
 import { t, tr } from '../i18n'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useDay, useRoutines, useUnusualReports } from '../api/hooks'
+import { useDay, useRoutines, useSignalValues, useUnusualReports } from '../api/hooks'
+import { meanings } from '../signals'
 import { Badge, Panel, QueryState } from '../components/ui'
 import { KIND_LABEL, addDays, dayShort, dayTitle, describe, isDay, placedAt, summary, when } from '../day'
 import { standsOut } from '../unusual'
@@ -19,6 +20,7 @@ export default function DayPage() {
   // the reports of this day that stand out (M64): the UTC days around the car's local day, whatever the period
   const unusual = useUnusualReports(day ? { from: addDays(day, -1), to: addDays(day, 1) } : undefined)
   const routines = useRoutines() // a drive's routine (M66), matched by the time its stretch ended
+  const documented = meanings(useSignalValues().data) // the engine state and the alarm in words (M72)
   const to = (path: string, extra?: Record<string, string>) => {
     const p = new URLSearchParams(search)
     for (const [k, v] of Object.entries(extra ?? {})) p.set(k, v)
@@ -69,7 +71,7 @@ export default function DayPage() {
                 <p style={{ margin: '0 0 12px' }}>{summary(d)}</p>
                 <ol className="day-list">
                   {d.entries.map((e, i) => {
-                    const line = describe(e)
+                    const line = describe(e, documented)
                     const odd = standsOut(e.kind, e.at, unusual.data?.reports)
                     // a drive's `at` is the report before the stretch, `until` the one at its end: routines are by the end
                     const routine = e.kind === 'drive' ? routineOf(e.until, routines.data) : null

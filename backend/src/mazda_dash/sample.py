@@ -66,6 +66,11 @@ class Profile:
     diag_offset_hours: int = 0  # the diagnostic tool's clock
     oil: bool = True  # does the car send the oil-change countdown?
     belts: bool = False  # does the car send the seatbelt signals (who rides)?
+    # does the car send the seat sensors (occupant classification, M72)? From the odometer: no random numbers
+    seat_sensors: bool = False
+    # the platform whose documented signal values the demo applies (M72): written into the sample's settings,
+    # for a model whose config/models/<id>/model.yaml names none (so the real model is not given one)
+    signal_platform: str | None = None
     # from this day on every drive uses this many l/100 km more (the change point of M65; no random number)
     l100_step: tuple[date, float] | None = None
     # a fault that comes and goes (M67): listed only in these read-outs, without freeze frames (no random number)
@@ -193,6 +198,8 @@ CX60 = Profile(
     morning_dip=(1, 10.0),
     late_receipt=True,
     belts=True,
+    seat_sensors=True,
+    signal_platform="24PF",
     extra_signals=("sample60_drivemode", "sample60_cabintemp"),
     fuel_prices=(
         (date(2026, 4, 10), 1.79),
@@ -278,6 +285,7 @@ class Car:
             "rrtprsdispkp": tires[3],
             **(self.oil(t) if self.p.oil else {}),
             **(self.seatbelts() if self.p.belts else {}),
+            **(self.seat_sensors(t) if self.p.seat_sensors else {}),
             **self.car_warnings(tires),
             **self.tire_clock(t),
             **self.lamp_flags(t),
@@ -295,6 +303,20 @@ class Car:
             "firstrowbucklepsngr": int(passenger),
             "rear_left_seatbelt_used": int(rear),
             "rear_right_seatbelt_used": int(rear and int(self.odo) % 16 == 0),
+        }
+
+    def seat_sensors(self, t: datetime) -> dict[str, int]:
+        """The seat sensors (1 empty, 2 occupied, 3 malfunction), from the odometer and the clock only: a seat
+        with a buckled belt is occupied, the passenger's seat also holds a bag on one trip in five (occupied
+        without a belt: a sensor reads a weight), and the rear centre sensor reports a malfunction in the last
+        two days, so the demo shows one marked for attention."""
+        belts = self.seatbelts()
+        bag = self.trip_km > 0 and int(self.odo) % 5 == 0
+        return {
+            "ocsstatus": 2 if belts["firstrowbucklepsngr"] or bag else 1,
+            "rlocsstatdactl": 2 if belts["rear_left_seatbelt_used"] else 1,
+            "rcocsstatdactl": 3 if t >= self.p.end - timedelta(days=2) else 1,
+            "rrocsstatdactl": 2 if belts["rear_right_seatbelt_used"] else 1,
         }
 
     def extras(self) -> dict[str, float]:
@@ -854,6 +876,8 @@ def settings_text(p: Profile) -> str:
         f"fuel_currency: {p.fuel_currency}",
         f"tank_litres: {p.tank_l:g}",
     ]
+    if p.signal_platform:  # the documented signal values (M72), for the demo only
+        lines.append(f"platform: {p.signal_platform}")
     if p.mileage_limit_km:  # a year that starts with the data, so the demo shows a projection against a limit
         lines.append(
             f"mileage: {{limit_km_per_year: {p.mileage_limit_km}, start_date: {p.start.date().isoformat()}}}"

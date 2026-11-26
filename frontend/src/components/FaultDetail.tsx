@@ -1,7 +1,8 @@
 import { codeTitle } from '../alerttext'
 import { tr } from '../i18n'
 import { useMemo, useState } from 'react'
-import { useDtcEvents, useFaultContext, useFreezeFrames } from '../api/hooks'
+import { useDtcEvents, useFaultContext, useFreezeFrames, useSignalValues } from '../api/hooks'
+import { meanings, valueText } from '../signals'
 import type { DtcEvent, DtcFrequency, FreezeFrame } from '../api/types'
 import { fmtDateTime, fmtDateTimeSec, fmtNum, signalLabel, signalValue } from '../lib'
 import { fmtDistance } from '../units'
@@ -30,6 +31,7 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
 
   const tx = chosenTx ?? events.data?.[0]?.transaction_id
   const context = useFaultContext(tx)
+  const documented = meanings(useSignalValues().data) // the engine state in words (M72)
   const list = useMemo(() => frames.data ?? [], [frames.data])
   const frame = list[Math.min(frameIdx, Math.max(0, list.length - 1))]
   const varying = useMemo(() => differingSignals(list), [list])
@@ -172,7 +174,7 @@ export function FaultDetail({ fault }: { fault: DtcFrequency }) {
                       <dt>{tr('Odometer')}</dt>
                       <dd>{fmtDistance(ctx.status.odometer_km)}</dd>
                       <dt>{tr('Engine state')}</dt>
-                      <dd>{fmtNum(ctx.status.engine_state)}</dd>
+                      <dd>{valueText(documented, 'enginestate', ctx.status.engine_state)}</dd>
                     </dl>
                   ) : (
                     <div className="muted">

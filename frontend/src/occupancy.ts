@@ -5,6 +5,7 @@
 
 import { msg, tr } from './i18n'
 import type { Occupancy } from './api/types'
+import { SEAT_NAMES } from './signals'
 
 /** A month with fewer belted snapshots than this is marked: a share of a handful is not a trend. */
 export const MIN_READINGS = 5
@@ -90,3 +91,32 @@ export function seats(o: Occupancy | undefined, steering: 'left' | 'right' = 'le
 export const seatShade = (s: Pick<Seat, 'pct'>): number => 0.08 + 0.92 * ((s.pct ?? 0) / 100)
 
 export const SEATS_NOTE = msg('Each seat is shaded by how often its belt was buckled in the snapshots with the driver belted. A third row and a child seat are not seen either.')
+
+// ------------------------------------------------------------- the seat sensors (M72)
+
+export interface SensorRow {
+  seat: string
+  label: string
+  /** share of the readings (with the driver belted) in which the sensor read Occupied */
+  pct: number | null
+  readings: number
+  /** the newest reading in the period, in words */
+  latest: string | null
+  /** the sensor itself reported a malfunction in its newest reading: the seat is marked for attention */
+  attention: boolean
+}
+
+/** One row per seat whose sensor the platform documents (none for a car or platform without them). */
+export function sensorRows(o: Occupancy | undefined): SensorRow[] {
+  return (o?.sensors ?? []).map((s) => ({
+    seat: s.seat,
+    label: tr(SEAT_NAMES[s.seat] ?? s.seat),
+    pct: pct(s.occupied_readings, s.readings),
+    readings: s.readings,
+    latest: s.latest_label ? tr(s.latest_label) : null,
+    attention: s.latest_state === 'attention',
+  }))
+}
+
+export const SENSORS_NOTE =
+  msg('The seat sensors weigh the seat, so a bag counts as occupied too. Shares are of the snapshots with the driver’s belt buckled; a sensor reading Unknown is left out.')

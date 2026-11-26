@@ -3,7 +3,8 @@ import { useState } from 'react'
 import {
   Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview, useRefuels, useImports, useWritable } from '../api/hooks'
+import { useCarWarnings, useFuelMonthly, useOdometerDaily, useOilService, useOverview, useRefuels, useImports, useSignalValues, useWritable } from '../api/hooks'
+import { alarmText, meanings } from '../signals'
 import { AheadPanel } from '../components/AheadPanel'
 import { SEEN_KEY, changedAnything, headline } from '../imports'
 import { lastFillUp } from '../refuels'
@@ -20,6 +21,7 @@ const axis = { stroke: 'var(--muted)', fontSize: 11, fontFamily: 'var(--mono)' }
 export default function OverviewPage() {
   const { id } = useCurrentModel()
   const overview = useOverview()
+  const documented = meanings(useSignalValues().data)
   const odometer = useOdometerDaily()
   const fuel = useFuelMonthly()
   const oil = oilTile(useOilService().data)
@@ -92,7 +94,7 @@ export default function OverviewPage() {
               {o.last_alarm && (
                 <div className="alert-row warn">
                   <b>{tr('Burglar alarm event')}</b>
-                  <span className="muted">{tr('status {status}, reason {reason}', { status: o.last_alarm.burglar_status ?? '–', reason: o.last_alarm.alarm_reason ?? '–' })}</span>
+                  <span className="muted">{alarmText(documented, o.last_alarm.burglar_status, o.last_alarm.alarm_reason)}</span>
                   <span className="when">{fmtDateTime(o.last_alarm.created_at)}</span>
                 </div>
               )}

@@ -220,6 +220,15 @@ export const useServiceLog = () => {
   })
 }
 
+/** What the values of some signals mean, as Mazda documents them for the model's platform (M72): a state. */
+export const useSignalValues = () => {
+  const { model } = useRangeQuery()
+  return useQuery({
+    queryKey: ['signal-values', model],
+    queryFn: () => unwrap(client.GET('/api/signals/values', { params: { query: { model } } })),
+  })
+}
+
 /** Whether this server may edit the model's own files (the Mac's API, not the demo, never the phone). */
 export const useWritable = (): boolean => {
   const { model } = useRangeQuery()

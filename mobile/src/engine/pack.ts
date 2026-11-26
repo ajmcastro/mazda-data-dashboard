@@ -139,6 +139,9 @@ function statements(sql: string): string[] {
  * size and fails ("No magic bytes found"). */
 let loads = 0
 
+/** The table of `backend/src/mazda_dash/model/signal_values.py` (keep the two equal). */
+export const SIGNAL_VALUES_DDL = 'CREATE TABLE ref_signal_values (signal VARCHAR, value DOUBLE, label VARCHAR, state VARCHAR)'
+
 export interface LoadOptions {
   /** Verify each table's SHA-256 against the manifest (skipped where crypto.subtle is unavailable). */
   verify?: boolean
@@ -162,6 +165,8 @@ export async function loadPack(raw: RawDb, bytes: Uint8Array, options: LoadOptio
     await con.exec(`CREATE TABLE "${name}" AS SELECT * FROM read_parquet('${file}')`)
     await raw.dropFile(file)
   }
+  // a pack made before M72 has no documented signal values: an empty table, so the views that read it work
+  if (!('ref_signal_values' in manifest.tables)) await con.exec(SIGNAL_VALUES_DDL)
   for (const st of statements(viewsSql)) await con.exec(st)
   return manifest
 }

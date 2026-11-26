@@ -99,6 +99,9 @@ class LatestStatus(BaseModel):
         None  # how much older than `at` the measurement was
     )
     tire_stale: bool | None = None
+    engine_state: float | None = (
+        None  # raw; the platform's documented values put it into words (M72)
+    )
 
 
 class AlarmEvent(BaseModel):
@@ -489,6 +492,21 @@ class OccupancyMonth(BaseModel):
     rear_readings: int
 
 
+class SeatSensor(BaseModel):
+    """One seat's sensor (occupant classification, M72) among the snapshots with the driver's belt buckled.
+    A sensor reads a weight, so "occupied" can be a bag as well as a person."""
+
+    seat: str  # passenger, rear_left, rear_center, rear_right
+    readings: int  # readings with a documented value other than Unknown
+    occupied_readings: int  # of those, read Occupied
+    latest_value: float | None = None  # the newest reading in the period, raw
+    latest_label: str | None = (
+        None  # and its documented label (English; the page translates it)
+    )
+    latest_state: str | None = None  # ok, info, attention (Malfunction) or unknown
+    latest_at: datetime | None = None
+
+
 class Occupancy(BaseModel):
     available: bool  # the car sent the driver's belt in the period
     readings: int  # status snapshots with a valid driver's belt value
@@ -503,6 +521,24 @@ class Occupancy(BaseModel):
     rear_right_readings: int = 0
     driver_only_readings: int  # belted readings with no other belt buckled
     months: list[OccupancyMonth]
+    sensors: list[
+        SeatSensor
+    ] = []  # where the platform documents the seat sensors (M72)
+
+
+class SignalValue(BaseModel):
+    signal: str
+    value: float
+    label: str  # English; both apps translate it
+    state: str  # ok, info, attention or unknown
+
+
+class SignalValues(BaseModel):
+    """What the values of some signals mean, as Mazda documents them for the model's platform (M72)."""
+
+    platform: str | None = None
+    source: str | None = None
+    values: list[SignalValue]
 
 
 class Refuel(BaseModel):
@@ -718,6 +754,11 @@ class DayEntry(BaseModel):
         None  # what is open; fault codes; an alarm's raw codes; an alert's detail
     )
     ref: str | None = None  # read-out transaction id, report id, alert key
+    engine_state: float | None = None  # a status report's, raw (M72)
+    alarm_status: float | None = (
+        None  # an alarm reading's burglar status and reason, raw (M72)
+    )
+    alarm_reason: float | None = None
 
 
 class Day(BaseModel):
